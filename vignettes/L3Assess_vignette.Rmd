@@ -1,0 +1,825 @@
+---
+title: "L3Assess_vignette"
+output: 
+  rmarkdown::html_vignette:
+  #rmarkdown::word_document:
+    toc: true
+    toc_depth: 3
+vignette: >
+  %\VignetteIndexEntry{L3Assess_vignette}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+```{r library_setup}
+library(L3Assess)
+Fig_Path = "C:/~/L3AssessPackage/vignettes/"
+```
+
+# Introduction
+#### Last updated November 2022 (Alex Hesp - DPIRD)
+
+This package is intended as a toolbox of methods with analyses for conducting "level 3" assessments in Western Australia. These methods are typically "equilibrium" approaches, used when size and/or age data are available, together with information on various biological attributes of species, such as estimates of natural mortality, growth and maturity.  
+
+Typically, a level 3 assessment, as considered by DPIRD in Western Australia, involves producing a "catch curve" estimate of average 'long term' fishing mortality fitted to age or length composition data. The long-term 'fishing mortality' is either estimated directly, or indirectly from total mortality and natural mortality. Some catch curve methods also produce age or length-based estimates of selectivity.  
+
+The catch curve estimates of fishing mortality are often compared to estimates of natural mortality to inform about the (long-term average) level of fishing pressure the stock has experienced. Note that catch curve (equilibrium) estimates of fishing mortality typically pertain to the average value experience over the lifespans of all fish in the sample, and may not correspond to recent mortality (i.e. as the stock may not in equilibrium with respect to mortality and other factors, e.g. recruitment).  
+
+The estimates of 'fishing mortality' and selectivity may be used, in combination with other biological information (e.g. growth, maturity etc,) in per recruit analysis to calculate measures of population reproductive potential, such as spawning potential ratio (SPR). Per recruit analysis may be extended from the traditional form to include a stock-recruitment relationship, to account for potential impacts of fishing pressure on recruitment (i.e. through impacts on spawning stock levels). The estimates of spawning potential ratio (or relative female biomass, from extended per recruit analysis) are used as a proxy for female spawning biomass.  
+
+The estimates of 'fishing mortality', from catch curve analysis, female spawning potential ratio and relative female spawning biomass from per recruit analysis, may be compared against various standard points relating to fishing pressure (e.g. $F_\mathrm{targ}=2/3$, $F_\mathrm{thresh}=M$, $F_\mathrm{lim}=3/2M$) and female spawning stock levels ($B^\mathrm{rel}_\mathrm{targ}=0.4$, $B^\mathrm{rel}_\mathrm{thresh}=0.3$, $B^\mathrm{rel}_\mathrm{lim}=0.2$). The threshold levels are taken as proxies for long-term levels of fishing and biomass expected to yield maximum sustainable yield. Note, however, that if (in particular) the 'steepness' of the stock recruitment relationship is lower than typical for marine broadcast spawning fishes (~0.75), which would be indicative of lower stock productivity (e.g. some shark species), then the values of the reference points would need to be more conservative. 
+
+The package contains several age- and length-based routines for catch curve analysis, per recruit analysis, and an "extended" form of per recruit analysis with a stock-recruitment relationship. It also contains an analysis for calculating length-based selectivity given estimates of selectivity parameters for fish caught by gillnet fishing. The various R functions output a range of statistics and diagnostic plots. 
+
+Please note that this is a 'trial version' with testing of the various routines continuing. Please report any identified issues to Alex Hesp ($\mathrm{Alex.Hesp@dpird.wa.gov.au}$).
+
+## Age-based catch curve methods
+
+### Chapman and Robson (1960) mortality estimator
+
+$$
+\hat{Z} = \ln\bigg[1+\overline{X}-\frac{1}{n}\bigg]^{-1}-\ln\overline{X}-\bigg[\frac{{(n-1)(n-2)}}{n(t+1)(n+t-1)}\bigg]
+$$
+where $\overline{X}$ is the mean age above the age at full recruitment into the fishery, $n$ is the sample size and $t=n\overline{X}$.
+
+An approximate estimate of the variance of $Z$ (for large sample sizes) may be determined as
+
+$$
+\hat{\sigma}^2 = \bigg[\frac{(1-\exp(\hat{Z}))^2}{n\exp(\hat{Z}))}\bigg]
+$$
+see Smith et al. (2012). Thus, an approximate 95% confidence interval for $Z$ may be calculated as $1.96\sigma$. Alternatively, 95% confidence intervals for $Z$ are calculated using resampling with replacement (bootstrapping). The resampling procedure involves producing a specified number (500) random age frequency data sets, and applying the  calculating Chapman and Robson (1960) mortality formula to each of these to produce 500 estimates for $Z$. The point estimate for $Z$, from resamping, is taken as the median of the 500 calculated values for $Z$, and the lower and upper 95 confidence limits as the 2.5 and 97.5 percentiles, respectively. For visualisation, the resampling procedure is also used to produce estimated frequencies of fish at age (above the age at full selection) with associated 95% confidence limits, based on the survival function, i.e.
+
+$$
+\hat{N_t} = N_0\exp(-Zt)
+$$
+where, for a given random data set, $\hat{N_t}$ is the estimated number at relative age $t$, $N_0$ is the observed number of fish at the calculated recruitment age (determined from the original data set), at $t$ is relative age. The observed and estimated frequencies at age can be visualised in normal or log space (for comparison with other age-based catch curve methods).
+
+
+#### Apply the Chapman and Robson (1960) mortality estimator
+
+Key functions relevant to applying this method are:
+GetChapmanRobsonMortalityResults()
+PlotAgeBasedCatchCurveResults_NormalSpace()  
+PlotAgeBasedCatchCurveResults_LogSpace()  
+Refer to help files and example code, showing function inputs and outputs.
+
+
+### Linear catch curve analysis
+
+Applying linear catch curve analysis
+
+$$
+\begin{align}
+    \log_e(N_t) = \log_e(N_0)-Z_t\\
+\end{align}
+$$
+where $N_t$ represents the numbers of fish in the population at time $t$ and $N_0$ is the initial recruitment (e.g. Haddon, 2011). The value for total mortality, $Z_t$, is taken as the negative of the slope of the line. It is assumed that the catch of fish at age $t$ is proportional to the number of fish in the population at that age, and that the population is at equilibrium with respect to mortality and recruitment. The model is fitted using the lm function in R, applying the predict function to estimate 95% confidence limits for the fitted line. Approximate 95% confidence intervals for $Z$ are be calculated as $1.96\sigma$, where $\sigma$ is the estimate of the standard error for $Z$ produced by the lm function. For visualisation, the predict function in R is used to produce estimated frequencies of fish at age (above the age at full selection) with associated approximate 95% confidence limits, 
+
+#### Apply linear catch curve anlaysis
+
+Key functions relevant to applying this method are:  
+GetLinearCatchCurveResults()  
+PlotAgeBasedCatchCurveResults_NormalSpace()  
+PlotAgeBasedCatchCurveResults_LogSpace()  
+Refer to help files and example code, showing function inputs and outputs.
+
+### Catch curve analysis with logistic selectivity
+
+Applying this catch curve approach, selectivity at age, $S_a$, is calculated as
+$$
+S_a = 1/(1+\exp(-s(a-a_{50})))
+$$
+where $a_{50}$ age at which 50% of fish are selected into the fishery and $s$ is the slope of the logistic equation. Fishing mortality at age, $F_a$, is calculated as 
+$$
+F_a = S_aF
+$$
+where $F$ is the fully-selected fishing mortality. Total mortality at age, $Z_a$, is
+$$
+Z_a = F_a+M
+$$
+The instantaneous rate of natural mortality, $M$, may be calculated from an empirical equation such as that of Hoenig's (1983) equation for fish, i.e.
+$$
+M = \exp(1.46)-(1.01)\ln(A_{\mathrm{max}})
+$$
+Setting survival at age zero, $N_{a=0}$, to 1, and treating age $A$ as a 'plus group', the expected number of survivors per recruit for each age is
+
+$$
+\begin{align}
+    N_a = N_{a-1}\exp(-Z_{a-1}) && \text{if a<A}\\
+    N_a = N_{a-1}\exp(-Z)/(1-\exp(-Z)) && \text{if a=A}\\
+\end{align}
+$$
+
+$C_a$, the catch at age $a$, may be calculated using the Baranov catch equation, i.e.
+$$
+C_a = N_a\biggl(\frac{F_a}{Z_a}\biggr)(1-\exp(-Z_a))
+$$
+The expected catch proportion at age, $\hat{P_a}$, is thus
+$$
+\hat{P}{_a} = \frac{C_a}{\sum_{a=0}^{A}C_a}
+$$
+The multinomial log-likelihood associated with the catch curve is calculated as
+$$
+{\lambda} = \sum_{a=0}^{A}f_a\ln\hat{P}{_a}
+$$
+where $f$ is the observed frequency at age $a$. The model is fitted by minimising the negative log-likelihood, $\lambda$, using nlminb in R, by estimating the fully-selected fishing mortality $F$, and selectivity parameters, $a_{50}$ and $s$. Estimates of asymptotic standard errors, $\sigma$, for each of the model parameters, are derived from the variance-covariance matrix (i.e. from the inverted Hessian matrix produced by nlminb). Approximate 95% confidence intervals for the estimated parameters are calculated as $1.96\sigma$. For visualisation, model estimates of the frequency of fish at each age, with associated 95% confidence intervals, are calculated using a parametric resampling approach, assuming the estimated model parameters conform to a multivariate normal distribution. The mvrnorm function within the MASS package is used together with the values of the estimated model parameters and associated variance-covariance matrix to generate 500 random values of each of the model parameters. These, in turn, are used to produce 500 sets of model estimates for the frequency of fish at each age, $\hat{f_a}$, calculated as
+
+$$
+\hat{f_a}=\hat{P}{_a}n
+$$
+
+where $n$ is the observed sample size. The lower and upper 95 confidence limits for $\hat{f_a}$ are taken as the 2.5 and 97.5 percentiles of the 500 estimates for $\hat{f_a}$, respectively. 
+
+
+#### Apply catch curve analysis with logistic selectivity
+
+Key functions relevant to applying this method are:  
+GetLogisticCatchCurveResults()  
+PlotAgeBasedCatchCurveResults_NormalSpace()  
+PlotAgeBasedCatchCurveResults_LogSpace()  
+Refer to help files and example code, showing function inputs and outputs.
+
+## Length-based selectivity analysis
+
+### Gillnet selectivity - Kirkwood and Walker (1986)
+
+The Kirkwood & Walker (1986) model describes selectivity as a function of fish length and two parameters for the probability density function of the gamma distribution, $\theta_1$ and $\theta_2$. The routine implemented outputs length-based selectivity schedules (by mesh and overall), from inputted values for two gillnet selectivity parameters that, in turn, can be inputted into various routines for catch curve and per recruit analysis. The routine may be extended in future to estimate the two gillnet selectivity parameters from gillnet length data. 
+
+The relative selectivity of a fish in length class $j$ caught in mesh size $i$ is calculated as
+$$
+\begin{align}
+    S_{ij} =\bigg(\frac{L_j}{\alpha_i\beta_i}\bigg)^{\alpha_i}\exp\bigg(\alpha-\frac{L_j}{\beta} \bigg)
+\end{align}
+$$
+where $Lj$ is the midpoint of length class $j$, and $\alpha_i$ and $\beta_i$ are the parameters of the gamma distribution determined for mesh size $m_i$. The values of $\alpha_i$ and $\beta_i$ may be calculated from $m_i$, $\theta_1$, a dimensionless scaling parameter used to relate the mode of the gamma distribution $(\alpha,\beta)$ to mesh size and from the variance $(\theta_2)$, with
+$$
+\begin{align}
+    \alpha_i\beta_i=\theta_1m_i
+\end{align}
+$$
+and
+$$
+\begin{align}
+    \beta_i=-0.5(\theta_1m_i-(\theta_2^2m_i^2+4\theta_2)^{0.5})
+\end{align}
+$$
+Applying this model, estimates of the relative proportion of fish in the population from length
+class $j$ is calculated as
+
+$$
+\begin{align}
+    \mu_j=\frac{\sum_{i=1}^{I}n_{ij}}{\sum_{i=1}^{I}S_{ij}}
+\end{align}
+$$
+where $n_ij$ is the number of fish in length class $j$ caught in mesh size $i$. The relative selectivity of fish in the multi-mesh research gill net in length class $j$ is estimated as
+
+$$
+\begin{align}
+    P_j=\frac{\sum_{i=1}^{I}S_{ij}}{\max\sum_{i=1}^{I}S_{ij}}
+\end{align}
+$$
+e.g. Hansen et al. (1997). 
+
+The Kirkwood and Walker (1986) gillnet selectivity routines could be extended to estimate the values of $\theta_1$ and $\theta_2$, which would involve by minimising the negative log-likelihood
+
+$$
+\begin{align}
+    \lambda=\sum_{i=1}^{I}\sum_{j=1}^{J}[n_{ij}\log_e(\mu_jS_{ij})-\mu_jS_{ij}]
+\end{align}
+$$
+Note, an important assumption of this implementation of the Kirkwood & Walker (1986) model is that, at the size of maximum selectivity, the different meshes to which the model is fitted have equal fishing power.
+
+
+### Apply gillnet selectivity - Kirkwood and Walker (1986)
+
+Key functions relevant to applying this method are:  
+CalcGillnetSelectivity()  
+Refer to help files and example code, showing function inputs and outputs.
+
+## Length-based catch curve methods
+### Length-based catch curve
+
+This sex-structured length-based catch curve approach allows for common or divergent growth between the two sexes, growth variation (by applying sex-specifid length-transition matrices), and assumes common selectivity and fully-selected fishing mortality (and natural mortality) for the two sexes. Growth can be based on either a von Bertalanffy growth curve or Schnute growth curve. The approach involves calculating expected survival and catches for each sex, per recruit, given specified values for natural mortality, growth parameters (and associated variation), weight-at-length parameters, and model parameters for selectivity and fishing mortality. 
+
+As a word of caution method, in its current version, this method (and age and length based method described below) is likely best suited for medium to longer-lived (> 10 y) species (as the model employs an annual timestep; in short-lived species this may not be sufficient to capture growth/selectivity changes well). Although the model is sex-structured, allowing for potential differences in growth, the model can be separately fitted to sex-specific data, by inputting a single set of growth parameters for that sex. 
+
+#### Growth calculations
+
+Fish are assumed to recruit into the population at age $t=1$ y (to help avoid the possibility of negative lengths), with the size distribution assuming to conform to a normal distribution. The proportion of fish of sex $s$, in length class $l$ at age $t=1$ is calculated as
+
+$$
+\theta_{k,s} = \int_{l_k^-}^{\mathrm{l_k^+}}f_{a=1}(l)dl_s
+$$
+
+where $l^-$ and $l^+$ are the lower and upper limits of the length class $k$, and $f_{a=1}(l)$ is the value of the normal probability density function for fish of sex $s$ at age $t=1$ for given length $l$, mean length $\mu$ (as calculated from the growth curve) and associated standard deviation $\sigma$, i.e. where 
+$$
+l_s{\sim}N(\mu_s,\sigma{^2)}
+$$
+$\sigma$ is calculated given a specified value for the coefficient of variation, $CV$, assumed to be constant with respect to mean fish lengths at age (common to both sexes). The associated value of the normal probability density function, is calculated as
+
+$$
+f_{a=1}(l_s) = \frac{1}{\sigma\sqrt{2{\pi}}}\exp\bigg[\frac{(l_s-\mu_s)^2}{2\sigma^2}\bigg]
+$$
+Growth is modelled using length transition matrices, $G_s=g_{k,j}$, which represent the probability that a fish (of sex $s$) in length class $j$ will grow into length class $k$ over a specified time interval, i.e.
+
+$$
+\begin{equation*}
+G_s = 
+\begin{pmatrix}
+g_{s,1,1} & g_{s,1,2} & \cdots & g_{s,1,n} \\
+g_{s,2,1} & g_{s,2,2} & \cdots & g_{s,2,n} \\
+\vdots  & \vdots  & \ddots & \vdots  \\
+g_{s,n,1} & g_{s,n,2} & \cdots & g_{s,n,n} 
+\end{pmatrix}
+\end{equation*}
+$$
+The general form of a length transition matrix (Punt et al., 1997; see also Hall et al., 2000),is
+
+$$
+g_{s,k,j} = \left\{
+    \begin{array}{ll}
+        \int_{{\infty}^-}^{\mathrm{l_{s,k}^+}}f[\phi_s(T,l_s,j)]dl & \mbox{if }k=1 \\
+        \int_{l_{s,k}^-}^{\mathrm{l_{s,k}^+}}f[\phi_s(T,l_s,j)]dl &\mbox{if }k=1<k<n \\
+\int_{l_{s,k}^-}^{\mathrm{\infty^+}}f[\phi_s(T,l_s,j)]dl &\mbox{if }k=n \\
+    \end{array}
+\right.
+$$
+where $l_s$ is the length for a fish of sex $s$, $f$ is the specified (normal) distribution, $l_{s,k}^-$ and $l_{s,k}^+$ are the lower and upper limits, respectively, of length class $j$ for fish of sex $s$, and $\phi_s$ is a vector of parameters dependent on the time period $T$ and sex, and the midpoint of the size class $j$, $l_j$. In the model, growth is applied at the end of each time step, after mortality has been applied.
+
+
+#### Selectivity and mortality calculations
+
+Selectivity is either estimated and by an asymptotic logistic curve, or imposed (inputted as a vector). It is assumed that length based selectivity is common to both sexes. Applying the model assuming logistic selectivity, $S_l$, the selectivity of fish of, of either sex, of length $L$, corresponding to the midpoint of length class $l$, is
+
+$$
+S_l = 1/(1+\exp(-\log_e(19)(L-L_{50}^{\mathrm{sel}})/(L_{95}^{\mathrm{sel}}-L_{50}^{\mathrm{sel}})))
+$$
+
+where $L_{50}^{\mathrm{sel}}$ and $L_{95}^{\mathrm{sel}}$ are the lengths at which 50 and 95% of fish of sex $s$ are selected by the gear. The fishing mortality for fish of either sex in length class, $l$, is
+
+$$
+F_l = S_lF^*
+$$
+where $F^*$ is the instantaneous rate of fishing mortality ($y^-1$), for fully-selected fish. The total mortality at length is thus
+
+$$
+Z_l = F_l+M
+$$
+where $M$ is the instantaneous rate of natural mortality ($y^-1$).
+
+#### Survival and catch calculations
+
+For gonochoristic species (i.e. non-hermaphroditic species), assuming equal proportions of each sex for age 1 recruits, the per recruit numbers of either sex in length class $l$ that have survived to age $a$, i.e. $N_{s,l,a}$, is
+
+$$
+N_{s,l,a} = \left\{
+    \begin{array}{ll}
+        0.5 & \mbox{if }a=1 \\
+        N_{s,l,a-1}\exp(-Z_{s,l}) &\mbox{if }a=1<a<A \\
+        N_{s,l,a-1}\exp(-Z_{s,l})/(1-\exp(-Z_{s,l})) &\mbox{if }a=A \\
+    \end{array}
+\right.
+$$
+
+The estimated catch numbers of fish of sex $s$ in length class $l$ at age $a$, as calculated from the Baranov catch equation, is
+
+$$
+\hat{C}_{s,l,a} = (F_{s,l}/Z_{s,l})(1-\exp(-Z_{s,l}))N_{s,l,a}
+$$
+
+#### Objective function calculations
+
+The observed length composition, to which the model is fitted, is assumed to conform to a multinomial distribution.
+For combined sexes, the expected proportions of fish in each length class, $\hat{P}_l$, is
+
+$$
+\hat{P}_l = \sum_s\sum_a\bigg(\frac{\hat{C}_{s,l,a}}{\sum_{l}\hat{C}_{s,l,a}}\bigg)
+$$
+The multinomial log-likelihood associated with the length composition data, $\lambda_1$, is
+
+$$
+\lambda_1 = C_l\log_e(\hat{P}_l)
+$$
+where $C_l$ is the observed catch frequency. The model is fitted by minimsing the negative log-likelihood using nlminb in R, by estimating the fully-selected fishing mortality $F^*$, and selectivity parameters, $L_{50}^{\mathrm{sel}}$ and $L_{95}^{\mathrm{sel}}$. Estimates of asymptotic standard errors, $\sigma$ are derived from the variance-covariance matrix (i.e. from the inverted Hessian matrix produced by nlminb). Approximate 95% confidence intervals for the estimated parameters are calculated as $1.96\sigma$.  
+
+For visualisation, model estimates of the proportion of fish in each length class, with associated 95% confidence intervals, are also calculated using a parametric resampling approach, assuming the estimated model parameters conform to a multivariate normal distribution. The mvrnorm function within the MASS package is used together with the values of the estimated model parameters and associated variance-covariance matrix to generate 200 random values of each of the model parameters. These, in turn, are used to produce 200 sets of model estimates for the expected proportion of fish in each length class. The lower and upper 95 confidence limits for $\hat{f_a}$ are taken as the 2.5 and 97.5 percentiles of the 200 estimates for $\hat{P}_l$, respectively. 
+
+
+### Apply length-based catch curve
+
+Key functions relevant to applying this method are:  
+SimLenAndAgeFreqData()  
+VisualiseGrowthApplyingLTM()  
+GetLengthBasedCatchCurveResults()  
+PlotLengthBasedCatchCurveResults()  
+Refer to help files and example code, showing function inputs and outputs.
+
+### Length and age-based catch curve
+
+This model applies the same set of equations as described above for the length-based catch curve, but is fitted using a modified objective function with two components, the first associated with the marginal length composition (as described above), and the second, with conditional ages-at-length. The approach estimates logistic selectivity parameters ($L_{50}$ and $L_{95}$), von Bertalanffy growth parameters ($L_{\infty,s}$ and $k,s$) and fully-selected fishing mortality ($F^*$). As with the above length-based model, this model is also sex-structured, allowing growth to be estimated simultaneously for both sexes, whilst assuming common length-based selectivity and fully-selected fishing mortality. Single sex data can also be inputted, allowing for growth, selectivity and fishing mortality to be estimated separately for each sex. 
+
+Following Piner et al. (2016), the distribution of ages for a given length class is assumed to follow a multinomial distribution. The log-likelihood for ${C}_{l,a}$, the number of fish in the catch in length class $l$ at age $a$, is calculated as
+
+$$
+\lambda_2=\sum_{s}\sum_{l}\sum_{a}{C}_{s,l,a}\log_e(\hat{P_s}{(a|l)})
+$$
+
+In the above equation, $\hat{P_s}(a|l)$ is the expected conditional proportion of fish, of sex $s$, in the catch at age $a$ given length $l$, which calculated as
+
+$$
+\hat{P_s}{(a|l)}=\frac{\hat{P_s}(l|a)\hat{P_s}(a)}{\sum_{a}\hat{P_s}(l|a)\hat{P_s}(a)}
+$$
+where
+$$
+\hat{P_s}(a) = \frac{\hat{C}_{s,a}}{\sum_{s,a}\hat{C}_{s,a}}
+$$
+and 
+
+$$
+\hat{P_s}(l|a) = \frac{\hat{C}_{s,l,a}}{\sum_{l}\hat{C}_{s,l,a}}
+$$
+The overall log-likelihood is calculated as the sum of the log-likelihoods associated with the marginal length composition, $\lambda_1$ (as described above for the length-based catch curve method) and the conditional age at length log-likelihood, $\lambda_2$.
+
+### Apply length and age-based catch curve
+
+Key functions relevant to applying this method are:  
+SimLenAndAgeFreqData()  
+VisualiseGrowthApplyingLTM()  
+GetAgeAndLengthBasedCatchCurveResults ()  
+PlotAgeAndLengthBasedCatchCurveResults ()  
+Refer to help files and example code, showing function inputs and outputs.
+
+### Length-converted catch curve (regression approach)
+
+A length-converted catch curve (e.g. see Pauly 1990, 1995), is typically a linear regression, and may be described as 
+
+$$
+\begin{align}
+    \log_e[N/{\Delta}_t] = a+bt'_{m}
+\end{align}
+$$
+where $N$ is the observed number of fish in a given length class, ${\Delta}_t$ is the time taken for fish to grow through that length class, $a$ is the y intercept, $t'_m$ is the mean (relative) age of fish at the mid-point of that length class. The negative of $b$ equates to total mortality, $Z$. If the growth of the species is described by a von Bertalanffy growth curve, the relative age of fish at the lower bound ($t_{lw}$), upper bound ($t_{up}$) and mid-point of length class $t'_l$, may each be calculated from the inverse von Bertalanffy growth equation, i.e.
+$$
+\begin{align}
+    t'=-(1/k)(\log_e(1-(L_{t'}-L_\infty))
+\end{align}
+$$
+
+where $t'$ is the relative age, $L_\infty$ and $k$ are the asymptotic length and growth coefficient parameters of the growth curve, and $L_t'$ is the length, at $t'$. In this package, length-converted catch curves may also be calculated for fish with growth described by a Schnute growth curve, for cases where the parameters $a$ and $b$ are not equal to zero. That is, where growth is described as 
+
+$$
+L_t=\bigg((y_1^b+(y_2^b-y_1^b))\frac{1-\exp(-a(t-t_1))}{1-\exp(-a(t_2-t_1))}\bigg)^{1/b}
+$$
+In this case, relative ages may be calculated from the inverse Schnute growth equation as
+
+$$
+t'=\frac{\log_e(1-(L_{t'}^b-y_1^b)/(y_2^b-y_1^b)(1-\exp(-a(t_2-t_1))))}{-a+t_1}
+$$
+In this implementation, using either growth curve model, the values of ${\Delta}_t$ are calculated as 
+$$
+{\Delta}_t=t_{up}-t_{lw}
+$$
+The length-converted catch curve model is using the lm() function in R, which outputs estimates of the linear model parameters, i.e. $a$ and $b$, and associated standard errors. Approximate 95% confidence limits for the parameters are calculated as $1.96SE$. Approximate 95% confidence limits for the fitted line, estimated at the midpoint of each length class, are calculated from the outputs of the linear model, using the predict() function.
+
+### Apply length-converted catch curve (regression approach)
+
+Key functions relevant to applying this method are:  
+SimLenAndAgeFreqData()  
+GetPaulyLenConvCatchCurveResults()  
+PlotLenConvCatchCurveResults()  
+Refer to help files and example code, showing function inputs and outputs.
+
+## Simulation of age data
+
+The package provides a simple procedure for simulating age frequency samples, based on the equations provided above describing the (age-based) catch curve method available with logistic selectivity. Given a specified sample size, values for expected catch proportions at age, $\hat{P_a}$, an age sample can be generated from a multinomial distribution, i.e. using the rmultinom() function in R. This method for simulating age frequency data is provided in code for several examples for applying age-based catch curves. 
+
+## Simulation of length and age data
+
+A function is provided in the package for simulating length and age data, using the 'length and age based catch curve model' described above. The function produces length frequency samples of a specified sample size, given the expected proportion of fish in each length class $l$, i.e. $\hat{P}_l$, using the rmultinom() function in R. An associated age frequency sample for each length class $l$ is generated from the expected each distributions for each length class, $\hat{P}_{a|l}$, by applying the rmultinom() function from within R.  
+
+### Apply routine for simulating length and/or age data
+
+Key functions relevant to applying this method are:  
+SimLenAndAgeFreqData()
+
+## Age-based per recruit analysis
+
+This package implements an age-based per recruit analysis, including several options, some of which represent extensions to traditional per recruit analysis. Some of these options include, variable model timestep options (i.e. allowing for a shorter model time step for shorter-lived species, for more accurate modelling), allowing for post-release mortality (using a 'retention-function' approach), allowing for effects of fishing on recruitment (i.e. by including a stock-recruitment relationship), and  calculations to determine expected relative biomass and fishing mortality levels associated with BMSY reference points.
+
+### Growth and maturity - age-based per recruit analysis
+
+Growth can be modelled according to a von Bertalanffy growth equation (with inputted parameter values), or any other form of growth curve with inputted values for mean length at age. Applying the von Bertalanffy growth euation, the estimated length of fish at age $t$ and sex $s$, $L_{t,s}$ is calculated as
+
+$$
+L_{t,s} = L_{\infty,s}(1-\exp(-k_s(t-t_{0,s})))
+$$
+where $L_{\infty,s}$, $k,_s$ and $t_0,s$ are the is the asymptotic length, growth coefficient hypothetical age at zero length, respectively. The weight of fish at age $t$, $W_t$, in kg, can be inputted as a vector of mean weights at ages, for calculated from inputted paramerer values according to a weight-length relationship, either
+
+$$
+W_{t,s}=\exp(a_s+b_s\log_eL_{t,s})/1000
+$$
+or
+$$
+W_{t,s}=(a_s L_{t,s}^ {b_s})/1000
+$$
+where $a_s$ and $b_s$ are the sex-specific weight-length parameters, for a model fitted to weights measured in g and fish lengths measured in mm. The probability of a fish of sex $s$ being mature at age $t$ is calculated as
+
+$$
+P_{s,a} = 1/(1+\exp(-\log_e(19)(a-a_{50,s}^{\mathrm{M}})/(a_{95,s}^{\mathrm{M}}-a_{50,s}^{\mathrm{M}})))
+$$
+where $a_{50,s}^{\mathrm{M}}$ and $a_{95,s}^{\mathrm{M}}$ are the ages at which 50 and 95% of fish are mature, respectively.
+
+
+### Gear selectivity, retention and discard mortality - age-based per recruit analysis
+
+The model employs a 'retention function' approach to account for such 'discard mortality' (Fairclough et al., 2021; Shertzer et al., 2021). Applying this approach, the vulnerability of fish of sex $s$ and age $a$ to the fishing gear. $V_{s,a}$ is calculated as
+
+$$
+V_{s,a} = 1/(1+\exp(-\log_e(19)(a-a_{50,s}^{\mathrm{V}})/(a_{95,s}^{\mathrm{V}}-a_{50,s}^{\mathrm{V}})))
+$$
+
+where $a_{50,s}^{\mathrm{V}}$ and $a_{95,s}^{\mathrm{V}}$ are the ages at which 50 and 95% of fish of sex $s$ are selected by the gear. $\psi_{s,a}$, the probability of a fish (during normal fishing operations) of either sex at age $t$ being retained (i.e. retention ogive) at age $a$, is calculated as
+
+$$
+\psi_{s,a} = 1/(1+\exp(-\log_e(19)(a-a_{50,s}^{\mathrm{\psi}})/(a_{95,s}^{\mathrm{\psi}}-a_{50,s}^{\mathrm{\psi}})))
+$$
+where $a_{50,s}^{\mathrm{\psi}}$ and $a_{95,s}^{\mathrm{\psi}}$ are the ages at which 50 and 95% of fish of sex $s$ are retained. 
+
+The selectivity of fish landings, $\phi_{s,a}$ for sex $s$ and age $a$ is calculated as
+
+$$
+\phi_{s,a}=\psi_{s,a}V_{s,a}
+$$
+The selectivity of discarding is calculated as
+
+$$
+\delta{s,a}=V_{s,a}(1-\psi_{s,a})
+$$
+### Fishing mortality - age-based per recruit analysis
+
+For model scenarios not allowing for post-release mortality of undersize fish, the proportion of fish that die following capture and release, $D$, is set to zero. In such cases, the annual fishing mortality associated with capture and retention of fish of sex $s$ at age $t$ is calculated as
+
+$$
+F_{s,t}=\psi_{s,a}F
+$$
+where $F$ is the fully-selected fishing mortality. Conversely, for model scenarios allowing for post-release mortality (i.e. $D>0$), $F_{s,a}$ is calculated as
+
+$$
+F_{s,a} = (\phi_{s,a}+\delta_{s,a}D)F
+$$
+where $\phi_{s,a}$ and $\delta{s,a}$ are the selectivity of fish landings and fish discards, respectively, for fish of sex $s$ and age $a$.
+
+Total mortality for fish of sex $s$ at age $t$ is calculated as 
+
+$$
+Z_{s,a} = F_{s,a}+M
+$$
+where $M$ is the instantaneous rate of natural mortality ($y^-1$).
+
+
+### Yield per recruit - age-based per recruit analysis
+
+Yield per recruit, $YPR$, is calculated as
+$$
+YPR = \sum_{s=1}^{2}\sum_{a=0}^{A}C_{s,a}W_{s,a}
+$$
+where the catch of fish of sex $s$ at age $a$, i.e. $C_{s,a}$, is calculated from the Baranov catch equation.
+$$
+C_{s,a} = N_{s,a}\biggl(\frac{F_{s,a}}{Z_{s,a}}\biggr)(1-\exp(-Z_{s,a}))
+$$
+In the above equation, $N_s,a$, i.e. the numbers of sex $s$ at age $a$, for the fished population are calculated as
+$$
+\begin{align}
+    N_{s,a} = \phi && \text{if s=1 and a=0}\\
+    N_{s,a} = 1-\phi && \text{if s=2 and a=0}\\
+    N_{s,a} = N_{s,a-1}\exp(-Z_{s,a-1}) && \text{if 0<a<A}\\
+    N_{s,a} = N_{s,a-1}\exp(-Z_{s,a-1})/(1-\exp(-Z_{s,a-1})) && \text{if a=A}\\
+\end{align}
+$$
+where $\phi$ is the ratio of females to males at age 0 yr, and $A$, is the maximum age considered by the model. The numbers of sex $s$ at age $a$ for the unfished population, $\acute{N}_{s,a}$ are calculated as above for $N_{s,a}$, but replacing all values for total mortality with natural mortality, $M$. 
+
+If the species is a protogynous hermaphrodite (female to male sex change), the proportion of females at age is assumed to remain constant, described by the following inverse logistic relationship 
+
+$$
+\rho_{a} = 1-\bigg[P_{max}^{s=2}/(1+\exp(-\log_e(19)(a-a_{50}^{\rho})/(a_{95}^{\rho}-a_{50}^{\rho})))\bigg]
+$$
+where $P_{max}^{s=2}$ is the maximum proportion for the terminal sex (males) and $a_{50}^{\rho}$ and $a_{95}^{\rho}$ are the ages at which 50 and 95% of $P_{max}^\rho$ are males. For protandrous species (male to female sex change), $\rho_{a}$ is calculated as
+$$
+\rho_{a} = P_{max}^{s=1}/(1+\exp(-\log_e(19)(a-a_{50}^{\rho})/(a_{95}^{\rho}-a_{50}^{\rho})))
+$$
+where $P_{max}^{s=1}$, the terminal sex, is females. For hermaphroditic species, the values of $N_{s,a}$ become modified, prior calculation of survival at the next age step, to reflect the assumed stable sex ratio. The modified values for female, $N'_{s=1,a}$ are calculated as
+
+$$
+N'_{s=1,a}=\rho_{a}(N_{s=1,a}+N_{s=2,a})
+$$
+and those for males as
+$$
+N'_{s=1,a}=(1-\rho_{a})(N_{s=1,a}+N_{s=2,a})
+$$
+
+
+### Spawning potential ratio - age-based per recruit analysis
+
+Spawning potential ratio, $SPR$, for sex $s$, is calculated as
+$$
+SPR_s = \frac{\theta_s}{\theta_{0,s}}
+$$
+where $\theta_s$ and $\theta_{0,s}$ is the spawning biomass per recruit for sex $s$, for the fished and unfished population, respectively. Spawning potential ratio, for sexes combined, is thus calculated as
+
+$$
+SPR_{s=1:2} = \frac{\theta_{s=1}+\theta_{s=2}}{\theta_{0,{s=1}}+\theta_{0,{s=2}}}
+$$
+
+$\theta_s$ is calculated as
+$$
+\theta_s = \sum_{a=0}^{A}N_{a,s}W_{a,s}P_{a,s}
+$$
+where $N_{a,s}$, $W_{a,s}$ and $P_{a,s}$, respectively, are the number, weight and proportion of mature fish, that are of sex $s$ and age $a$.
+
+
+## Length-based per recruit analysis
+
+This package implements an length-based per recruit analysis, applying length-transition matrices to allow for variation in growth. As with age-based per recruit analysis, various options have been included, variable model timestep options (i.e. allowing for a shorter model time step for shorter-lived species, for more accurate modelling), allowing for post-release mortality (using a 'retention-function' approach), allowing for effects of fishing on recruitment (i.e. by including a stock-recruitment relationship), and  calculations to determine expected relative biomass and fishing mortality levels associated with BMSY reference points.
+
+### Growth and maturity - length-based per recruit analysis
+
+Growth can be modelled according to either a von Bertalanffy growth, or a Schnute growth model for cases where the parameters $a$ and $b$ are not equal to zero. Applying the von Bertalanffy growth equation, the estimated length of fish at age $t$ and sex $s$, $L_{t,s}$ is calculated as
+
+$$
+L_{t,s} = L_{\infty,s}(1-\exp(-k_s(t-t_{0,s})))
+$$
+where $L_{\infty,s}$, $k,_s$ and $t_0,s$ are the is the asymptotic length, growth coefficient hypothetical age at zero length, respectively. Alternatively, applying a Schnute growth model (with $a$ and $b$ not equal to zero), $L_{t,s}$ is calculated as 
+
+$$
+L_t=\bigg((y_1^b+(y_2^b-y_1^b))\frac{1-\exp(-a(t-t_1))}{1-\exp(-a(t_2-t_1))}\bigg)^{1/b}
+$$
+Fish are assumed to recruit into the population at age $t=1$ y, with the size distribution assuming to conform to a normal distribution. The proportion of fish of sex $s$, in length class $l$ at age $t=1$ is calculated as
+
+$$
+\theta_{k,s} = \int_{l_k^-}^{\mathrm{l_k^+}}f_{a=1}(l)dl_s
+$$
+where $l^-$ and $l^+$ are the lower and upper limits of the length class $k$, and $f_{a=1}(l)$ is the value of the normal probability density function for fish of sex $s$ at age $t=1$ for given length $l$, mean length $\mu$ (as calculated from the growth curve) and associated standard deviation $\sigma$, i.e. where 
+$$
+l_s{\sim}N(\mu_s,\sigma{^2)}
+$$
+$\sigma$ is calculated given a specified value for the coefficient of variation, $CV$, assumed to be constant with respect to mean fish lengths at age (common to both sexes). The associated value of the normal probability density function, is calculated as
+$$
+f_{a=1}(l_s) = \frac{1}{\sigma\sqrt{2{\pi}}}\exp\bigg[\frac{(l_s-\mu_s)^2}{2\sigma^2}\bigg]
+$$
+As with the length-based and length at age based catch curve analyses implemented in this package, growth is modelled using length transition matrices, $G_s=g_{k,j}$, which represent the probability that a fish (of sex $s$) in length class $j$ will grow into length class $k$ over a specified time interval, i.e.
+
+$$
+\begin{equation*}
+G_s = 
+\begin{pmatrix}
+g_{s,1,1} & g_{s,1,2} & \cdots & g_{s,1,n} \\
+g_{s,2,1} & g_{s,2,2} & \cdots & g_{s,2,n} \\
+\vdots  & \vdots  & \ddots & \vdots  \\
+g_{s,n,1} & g_{s,n,2} & \cdots & g_{s,n,n} 
+\end{pmatrix}
+\end{equation*}
+$$
+The general form of a length transition matrix (Punt et al., 1997; see also Hall et al., 2000),is
+
+$$
+g_{s,k,j} = \left\{
+    \begin{array}{ll}
+        \int_{{\infty}^-}^{\mathrm{l_{s,k}^+}}f[\phi_s(T,l_s,j)]dl & \mbox{if }k=1 \\
+        \int_{l_{s,k}^-}^{\mathrm{l_{s,k}^+}}f[\phi_s(T,l_s,j)]dl &\mbox{if }k=1<k<n \\
+\int_{l_{s,k}^-}^{\mathrm{\infty^+}}f[\phi_s(T,l_s,j)]dl &\mbox{if }k=n \\
+    \end{array}
+\right.
+$$
+where $l_s$ is the length for a fish of sex $s$, $f$ is the specified (normal) distribution, $l_{s,k}^-$ and $l_{s,k}^+$ are the lower and upper limits, respectively, of length class $j$ for fish of sex $s$, and $\phi_s$ is a vector of parameters dependent on the time period $T$ and sex, and the midpoint of the size class $j$, $l_j$. In the model, growth is applied at the end of each time step, after mortality has been applied.
+
+The weight of fish at length $t$, $W_l$, in kg, can be inputted as a vector of mean weights at the midpoints of each length class considered in the model, or calculated from inputted parameter values according to a weight-length relationship, either
+
+$$
+W_{s,l}=\exp(a_s+b_s\log_el_s)/1000
+$$
+or
+$$
+W_{s,l}=(a_s l_s^ {b_s})/1000
+$$
+
+where $a_s$ and $b_s$ are the sex-specific weight-length parameters, for a model fitted to weights measured in g and fish lengths measured in mm. The probability of a fish of sex $s$ being mature at the midpoint of length class $l$ is calculated as
+
+$$
+P_{s,l} = 1/(1+\exp(-\log_e(19)(l_s-L_{50,s}^{\mathrm{M}})/(L_{95,s}^{\mathrm{M}}-L_{50,s}^{\mathrm{M}})))
+$$
+
+where $L_{50,s}^{\mathrm{M}}$ and $L_{95,s}^{\mathrm{M}}$ are the lengths at which 50 and 95% of fish are mature, respectively.
+
+
+### Gear selectivity, retention and discard mortality - age-based per recruit analysis
+
+As with the age-based per recruit model, a 'retention function' approach is used to account for such 'discard mortality' (Fairclough et al., 2021; Shertzer et al., 2021). The vulnerability of fish of sex $s$ at the midpoint of length class $l$ to the fishing gear. $V_{s,a}$ is calculated as
+
+$$
+V_{s,l} = 1/(1+\exp(-\log_e(19)(l_s-L_{50,s}^{\mathrm{V}})/(L_{95,s}^{\mathrm{V}}-L_{50,s}^{\mathrm{V}})))
+$$
+
+where $L_{50,s}^{\mathrm{V}}$ and $L_{95,s}^{\mathrm{V}}$ are the lengths at which 50 and 95% of fish of sex $s$ are selected by the gear. The probability of a fish (during normal fishing operations) of either sex of at the midpoint of length class $l$ being retained (i.e. retention ogive), $ψ_{s,l}$, is calculated as
+
+$$
+\psi_{s,a} = 1/(1+\exp(-\log_e(19)(l_s-L_{50,s}^{\mathrm{\psi}})/(L_{95,s}^{\mathrm{\psi}}-L_{50,s}^{\mathrm{\psi}})))
+$$
+where $L_{50,s}^{\mathrm{\psi}}$ and $L_{95,s}^{\mathrm{\psi}}$ are the lengths at which 50 and 95% of fish of sex $s$ are retained. 
+
+The selectivity of fish landings, $\phi_{s,l}$ for sex $s$ at the midpoint of length class $l$, is calculated as
+
+$$
+\phi_{s,l}=\psi_{s,l}V_{s,l}
+$$
+The selectivity of discarding is calculated as
+
+$$
+\delta_{s,l}=V_{s,l}(1-\psi_{s,l})
+$$
+
+### Fishing mortality - age-based per recruit analysis
+
+For model scenarios not allowing for post-release mortality of undersize fish, the proportion of fish that die following capture and release, $D$, is set to zero. In such cases, the annual fishing mortality associated with capture and retention of fish of sex $s$ at the midpoint of length class $l$ is calculated as
+
+$$
+F_{s,l}=\psi_{s,l}F
+$$
+where $F$ is the fully-selected fishing mortality. Conversely, for model scenarios allowing for post-release mortality (i.e. $D>0$), $F_{s,l}$ is calculated as
+
+$$
+F_{s,l} = (\phi_{s,l}+\delta_{s,l}D)F
+$$
+where $\phi_{s,l}$ and $\delta_{s,l}$ are the selectivity of fish landings and fish discards, respectively, for fish of sex $s$ at the midpoint of length class $l$.
+
+Total mortality for fish of sex $s$ at the midpoint of length class $l$ is calculated as 
+
+$$
+Z_{s,l} = F_{s,l}+M
+$$
+where $M$ is the instantaneous rate of natural mortality ($y^-1$).
+
+
+### Yield per recruit - age-based per recruit analysis
+
+Yield per recruit, $YPR$, is calculated as
+$$
+YPR = \sum_{s=1}^{2}\sum_{l=1}^{n}C_{s,l}W_{s,l}
+$$
+where $n$ donotes the number of length classes considered by the model. The catch of fish of sex $s$ of at the midpoint of length class $l$, i.e. $C_{s,l}$, is calculated from the Baranov catch equation.
+$$
+C_{s,l} = N_{s,l}\biggl(\frac{F_{s,l}}{Z_{s,l}}\biggr)(1-\exp(-Z_{s,l}))
+$$
+For a model with an annual timestep, tn the above equation, $N_s,l$, i.e. the numbers of fish of sex $s$ at age $a$, for the fished population are calculated as
+$$
+\begin{align}
+    N_{s,a} = \phi && \text{if s=1 and a=1}\\
+    N_{s,a} = 1-\phi && \text{if s=2 and a=1}\\
+    N_{s,a} = N_{s,a-1}\exp(-Z_{s,a-1}) && \text{if 1<a<A}\\
+    N_{s,a} = N_{s,a-1}\exp(-Z_{s,a-1})/(1-\exp(-Z_{s,a-1})) && \text{if a=A}\\
+\end{align}
+$$
+where $\phi$ is the ratio of females to males at age 1 yr, and $A$, is the maximum age considered by the model. Note that, for this length-based per recruit analysis, a juvenile is recruited at age one rather than at age zero (to avoid calculations of negative values of fish lengths). The numbers of sex $s$ at the midpoint of lengthl class $l$ for the unfished population, $\acute{N}_{s,l}$ are calculated as above for $N_{s,l}$, but replacing all values for total mortality with natural mortality, $M$. 
+
+If the species is a protogynous hermaphrodite (female to male sex change), the proportion of females at length is assumed to remain constant, and follow the following logistic relationship 
+
+$$
+\rho_{l} = 1-\bigg[P_{max}^{s=2}/(1+\exp(-\log_e(19)(l-L_{50}^{\rho})/(L_{95}^{\rho}-L_{50}^{\rho})))\bigg]
+$$
+where $P_{max}^{s=2}$ is the maximum proportion for the terminal sex (males) and $L_{50}^{\rho}$ and $L_{95}^{\rho}$ are the lengths at which 50 and 95% of $P_{max}^\rho$ are males. For protandrous species (male to female sex change), $\rho_{l}$ is calculated as
+$$
+\rho_{l} = P_{max}^{s=1}/(1+\exp(-\log_e(19)(l-L_{50}^{\rho})/(L_{95}^{\rho}-L_{50}^{\rho})))
+$$
+where $P_{max}^{s=1}$, the terminal sex, is females. For hermaphroditic species, the values of $N_{s,a}$ become modified, prior calculation of survival at the next age step, to reflect the assumed stable sex ratio. The modified values for female, $N'_{s=1,l}$ are calculated as
+$$
+N'_{s=1,l}=\rho_{l}(N_{s=1,l}+N_{s=2,l})
+$$
+and those for males as
+$$
+N'_{s=1,l}=(1-\rho_{l})(N_{s=1,l}+N_{s=2,l})
+$$
+
+
+### Spawning potential ratio
+
+As with age-based per recruit anlaysis, spawning potential ratio, $SPR$, for sex $s$, is calculated as
+$$
+SPR_s = \frac{\theta_s}{\theta_{0,s}}
+$$
+where $\theta_s$ and $\theta_{0,s}$ is the spawning biomass per recruit for sex $s$, for the fished and unfished population, respectively. Spawning potential ratio, for sexes combined, is calculated as
+$$
+SPR_{s=1:2} = \frac{\theta_{s=1}+\theta_{s=2}}{\theta_{0,{s=1}}+\theta_{0,{s=2}}}
+$$
+In the above equation, $\theta_s$ is calculated as
+$$
+\theta_s = \sum_{l=1}^{n}N_{l,s}W_{l,s}P_{l,s}
+$$
+where $N_{l,s}$, $W_{l,s}$ and $P_{l,s}$, respectively, are the number, weight and proportion of mature fish, that are of sex $s$ and at the midpoint of length class $l$.
+
+
+## Extended per recruit analysis (allowing for stock-recruitment dynamics in age and length-based per recruit models)
+
+Per recruit analysis may be extended to incorporate a stock-recruitment relationship, such as Beverton & Holt and Ricker models, to account for impacts of fishing mortality on recruitment. The Beverton & Holt stock-recruitment relationship may be described as
+$$
+R = \frac{S}{Sb+a}
+$$
+where $R$ is recruitment, $S$ is female spawning biomass and $a$ and $b$ are parameters of the stock-recruitment relationship. This equation may be reparametrised into an alternative form that employs a steepness parameter $h$, i.e., the proportion of the unexploited equilibrium recruitment expected to recruit when spawning biomass is reduced to 20% of its unfished equilibrium level (Mace and Doonan, 1988). For gonochoristic species, the equilibrium level of recruitment for the fished population, relative to that for the unfished population may be calculated as
+
+$$
+\frac{R}{R0} = \frac{4h\theta_{s=1}-(1-h)\theta_{0,s=1}}{5(h-0.2)\theta_{s=1}}
+$$
+For hermaphroditic species, recruitment is calculated on the combined mature biomass for both sexes, $SPR_{s=1:2}$, rather than just females. 
+
+The Ricker stock-recruitment model may be described as 
+
+$$
+R = aS\exp(-bS)
+$$
+Using the Ricker model for a gonochoristic species, the equilibrium level of recruitment of the fished population, relative to that for the unfished population may be calculated as
+
+$$
+\frac{\theta_{0,s=1}\bigg(1-\frac{4\log_e(\theta_{s=1,0}/\theta_{s=1})}{5\log_e(5h)}\bigg)}{\theta_{s=1}}
+$$
+For hermaphrodtic species, equilbribium recruitment is calculated based on the combined mature biomass for both sexes. The equilibrium level of catch, for the fished population may be calculated as
+
+$$
+C_{eq}=\frac{R}{R0}YPR
+$$
+The equilibrium level of spawning biomass for sex $s$, for the fished population may be calculated as
+
+$$
+S_{eq,s}=\frac{R}{R0}\theta_s
+$$
+The equilibrium ratio of spawning biomass of sex $s$, relative to the unfished level, is
+
+$$
+B_{rel,s} =S_{eq,s}/\theta_{0,s}
+$$
+The value of $B_{rel}$ corresponding to $B_{MSY}$ is calculated as the level at which $C_{eq}$ is maximised, with $F_{MSY}$ equal to the level of fully-selected fishing mortality resulting in this maximum equilibrium catch level. Applying reference points commonly adopted by DPIRD, WA, the threshold levels for biomass corresponds to the level of $B{rel}$ at $B_{MSY}$, with the limit set to half this level, and the target at 1.2 times this level or higher. Alternatively, proxy levels for biomass are often used, with the limit set to $B_{rel}=0.2$, the threshold at $B_{rel}=0.3$ and target at $B_{rel}=0.4$.  
+
+### Allowing for error in per recruit calculations
+
+This implementation of per recruit analysis allows for incorporation uncertainty in estimates of fishing mortality, natural mortality and steepness, assuming independent normal distributions for each of these parameters. Estimates of key outputs from per recruit analysis, with uncertainty, are produced using parametric sampling to produce a specified number (e.g. 500) of F, M and h values, which are inputted into the deterministic per recruit equations (i.e. within the CalcYPRAndSPRForFMort() function), to produce 500 sets of estimated results of key parameters of interest. Lower and Upper 95% confidence limits are taken as the 2.5 and 97.5 percentiles of the 500 estimates. 
+
+Note, it is also possible to incorporate other sources of uncertainty, such as for growth and maturity ogives, if estimates are available for the both parameters of each ogive and associated variance-covariance matrix (such as are outputted by the WAFishBiolgy R package. 'Wrapper' code has been developed but not yet been built into the package. The process involves use of the CalcYPRAndSPRForFMort() function for each set of input parameters, and storing and analysing the outputs to produce confidence limits.     
+
+
+### Apply age-based per recruit analysis
+
+Key functions relevant to applying this method are:  
+CalcYPRAndSPRForFMort_AB()  
+GetPerRecruitResults_AB()  
+GetPerRecruitResults_with_err_AB()
+PlotPerRecruitResults_AB()  
+PlotPerRecruit_Biom_no_err_AB()
+PlotPerRecruit_Biom_with_err_AB()
+PlotPerRecruit_Yield_no_err_AB()
+Refer to help files and example code, showing function inputs and outputs.
+
+### Apply length-based per recruit analysis
+
+Key functions relevant to applying this method are:  
+CalcYPRAndSPRForFMort_LB()  
+GetPerRecruitResults_LB()  
+GetPerRecruitResults_with_err_LB()
+PlotPerRecruitResults_LB()  
+PlotPerRecruit_Biom_no_err_LB()
+PlotPerRecruit_Biom_with_err_LB()
+PlotPerRecruit_Yield_no_err_LB()
+Refer to help files and example code, showing function inputs and outputs.
+
+## References:
+
+Beverton, R. J. H. & Holt, S. J. (1957). On the Dynamics of Exploited Fish Populations. Chapman and Hall, London.
+
+Chapman, D. G., and D. S. Robson. (1960). The analysis of a catch curve. Biometrics 16, 354-368.
+
+Fairclough, D.V., Hesp, S.A., Denham, A., Fisher, E.A., Marks, R., Ryan, K.L., Lek, E., Allen, R., Crisafulli, B.M. 2021. 2021 assessment of the status of the West Coast Demersal Scalefish Resource. Fisheries Research Report No. 316 Department of
+Primary Industries and Regional Development, Western Australia. 158 pp.
+
+Hoenig, J. M. (1983). Empirical use of longevity data to estimate mortality rates. Fishery Bulletin 82, 898–903.
+
+Kirkwood, G. P. & Walker, T. I. (1986). Gill net mesh selectivities for gummy shark, Mustelus antarcticus Günther, taken in south-eastern Australia. Australian Journal of Marine and Freshwater Research, 37, 689-697.Kurup, R. G., & Hamilton, D. P. (2002).
+
+Mace, P. M. & Doonan, I. J. (1988). A Generalised Bioeconomic Simulation Model for Fish Population Dynamics. MAFFish, NZ Ministry of Agriculture and Fisheries, Wellington, New Zealand.
+
+Pauly, D. (1990). Length-converted catch curves and the seasonal growth curve of fishes. Fishbyte 8(3), 24-29.
+
+Pauly, D., Moreau, J. & Abad, N. (1995). Comparison of age-stuctured and length-converted catch curves of brown trout Salmo trutta in two French rivers. Fisheries Research 22, 197-204.
+
+Piner, K. R., Lee, H.-H., Maunder, M. N. (2016). Evaluation of using random-at-length observations and an equilbrium approximation of the population age structure in fitting the von Bertalanffy growth function. Fisheries Research 180, 128-137.
+
+Shertzer, K.W., Williams, E.H. & Sagarese, S.R. (2022). Modeling discards in stock assessments: red grouper Epinephelus morio in the U.S. Gulf of Mexico. Fishes 2022, 7(1), 7. Doi.org/10.3390/fishes7010007.
+
+Smith, M. W., Then, A. Y., Wor, C., Ralph, G., Pollock, K. H. & Hoenig, J/. M. (2012) Recommendations for Catch-Curve Analysis, North American Journal of Fisheries Management, 32(5), 956-967.
+
+Wakefield, C. B., Williams, A. J., Fisher, E. A., Hall, N. G., Hesp, S. A., Halafihi, T., Kaltavara, J., Vourey, E., Taylor, B. M., O’Malley, J. M., Nicol, S. J., Wise, B. W. & Newman, S. J. (2020). Variations in life history characteristics of the deep-water giant ruby snapper (Etelis sp.) between the Indian and Pacific Oceans and application of a data-poor assessment. Fisheries Research 230.  Art. 105651. 
+
+
+
+
