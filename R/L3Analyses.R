@@ -4662,8 +4662,13 @@ CalcYPRAndSPRForFMort_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
   MalLandFAtAge <- FMort * MalSelLandAtAge
 
   # calculate (total) female and male fishing mortality at age
-  FemFAtAge <- FMort * (FemSelLandAtAge + (DiscMort * FemSelDiscAtAge))
-  MalFAtAge <- FMort * (MalSelLandAtAge + (DiscMort * MalSelDiscAtAge))
+  if (DiscMort > 0.0001) {
+    FemFAtAge <- FMort * (FemSelLandAtAge + (DiscMort * FemSelDiscAtAge))
+    MalFAtAge <- FMort * (MalSelLandAtAge + (DiscMort * MalSelDiscAtAge))
+  } else {
+    FemFAtLen <- FMort * FemRetProbAtAge
+    MalFAtLen <- FMort * MalRetProbAtAge
+  }
 
   # calculate female and male total mortality at age
   FemZAtAge <- FemFAtAge + NatMort
@@ -5214,11 +5219,11 @@ CalcYPRAndSPRForFMort_LB<- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
 
   # calculate (total) female and male fishing mortality at age
   if (DiscMort > 0.0001) {
-    FemFAtLen <- FMort * FemRetProbAtLen
-    MalFAtLen <- FMort * MalRetProbAtLen
-  } else {
     FemFAtLen <- FMort * (FemSelLandAtLen + (DiscMort * FemSelDiscAtLen))
     MalFAtLen <- FMort * (MalSelLandAtLen + (DiscMort * MalSelDiscAtLen))
+  } else {
+    FemFAtLen <- FMort * FemRetProbAtLen
+    MalFAtLen <- FMort * MalRetProbAtLen
   }
 
   # calculate female and male total mortality at age
