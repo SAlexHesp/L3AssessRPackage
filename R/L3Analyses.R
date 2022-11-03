@@ -2950,6 +2950,8 @@ PlotAgeLengthCatchCurve_Cond_AL <- function(params, MLL, SelectivityType, ObsCat
                                             lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, MainLabel,
                                             xaxis_lab, yaxis_lab, xmax, xint, ymax, yint, FittedRes) {
 
+  .pardefault <- par(no.readonly = TRUE) # store current par settings
+
   # if model already fitted, can input results rather than refit
   if (is.list(FittedRes)) {
     res =  FittedRes
@@ -3116,6 +3118,8 @@ PlotAgeLengthCatchCurve_Cond_AL <- function(params, MLL, SelectivityType, ObsCat
              pch=c(16,-1), col=c("black","blue"), bty='n', cex=0.8)
     }
   }
+  # reset default par options
+  par(.pardefault)
 }
 
 
@@ -3489,6 +3493,8 @@ GetLenConvCatchCurveResults <- function(ModelType, GrowthParams, RefnceAges, Obs
 PlotLenConvCatchCurveResults <- function(MaxAge, ModelType, GrowthParams, RefnceAges, ObsCatchFreqAtLen, MinFreq,
                                          lbnd, midpt, ubnd) {
 
+  .pardefault <- par(no.readonly = TRUE) # store default par settings
+
     res=GetLenConvCatchCurveResults(ModelType, GrowthParams, RefnceAges, ObsCatchFreqAtLen,
                                     MinFreq, lbnd, midpt, ubnd)
     Ages = 1:MaxAge
@@ -3548,6 +3554,9 @@ PlotLenConvCatchCurveResults <- function(MaxAge, ModelType, GrowthParams, Refnce
     y = c(res$Est_ln_n_dtlow, rev(res$Est_ln_n_dtup))
     polygon(x,y,col="pink",border=NA)
     points(res$Age_midptlencl,res$Obs_ln_n_dt)
+
+    # reset default par options
+    par(.pardefault)
 
 }
 
@@ -4662,12 +4671,12 @@ CalcYPRAndSPRForFMort_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
   MalLandFAtAge <- FMort * MalSelLandAtAge
 
   # calculate (total) female and male fishing mortality at age
-  if (DiscMort > 0.0001) {
+  if (DiscMort > 0.01) {
     FemFAtAge <- FMort * (FemSelLandAtAge + (DiscMort * FemSelDiscAtAge))
     MalFAtAge <- FMort * (MalSelLandAtAge + (DiscMort * MalSelDiscAtAge))
   } else {
-    FemFAtLen <- FMort * FemRetProbAtAge
-    MalFAtLen <- FMort * MalRetProbAtAge
+    FemFAtAge <- FMort * FemRetProbAtAge
+    MalFAtAge <- FMort * MalRetProbAtAge
   }
 
   # calculate female and male total mortality at age
@@ -5218,7 +5227,7 @@ CalcYPRAndSPRForFMort_LB<- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
   MalLandFAtLen <- FMort * MalSelLandAtLen
 
   # calculate (total) female and male fishing mortality at age
-  if (DiscMort > 0.0001) {
+  if (DiscMort > 0.01) {
     FemFAtLen <- FMort * (FemSelLandAtLen + (DiscMort * FemSelDiscAtLen))
     MalFAtLen <- FMort * (MalSelLandAtLen + (DiscMort * MalSelDiscAtLen))
   } else {
@@ -6090,6 +6099,8 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
                                   mat_A50, mat_A95, EstMatAtAge, sel_A50, sel_A95, EstSelAtAge, ret_Pmax, ret_A50, ret_A95,
                                   EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, RefPointPlotOpt, Current_F) {
 
+  .pardefault <- par(no.readonly = TRUE) # store current par settings
+
   Res = GetPerRecruitResults_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
                              lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge,
                              ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95,
@@ -6391,6 +6402,9 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
   mtext(expression(paste(plain("Equil. Recruitment"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
   mtext(expression(paste(italic("F") ~ (year^{-1}))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
 
+  # reset default par options
+  par(.pardefault)
+
 }
 
 
@@ -6493,6 +6507,8 @@ PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
                                      EstWtAtLen, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
                                      FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
                                      ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F) {
+
+  .pardefault <- par(no.readonly = TRUE) # store current par settings
 
   Res = GetPerRecruitResults_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                 RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
@@ -6783,6 +6799,9 @@ PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
   axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
   mtext(expression(paste(plain("Equil. Recruitment"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
   mtext(expression(paste(italic("F") ~ (year^{-1}))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
+
+  # reset default par options
+  par(.pardefault)
 
 }
 
