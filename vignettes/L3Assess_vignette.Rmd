@@ -209,7 +209,7 @@ This sex-structured length-based catch curve approach allows for common or diver
 
 As a word of caution method, in its current version, this method (and age and length based method described below) is likely best suited for medium to longer-lived (> 10 y) species (as the model employs an annual timestep; in short-lived species this may not be sufficient to capture growth/selectivity changes well). Although the model is sex-structured, allowing for potential differences in growth, the model can be separately fitted to sex-specific data, by inputting a single set of growth parameters for that sex. 
 
-#### Growth calculations
+#### Growth calculations - length-based catch curve
 
 Fish are assumed to recruit into the population at age $t=1$ y (to help avoid the possibility of negative lengths), with the size distribution assuming to conform to a normal distribution. The proportion of fish of sex $s$, in length class $l$ at age $t=1$ is calculated as
 
@@ -253,27 +253,61 @@ $$
 where $l_s$ is the length for a fish of sex $s$, $f$ is the specified (normal) distribution, $l_{s,k}^-$ and $l_{s,k}^+$ are the lower and upper limits, respectively, of length class $j$ for fish of sex $s$, and $\phi_s$ is a vector of parameters dependent on the time period $T$ and sex, and the midpoint of the size class $j$, $l_j$. In the model, growth is applied at the end of each time step, after mortality has been applied.
 
 
-#### Selectivity and mortality calculations
+### Gear selectivity, retention and discard mortality - length-based catch curve
 
-Selectivity is either estimated and by an asymptotic logistic curve, or imposed (inputted as a vector). It is assumed that length based selectivity is common to both sexes. Applying the model assuming logistic selectivity, $S_l$, the selectivity of fish of, of either sex, of length $L$, corresponding to the midpoint of length class $l$, is
-
-$$
-S_l = 1/(1+\exp(-\log_e(19)(L-L_{50}^{\mathrm{sel}})/(L_{95}^{\mathrm{sel}}-L_{50}^{\mathrm{sel}})))
-$$
-
-where $L_{50}^{\mathrm{sel}}$ and $L_{95}^{\mathrm{sel}}$ are the lengths at which 50 and 95% of fish of sex $s$ are selected by the gear. The fishing mortality for fish of either sex in length class, $l$, is
+A 'retention function' approach is used to account for the possibility of 'discard mortality' (Fairclough et al., 2021; Shertzer et al., 2021). The vulnerability of fish of sex $s$ at the midpoint of length class $l$ to the fishing gear. $V_{s,a}$ is calculated as
 
 $$
-F_l = S_lF^*
+V_{s,l} = 1/(1+\exp(-\log_e(19)(l_s-L_{50,s}^{\mathrm{V}})/(L_{95,s}^{\mathrm{V}}-L_{50,s}^{\mathrm{V}})))
 $$
-where $F^*$ is the instantaneous rate of fishing mortality ($y^-1$), for fully-selected fish. The total mortality at length is thus
+
+where $L_{50,s}^{\mathrm{V}}$ and $L_{95,s}^{\mathrm{V}}$ are the lengths at which 50 and 95% of fish of sex $s$ are selected by the gear. In cases where a minimum legal length (MLL) applies, most/all fishers comply with this regulation and high-grading of fish is negligible, it may be assumed that the probability of a fish of either sex $ψ_{s,l}$, is zero, if that midpoint of its length class is below the MLL, and one if it is equal to or above the MLL. Where an MLL applies, the selectivity of  landings, $\phi_{s,l}$ for fish of sex $s$ at the midpoint of length class $l$, is calculated as
 
 $$
-Z_l = F_l+M
+\phi_{s,l}=\psi_{s,l}V_{s,l}
+$$
+If an MLL does not apply, the values of $\phi_{s,l}$ are set to one. The selectivity of discarding is calculated as
+
+$$
+\delta_{s,l}=V_{s,l}(1-\psi_{s,l})
+$$
+
+### Fishing mortality - length-based catch curve
+
+For model scenarios not concerned with post-release mortality, and for which the sample length data are unlikely to be affected by an MLL, the proportion of fish that die following capture and release, $D$, is set to zero. In such cases, fishing mortality for fish of sex $s$, at the midpoint of length class $l$, is calculated as
+
+$$
+F_{s,l}=V_{s,l}F
+$$
+where $F$ is the fully-selected fishing mortality. For model scenarios allowing for post-release mortality associated with release of undersize fish (i.e. when $D>=0.001$), $F_{s,l}$ is calculated as
+
+$$
+F_{s,l} = (\phi_{s,l}+\delta_{s,l}D)F
+$$
+where $D$ is the specified proportion of fish that die following capture and release. To allow for a possible effect of an MLL on selectivity with negligible discard mortality, the value for $D$ can be set to 0.001. The fishing mortality of fish of sex $s$ at the midpoint of length class $l$ associated with retention, $F_{s,l}^R$ is calculated as
+
+$$
+F_{s,l}^R=\phi_{s,l}F
+$$
+Note that when discard mortality is not being considered, $F_{s,l}^R$ is equal to $F_{s,l}$. The fishing mortality associated with discarding, $F_{s,l}^D$, is 
+
+$$
+F_{s,l}^D=\delta_{s,l}DF
+$$
+The total number of fish that are discarded, i.e. that may either survive or die, may be calculated using $F_{s,l}^{D*}$, determined as
+
+$$
+F_{s,l}^{D*}=\delta_{s,l}F
+$$
+
+Total mortality for fish of sex $s$ at the midpoint of length class $l$ is calculated as 
+
+$$
+Z_{s,l} = F_{s,l}+M
 $$
 where $M$ is the instantaneous rate of natural mortality ($y^-1$).
 
-#### Survival and catch calculations
+#### Survival and catch calculations - length-based catch curve
 
 For gonochoristic species (i.e. non-hermaphroditic species), assuming equal proportions of each sex for age 1 recruits, the per recruit numbers of either sex in length class $l$ that have survived to age $a$, i.e. $N_{s,l,a}$, is
 
@@ -290,10 +324,18 @@ $$
 The estimated catch numbers of fish of sex $s$ in length class $l$ at age $a$, as calculated from the Baranov catch equation, is
 
 $$
-\hat{C}_{s,l,a} = (F_{s,l}/Z_{s,l})(1-\exp(-Z_{s,l}))N_{s,l,a}
+\hat{C}_{s,l,a} = (F_{s,l}^R/Z_{s,l})(1-\exp(-Z_{s,l}))N_{s,l,a}
 $$
 
-#### Objective function calculations
+The numbers of fish that are caught and discarded, which may either survive or die, are calculated as
+
+$$
+\hat{C}_{s,l,a} = (F_{s,l}^{D*}/Z_{s,l})(1-\exp(-Z_{s,l}))N_{s,l,a}
+$$
+
+The above numbers may be used to estimate (if sufficient information exists in the data), the proportion of fish that are caught and released. 
+
+#### Objective function calculations - length-based catch curve
 
 The observed length composition, to which the model is fitted, is assumed to conform to a multinomial distribution.
 For combined sexes, the expected proportions of fish in each length class, $\hat{P}_l$, is
@@ -310,6 +352,7 @@ where $C_l$ is the observed catch frequency. The model is fitted by minimsing th
 
 For visualisation, model estimates of the proportion of fish in each length class, with associated 95% confidence intervals, are also calculated using a parametric resampling approach, assuming the estimated model parameters conform to a multivariate normal distribution. The mvrnorm function within the MASS package is used together with the values of the estimated model parameters and associated variance-covariance matrix to generate 200 random values of each of the model parameters. These, in turn, are used to produce 200 sets of model estimates for the expected proportion of fish in each length class. The lower and upper 95 confidence limits for $\hat{f_a}$ are taken as the 2.5 and 97.5 percentiles of the 200 estimates for $\hat{P}_l$, respectively. 
 
+If an estimate of the proportion of fish that are caught and released by the fishery exists (e.g. from an observer monitoring program), then the value estimated by the model may be matched to this external estimate which, potentially, may improve estimates of the vulnerability and fishing mortality parameters. This may be achieved by adding an additional component to the objective function, matching the estimated value for the proportion of undersize fish released, to the observed value with associated standard deviation (assuming a normal distribution).
 
 ### Apply length-based catch curve
 
@@ -468,12 +511,17 @@ For model scenarios not allowing for post-release mortality of undersize fish, t
 $$
 F_{s,t}=\psi_{s,a}F
 $$
-where $F$ is the fully-selected fishing mortality. Conversely, for model scenarios allowing for post-release mortality (i.e. $D>0$), $F_{s,a}$ is calculated as
+where $F$ is the fully-selected fishing mortality. Conversely, for model scenarios allowing for post-release mortality (i.e. $D>0.01$), $F_{s,a}$ is calculated as
 
 $$
 F_{s,a} = (\phi_{s,a}+\delta_{s,a}D)F
 $$
-where $\phi_{s,a}$ and $\delta{s,a}$ are the selectivity of fish landings and fish discards, respectively, for fish of sex $s$ and age $a$.
+where $\phi_{s,a}$ and $\delta{s,a}$ are the selectivity of fish landings and fish discards, respectively, for fish of sex $s$ and age $a$. The fishing mortality of fish of sex $s$ at the midpoint at age $a$ associated with retention, $F_{s,a}^R$ is calculated as
+
+$$
+F_{s,a}^R=\phi_{s,a}F
+$$
+
 
 Total mortality for fish of sex $s$ at age $t$ is calculated as 
 
@@ -491,7 +539,7 @@ YPR = \sum_{s=1}^{2}\sum_{a=0}^{A}C_{s,a}W_{s,a}
 $$
 where the catch of fish of sex $s$ at age $a$, i.e. $C_{s,a}$, is calculated from the Baranov catch equation.
 $$
-C_{s,a} = N_{s,a}\biggl(\frac{F_{s,a}}{Z_{s,a}}\biggr)(1-\exp(-Z_{s,a}))
+C_{s,a} = N_{s,a}\biggl(\frac{F_{s,a}^R}{Z_{s,a}}\biggr)(1-\exp(-Z_{s,a}))
 $$
 In the above equation, $N_s,a$, i.e. the numbers of sex $s$ at age $a$, for the fished population are calculated as
 $$
@@ -513,7 +561,7 @@ where $P_{max}^{s=2}$ is the maximum proportion for the terminal sex (males) and
 $$
 \rho_{a} = P_{max}^{s=1}/(1+\exp(-\log_e(19)(a-a_{50}^{\rho})/(a_{95}^{\rho}-a_{50}^{\rho})))
 $$
-where $P_{max}^{s=1}$, the terminal sex, is females. For hermaphroditic species, the values of $N_{s,a}$ become modified, prior calculation of survival at the next age step, to reflect the assumed stable sex ratio. The modified values for female, $N'_{s=1,a}$ are calculated as
+where $P_{max}^{s=1}$, the terminal sex, is females. For hermaphroditic species, the values of $N_{s,a}$ become modified, prior calculation of survival at the next age step, to reflect the assumed sex ratios at age. The modified values for female, $N'_{s=1,a}$ are calculated as
 
 $$
 N'_{s=1,a}=\rho_{a}(N_{s=1,a}+N_{s=2,a})
@@ -530,7 +578,7 @@ Spawning potential ratio, $SPR$, for sex $s$, is calculated as
 $$
 SPR_s = \frac{\theta_s}{\theta_{0,s}}
 $$
-where $\theta_s$ and $\theta_{0,s}$ is the spawning biomass per recruit for sex $s$, for the fished and unfished population, respectively. Spawning potential ratio, for sexes combined, is thus calculated as
+where $\theta_s$ and $\theta_{0,s}$ is the spawning biomass per recruit for sex $s$, for the fished and unfished population, respectively. For gonochoristic species, $SPR$ is calculated based on females only. For hermaphroditic species, Spawning potential ratio, $SPR$ is calculated for combined sexes, i.e.
 
 $$
 SPR_{s=1:2} = \frac{\theta_{s=1}+\theta_{s=2}}{\theta_{0,{s=1}}+\theta_{0,{s=2}}}
@@ -617,7 +665,7 @@ $$
 where $L_{50,s}^{\mathrm{M}}$ and $L_{95,s}^{\mathrm{M}}$ are the lengths at which 50 and 95% of fish are mature, respectively.
 
 
-### Gear selectivity, retention and discard mortality - age-based per recruit analysis
+### Gear selectivity, retention and discard mortality - length-based per recruit analysis
 
 As with the age-based per recruit model, a 'retention function' approach is used to account for such 'discard mortality' (Fairclough et al., 2021; Shertzer et al., 2021). The vulnerability of fish of sex $s$ at the midpoint of length class $l$ to the fishing gear. $V_{s,a}$ is calculated as
 
@@ -643,7 +691,7 @@ $$
 \delta_{s,l}=V_{s,l}(1-\psi_{s,l})
 $$
 
-### Fishing mortality - age-based per recruit analysis
+### Fishing mortality - length-based per recruit analysis
 
 For model scenarios not allowing for post-release mortality of undersize fish, the proportion of fish that die following capture and release, $D$, is set to zero. In such cases, the annual fishing mortality associated with capture and retention of fish of sex $s$ at the midpoint of length class $l$ is calculated as
 
@@ -655,7 +703,11 @@ where $F$ is the fully-selected fishing mortality. Conversely, for model scenari
 $$
 F_{s,l} = (\phi_{s,l}+\delta_{s,l}D)F
 $$
-where $\phi_{s,l}$ and $\delta_{s,l}$ are the selectivity of fish landings and fish discards, respectively, for fish of sex $s$ at the midpoint of length class $l$.
+where $\phi_{s,l}$ and $\delta_{s,l}$ are the selectivity of fish landings and fish discards, respectively, for fish of sex $s$ at the midpoint of length class $l$. The fishing mortality associated with retention, $F_{s,l}^R$, for fish of sex $s$ at the midpoint at length $l$, is calculated as
+
+$$
+F_{s,l}^R=\phi_{s,l}F
+$$
 
 Total mortality for fish of sex $s$ at the midpoint of length class $l$ is calculated as 
 
@@ -671,9 +723,9 @@ Yield per recruit, $YPR$, is calculated as
 $$
 YPR = \sum_{s=1}^{2}\sum_{l=1}^{n}C_{s,l}W_{s,l}
 $$
-where $n$ donotes the number of length classes considered by the model. The catch of fish of sex $s$ of at the midpoint of length class $l$, i.e. $C_{s,l}$, is calculated from the Baranov catch equation.
+where $n$ donotes the number of length classes considered by the model. The retained catch of fish of sex $s$ of at the midpoint of length class $l$, i.e. $C_{s,l}$, is calculated from the Baranov catch equation.
 $$
-C_{s,l} = N_{s,l}\biggl(\frac{F_{s,l}}{Z_{s,l}}\biggr)(1-\exp(-Z_{s,l}))
+C_{s,l} = N_{s,l}\biggl(\frac{F_{s,l}^R}{Z_{s,l}}\biggr)(1-\exp(-Z_{s,l}))
 $$
 For a model with an annual timestep, tn the above equation, $N_s,l$, i.e. the numbers of fish of sex $s$ at age $a$, for the fished population are calculated as
 $$
@@ -707,11 +759,11 @@ $$
 
 ### Spawning potential ratio
 
-As with age-based per recruit anlaysis, spawning potential ratio, $SPR$, for sex $s$, is calculated as
+As with age-based per recruit analysis, spawning potential ratio, $SPR$, for sex $s$, is calculated as
 $$
 SPR_s = \frac{\theta_s}{\theta_{0,s}}
 $$
-where $\theta_s$ and $\theta_{0,s}$ is the spawning biomass per recruit for sex $s$, for the fished and unfished population, respectively. Spawning potential ratio, for sexes combined, is calculated as
+where $\theta_s$ and $\theta_{0,s}$ is the spawning biomass per recruit for sex $s$, for the fished and unfished population, respectively. For gonochoristic species, $SPR$ is calculated based on females. For hermaphroditic species, $SPR$ is calculated for combined sexes combined, i.e.
 $$
 SPR_{s=1:2} = \frac{\theta_{s=1}+\theta_{s=2}}{\theta_{0,{s=1}}+\theta_{0,{s=2}}}
 $$
