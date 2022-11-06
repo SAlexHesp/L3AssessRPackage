@@ -2105,9 +2105,11 @@ PlotLengthBasedCatchCurveResults <- function(params, MLL, SelectivityType, ObsCa
            cex = 0.8, bty="n", lty="dotted", col=c("dark grey","blue"))
   }
   if (PlotCLs == TRUE) {
-    x = c(Res$midpt,rev(Res$midpt)) # using shading for 95% CLs
-    y = c(EstProp.sim_low, rev(EstProp.sim_up))
-    polygon(x,y,col="pink",border=NA)
+    sm1 = spline(Res$midpt, EstProp.sim_low, n=100, method="natural")
+    sm2 = spline(Res$midpt, EstProp.sim_up, n=100, method="natural")
+    x = c(sm1$x, rev(sm2$x)) # using shading for 95% CLs
+    y = c(sm1$y, rev(sm2$y))
+    polygon(x,y, col="pink",border=NA)
   }
   points(midpt, ObsRelCatchAtLen, col="black", pch=16, cex=0.8)
   points(midpt, ExpCatchAtLen, col="red", pch=1, cex=0.8)
@@ -4228,11 +4230,11 @@ PlotAgeBasedCatchCurveResults_NormalSpace <- function(RecAssump, MinFreq, MinAge
   axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 0.8, las = 1)
   axis(2, at = seq(0, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 0.8, las = 1)
   if (PlotCLs == TRUE) {
-    x = c(Ages[j],rev(Ages[j])) # using shading for 95% CLs
-    y = c(Res$EstFreq_Zlow[1:length(jj)], rev(Res$EstFreq_Zup[1:length(j)]))
-    polygon(x,y,col="pink",border=NA)
-    # lines(Ages[j], Res$EstFreq_Zup[1:length(j)] , col="black", lty="dotted")
-    # lines(Ages[jj], Res$EstFreq_Zlow[1:length(jj)] , col="black", lty="dotted")
+    sm1 = spline(Ages[j], Res$EstFreq_Zlow[1:length(jj)], n=100, method="natural")
+    sm2 = spline(Ages[j], Res$EstFreq_Zup[1:length(j)], n=100, method="natural")
+    x = c(sm1$x, rev(sm2$x)) # using shading for 95% CLs
+    y = c(sm1$y, rev(sm2$y))
+    polygon(x,y, col="pink",border=NA)
   }
   # lines(Ages[jjj], Res$EstFreq[1:length(jjj)], col="black")
   points(Ages, ObsAgeFreq, pch=16, cex=0.8)
@@ -4386,35 +4388,35 @@ PlotAgeBasedCatchCurveResults_LogSpace <- function(RecAssump, MinFreq, MinAge, M
   # Chap-Rob
   if (CatchCurveModel == 1) {
     if (PlotCLs == TRUE) {
-      x = c(Ages[j],rev(Ages[jj])) # using shading for 95% CLs
-      y = c(log(Res$EstFreq_Zup[k]), rev(log(Res$EstFreq_Zlow[kk])))
-      polygon(x,y,col="pink",border=NA)
-      # lines(Ages[j], log(Res$EstFreq_Zup[k]), col="black", lty="dotted")
-      # lines(Ages[jj], log(Res$EstFreq_Zlow[kk]), col="black", lty="dotted")
+      sm1 = spline(Ages[j], log(Res$EstFreq_Zup[k]), n=100, method="natural")
+      sm2 = spline(Ages[jj], log(Res$EstFreq_Zlow[kk]), n=100, method="natural")
+      x = c(sm1$x, rev(sm2$x)) # using shading for 95% CLs
+      y = c(sm1$y, rev(sm2$y))
+      polygon(x,y, col="pink",border=NA)
     }
     # lines(Ages[jjj], log(Res$EstFreq[kkk]), col="red")
     points(Ages[jjj], log(Res$EstFreq[kkk]), pch=1, col="red", cex=0.6)
   }
   if (CatchCurveModel == 2) {
     if (PlotCLs == TRUE) {
-      x = c(Ages[j],rev(Ages[jj])) # using shading for 95% CLs
-      y = c(log(Res$EstFreq_Zup[1:length(j)]), rev(log(Res$EstFreq_Zlow[1:length(jj)])))
-      polygon(x,y,col= "pink",border=NA)
-      # lines(Ages[j], log(Res$EstFreq_Zup[1:length(j)]), col="black", lty="dotted")
-      # lines(Ages[jj], log(Res$EstFreq_Zlow[1:length(jj)]), col="black", lty="dotted")
+
+      sm1 = spline(Ages[j], log(Res$EstFreq_Zup[1:length(j)]), n=100, method="natural")
+      sm2 = spline(Ages[j], log(Res$EstFreq_Zlow[1:length(jj)]), n=100, method="natural")
+      x = c(sm1$x, rev(sm2$x)) # using shading for 95% CLs
+      y = c(sm1$y, rev(sm2$y))
+      polygon(x,y, col="pink",border=NA)
     }
     # lines(Ages[jjj], log(Res$EstFreq[1:length(jjj)]), col="red")
     points(Ages[jjj], log(Res$EstFreq[1:length(jjj)]), pch=1, col="red", cex=0.6)
   }
   if (CatchCurveModel == 3) {
     if (PlotCLs == TRUE) {
-      # arrows(Ages[j], log(Res$EstFreq_Zup[j]), Ages[j], log(Res$EstFreq_Zlow[j]), length=0.02, angle=90, code=3,
-      #        col="dark grey")
-      x = c(Ages[j],rev(Ages[j])) # using shading for 95% CLs
-      y = c(log(Res$EstFreq_Zup[j]), rev(log(Res$EstFreq_Zlow[j])))
-      polygon(x,y,col="pink",border=NA)
-      # lines(Ages[j], log(Res$EstFreq_Zup[j]), col="pink", lty="dotted")
-      # lines(Ages[j], log(Res$EstFreq_Zlow[j]), col="pink", lty="dotted")
+
+      sm1 = spline(Ages[j], log(Res$EstFreq_Zup[j]), n=100, method="natural")
+      sm2 = spline(Ages[j], log(Res$EstFreq_Zlow[j]), n=100, method="natural")
+      x = c(sm1$x, rev(sm2$x)) # using shading for 95% CLs
+      y = c(sm1$y, rev(sm2$y))
+      polygon(x,y, col="pink",border=NA)
     }
     #lines(Ages[j], log(Res$EstFreq[j]), col="red")
     points(Ages, log(Res$EstFreq), pch=1, col="red", cex=0.6)
@@ -4671,7 +4673,7 @@ CalcYPRAndSPRForFMort_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
   MalLandFAtAge <- FMort * MalSelLandAtAge
 
   # calculate (total) female and male fishing mortality at age
-  if (DiscMort > 0.01) {
+  if (DiscMort >= 0.001) {
     FemFAtAge <- FMort * (FemSelLandAtAge + (DiscMort * FemSelDiscAtAge))
     MalFAtAge <- FMort * (MalSelLandAtAge + (DiscMort * MalSelDiscAtAge))
   } else {
@@ -5227,7 +5229,7 @@ CalcYPRAndSPRForFMort_LB<- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
   MalLandFAtLen <- FMort * MalSelLandAtLen
 
   # calculate (total) female and male fishing mortality at age
-  if (DiscMort > 0.01) {
+  if (DiscMort >= 0.001) {
     FemFAtLen <- FMort * (FemSelLandAtLen + (DiscMort * FemSelDiscAtLen))
     MalFAtLen <- FMort * (MalSelLandAtLen + (DiscMort * MalSelDiscAtLen))
   } else {
