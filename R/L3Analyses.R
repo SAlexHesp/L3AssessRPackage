@@ -2044,8 +2044,8 @@ SimLenAndAgeFreqData <- function(SampleSize, MaxAge, NatMort, FishMort, MaxLen, 
 #' # Plot. Note, can skip above step and set FittedRes=NA (plot function will be slower)
 #' PlotLengthBasedCatchCurveResults(params, MLL, SelectivityType, ObsCatchFreqAtLen, lbnd, ubnd, midpt,
 #'                                  SelectivityVec, PropReleased, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, MaxAge, NatMort, MainLabel=NA,
-#'                                  xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA,
-#'                                  ymax=NA, yint=NA, PlotCLs=TRUE, FittedRes, nReps=200)
+#'                                  xaxis_lab=NA, yaxis_lab=NA, xmax=1500, xint=500,
+#'                                  ymax=0.15, yint=0.05, PlotCLs=TRUE, FittedRes, nReps=200)
 #' @export
 PlotLengthBasedCatchCurveResults <- function(params, MLL, SelectivityType, ObsCatchFreqAtLen, lbnd, ubnd, midpt,
                                              SelectivityVec, PropReleased, DiscMort, GrowthCurveType, GrowthParams, RefnceAges,
@@ -2096,8 +2096,8 @@ PlotLengthBasedCatchCurveResults <- function(params, MLL, SelectivityType, ObsCa
   if (is.na(ymax)) ymax = ylims$ymax
   if (is.na(yint)) yint = ylims$yint
 
-  plot(midpt, ObsRelCatchAtLen, "p", main=MainLabel, cex.main=1.0, pch=16, cex=0.8, xaxt = "n", yaxt = "n",
-       xlab=xaxis_lab,ylab=yaxis_lab, frame=F, xlim=c(0,xmax), ylim=c(0,ymax))
+  plot(midpt, ObsRelCatchAtLen, "p", main=MainLabel, cex.main=1.2, pch=16, cex=0.8, xaxt = "n", yaxt = "n",
+       xlab=list(xaxis_lab,cex=1.2),ylab=list(yaxis_lab,cex=1.2), frame=F, xlim=c(0,xmax), ylim=c(0,ymax))
   if (is.data.frame(GrowthParams)) {
     lines(midpt, Res$ExpCatchPropInLenClass_Fem, lty="dotted", col="dark grey")
     lines(midpt, Res$ExpCatchPropInLenClass_Mal, lty="dotted", col="blue")
@@ -2115,8 +2115,8 @@ PlotLengthBasedCatchCurveResults <- function(params, MLL, SelectivityType, ObsCa
   points(midpt, ExpCatchAtLen, col="red", pch=1, cex=0.8)
   axis(1, at = seq(0, xmax, xint), line = 0.2, labels = F)
   axis(2, at = seq(0, ymax, yint), line = 0.2, labels = F)
-  axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 0.8, las = 1)
-  axis(2, at = seq(0, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 0.8, las = 1)
+  axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
+  axis(2, at = seq(0, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
   # inverse logit transformed value
   params = res$params # from point estimate, not from resampled values
   Fval = round(1/(1+exp(-params[1])),2)
@@ -2316,8 +2316,8 @@ PlotAgeLengthCatchCurve_MargLength <- function(params, MLL, SelectivityType, Obs
   # combined sexes
   if (is.vector(ObsCatchFreqAtLen)) {
     if (is.na(yaxis_lab)) yaxis_lab = "Proportion"
-    plot(midpt, ObsRelCatchAtLen, "p", main=MainLabel, cex.main=1.0, pch=16, cex=0.8,
-         xaxt = "n", yaxt = "n", xlab=xaxis_lab,ylab=yaxis_lab, frame=F, xlim=c(0,xmax), ylim=c(0,ymax))
+    plot(midpt, ObsRelCatchAtLen, "p", main=MainLabel, cex.main=1.2, pch=16, cex=0.8,
+         xaxt = "n", yaxt = "n", xlab=list(xaxis_lab,cex=1.2),ylab=list(yaxis_lab,cex=1.2), frame=F, xlim=c(0,xmax), ylim=c(0,ymax))
     points(midpt, ObsRelCatchAtLen, col="black", pch=16, cex=0.8)
     if (PlotCLs == TRUE) {
       x = c(Res$midpt,rev(Res$midpt)) # using shading for 95% CLs
@@ -2328,15 +2328,15 @@ PlotAgeLengthCatchCurve_MargLength <- function(params, MLL, SelectivityType, Obs
     points(midpt, EstProp.sim, col="red", pch=1, cex=0.8)
     axis(1, at = seq(0, xmax, xint), line = 0.2, labels = F)
     axis(2, at = seq(0, ymax, yint), line = 0.2, labels = F)
-    axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 0.8, las = 1)
-    axis(2, at = seq(0, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 0.8, las = 1)
+    axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
+    axis(2, at = seq(0, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
   }
 
   # separate sexes
   if (is.data.frame(ObsCatchFreqAtLen)) {
     if (is.na(yaxis_lab)) yaxis_lab1 = "Proportion - Females"
-    plot(midpt, ObsRelCatchAtLen[1,], "p", main=MainLabel, cex.main=1.0, pch=16, cex=0.8,
-         xaxt = "n", yaxt = "n", xlab=xaxis_lab,ylab=yaxis_lab1, frame=F, xlim=c(0,xmax), ylim=c(0,ymax))
+    plot(midpt, ObsRelCatchAtLen[1,], "p", main=MainLabel, cex.main=1.2, pch=16, cex=0.8,
+         xaxt = "n", yaxt = "n", xlab=list(xaxis_lab,cex=1.2),ylab=list(yaxis_lab1,cex=1.2), frame=F, xlim=c(0,xmax), ylim=c(0,ymax))
     points(midpt, ObsRelCatchAtLen[1,], col="black", pch=16, cex=0.8)
     if (PlotCLs == TRUE) {
       x = c(Res$midpt,rev(Res$midpt)) # using shading for 95% CLs
@@ -2347,12 +2347,12 @@ PlotAgeLengthCatchCurve_MargLength <- function(params, MLL, SelectivityType, Obs
     points(midpt, EstPropF.sim, col="red", pch=1, cex=0.8)
     axis(1, at = seq(0, xmax, xint), line = 0.2, labels = F)
     axis(2, at = seq(0, ymax, yint), line = 0.2, labels = F)
-    axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 0.8, las = 1)
-    axis(2, at = seq(0, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 0.8, las = 1)
+    axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
+    axis(2, at = seq(0, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
 
     if (is.na(yaxis_lab)) yaxis_lab2 = "Proportion - Males"
-    plot(midpt, ObsRelCatchAtLen[2,], "p", main=MainLabel, cex.main=1.0, pch=16, cex=0.8,
-         xaxt = "n", yaxt = "n", xlab=xaxis_lab,ylab=yaxis_lab2, frame=F, xlim=c(0,xmax), ylim=c(0,ymax))
+    plot(midpt, ObsRelCatchAtLen[2,], "p", main=MainLabel, cex.main=1.2, pch=16, cex=0.8,
+         xaxt = "n", yaxt = "n", xlab=list(xaxis_lab,cex=1.2),ylab=list(yaxis_lab2,cex=1.2), frame=F, xlim=c(0,xmax), ylim=c(0,ymax))
     points(midpt, ObsRelCatchAtLen[2,], col="black", pch=16, cex=0.8)
     if (PlotCLs == TRUE) {
       x = c(Res$midpt,rev(Res$midpt)) # using shading for 95% CLs
@@ -2363,8 +2363,8 @@ PlotAgeLengthCatchCurve_MargLength <- function(params, MLL, SelectivityType, Obs
     points(midpt, EstPropM.sim, col="red", pch=1, cex=0.8)
     axis(1, at = seq(0, xmax, xint), line = 0.2, labels = F)
     axis(2, at = seq(0, ymax, yint), line = 0.2, labels = F)
-    axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 0.8, las = 1)
-    axis(2, at = seq(0, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 0.8, las = 1)
+    axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
+    axis(2, at = seq(0, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
   }
 }
 
@@ -2596,8 +2596,8 @@ PlotAgeLengthCatchCurve_Growth <- function(params, MLL, SelectivityType, ObsCatc
     ylims = Get_yaxis_scale(midpt)
     if (is.na(ymax)) ymax = ylims$ymax
     if (is.na(yint)) yint = ylims$yint
-    plot(ObsAgeCl, ObslenClMidPt, "p", main=MainLabel, cex.main=1.0, pch=16, cex=0.6,
-         xaxt = "n", yaxt = "n", xlab=xaxis_lab,ylab=yaxis_lab, frame=F, xlim=c(0,xmax), ylim=c(0,ymax))
+    plot(ObsAgeCl, ObslenClMidPt, "p", main=MainLabel, cex.main=1.2, pch=16, cex=0.6,
+         xaxt = "n", yaxt = "n", xlab=list(xaxis_lab,cex=1.2),ylab=list(yaxis_lab,cex=1.2), frame=F, xlim=c(0,xmax), ylim=c(0,ymax))
     points(ObsAgeCl, ObslenClMidPt, col="black", cex=0.6)
     points(AgeClasses,EstProp.sim, col="red", cex=0.6)
     if (PlotCLs == TRUE) {
@@ -2609,8 +2609,8 @@ PlotAgeLengthCatchCurve_Growth <- function(params, MLL, SelectivityType, ObsCatc
     points(0:MaxAge, EstProp.sim, col="red", pch=1, cex=0.6)
     axis(1, at = seq(0, xmax, xint), line = 0.2, labels = F)
     axis(2, at = seq(0, ymax, yint), line = 0.2, labels = F)
-    axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 0.8, las = 1)
-    axis(2, at = seq(0, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 0.8, las = 1)
+    axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
+    axis(2, at = seq(0, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
   }
   if (is.data.frame(ObsCatchFreqAtLen)) { # combined sex
     # females
@@ -2618,8 +2618,8 @@ PlotAgeLengthCatchCurve_Growth <- function(params, MLL, SelectivityType, ObsCatc
     if (is.na(ymax)) ymax = ylims$ymax
     if (is.na(yint)) yint = ylims$yint
     if (is.na(yaxis_lab)) yaxis_lab1 = "Length females"
-    plot(ObsAgeCl_F, ObslenClMidPt_F, "p", main=MainLabel, cex.main=1.0, pch=16, cex=0.6,
-         xaxt = "n", yaxt = "n", xlab=xaxis_lab, ylab=yaxis_lab1, frame=F, xlim=c(0,xmax), ylim=c(0,ymax))
+    plot(ObsAgeCl_F, ObslenClMidPt_F, "p", main=MainLabel, cex.main=1.2, pch=16, cex=0.6,
+         xaxt = "n", yaxt = "n", xlab=list(xaxis_lab,cex=1.2), ylab=list(yaxis_lab1,cex=1.2), frame=F, xlim=c(0,xmax), ylim=c(0,ymax))
     points(ObsAgeCl_F, ObslenClMidPt_F, col="black", cex=0.6)
     points(AgeClasses,EstPropF.sim, col="red", cex=0.6)
     if (PlotCLs == TRUE) {
@@ -2631,15 +2631,15 @@ PlotAgeLengthCatchCurve_Growth <- function(params, MLL, SelectivityType, ObsCatc
     points(0:MaxAge, EstPropF.sim, col="red", pch=1, cex=0.6)
     axis(1, at = seq(0, xmax, xint), line = 0.2, labels = F)
     axis(2, at = seq(0, ymax, yint), line = 0.2, labels = F)
-    axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 0.8, las = 1)
-    axis(2, at = seq(0, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 0.8, las = 1)
+    axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
+    axis(2, at = seq(0, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
     # males
     if (is.na(yaxis_lab)) yaxis_lab2 = "Length males"
     ylims = Get_yaxis_scale(midpt)
     if (is.na(ymax)) ymax = ylims$ymax
     if (is.na(yint)) yint = ylims$yint
     plot(ObsAgeCl_M, ObslenClMidPt_M, "p", main=MainLabel, cex.main=1.0, pch=16, cex=0.6,
-         xaxt = "n", yaxt = "n", xlab=xaxis_lab, ylab=yaxis_lab2, frame=F, xlim=c(0,xmax), ylim=c(0,ymax))
+         xaxt = "n", yaxt = "n", xlab=list(xaxis_lab,cex=1.2), ylab=list(yaxis_lab2,cex=1.2), frame=F, xlim=c(0,xmax), ylim=c(0,ymax))
     points(ObsAgeCl_M, ObslenClMidPt_M, col="black", cex=0.6)
     points(AgeClasses,EstPropM.sim, col="blue", cex=0.6)
     if (PlotCLs == TRUE) {
@@ -2651,8 +2651,8 @@ PlotAgeLengthCatchCurve_Growth <- function(params, MLL, SelectivityType, ObsCatc
     points(0:MaxAge, EstPropM.sim, col="blue", pch=1, cex=0.6)
     axis(1, at = seq(0, xmax, xint), line = 0.2, labels = F)
     axis(2, at = seq(0, ymax, yint), line = 0.2, labels = F)
-    axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 0.8, las = 1)
-    axis(2, at = seq(0, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 0.8, las = 1)
+    axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
+    axis(2, at = seq(0, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
   }
 }
 
@@ -2818,21 +2818,29 @@ PlotAgeLengthCatchCurve_Selectivity <- function(params, MLL, SelectivityType, Ob
   if (is.na(ymax)) ymax = 1.2
   if (is.na(yint)) yint = 0.2
 
-  plot(midpt, EstProp.sim, "p", main=MainLabel, cex.main=1.0, pch=1, cex=0.6,
-       xaxt = "n", yaxt = "n", xlab=xaxis_lab,ylab=yaxis_lab, frame=F, xlim=c(0,xmax),
+  plot(midpt, EstProp.sim, "p", main=MainLabel, cex.main=1.2, pch=1, cex=0.6,
+       xaxt = "n", yaxt = "n", xlab=list(xaxis_lab,cex=1.2),ylab=list(yaxis_lab,cex=1.2), frame=F, xlim=c(0,xmax),
        ylim=c(0,ymax), col="red")
-  lines(midpt,EstProp.sim, col="red", cex=0.6)
   if (PlotCLs == TRUE) {
-    x = c(midpt,rev(midpt)) # using shading for 95% CLs
-    y = c(EstProp.sim_low, rev(EstProp.sim_up))
-    polygon(x,y,col="pink",border=NA)
-  }
+    # x = c(midpt,rev(midpt)) # using shading for 95% CLs
+    # y = c(EstProp.sim_low, rev(EstProp.sim_up))
+    # polygon(x,y,col="pink",border=NA)
+    sm1 = spline(midpt, EstProp.sim_low, n=100, method="natural")
+    sm2 = spline(midpt, EstProp.sim_up, n=100, method="natural")
+    sm1$y[which(sm1$y<0)]=0
+    sm2$y[which(sm1$y>1)]=1
+    x = c(sm1$x, rev(sm2$x)) # using shading for 95% CLs
+    y = c(sm1$y, rev(sm2$y))
+    polygon(x,y, col="pink",border=NA)
 
+  }
+  sm1 = spline(midpt, EstProp.sim, n=100, method="natural")
+  lines(sm1$x,sm1$y, col="red", cex=0.6)
   points(midpt, EstProp.sim, col="red", pch=1, cex=0.6)
   axis(1, at = seq(0, xmax, xint), line = 0.2, labels = F)
   axis(2, at = seq(0, ymax, yint), line = 0.2, labels = F)
-  axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 0.8, las = 1)
-  axis(2, at = seq(0, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 0.8, las = 1)
+  axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
+  axis(2, at = seq(0, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
 
   if (SelectivityType==2) { # logistic selectivity
     L50est=paste("L50 =",round(exp(params[2]),0),"mm")
@@ -3495,7 +3503,7 @@ GetLenConvCatchCurveResults <- function(ModelType, GrowthParams, RefnceAges, Obs
 PlotLenConvCatchCurveResults <- function(MaxAge, ModelType, GrowthParams, RefnceAges, ObsCatchFreqAtLen, MinFreq,
                                          lbnd, midpt, ubnd) {
 
-  .pardefault <- par(no.readonly = TRUE) # store default par settings
+  # .pardefault <- par(no.readonly = TRUE) # store default par settings
 
     res=GetLenConvCatchCurveResults(ModelType, GrowthParams, RefnceAges, ObsCatchFreqAtLen,
                                     MinFreq, lbnd, midpt, ubnd)
@@ -3522,19 +3530,19 @@ PlotLenConvCatchCurveResults <- function(MaxAge, ModelType, GrowthParams, Refnce
       }
     }
 
-    par(mfrow = c(2,2), mar=c(4,4,0.1,0.1), oma=rep(0.1,4), tck=-0.03, mgp = c(3,1,0))
+    # par(mfrow = c(2,2), mar=c(4,4,0.1,0.1), oma=rep(0.1,4), tck=-0.03, mgp = c(3,1,0))
 
     # plot data that can be used for the catch curve,
     # relative to full set of length data
-    plot(midpt, ObsCatchFreqAtLen, ylab="Frequency", xlab="Length",
-         cex.lab = 1.2, frame.plot=F, xlim=c(0,MaxLen), las=1)
+    plot(midpt, ObsCatchFreqAtLen, ylab=list("Frequency",cex=1.2), xlab=list("Length",cex=1.2),
+         cex.lab = 1, frame.plot=F, xlim=c(0,MaxLen), las=1)
     points(midpt, res$ObsCatchFreqAtLen2, pch=16, col="blue")
     legend('topright', col=c("grey","blue"),legend=c("all","analysis"),
            bty='n', cex=0.8,lwd=1.75)
 
     # plot growth curve, and overlay range of lengths available for catch curve analysis
     plot(Ages,MeanSizeAtAge,"l",frame.plot=F, xlim=c(0,max(Ages)),
-         ylim=c(0,MaxLen), cex.lab = 1.2, col="blue", ylab="Length",xlab="Age", las=1)
+         ylim=c(0,MaxLen), cex.lab = 1, col="blue", ylab=list("Length",cex=1.2),xlab=list("Age",cex=1.2), las=1)
     abline(h=lbnd[res$PeakLencl],lty="solid")
     abline(h=ubnd[res$LastLenCl],lty="dotted")
     legend('bottomright', col=c("black","black"),lty=c("solid","dotted"),
@@ -3544,21 +3552,21 @@ PlotLenConvCatchCurveResults <- function(MaxAge, ModelType, GrowthParams, Refnce
     # plot growth curve, and overlay range of lengths available for catch curve analysis
     ymax=1.35*max(res$Obs_ln_n_dt)
     xmax=1.35*max(res$Age_midptlencl)
-    plot(res$Age_midptlencl,res$Obs_ln_n_dt,"p",frame.plot=F, xlim=c(0,xmax),
-         ylim=c(0,ymax), cex.lab = 1.2, , col="black", ylab="ln(n/dt)",xlab="Relative age", las=1)
-    lines(res$Age_midptlencl, res$Est_ln_n_dt)
+    plot(res$Age_midptlencl,res$Obs_ln_n_dt,"p",pch=16,frame.plot=F, xlim=c(0,xmax),
+         ylim=c(0,ymax), cex.lab = 1, col="black", ylab=list("ln(n/dt)",cex=1.2),xlab=list("Relative age",cex=1.2), las=1)
+
     Zval = round(res$ParamEst[1,1],2)
     Zest = bquote("Z =" ~ .(Zval) ~ y^-1)
     legend("bottomleft", pch=-1, legend=as.expression(Zest),
            lty="solid",col="black",
-           bty='n', cex=0.8,lwd=-1, y.intersp=1.2, adj=0)
+           bty='n', cex=0.8,lwd=-1, y.intersp=1, adj=0)
     x = c(res$Age_midptlencl,rev(res$Age_midptlencl)) # using shading for 95% CLs
     y = c(res$Est_ln_n_dtlow, rev(res$Est_ln_n_dtup))
     polygon(x,y,col="pink",border=NA)
-    points(res$Age_midptlencl,res$Obs_ln_n_dt)
-
+    points(res$Age_midptlencl,res$Obs_ln_n_dt,pch=16)
+    lines(res$Age_midptlencl, res$Est_ln_n_dt)
     # reset default par options
-    par(.pardefault)
+    # par(.pardefault)
 
 }
 
@@ -4223,12 +4231,12 @@ PlotAgeBasedCatchCurveResults_NormalSpace <- function(RecAssump, MinFreq, MinAge
   jjj = seq(x,xxxx,1) # est
 
   # plot catch curve over age frequency data, in normal space
-  plot(Ages, ObsAgeFreq, "p", main=MainLabel, cex.main=1.0, pch=16, cex=0.8, xaxt = "n", yaxt = "n",
-       xlab=xaxis_lab,ylab=yaxis_lab, frame=F, xlim=c(0,xmax), ylim=c(0,ymax)) # observed data (normal space)
+  plot(Ages, ObsAgeFreq, "p", main=MainLabel, cex.main=1.2, pch=16, cex=0.8, xaxt = "n", yaxt = "n",
+       xlab=list(xaxis_lab,cex=1.2),ylab=list(yaxis_lab,cex=1.2), frame=F, xlim=c(0,xmax), ylim=c(0,ymax)) # observed data (normal space)
   axis(1, at = seq(0, xmax, xint), line = 0.2, labels = F)
   axis(2, at = seq(0, ymax, yint), line = 0.2, labels = F)
-  axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 0.8, las = 1)
-  axis(2, at = seq(0, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 0.8, las = 1)
+  axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
+  axis(2, at = seq(0, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
   if (PlotCLs == TRUE) {
     sm1 = spline(Ages[j], Res$EstFreq_Zlow[1:length(jj)], n=100, method="natural")
     sm2 = spline(Ages[j], Res$EstFreq_Zup[1:length(j)], n=100, method="natural")
@@ -4379,12 +4387,12 @@ PlotAgeBasedCatchCurveResults_LogSpace <- function(RecAssump, MinFreq, MinAge, M
     j = seq(x,xx,1) # up
   }
 
-  plot(Ages, log(ObsAgeFreq), "p", main=MainLabel, pch=16, cex=0.8, cex.main=1.0, xaxt = "n", yaxt = "n",
-       xlab=xaxis_lab,ylab=yaxis_lab, frame=F, xlim=c(0,xmax), ylim=c(ymin,ymax)) # observed data (normal space)
+  plot(Ages, log(ObsAgeFreq), "p", main=MainLabel, pch=16, cex=0.8, cex.main=1.2, xaxt = "n", yaxt = "n",
+       xlab=list(xaxis_lab,cex=1.2),ylab=list(yaxis_lab,cex=1.2), frame=F, xlim=c(0,xmax), ylim=c(ymin,ymax)) # observed data (normal space)
   axis(1, at = seq(0, xmax, xint), line = 0.2, labels = F)
   axis(2, at = seq(ymin, ymax, yint), line = 0.2, labels = F)
-  axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 0.8, las = 1)
-  axis(2, at = seq(ymin, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 0.8, las = 1)
+  axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
+  axis(2, at = seq(ymin, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
   # Chap-Rob
   if (CatchCurveModel == 1) {
     if (PlotCLs == TRUE) {
