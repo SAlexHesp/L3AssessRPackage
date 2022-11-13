@@ -214,15 +214,15 @@
  #' @param midpt mid points of length classes
  #'
  #' @return Expected lengths (ExpLen)
- CalcLengthAfterOneYearOfGrowth <- function(GrowthCurveType, GrowthParamsForSex, RefnceAgesForSex, midpt) {
+ CalcLengthAfterGrowthForTimetep <- function(GrowthCurveType, TimeStep, GrowthParamsForSex, RefnceAgesForSex, midpt) {
 
-   # calculate mean length after one year of growth, given growth curve type,
+   # calculate mean length after growth for current timestep, given growth curve type,
    # mean length of the current length class and initial length
 
    if (GrowthCurveType == 1) { # von Bert
      Linf = GrowthParams[1]
      vbK = GrowthParams[2]
-     ExpLen = midpt + (Linf - midpt) * (1 - exp(-vbK))
+     ExpLen = midpt + (Linf - midpt) * (1 - exp(-vbK*TimeStep))
    }
    if (GrowthCurveType == 2) { # Schnute
 
@@ -239,7 +239,7 @@
      for (i in 1:nObs) {
        FishLen = midpt[i]
        StartAge[i] = InverseSchnuteGrowthfunction(FishLen, t1, t2, y1, y2, a, b)
-       Age <- StartAge[i] + 1
+       Age <- StartAge[i] + TimeStep
        ExpLen[i] = SchnuteGrowthfunction(Age, t1, t2, y1, y2, a, b)
        #cat("Age",Age,"MeanLen",MeanLen[i],'\n')
      }
@@ -350,7 +350,7 @@ CalcSizeDistOfRecruits <- function(MeanSizeAtAge, CVSizeAtAge, lbnd, ubnd, midpt
   if (is.vector(MeanSizeAtAge)) {
     MeanLenRec <- MeanSizeAtAge[1]
     # robustify for positive tzero values
-    if (MeanLenRec < 10) MeanLenRec = 50 # i.e. assuming mean size at least 50 mm at 1 year of age
+    if (MeanLenRec < 50) MeanLenRec = 50 # i.e. assuming mean size at least 50 mm at 1 year of age
     SDAgeOneRecruits = MeanLenRec * CVSizeAtAge
 
     RecLenDist = rep(0,nLenCl)
@@ -369,7 +369,7 @@ CalcSizeDistOfRecruits <- function(MeanSizeAtAge, CVSizeAtAge, lbnd, ubnd, midpt
     for (i in 1:2) {
       MeanLenRec[i] <- MeanSizeAtAge[i,1]
       # robustify for positive tzero values
-      if (MeanLenRec[i] < 10) MeanLenRec[i] = 50 # i.e. assuming mean size at least 50 mm at 1 year of age
+      if (MeanLenRec[i] < 50) MeanLenRec[i] = 50 # i.e. assuming mean size at least 50 mm at 1 year of age
       if (length(CVSizeAtAge)==1) { # age and length-based catch curve, estimated cv value
         SDAgeOneRecruits[i] = MeanLenRec[i] * CVSizeAtAge[i]
       }
@@ -396,6 +396,7 @@ CalcSizeDistOfRecruits <- function(MeanSizeAtAge, CVSizeAtAge, lbnd, ubnd, midpt
 #' effects on variation in data.
 #'
 #' @param nFish number of growth trajectories for individual fish to simulate
+#' @param TimeStep model timestep (fraction of year)
 #' @param MinAge minimum age
 #' @param MinAge maximum age
 #' @param CVSizeAtAge coefficient of variation (CV), common across all mean lengths at age
@@ -426,17 +427,17 @@ CalcSizeDistOfRecruits <- function(MeanSizeAtAge, CVSizeAtAge, lbnd, ubnd, midpt
 #' Growth_params = c(Linf, vbK, tzero) # currently only set up for von Bertalanffy growth equation
 #' CVSizeAtAge = 0.05
 #' nFish = 100
-#' VisualiseGrowthApplyingLTM(nFish, MaxAge, Growth_params, CVSizeAtAge, midpt, nLenCl, MainLabel=NA,
+#' VisualiseGrowthApplyingLTM(nFish, TimeStep, MaxAge, Growth_params, CVSizeAtAge, midpt, nLenCl, MainLabel=NA,
 #'                            xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA, ymax=NA, yint=NA)
 #' @export
-VisualiseGrowthApplyingLTM <- function (nFish, MaxAge, Growth_params, CVSizeAtAge, midpt, nLenCl, MainLabel,
+VisualiseGrowthApplyingLTM <- function (nFish, TimeStep, MaxAge, Growth_params, CVSizeAtAge, midpt, nLenCl, MainLabel,
                                         xaxis_lab, yaxis_lab, xmax, xint, ymax, yint) {
 
   # a bit of code to check growth transition matrix is likely to
   # give sensible results - not part of catch curve model
 
   # note, this doesn't account for mortality effects
-  Ages = 1:MaxAge
+  Ages = seq(TimeStep,MaxAge,TimeStep)
   if (is.na(xaxis_lab)) xaxis_lab = "Age (y)"
   if (is.na(yaxis_lab)) yaxis_lab = "Length (mm)"
   xlims = Get_xaxis_scale(Ages)
@@ -450,18 +451,19 @@ VisualiseGrowthApplyingLTM <- function (nFish, MaxAge, Growth_params, CVSizeAtAg
   vbK = Growth_params[2]
   tzero = Growth_params[3]
   MeanSizeAtAge = Linf * (1 - exp (-vbK * (Ages - tzero))) # e.g. as calculated from a von Bertalanffy growth curve
-  MeanEndingLength = midpt + (Linf - midpt) * (1 - exp(-vbK)) # e.g. as calculated from a von Bertalanffy growth curve
-  AnnGrowthSizeInc = MeanEndingLength-midpt # amount of annual growth with respect to initial length
+  MeanEndingLength = midpt + (Linf - midpt) * (1 - exp(-vbK*TimeStep)) # e.g. as calculated from a von Bertalanffy growth curve
+  TimestepGrowthSizeInc = MeanEndingLength-midpt # amount of annual growth with respect to initial length
 
-  LTM = CalcLTM_cpp(AnnGrowthSizeInc, CVSizeAtAge, lbnd, midpt, ubnd, nLenCl)
+  LTM = CalcLTM_cpp(TimestepGrowthSizeInc, CVSizeAtAge, lbnd, midpt, ubnd, nLenCl)
 
-  FishLenAtAge = data.frame(matrix(nrow=nFish, ncol=MaxAge))
+  FishLenAtAge = data.frame(matrix(nrow=nFish, ncol=length(Ages)))
   colnames(FishLenAtAge) = Ages
   FishLenAtAge = as.matrix(FishLenAtAge)
 
+  k = 0
   for (j in 1:nFish) { # fish
-    for (k in 1:MaxAge) { # age
-
+    for (kk in Ages) { # age
+     k=k+1
       if (k ==1) {
         rndlen = rnorm(1,MeanSizeAtAge[1],MeanSizeAtAge[1]*CVSizeAtAge)
         FishLenAtAge[j,k] = rndlen
@@ -533,7 +535,7 @@ VisualiseGrowthApplyingLTM <- function (nFish, MaxAge, Growth_params, CVSizeAtAg
 #' growth curve (MeanSizeAtAge), midpoint of each length class (midpt), mean length after 1 year from
 #' growth curve, given initial length (MeanEndingLength), mean change in length after 1 year,
 #' from initial length - note, assuming normal a distribution allows for possibility of negative growth
-#' if above asymptotic length (AnnGrowthSizeInc), length distribution of 1+ year old recruits (RecLenDist),
+#' if above asymptotic length (TimestepGrowthSizeInc), length distribution of 1+ year old recruits (RecLenDist),
 #' expected catches, at length (ExpCatchAtLen), proportion of catch in each length classes for sexes combined
 #' and separate (ExpCatchPropInLenClass, ExpCatchPropInLenClass_Fem, ExpCatchPropInLenClass_Mal),
 #' observed catch in each length class for sexes combined (ObsCatchFreqAtLen), CV for modelled lengthsat age, around mean
@@ -689,7 +691,7 @@ GetLengthBasedCatchCurveResults <- function (params, GrowthCurveType, GrowthPara
                  MeanSizeAtAge=res$MeanSizeAtAge,
                  midpt=res$midpt,
                  MeanEndingLength=res$MeanEndingLength,
-                 AnnGrowthSizeInc=res$AnnGrowthSizeInc,
+                 TimestepGrowthSizeInc=res$TimestepGrowthSizeInc,
                  RecLenDist=res$RecLenDist,
                  ExpCatchPropInLenClass=res$ExpCatchPropInLenClass,
                  ExpCatchPropInLenClass_Fem=res$ExpCatchPropInLenClass_Fem,
@@ -979,7 +981,7 @@ GetGrowthAndSelectivityParams <- function(params, GrowthParams, RefnceAges, Catc
 #' @param RefnceAges Schnute reference ages (used for GrowthModelType 4)
 #'
 #' @return mean size at age from growth curve (MeanSizeAtAge), estimated length after one year for each length class
-#' mid point, given growth curve (MeanEndingLength) and associated change in length after one year of growth (AnnGrowthSizeInc)
+#' mid point, given growth curve (MeanEndingLength) and associated change in length after one year of growth (TimestepGrowthSizeInc)
 GetInputsForLengthTransitionMatrices <- function(MaxAge, nLenCl, midpt, GrowthModelType, Linf, vbK,
                                          t1, t2, y1, y2, a, b, GrowthParams, RefnceAges) {
 
@@ -988,19 +990,19 @@ GetInputsForLengthTransitionMatrices <- function(MaxAge, nLenCl, midpt, GrowthMo
   if (GrowthModelType == 1) { # von Bertalanffy, single sex
     MeanSizeAtAge = Linf * (1 - exp (-vbK * (1:MaxAge)))
     MeanEndingLength = midpt + (Linf - midpt) * (1 - exp(-vbK))
-    AnnGrowthSizeInc = MeanEndingLength-midpt # amount of annual growth with respect to initial length
+    TimestepGrowthSizeInc = MeanEndingLength-midpt # amount of annual growth with respect to initial length
   }
   if (GrowthModelType == 2) { # von Bertalanffy, separate sex
     MeanSizeAtAge <- data.frame(matrix(nrow = 2, ncol = MaxAge))
     colnames(MeanSizeAtAge) <- 1:MaxAge
     MeanEndingLength <- data.frame(matrix(nrow = 2, ncol = nLenCl))
     colnames(MeanEndingLength) <- midpt
-    AnnGrowthSizeInc = MeanEndingLength
+    TimestepGrowthSizeInc = MeanEndingLength
     RecLenDist = MeanEndingLength
     for (i in 1:2) {
       MeanSizeAtAge[i,] = Linf[i] * (1 - exp (-vbK[i] * (1:MaxAge)))
       MeanEndingLength[i,] = midpt + (Linf[i] - midpt) * (1 - exp(-vbK[i]))
-      AnnGrowthSizeInc[i,] = MeanEndingLength[i,] - midpt # amount of annual growth with respect to initial length
+      TimestepGrowthSizeInc[i,] = MeanEndingLength[i,] - midpt # amount of annual growth with respect to initial length
     }
   }
   if (GrowthModelType == 3) { # Schnute, single sex
@@ -1010,15 +1012,15 @@ GetInputsForLengthTransitionMatrices <- function(MaxAge, nLenCl, midpt, GrowthMo
     }
     RefnceAgesForSex = c(t1, t2)
     GrowthParamsForSex = GrowthParams
-    MeanEndingLength = CalcLengthAfterOneYearOfGrowth(GrowthCurveType=2, GrowthParamsForSex, RefnceAgesForSex, midpt)
-    AnnGrowthSizeInc = MeanEndingLength-midpt # amount of annual growth with respect to initial length
+    MeanEndingLength = CalcLengthAfterGrowthForTimetep(GrowthCurveType=2, TimeStep, GrowthParamsForSex, RefnceAgesForSex, midpt)
+    TimestepGrowthSizeInc = MeanEndingLength-midpt # amount of annual growth with respect to initial length
   }
   if (GrowthModelType == 4) { # Schnute, separate sex
     MeanSizeAtAge <- data.frame(matrix(nrow = 2, ncol = MaxAge))
     colnames(MeanSizeAtAge) <- 1:MaxAge
     MeanEndingLength <- data.frame(matrix(nrow = 2, ncol = nLenCl))
     colnames(MeanEndingLength) <- midpt
-    AnnGrowthSizeInc = MeanEndingLength
+    TimestepGrowthSizeInc = MeanEndingLength
     RecLenDist = MeanEndingLength
     for (i in 1:2) {
       t1=RefnceAges[i,1]
@@ -1032,14 +1034,14 @@ GetInputsForLengthTransitionMatrices <- function(MaxAge, nLenCl, midpt, GrowthMo
       }
       GrowthParamsForSex = c(y1, y2, a, b)
       RefnceAgesForSex = c(t1, t2)
-      MeanEndingLength[i,] = CalcLengthAfterOneYearOfGrowth(GrowthCurveType=2, GrowthParamsForSex, RefnceAgesForSex, midpt)
-      AnnGrowthSizeInc[i,] = MeanEndingLength[i,] - midpt
+      MeanEndingLength[i,] = CalcLengthAfterGrowthForTimetep(GrowthCurveType=2, TimeStep, GrowthParamsForSex, RefnceAgesForSex, midpt)
+      TimestepGrowthSizeInc[i,] = MeanEndingLength[i,] - midpt
     }
   }
 
   result = list(MeanSizeAtAge = MeanSizeAtAge,
                 MeanEndingLength = MeanEndingLength,
-                AnnGrowthSizeInc = AnnGrowthSizeInc)
+                TimestepGrowthSizeInc = TimestepGrowthSizeInc)
 
   return(result)
 }
@@ -1069,7 +1071,7 @@ GetInputsForLengthTransitionMatrices <- function(MaxAge, nLenCl, midpt, GrowthMo
 #'
 #' @return selectivity at length (SelAtLength), mean size at age from growth curve (MeanSizeAtAge),
 #' mid points of length classes (midpt), mean length after 1 year of growth given initial length of midpt
-#' (MeanEndingLength), associated change in length after 1 year of growth (AnnGrowthSizeInc), length distribution
+#' (MeanEndingLength), associated change in length after 1 year of growth (TimestepGrowthSizeInc), length distribution
 #' of 1+ year old recruits (RecLenDist), catch proportions at each length for females, males and sexes combined
 #' (ExpCatchPropInLenClass, ExpCatchPropInLenClass_Fem, ExpCatchPropInLenClass_Mal), expected catches at age
 #' for females, males and sexes combined (ExpCatchAtAge, ExpCatchAtAge_Fem, ExpCatchAtAge_Mal), catches proportions
@@ -1140,7 +1142,7 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, GrowthCurveType, GrowthPa
   # get key inputs for length transition matrices
   Res = GetInputsForLengthTransitionMatrices(MaxAge, nLenCl, midpt, GrowthModelType, Linf, vbK, t1, t2, y1, y2, a, b, GrowthParams, RefnceAges)
   MeanSizeAtAge = Res$MeanSizeAtAge
-  AnnGrowthSizeInc = Res$AnnGrowthSizeInc
+  TimestepGrowthSizeInc = Res$TimestepGrowthSizeInc
   MeanEndingLength = Res$MeanEndingLength
 
   # get size distribution for juvenile recruits
@@ -1148,7 +1150,7 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, GrowthCurveType, GrowthPa
   RecLenDist = CalcSizeDistOfRecruits(MeanSizeAtAge, CV_BothSexes, lbnd, ubnd, midpt, nLenCl) # length distribution of 1+ recruits
 
   if (GrowthModelType ==  1 | GrowthModelType == 3) { # single sex
-    LTM = CalcLTM_cpp(AnnGrowthSizeInc, CVSizeAtAge, lbnd, midpt, ubnd, nLenCl) # length-transition matrix
+    LTM = CalcLTM_cpp(TimestepGrowthSizeInc, CVSizeAtAge, lbnd, midpt, ubnd, nLenCl) # length-transition matrix
     InitRecNumber = 1.0
     CatchCurveResults = CalcCatches_AgeAndLengthBasedCatchCurves_cpp(params, NatMort, RecLenDist, InitRecNumber, MaxAge, nLenCl, midpt, RetAtLength, SelAtLength, DiscMort, LTM)
 
@@ -1201,15 +1203,15 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, GrowthCurveType, GrowthPa
 
   if (GrowthModelType ==  2 | GrowthModelType == 4) { # separate sex
 
-    AnnGrowthSizeInc_Fem = as.vector(unlist(AnnGrowthSizeInc[1,]))
+    TimestepGrowthSizeInc_Fem = as.vector(unlist(TimestepGrowthSizeInc[1,]))
     if (CatchCurveType == 1) CVSizeAtAge_Fem = CVSizeAtAge[1]
     if (CatchCurveType == 2) CVSizeAtAge_Fem = CVSizeAtAge
-    LTM_Fem = CalcLTM_cpp(AnnGrowthSizeInc_Fem, CVSizeAtAge_Fem, lbnd, midpt, ubnd, nLenCl) # length-transition matrix - females
+    LTM_Fem = CalcLTM_cpp(TimestepGrowthSizeInc_Fem, CVSizeAtAge_Fem, lbnd, midpt, ubnd, nLenCl) # length-transition matrix - females
 
-    AnnGrowthSizeInc_Mal = as.vector(unlist(AnnGrowthSizeInc[2,]))
+    TimestepGrowthSizeInc_Mal = as.vector(unlist(TimestepGrowthSizeInc[2,]))
     if (CatchCurveType == 1) CVSizeAtAge_Mal = CVSizeAtAge[2]
     if (CatchCurveType == 2) CVSizeAtAge_Mal = CVSizeAtAge
-    LTM_Mal = CalcLTM_cpp(AnnGrowthSizeInc_Mal, CVSizeAtAge_Mal, lbnd, midpt, ubnd, nLenCl) # length-transition matrix - males
+    LTM_Mal = CalcLTM_cpp(TimestepGrowthSizeInc_Mal, CVSizeAtAge_Mal, lbnd, midpt, ubnd, nLenCl) # length-transition matrix - males
 
     RecLenDist_Fem = as.vector(unlist(RecLenDist[1,]))
     InitRecNumber = 0.5
@@ -1276,7 +1278,7 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, GrowthCurveType, GrowthPa
                  MeanSizeAtAge = MeanSizeAtAge,
                  midpt = midpt,
                  MeanEndingLength = MeanEndingLength,
-                 AnnGrowthSizeInc = AnnGrowthSizeInc,
+                 TimestepGrowthSizeInc = TimestepGrowthSizeInc,
                  RecLenDist = RecLenDist,
                  ExpCatchPropInLenClass = ExpCatchPropInLenClass,
                  ExpCatchPropInLenClass_Fem = ExpCatchPropInLenClass_Fem,
@@ -1334,7 +1336,7 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, GrowthCurveType, GrowthPa
 #' growth curve (MeanSizeAtAge), midpoint of each length class (midpt), mean length after 1 year from
 #' growth curve, given initial length (MeanEndingLength), mean change in length after 1 year,
 #' from initial length - note, assuming normal a distribution allows for possibility of negative growth
-#' if above asyptotic length (AnnGrowthSizeInc), length distribution of 1+ year old recruits (RecLenDist),
+#' if above asyptotic length (TimestepGrowthSizeInc), length distribution of 1+ year old recruits (RecLenDist),
 #' expected relative catches at length and age (Catch), expected catches at length (ExpCatchAtLen),
 #' catch proportions at length (ExpCatchPropInLenClass), expected catches at age (ExpCatchAtAge),
 #' catch proportions at age of females, males and sexes combined (ExpCatchPropAtAge, ExpCatchPropAtAge_Fem,
@@ -1523,7 +1525,7 @@ GetAgeAndLengthBasedCatchCurveResults <- function (params, MLL, SelectivityType,
                  MeanSizeAtAge=res$MeanSizeAtAge,
                  midpt=res$midpt,
                  MeanEndingLength=res$MeanEndingLength,
-                 AnnGrowthSizeInc=res$AnnGrowthSizeInc,
+                 TimestepGrowthSizeInc=res$TimestepGrowthSizeInc,
                  RecLenDist=res$RecLenDist,
                  RetCatch=res$RetCatch,
                  ExpCatchAtLen=res$ExpCatchAtLen,
@@ -1679,11 +1681,11 @@ SimLenAndAgeFreqData <- function(SampleSize, MaxAge, NatMort, FishMort, MaxLen, 
     colnames(MeanSizeAtAge) <- 1:MaxAge
     MeanEndingLength <- data.frame(matrix(nrow = 2, ncol = nLenCl))
     colnames(MeanEndingLength) <- midpt
-    AnnGrowthSizeInc = MeanEndingLength
+    TimestepGrowthSizeInc = MeanEndingLength
     for (i in 1:2) {
       MeanSizeAtAge[i,] = Linf[i] * (1 - exp (-vbK[i] * (1:MaxAge))) # e.g. as calculated from a von Bertalanffy growth curve
       MeanEndingLength[i,] = midpt + (Linf[i] - midpt) * (1 - exp(-vbK[i])) # e.g. as calculated from a von Bertalanffy growth curve
-      AnnGrowthSizeInc[i,] = MeanEndingLength[i,] - midpt # amount of annual growth with respect to initial length
+      TimestepGrowthSizeInc[i,] = MeanEndingLength[i,] - midpt # amount of annual growth with respect to initial length
     }
   } # GrowthCurveType = 1
 
@@ -1712,15 +1714,15 @@ SimLenAndAgeFreqData <- function(SampleSize, MaxAge, NatMort, FishMort, MaxLen, 
     colnames(MeanSizeAtAge) <- 1:MaxAge
     MeanEndingLength <- data.frame(matrix(nrow = 2, ncol = nLenCl))
     colnames(MeanEndingLength) <- midpt
-    AnnGrowthSizeInc = MeanEndingLength
+    TimestepGrowthSizeInc = MeanEndingLength
     for (i in 1:2) {
       for (t in 1:MaxAge) {
         MeanSizeAtAge[i,t] =  SchnuteGrowthfunction(t, t1[i], t2[i], y1[i], y2[i], a[i], b[i])
       }
       GrowthParamsForSex = c(y1[i], y2[i], a[i], b[i])
       RefnceAgesForSex = c(t1[i], t2[i])
-      MeanEndingLength[i,] = CalcLengthAfterOneYearOfGrowth(GrowthCurveType=2, GrowthParamsForSex, RefnceAgesForSex, midpt)
-      AnnGrowthSizeInc[i,] = MeanEndingLength[i,] - midpt
+      MeanEndingLength[i,] = CalcLengthAfterGrowthForTimetep(GrowthCurveType=2, TimeStep, GrowthParamsForSex, RefnceAgesForSex, midpt)
+      TimestepGrowthSizeInc[i,] = MeanEndingLength[i,] - midpt
     }
   } # GrowthCurveType = 2
 
@@ -1746,13 +1748,13 @@ SimLenAndAgeFreqData <- function(SampleSize, MaxAge, NatMort, FishMort, MaxLen, 
   # size distribution of 1+ recruits
   RecLenDist = CalcSizeDistOfRecruits(MeanSizeAtAge, CVSizeAtAge, lbnd, ubnd, midpt, nLenCl)
 
-  AnnGrowthSizeInc_Fem = as.vector(unlist(AnnGrowthSizeInc[1,]))
+  TimestepGrowthSizeInc_Fem = as.vector(unlist(TimestepGrowthSizeInc[1,]))
   CVSizeAtAge_Fem = CVSizeAtAge[1]
-  LTM_Fem = CalcLTM_cpp(AnnGrowthSizeInc_Fem, CVSizeAtAge_Fem, lbnd, midpt, ubnd, nLenCl) # length-transition matrix - females
+  LTM_Fem = CalcLTM_cpp(TimestepGrowthSizeInc_Fem, CVSizeAtAge_Fem, lbnd, midpt, ubnd, nLenCl) # length-transition matrix - females
 
-  AnnGrowthSizeInc_Mal = as.vector(unlist(AnnGrowthSizeInc[2,]))
+  TimestepGrowthSizeInc_Mal = as.vector(unlist(TimestepGrowthSizeInc[2,]))
   CVSizeAtAge_Mal = CVSizeAtAge[2]
-  LTM_Mal = CalcLTM_cpp(AnnGrowthSizeInc_Mal, CVSizeAtAge_Mal, lbnd, midpt, ubnd, nLenCl) # length-transition matrix - males
+  LTM_Mal = CalcLTM_cpp(TimestepGrowthSizeInc_Mal, CVSizeAtAge_Mal, lbnd, midpt, ubnd, nLenCl) # length-transition matrix - males
 
   RecLenDist_Fem = as.vector(unlist(RecLenDist[1,]))
   InitRecNumber = 0.5
@@ -2320,16 +2322,21 @@ PlotAgeLengthCatchCurve_MargLength <- function(params, MLL, SelectivityType, Obs
          xaxt = "n", yaxt = "n", xlab=list(xaxis_lab,cex=1.2),ylab=list(yaxis_lab,cex=1.2), frame=F, xlim=c(0,xmax), ylim=c(0,ymax))
     points(midpt, ObsRelCatchAtLen, col="black", pch=16, cex=0.8)
     if (PlotCLs == TRUE) {
-      x = c(Res$midpt,rev(Res$midpt)) # using shading for 95% CLs
-      y = c(EstProp.sim_low, rev(EstProp.sim_up))
+      # x = c(Res$midpt,rev(Res$midpt)) # using shading for 95% CLs
+      # y = c(EstProp.sim_low, rev(EstProp.sim_up))
+      # polygon(x,y,col="pink",border=NA)
+      sm1 = spline(Res$midpt, EstProp.sim_low, n=100, method="natural")
+      sm2 = spline(Res$midpt, EstProp.sim_up, n=100, method="natural")
+      x = c(sm1$x, rev(sm2$x)) # using shading for 95% CLs
+      y = c(sm1$y, rev(sm2$y))
       polygon(x,y,col="pink",border=NA)
     }
-    points(midpt, ObsRelCatchAtLen, col="black", pch=16, cex=0.8)
-    points(midpt, EstProp.sim, col="red", pch=1, cex=0.8)
-    axis(1, at = seq(0, xmax, xint), line = 0.2, labels = F)
-    axis(2, at = seq(0, ymax, yint), line = 0.2, labels = F)
-    axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
-    axis(2, at = seq(0, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
+      points(midpt, ObsRelCatchAtLen, col="black", pch=16, cex=0.8)
+      points(midpt, EstProp.sim, col="red", pch=1, cex=0.8)
+      axis(1, at = seq(0, xmax, xint), line = 0.2, labels = F)
+      axis(2, at = seq(0, ymax, yint), line = 0.2, labels = F)
+      axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
+      axis(2, at = seq(0, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
   }
 
   # separate sexes
@@ -2339,8 +2346,13 @@ PlotAgeLengthCatchCurve_MargLength <- function(params, MLL, SelectivityType, Obs
          xaxt = "n", yaxt = "n", xlab=list(xaxis_lab,cex=1.2),ylab=list(yaxis_lab1,cex=1.2), frame=F, xlim=c(0,xmax), ylim=c(0,ymax))
     points(midpt, ObsRelCatchAtLen[1,], col="black", pch=16, cex=0.8)
     if (PlotCLs == TRUE) {
-      x = c(Res$midpt,rev(Res$midpt)) # using shading for 95% CLs
-      y = c(EstPropF.sim_low, rev(EstPropF.sim_up))
+      # x = c(Res$midpt,rev(Res$midpt)) # using shading for 95% CLs
+      # y = c(EstPropF.sim_low, rev(EstPropF.sim_up))
+      # polygon(x,y,col="pink",border=NA)
+      sm1 = spline(Res$midpt, EstPropF.sim_low, n=100, method="natural")
+      sm2 = spline(Res$midpt, EstPropF.sim_up, n=100, method="natural")
+      x = c(sm1$x, rev(sm2$x)) # using shading for 95% CLs
+      y = c(sm1$y, rev(sm2$y))
       polygon(x,y,col="pink",border=NA)
     }
     points(midpt, ObsRelCatchAtLen[1,], col="black", pch=16, cex=0.8)
@@ -2355,12 +2367,17 @@ PlotAgeLengthCatchCurve_MargLength <- function(params, MLL, SelectivityType, Obs
          xaxt = "n", yaxt = "n", xlab=list(xaxis_lab,cex=1.2),ylab=list(yaxis_lab2,cex=1.2), frame=F, xlim=c(0,xmax), ylim=c(0,ymax))
     points(midpt, ObsRelCatchAtLen[2,], col="black", pch=16, cex=0.8)
     if (PlotCLs == TRUE) {
-      x = c(Res$midpt,rev(Res$midpt)) # using shading for 95% CLs
-      y = c(EstPropM.sim_low, rev(EstPropM.sim_up))
-      polygon(x,y,col="pink",border=NA)
+      # x = c(Res$midpt,rev(Res$midpt)) # using shading for 95% CLs
+      # y = c(EstPropM.sim_low, rev(EstPropM.sim_up))
+      # polygon(x,y,col="light blue",border=NA)
+      sm1 = spline(Res$midpt, EstPropM.sim_low, n=100, method="natural")
+      sm2 = spline(Res$midpt, EstPropM.sim_up, n=100, method="natural")
+      x = c(sm1$x, rev(sm2$x)) # using shading for 95% CLs
+      y = c(sm1$y, rev(sm2$y))
+      polygon(x,y,col="light blue",border=NA)
     }
     points(midpt, ObsRelCatchAtLen[2,], col="black", pch=16, cex=0.8)
-    points(midpt, EstPropM.sim, col="red", pch=1, cex=0.8)
+    points(midpt, EstPropM.sim, col="blue", pch=1, cex=0.8)
     axis(1, at = seq(0, xmax, xint), line = 0.2, labels = F)
     axis(2, at = seq(0, ymax, yint), line = 0.2, labels = F)
     axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
@@ -5005,7 +5022,7 @@ CalcWeightAtLengthForPerRecruitAnalysis <- function(lenwt_a, ln_lenwt_a, lenwt_b
 #'
 #' This function calculates inputs required to calculate length transition matrices, for length-based per
 #' recruit analysis, including the mean size to which a fish grows, for a  model timestep, given its initial length and specified
-#' growth curve (MeanEndingLength), and the amount by which it grows (AnnGrowthSizeInc)
+#' growth curve (MeanEndingLength), and the amount by which it grows (TimestepGrowthSizeInc)
 #'
 #' @keywords internal
 #'
@@ -5016,19 +5033,19 @@ CalcWeightAtLengthForPerRecruitAnalysis <- function(lenwt_a, ln_lenwt_a, lenwt_b
 #' @param midpt length class mid-points
 #'
 #' @return MeanEndingLength
-#' @return AnnGrowthSizeInc
-GetLTMInputsForPerRecruitAnalysis <- function(GrowthCurveType, MaxModelAge, GrowthParams, RefnceAges, midpt) {
+#' @return TimestepGrowthSizeInc
+GetLTMInputsForPerRecruitAnalysis <- function(GrowthCurveType, TimeStep, MaxModelAge, GrowthParams, RefnceAges, midpt) {
 
   MeanEndingLength <- data.frame(matrix(nrow = 2, ncol = nLenCl))
   colnames(MeanEndingLength) <- midpt
   MeanEndingLength <- as.matrix(MeanEndingLength)
-  AnnGrowthSizeInc <- MeanEndingLength
+  TimestepGrowthSizeInc <- MeanEndingLength
 
   # get key inputs for length transition matrices
   if (GrowthCurveType == 1) { # von Bertalanffy
     for (i in 1:2) {
-      MeanEndingLength[i,] = midpt + (GrowthParams[i,1] - midpt) * (1 - exp(-GrowthParams[i,2]))
-      AnnGrowthSizeInc[i,] = MeanEndingLength[i,] - midpt # amount of annual growth with respect to initial length
+      MeanEndingLength[i,] = midpt + (GrowthParams[i,1] - midpt) * (1 - exp(-GrowthParams[i,2]*TimeStep))
+      TimestepGrowthSizeInc[i,] = MeanEndingLength[i,] - midpt # amount of annual growth with respect to initial length
     }
   }
   if (GrowthCurveType == 2) { # Schnute
@@ -5045,13 +5062,13 @@ GetLTMInputsForPerRecruitAnalysis <- function(GrowthCurveType, MaxModelAge, Grow
       }
       GrowthParamsForSex = c(y1, y2, a, b)
       RefnceAgesForSex = c(t1, t2)
-      MeanEndingLength[i,] = CalcLengthAfterOneYearOfGrowth(GrowthCurveType=2, GrowthParamsForSex, RefnceAgesForSex, midpt)
-      AnnGrowthSizeInc[i,] = MeanEndingLength[i,] - midpt
+      MeanEndingLength[i,] = CalcLengthAfterGrowthForTimetep(GrowthCurveType=2, TimeStep, GrowthParamsForSex, RefnceAgesForSex, midpt)
+      TimestepGrowthSizeInc[i,] = MeanEndingLength[i,] - midpt
     }
   }
 
   results = list(MeanEndingLength = MeanEndingLength,
-                 AnnGrowthSizeInc = AnnGrowthSizeInc)
+                 TimestepGrowthSizeInc = TimestepGrowthSizeInc)
 
   return(results)
 
@@ -5253,18 +5270,18 @@ CalcYPRAndSPRForFMort_LB<- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
   RecLenDist = CalcSizeDistOfRecruits(MeanSizeAtAge, CVSizeAtAge, lbnd, ubnd, midpt, nLenCl)
 
   # get required inputs to calculate length transition matrices
-  results = GetLTMInputsForPerRecruitAnalysis(GrowthCurveType, MaxModelAge, GrowthParams, RefnceAges, midpt)
+  results = GetLTMInputsForPerRecruitAnalysis(GrowthCurveType, TimeStep, MaxModelAge, GrowthParams, RefnceAges, midpt)
   MeanEndingLength = results$MeanEndingLength
-  AnnGrowthSizeInc = results$AnnGrowthSizeInc
+  TimestepGrowthSizeInc = results$TimestepGrowthSizeInc
 
   # calculate female and male length transition matrices
-  AnnGrowthSizeInc_Fem = AnnGrowthSizeInc[1,]
+  TimestepGrowthSizeInc_Fem = TimestepGrowthSizeInc[1,]
   CV_Fem = CVSizeAtAge[1]
-  LTM_Fem = CalcLTM_cpp(AnnGrowthSizeInc_Fem, CV_Fem, lbnd, midpt, ubnd, nLenCl)
+  LTM_Fem = CalcLTM_cpp(TimestepGrowthSizeInc_Fem, CV_Fem, lbnd, midpt, ubnd, nLenCl)
   CV_Mal = CVSizeAtAge[2]
-  AnnGrowthSizeInc_Mal = AnnGrowthSizeInc[2,]
+  TimestepGrowthSizeInc_Mal = TimestepGrowthSizeInc[2,]
 
-  LTM_Mal = CalcLTM_cpp(AnnGrowthSizeInc_Mal, CV_Mal, lbnd, midpt, ubnd, nLenCl)
+  LTM_Mal = CalcLTM_cpp(TimestepGrowthSizeInc_Mal, CV_Mal, lbnd, midpt, ubnd, nLenCl)
 
   # update survival and growth
   PopnRes = UpdateGrowthAndSurvival_cpp(ReprodPattern, TimeStep, nTimeSteps, nLenCl, InitRatioFem, RecLenDist, NatMort, FemZAtLen,
@@ -5368,6 +5385,10 @@ CalcYPRAndSPRForFMort_LB<- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
                  Unfish_MalNPerRec=Unfish_MalNPerRec,
                  Fish_FemNPerRec=Fish_FemNPerRec,
                  Fish_MalNPerRec=Fish_MalNPerRec,
+                 Unfish_FemNPerRecAtAge=Unfish_FemNPerRecAtAge,
+                 Unfish_MalNPerRecAtAge=Unfish_MalNPerRecAtAge,
+                 Fish_FemNPerRecAtAge=Fish_FemNPerRecAtAge,
+                 Fish_MalNPerRecAtAge=Fish_MalNPerRecAtAge,
                  Unfish_FemBiomPerRecAtAge=Unfish_FemBiomPerRecAtAge,
                  Unfish_MalBiomPerRecAtAge=Unfish_MalBiomPerRecAtAge,
                  Fish_FemBiomPerRecAtAge=Fish_FemBiomPerRecAtAge,
@@ -6254,26 +6275,30 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
          legend=c("Mal. F","Mal. DiscF","Mal.LandF","Mal. M"),bty='n', cex=1.0,lwd=1.75)
 
   # plot fished and unfished female survival in terms of numbers given specified current fully-selected fishing mortality
-  plot(Res$Ages, Res$UnfishFemSurvAtAge,"l",frame.plot=F,ylim=c(0,InitRatioFem),xlim=c(0,MaxModelAge),col="red",yaxt="n",xaxt="n",
+  ylims = Get_yaxis_scale(Res$UnfishFemSurvAtAge)
+  ymax = ylims$ymax; yint = ylims$yint
+  plot(Res$Ages, Res$UnfishFemSurvAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,MaxModelAge),col="red",yaxt="n",xaxt="n",
        ylab="",xlab="")
   lines(Res$Ages, Res$FishedFemSurvAtAge,col="red",lty="dotted")
   axis(1,at=seq(0,MaxModelAge,1), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(2,at=seq(0,InitRatioFem,0.1), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+  axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
   axis(1,at=seq(0,MaxModelAge,1), labels=seq(0,MaxModelAge,1),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
-  axis(2,at=seq(0,InitRatioFem,0.1), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
+  axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
   mtext(expression(paste(plain("Rel. survival"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
   mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
   legend('topright', col="red",lty=c("solid","dotted"),
          legend=c("Fem. unfish","Fem. fish"),bty='n', cex=1.0,lwd=1.75)
 
   # plot fished and unfished male survival in terms of numbers given specified current fully-selected fishing mortality
-  plot(Res$Ages, Res$UnfishMalSurvAtAge,"l",frame.plot=F,ylim=c(0,InitRatioFem),xlim=c(0,MaxModelAge),col="blue",yaxt="n",xaxt="n",
+  ylims = Get_yaxis_scale(Res$UnfishMalSurvAtAge)
+  ymax = ylims$ymax; yint = ylims$yint
+  plot(Res$Ages, Res$UnfishMalSurvAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,MaxModelAge),col="blue",yaxt="n",xaxt="n",
        ylab="",xlab="")
   lines(Res$Ages, Res$FishedMalSurvAtAge,col="blue",lty="dotted")
   axis(1,at=seq(0,MaxModelAge,1), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(2,at=seq(0,InitRatioFem,0.1), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+  axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
   axis(1,at=seq(0,MaxModelAge,1), labels=seq(0,MaxModelAge,1),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
-  axis(2,at=seq(0,InitRatioFem,0.1), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
+  axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
   mtext(expression(paste(plain("Rel. survival"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
   mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
   legend('topright', col="blue",lty=c("solid","dotted"),
@@ -6670,26 +6695,38 @@ PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
          legend=c("Mal. F","Mal. DiscF","Mal.LandF","Mal. M"),bty='n', cex=1.0,lwd=1.75)
 
   # plot fished and unfished female survival in terms of numbers given specified current fully-selected fishing mortality
-  plot(midpt, Res$Unfish_FemNPerRec,"l",frame.plot=F,ylim=c(0,InitRatioFem),xlim=c(0,MaxLen),col="red",yaxt="n",xaxt="n",
+  ylims = Get_yaxis_scale(Res$Unfish_FemNPerRec)
+  ymax = ylims$ymax; yint = ylims$yint
+  if (ymax <= 0) {
+    ymax = round(max(1.2*Res$Unfish_FemNPerRec),1)
+    yint = ymax
+  }
+  plot(midpt, Res$Unfish_FemNPerRec,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,MaxLen),col="red",yaxt="n",xaxt="n",
        ylab="",xlab="")
   lines(midpt, Res$Fish_FemNPerRec,col="red",lty="dotted")
   axis(1,at=seq(0,MaxLen,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(2,at=seq(0,InitRatioFem,0.1), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+  axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
   axis(1,at=seq(0,MaxLen,xint), labels=seq(0,MaxLen,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
-  axis(2,at=seq(0,InitRatioFem,0.1), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
+  axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
   mtext(expression(paste(plain("Rel. survival"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
   mtext(expression(paste(plain("Length (mm"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
   legend('topright', col="red",lty=c("solid","dotted"),
          legend=c("Fem. unfish","Fem. fish"),bty='n', cex=1.0,lwd=1.75)
 
   # plot fished and unfished male survival in terms of numbers given specified current fully-selected fishing mortality
-  plot(midpt, Res$Unfish_MalNPerRec,"l",frame.plot=F,ylim=c(0,InitRatioFem),xlim=c(0,MaxLen),col="blue",yaxt="n",xaxt="n",
+  ylims = Get_yaxis_scale(Res$Unfish_MalNPerRec)
+  ymax = ylims$ymax; yint = ylims$yint
+  if (ymax <= 0) {
+    ymax = round(max(1.2*Res$Unfish_FemNPerRec),1)
+    yint = ymax
+  }
+  plot(midpt, Res$Unfish_MalNPerRec,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,MaxLen),col="blue",yaxt="n",xaxt="n",
        ylab="",xlab="")
   lines(midpt, Res$Fish_MalNPerRec,col="blue",lty="dotted")
   axis(1,at=seq(0,MaxLen,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(2,at=seq(0,InitRatioFem,0.1), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+  axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
   axis(1,at=seq(0,MaxLen,xint), labels=seq(0,MaxLen,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
-  axis(2,at=seq(0,InitRatioFem,0.1), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
+  axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
   mtext(expression(paste(plain("Rel. survival"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
   mtext(expression(paste(plain("Length (mm"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
   legend('topright', col="blue",lty=c("solid","dotted"),
