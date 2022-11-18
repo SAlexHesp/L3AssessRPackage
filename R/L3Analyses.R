@@ -427,6 +427,7 @@ CalcSizeDistOfRecruits <- function(MeanSizeAtAge, CVSizeAtAge, lbnd, ubnd, midpt
 #' Growth_params = c(Linf, vbK, tzero) # currently only set up for von Bertalanffy growth equation
 #' CVSizeAtAge = 0.05
 #' nFish = 100
+#' TimeStep = 1
 #' VisualiseGrowthApplyingLTM(nFish, TimeStep, MaxAge, Growth_params, CVSizeAtAge, midpt, nLenCl, MainLabel=NA,
 #'                            xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA, ymax=NA, yint=NA)
 #' @export
@@ -460,8 +461,8 @@ VisualiseGrowthApplyingLTM <- function (nFish, TimeStep, MaxAge, Growth_params, 
   colnames(FishLenAtAge) = Ages
   FishLenAtAge = as.matrix(FishLenAtAge)
 
-  k = 0
   for (j in 1:nFish) { # fish
+    k = 0
     for (kk in Ages) { # age
      k=k+1
       if (k ==1) {
@@ -3929,21 +3930,6 @@ GetChapmanRobsonMortalityResults <- function(RecAssump, MinAge, MaxAge, ObsAgeFr
 #' @param ln_params model parameters log(c(FMort, SelA50, SelA95)
 #'
 #' @return negative log-likelihood (NLL)
-#'
-#' @examples
-#' set.seed(123)
-#' MinAge = 1
-#' MaxAge = 40
-#' Ages = MinAge:MaxAge
-#' NatMort <- exp(1.46 - (1.01 * (log(MaxAge)))) # i.e. Hoenig's (1983) eqn for fish
-#' FMort = 0.1
-#' ZMort = FMort + NatMort
-#' SelA50 = 6
-#' SelA95 = 8
-#' SampleSize = 500 # required number of fish for age sample
-#' Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
-#' ObsAgeFreq = unlist(as.vector(Res$CatchSample))
-#' Calculate_NLL_LogisticCatchCurve(ln_params)
 Calculate_NLL_LogisticCatchCurve <- function(ln_params) {
 
   FMort = exp(ln_params[1])
@@ -4034,7 +4020,7 @@ Calculate_NLL_LogisticCatchCurve <- function(ln_params) {
 #' Init_FMort = 0.2
 #' Init_SelA50 = 5
 #' Init_SelA95 = 7
-#' ln_params = log(c(FMort, SelA50, SelA95))
+#' ln_params = log(c(Init_FMort, Init_SelA50, Init_SelA95))
 #' res=GetLogisticCatchCurveResults(ln_params, NatMort, Ages, ObsAgeFreq)
 #' @export
 GetLogisticCatchCurveResults <- function (ln_params, NatMort, Ages, ObsAgeFreq)
@@ -4503,7 +4489,8 @@ PlotAgeBasedCatchCurveResults_LogSpace <- function(RecAssump, MinFreq, MinAge, M
 #' survival at age (UnfishFemSurvAtAge, UnfishMalSurvAtAge), unfished female and male biomass mature biomass at age
 #' (UnfishFemBiomAtAge, UnfishMalBiomAtAge), fished female survival at age (FishedFemSurvAtAge, FishedMalSurvAtAge),
 #' fished female and male biomass mature biomass at age (FishedFemBiomAtAge, FishedMalBiomAtAge), female and male
-#' catch at age in numbers (FemCatchAtAgeNum, MalCatchAtAgeNum), female and male catch at age in biomass
+#' retained catch at age in numbers (FemCatchAtAgeNum, MalCatchAtAgeNum), female and male
+#' release catch at age in numbers (FemRelCatchAtAgeNum, MalRelCatchAtAgeNum), female and male retained catch at age in biomass
 #' (FemCatchAtAge, MalCatchAtAge), derived Beverton-Holt stock recruitment parameters and associated equilibrium
 #' recruitment derived from those parameters (BH_SRRa, BH_SRRb, BH_Equil_Rec), equilibrium recruitment for
 #' either Beverton-Holt or Ricker relationship (Equil_Rec), equilibrium catch (Equil_Catch), equilibrium
@@ -4702,8 +4689,8 @@ CalcYPRAndSPRForFMort_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
     FemFAtAge <- FMort * (FemSelLandAtAge + (DiscMort * FemSelDiscAtAge))
     MalFAtAge <- FMort * (MalSelLandAtAge + (DiscMort * MalSelDiscAtAge))
   } else {
-    FemFAtAge <- FMort * FemRetProbAtAge
-    MalFAtAge <- FMort * MalRetProbAtAge
+    FemFAtAge <- FMort * FemSelLandAtAge
+    MalFAtAge <- FMort * MalSelLandAtAge
   }
 
   # calculate female and male total mortality at age
@@ -4790,7 +4777,13 @@ CalcYPRAndSPRForFMort_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
     (1 - exp(-(FemZAtAge * TimeStep)))
   MalCatchAtAgeNum <- FishedMalSurvAtAge * (MalLandFAtAge/MalZAtAge) *
     (1 - exp(-(MalZAtAge * TimeStep)))
-  #sum(FemCatchAtAgeNum)
+
+  # calculate female and male discarded catch at age (in numbers) - Baranov catch equation
+  # (including fish that either survive or die after release)
+  FemRelCatchAtAgeNum <- FishedFemSurvAtAge * ((FMort * FemSelDiscAtAge)/FemZAtAge) *
+    (1 - exp(-(FemZAtAge * TimeStep)))
+  MalRelCatchAtAgeNum <- FishedMalSurvAtAge * ((FMort * MalSelDiscAtAge)/MalZAtAge) *
+    (1 - exp(-(MalZAtAge * TimeStep)))
 
   # calculate female and male catch at age (in biomass)
   FemCatchAtAge <- FemCatchAtAgeNum * FemWtAtAge
@@ -4883,6 +4876,8 @@ CalcYPRAndSPRForFMort_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
                  MalCatchAtAgeNum = MalCatchAtAgeNum,
                  FemCatchAtAge = FemCatchAtAge,
                  MalCatchAtAge = MalCatchAtAge,
+                 FemRelCatchAtAgeNum = FemRelCatchAtAgeNum,
+                 MalRelCatchAtAgeNum = MalRelCatchAtAgeNum,
                  BH_SRRa = BH_SRRa,
                  BH_SRRb = BH_SRRb,
                  BH_Equil_Rec = BH_Equil_Rec,
@@ -5258,8 +5253,8 @@ CalcYPRAndSPRForFMort_LB<- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
     FemFAtLen <- FMort * (FemSelLandAtLen + (DiscMort * FemSelDiscAtLen))
     MalFAtLen <- FMort * (MalSelLandAtLen + (DiscMort * MalSelDiscAtLen))
   } else {
-    FemFAtLen <- FMort * FemRetProbAtLen
-    MalFAtLen <- FMort * MalRetProbAtLen
+    FemFAtLen <- FMort * FemSelLandAtLen
+    MalFAtLen <- FMort * MalSelLandAtLen
   }
 
   # calculate female and male total mortality at age
@@ -5488,8 +5483,9 @@ CalcYPRAndSPRForFMort_LB<- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
 #' unfished female and male mature biomass at age (UnfishFemBiomAtAge, UnfishMalBiomAtAge), fished female and
 #' male spawning potential ratio (Fem_SPR, Mal_SPR), fished female and male per recruit survival at age
 #' (FishedFemSurvAtAge, FishedMalSurvAtAge), fished female and male mature biomass at age (FishedFemBiomAtAge,
-#' FishedMalBiomAtAge), female and male per recruit catches at age in numbers (FemCatchAtAgeNum, MalCatchAtAgeNum)
-#' and biomass (FemCatchAtAge, MalCatchAtAge), and for the extended model, equilibrium recruitment (Equil_Rec),
+#' FishedMalBiomAtAge), female and male per recruit retained catches at age in numbers (FemCatchAtAgeNum, MalCatchAtAgeNum),
+#' female and male per recruit released catches at age in numbers, (FemRelCatchAtAgeNum, MalRelCatchAtAgeNum),
+#' female and male per recruit retained catches at age in biomass (FemCatchAtAge, MalCatchAtAge), and for the extended model, equilibrium recruitment (Equil_Rec),
 #' equilibrium catch (Equil_Catch), equilibrium female and male spawning biomass (Equil_FemSpBiom, Equil_MalSpBiom) and
 #' relative female, male and combined sex spawning biomass (Equilmod_FemRelBiom, Equilmod_MalRelBiom, Equilmod_CombSexRelBiom),
 #' Beverton-Holt stock-recruitment parameters (BH_SRRa, BH_SRRb), equilibrium recruitment from Beverton-Holt relationship (BH_Equil_Rec),
@@ -5684,6 +5680,8 @@ GetPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Est
                  FishedMalBiomAtAge = Res2$FishedMalBiomAtAge,
                  FemCatchAtAgeNum = Res2$FemCatchAtAgeNum,
                  MalCatchAtAgeNum = Res2$MalCatchAtAgeNum,
+                 FemRelCatchAtAgeNum = Res2$FemRelCatchAtAgeNum,
+                 MalRelCatchAtAgeNum = Res2$MalRelCatchAtAgeNum,
                  FemCatchAtAge = Res2$FemCatchAtAge,
                  MalCatchAtAge = Res2$MalCatchAtAge,
                  Equil_Rec = Res2$Equil_Rec,
@@ -6148,9 +6146,9 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
   y1=max(Res$FemLenAtAge)
   y2=max(Res$MalLenAtAge)
   if (y1 > y2) {
-    ylims = Get_yaxis_scale(Res$FemLenAtAge)
+    ylims = Get_yaxis_scale(c(0,Res$FemLenAtAge))
   } else {
-    ylims = Get_yaxis_scale(Res$MalLenAtAge)
+    ylims = Get_yaxis_scale(c(0,Res$MalLenAtAge))
   }
   ymax = ylims$ymax; yint = ylims$yint
   plot(Res$Ages,Res$FemLenAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,MaxModelAge),
