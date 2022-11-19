@@ -9,11 +9,11 @@ CalcCatches_AgeAndLengthBasedCatchCurves_cpp <- function(params, NatMort, RecLen
     .Call(`_L3Assess_CalcCatches_AgeAndLengthBasedCatchCurves_cpp`, params, NatMort, RecLenDist, InitRecNumber, MaxAge, nLenCl, midpt, RetAtLength, SelAtLength, DiscMort, LTM)
 }
 
-CalcLTM_cpp <- function(AnnGrowthSizeInc, CVSizeAtAge, lbnd, midpt, ubnd, nLenCl) {
-    .Call(`_L3Assess_CalcLTM_cpp`, AnnGrowthSizeInc, CVSizeAtAge, lbnd, midpt, ubnd, nLenCl)
+CalcLTM_cpp <- function(TimeStepGrowthSizeInc, CVSizeAtAge, lbnd, midpt, ubnd, nLenCl) {
+    .Call(`_L3Assess_CalcLTM_cpp`, TimeStepGrowthSizeInc, CVSizeAtAge, lbnd, midpt, ubnd, nLenCl)
 }
 
-UpdateGrowthAndSurvival_cpp <- function(ReprodPattern, TimeStep, nTimeSteps, nLenCl, InitRatioFem, RecLenDist, NatMort, FemZAtLen, MalZAtLen, PropFemAtLen, LTM_Fem, LTM_Mal, FemWtAtLen, MalWtAtLen, FemPropMatAtLen, MalPropMatAtLen) {
-    .Call(`_L3Assess_UpdateGrowthAndSurvival_cpp`, ReprodPattern, TimeStep, nTimeSteps, nLenCl, InitRatioFem, RecLenDist, NatMort, FemZAtLen, MalZAtLen, PropFemAtLen, LTM_Fem, LTM_Mal, FemWtAtLen, MalWtAtLen, FemPropMatAtLen, MalPropMatAtLen)
+UpdateGrowthAndSurvival_cpp <- function(ReprodPattern, TimeStep, nTimeSteps, nLenCl, InitRatioFem, RecLenDist, NatMort, FemZAtLen, MalZAtLen, PropFemAtLen, LTM_Fem, LTM_Mal, FemWtAtLen, MalWtAtLen, ReprodScale, FemPropMatAtLen, MalPropMatAtLen) {
+    .Call(`_L3Assess_UpdateGrowthAndSurvival_cpp`, ReprodPattern, TimeStep, nTimeSteps, nLenCl, InitRatioFem, RecLenDist, NatMort, FemZAtLen, MalZAtLen, PropFemAtLen, LTM_Fem, LTM_Mal, FemWtAtLen, MalWtAtLen, ReprodScale, FemPropMatAtLen, MalPropMatAtLen)
 }
 

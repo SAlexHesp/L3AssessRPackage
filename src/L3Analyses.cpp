@@ -148,7 +148,7 @@ List CalcCatches_AgeAndLengthBasedCatchCurves_cpp(NumericVector params, const do
       DiscCatch(t,i) = Fish_NPerRecAtAge(t,i) * (FAtLenDisc(i) / ZAtLen(i)) * (1 - exp(-ZAtLen(i)));
       DiscCatchAtLen(i) = DiscCatchAtLen(i) + DiscCatch(t,i);
 
-      // approximate total catches (caught + released)
+      // total catches (caught + released)
       TotCatch(t,i) = Fish_NPerRecAtAge(t,i) * (FAtLenCapt(i) / ZAtLen(i)) * (1 - exp(-ZAtLen(i)));
       TotCatchAtLen(i) = TotCatchAtLen(i) + TotCatch(t,i);
     } // i
@@ -169,7 +169,7 @@ List CalcCatches_AgeAndLengthBasedCatchCurves_cpp(NumericVector params, const do
 
 
 // [[Rcpp::export]]
-NumericMatrix CalcLTM_cpp(NumericVector AnnGrowthSizeInc, const double CVSizeAtAge,
+NumericMatrix CalcLTM_cpp(NumericVector TimeStepGrowthSizeInc, const double CVSizeAtAge,
                                   NumericVector lbnd, NumericVector midpt, NumericVector ubnd,
                                   const int nLenCl) {
 
@@ -181,7 +181,7 @@ NumericMatrix CalcLTM_cpp(NumericVector AnnGrowthSizeInc, const double CVSizeAtA
   NumericVector StDev(nLenCl);
   NumericVector temp;
 
-    MeanEndingLength = midpt + AnnGrowthSizeInc;
+    MeanEndingLength = midpt + TimeStepGrowthSizeInc;
     StDev = MeanEndingLength * CVSizeAtAge;
 
       for (ii=0; ii<nLenCl; ii++) { // starting length class, upper bound - lower bound
@@ -201,7 +201,7 @@ NumericMatrix CalcLTM_cpp(NumericVector AnnGrowthSizeInc, const double CVSizeAtA
 List UpdateGrowthAndSurvival_cpp(const int ReprodPattern, const double TimeStep, const int nTimeSteps, const int nLenCl,
                                  const double InitRatioFem, NumericMatrix RecLenDist, const double NatMort, NumericVector FemZAtLen,
                                  NumericVector MalZAtLen, NumericVector PropFemAtLen, NumericMatrix LTM_Fem,
-                                 NumericMatrix LTM_Mal, NumericVector FemWtAtLen, NumericVector MalWtAtLen,
+                                 NumericMatrix LTM_Mal, NumericVector FemWtAtLen, NumericVector MalWtAtLen, const double ReprodScale,
                                  NumericVector FemPropMatAtLen, NumericVector MalPropMatAtLen) {
 
   int t;
@@ -237,6 +237,8 @@ List UpdateGrowthAndSurvival_cpp(const int ReprodPattern, const double TimeStep,
   NumericVector tempVec2(nLenCl);
   NumericVector tempVec3(nLenCl);
   NumericVector tempVec4(nLenCl);
+
+  double tempWt;
 
   for (t=0; t<nTimeSteps; t++) {
     if(t==0) {
@@ -322,10 +324,13 @@ List UpdateGrowthAndSurvival_cpp(const int ReprodPattern, const double TimeStep,
   // calculate unfished mature biomass at age
   for (t=0; t<nTimeSteps; t++) {
     for (i=0; i<nLenCl; i++) {
-      Unfish_FemBiomPerRecAtAge(t,i) = Unfish_FemNPerRecAtAge(t,i) * FemWtAtLen(i) * FemPropMatAtLen(i);
-      Fish_FemBiomPerRecAtAge(t,i) = Fish_FemNPerRecAtAge(t,i) * FemWtAtLen(i) * FemPropMatAtLen(i);
-      Unfish_MalBiomPerRecAtAge(t,i) = Unfish_MalNPerRecAtAge(t,i) * MalWtAtLen(i) * MalPropMatAtLen(i);
-      Fish_MalBiomPerRecAtAge(t,i) = Fish_MalNPerRecAtAge(t,i) * MalWtAtLen(i) * MalPropMatAtLen(i);
+      tempWt = FemWtAtLen(i) * 1000;
+      Unfish_FemBiomPerRecAtAge(t,i) = Unfish_FemNPerRecAtAge(t,i) * (pow(tempWt,ReprodScale) / 1000) * FemPropMatAtLen(i);
+      Fish_FemBiomPerRecAtAge(t,i) = Fish_FemNPerRecAtAge(t,i) * (pow(tempWt,ReprodScale) / 1000) * FemPropMatAtLen(i);
+      tempWt = MalWtAtLen(i) * 1000;
+      Unfish_MalBiomPerRecAtAge(t,i) = Unfish_MalNPerRecAtAge(t,i) * (pow(tempWt,ReprodScale) / 1000) * MalPropMatAtLen(i);
+      Fish_MalBiomPerRecAtAge(t,i) = Fish_MalNPerRecAtAge(t,i) * (pow(tempWt,ReprodScale) / 1000) * MalPropMatAtLen(i);
+
       Unfish_FemBiomAtAge(t) = Unfish_FemBiomAtAge(t) + Unfish_FemBiomPerRecAtAge(t,i);
       Fish_FemBiomAtAge(t) = Fish_FemBiomAtAge(t) + Fish_FemBiomPerRecAtAge(t,i);
       Unfish_MalBiomAtAge(t) = Unfish_MalBiomAtAge(t) + Unfish_MalBiomPerRecAtAge(t,i);

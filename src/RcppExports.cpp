@@ -47,24 +47,24 @@ BEGIN_RCPP
 END_RCPP
 }
 // CalcLTM_cpp
-NumericMatrix CalcLTM_cpp(NumericVector AnnGrowthSizeInc, const double CVSizeAtAge, NumericVector lbnd, NumericVector midpt, NumericVector ubnd, const int nLenCl);
-RcppExport SEXP _L3Assess_CalcLTM_cpp(SEXP AnnGrowthSizeIncSEXP, SEXP CVSizeAtAgeSEXP, SEXP lbndSEXP, SEXP midptSEXP, SEXP ubndSEXP, SEXP nLenClSEXP) {
+NumericMatrix CalcLTM_cpp(NumericVector TimeStepGrowthSizeInc, const double CVSizeAtAge, NumericVector lbnd, NumericVector midpt, NumericVector ubnd, const int nLenCl);
+RcppExport SEXP _L3Assess_CalcLTM_cpp(SEXP TimeStepGrowthSizeIncSEXP, SEXP CVSizeAtAgeSEXP, SEXP lbndSEXP, SEXP midptSEXP, SEXP ubndSEXP, SEXP nLenClSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericVector >::type AnnGrowthSizeInc(AnnGrowthSizeIncSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type TimeStepGrowthSizeInc(TimeStepGrowthSizeIncSEXP);
     Rcpp::traits::input_parameter< const double >::type CVSizeAtAge(CVSizeAtAgeSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type lbnd(lbndSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type midpt(midptSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type ubnd(ubndSEXP);
     Rcpp::traits::input_parameter< const int >::type nLenCl(nLenClSEXP);
-    rcpp_result_gen = Rcpp::wrap(CalcLTM_cpp(AnnGrowthSizeInc, CVSizeAtAge, lbnd, midpt, ubnd, nLenCl));
+    rcpp_result_gen = Rcpp::wrap(CalcLTM_cpp(TimeStepGrowthSizeInc, CVSizeAtAge, lbnd, midpt, ubnd, nLenCl));
     return rcpp_result_gen;
 END_RCPP
 }
 // UpdateGrowthAndSurvival_cpp
-List UpdateGrowthAndSurvival_cpp(const int ReprodPattern, const double TimeStep, const int nTimeSteps, const int nLenCl, const double InitRatioFem, NumericMatrix RecLenDist, const double NatMort, NumericVector FemZAtLen, NumericVector MalZAtLen, NumericVector PropFemAtLen, NumericMatrix LTM_Fem, NumericMatrix LTM_Mal, NumericVector FemWtAtLen, NumericVector MalWtAtLen, NumericVector FemPropMatAtLen, NumericVector MalPropMatAtLen);
-RcppExport SEXP _L3Assess_UpdateGrowthAndSurvival_cpp(SEXP ReprodPatternSEXP, SEXP TimeStepSEXP, SEXP nTimeStepsSEXP, SEXP nLenClSEXP, SEXP InitRatioFemSEXP, SEXP RecLenDistSEXP, SEXP NatMortSEXP, SEXP FemZAtLenSEXP, SEXP MalZAtLenSEXP, SEXP PropFemAtLenSEXP, SEXP LTM_FemSEXP, SEXP LTM_MalSEXP, SEXP FemWtAtLenSEXP, SEXP MalWtAtLenSEXP, SEXP FemPropMatAtLenSEXP, SEXP MalPropMatAtLenSEXP) {
+List UpdateGrowthAndSurvival_cpp(const int ReprodPattern, const double TimeStep, const int nTimeSteps, const int nLenCl, const double InitRatioFem, NumericMatrix RecLenDist, const double NatMort, NumericVector FemZAtLen, NumericVector MalZAtLen, NumericVector PropFemAtLen, NumericMatrix LTM_Fem, NumericMatrix LTM_Mal, NumericVector FemWtAtLen, NumericVector MalWtAtLen, const double ReprodScale, NumericVector FemPropMatAtLen, NumericVector MalPropMatAtLen);
+RcppExport SEXP _L3Assess_UpdateGrowthAndSurvival_cpp(SEXP ReprodPatternSEXP, SEXP TimeStepSEXP, SEXP nTimeStepsSEXP, SEXP nLenClSEXP, SEXP InitRatioFemSEXP, SEXP RecLenDistSEXP, SEXP NatMortSEXP, SEXP FemZAtLenSEXP, SEXP MalZAtLenSEXP, SEXP PropFemAtLenSEXP, SEXP LTM_FemSEXP, SEXP LTM_MalSEXP, SEXP FemWtAtLenSEXP, SEXP MalWtAtLenSEXP, SEXP ReprodScaleSEXP, SEXP FemPropMatAtLenSEXP, SEXP MalPropMatAtLenSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -82,9 +82,10 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< NumericMatrix >::type LTM_Mal(LTM_MalSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type FemWtAtLen(FemWtAtLenSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type MalWtAtLen(MalWtAtLenSEXP);
+    Rcpp::traits::input_parameter< const double >::type ReprodScale(ReprodScaleSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type FemPropMatAtLen(FemPropMatAtLenSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type MalPropMatAtLen(MalPropMatAtLenSEXP);
-    rcpp_result_gen = Rcpp::wrap(UpdateGrowthAndSurvival_cpp(ReprodPattern, TimeStep, nTimeSteps, nLenCl, InitRatioFem, RecLenDist, NatMort, FemZAtLen, MalZAtLen, PropFemAtLen, LTM_Fem, LTM_Mal, FemWtAtLen, MalWtAtLen, FemPropMatAtLen, MalPropMatAtLen));
+    rcpp_result_gen = Rcpp::wrap(UpdateGrowthAndSurvival_cpp(ReprodPattern, TimeStep, nTimeSteps, nLenCl, InitRatioFem, RecLenDist, NatMort, FemZAtLen, MalZAtLen, PropFemAtLen, LTM_Fem, LTM_Mal, FemWtAtLen, MalWtAtLen, ReprodScale, FemPropMatAtLen, MalPropMatAtLen));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -93,7 +94,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_L3Assess_CalcNLLCondAgeAtLength_cpp", (DL_FUNC) &_L3Assess_CalcNLLCondAgeAtLength_cpp, 5},
     {"_L3Assess_CalcCatches_AgeAndLengthBasedCatchCurves_cpp", (DL_FUNC) &_L3Assess_CalcCatches_AgeAndLengthBasedCatchCurves_cpp, 11},
     {"_L3Assess_CalcLTM_cpp", (DL_FUNC) &_L3Assess_CalcLTM_cpp, 6},
-    {"_L3Assess_UpdateGrowthAndSurvival_cpp", (DL_FUNC) &_L3Assess_UpdateGrowthAndSurvival_cpp, 16},
+    {"_L3Assess_UpdateGrowthAndSurvival_cpp", (DL_FUNC) &_L3Assess_UpdateGrowthAndSurvival_cpp, 17},
     {NULL, NULL, 0}
 };
 
