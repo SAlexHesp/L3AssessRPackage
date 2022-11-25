@@ -350,7 +350,7 @@ CalcSizeDistOfRecruits <- function(MeanSizeAtAge, CVSizeAtAge, lbnd, ubnd, midpt
   if (is.vector(MeanSizeAtAge)) {
     MeanLenRec <- MeanSizeAtAge[1]
     # robustify for positive tzero values
-    if (MeanLenRec < 50) MeanLenRec = 50 # i.e. assuming mean size at least 50 mm at 1 year of age
+    if (MeanLenRec < 20) MeanLenRec = 20 # i.e. assuming mean size at least 20 mm at first time step
     SDAgeOneRecruits = MeanLenRec * CVSizeAtAge
 
     RecLenDist = rep(0,nLenCl)
@@ -1112,12 +1112,12 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, GrowthCurveType, GrowthPa
   L50_Pen = 0
   if (SelectivityType == 2) { # logistic selectivity
     if (L95 > max(Linf)) {
-      L95_Pen = 100.0 * (L95 - max(Linf))^2
+      L95_Pen = (L95 - max(Linf))^2
       L95 = max(Linf)
     }
     # calculate L50 penalty
     if (L50 > (L95 - 2)) {
-      L50_Pen = 100.0 * ((L95 - 2) - L50)^2
+      L50_Pen = ((L95 - 2) - L50)^2
       L50 = L95 - 2
     }
   }
