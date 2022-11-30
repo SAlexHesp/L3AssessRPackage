@@ -153,6 +153,6 @@ FittedRes=GetLengthBasedCatchCurveResults(params, GrowthCurveType, GrowthParams,
 # Plot. Note, can skip above step and set FittedRes=NA (plot function will be slower)
 PlotLengthBasedCatchCurveResults(params, MLL, SelectivityType, ObsCatchFreqAtLen, lbnd, ubnd, midpt,
                                  SelectivityVec, PropReleased, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, MaxAge, NatMort, MainLabel=NA,
-                                 xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA,
-                                 ymax=NA, yint=NA, PlotCLs=TRUE, FittedRes, nReps=200)
+                                 xaxis_lab=NA, yaxis_lab=NA, xmax=1500, xint=500,
+                                 ymax=0.15, yint=0.05, PlotCLs=TRUE, FittedRes, nReps=200)
 }

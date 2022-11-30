@@ -6,6 +6,7 @@
 \usage{
 VisualiseGrowthApplyingLTM(
   nFish,
+  TimeStep,
   MaxAge,
   Growth_params,
   CVSizeAtAge,
@@ -22,6 +23,8 @@ VisualiseGrowthApplyingLTM(
 }
 \arguments{
 \item{nFish}{number of growth trajectories for individual fish to simulate}
+
+\item{TimeStep}{model timestep (fraction of year)}
 
 \item{CVSizeAtAge}{coefficient of variation (CV), common across all mean lengths at age}
 
@@ -71,6 +74,7 @@ tzero = 0
 Growth_params = c(Linf, vbK, tzero) # currently only set up for von Bertalanffy growth equation
 CVSizeAtAge = 0.05
 nFish = 100
-VisualiseGrowthApplyingLTM(nFish, MaxAge, Growth_params, CVSizeAtAge, midpt, nLenCl, MainLabel=NA,
+TimeStep = 1
+VisualiseGrowthApplyingLTM(nFish, TimeStep, MaxAge, Growth_params, CVSizeAtAge, midpt, nLenCl, MainLabel=NA,
                            xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA, ymax=NA, yint=NA)
 }

@@ -6,6 +6,7 @@
 \usage{
 GetLTMInputsForPerRecruitAnalysis(
   GrowthCurveType,
+  TimeStep,
   MaxModelAge,
   GrowthParams,
   RefnceAges,
@@ -26,11 +27,11 @@ GetLTMInputsForPerRecruitAnalysis(
 \value{
 MeanEndingLength
 
-AnnGrowthSizeInc
+TimestepGrowthSizeInc
 }
 \description{
 This function calculates inputs required to calculate length transition matrices, for length-based per
 recruit analysis, including the mean size to which a fish grows, for a  model timestep, given its initial length and specified
-growth curve (MeanEndingLength), and the amount by which it grows (AnnGrowthSizeInc)
+growth curve (MeanEndingLength), and the amount by which it grows (TimestepGrowthSizeInc)
 }
 \keyword{internal}

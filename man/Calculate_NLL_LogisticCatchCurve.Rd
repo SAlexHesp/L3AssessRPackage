@@ -18,19 +18,4 @@ and age-based selectivity parameters, for a catch curve with age-based, logistic
 Function requires an estimate of natural mortality (NatMort), a value for maximum age (MaxAge)
 and age frequency data (stored in memory in R)
 }
-\examples{
-set.seed(123)
-MinAge = 1
-MaxAge = 40
-Ages = MinAge:MaxAge
-NatMort <- exp(1.46 - (1.01 * (log(MaxAge)))) # i.e. Hoenig's (1983) eqn for fish
-FMort = 0.1
-ZMort = FMort + NatMort
-SelA50 = 6
-SelA95 = 8
-SampleSize = 500 # required number of fish for age sample
-Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
-ObsAgeFreq = unlist(as.vector(Res$CatchSample))
-Calculate_NLL_LogisticCatchCurve(ln_params)
-}
 \keyword{internal}

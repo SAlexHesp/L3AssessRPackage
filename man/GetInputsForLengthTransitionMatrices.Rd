@@ -53,7 +53,7 @@ GetInputsForLengthTransitionMatrices(
 }
 \value{
 mean size at age from growth curve (MeanSizeAtAge), estimated length after one year for each length class
-mid point, given growth curve (MeanEndingLength) and associated change in length after one year of growth (AnnGrowthSizeInc)
+mid point, given growth curve (MeanEndingLength) and associated change in length after one year of growth (TimestepGrowthSizeInc)
 }
 \description{
 Get key inputs required to calculate length transition matrices, for models with either one or two sexes,

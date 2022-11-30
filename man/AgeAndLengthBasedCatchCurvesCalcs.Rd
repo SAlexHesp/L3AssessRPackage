@@ -55,7 +55,7 @@ both sexes von Bertalanffy, or c(y1, y2, a, b) single sex Schnute, or data.frame
 \value{
 selectivity at length (SelAtLength), mean size at age from growth curve (MeanSizeAtAge),
 mid points of length classes (midpt), mean length after 1 year of growth given initial length of midpt
-(MeanEndingLength), associated change in length after 1 year of growth (AnnGrowthSizeInc), length distribution
+(MeanEndingLength), associated change in length after 1 year of growth (TimestepGrowthSizeInc), length distribution
 of 1+ year old recruits (RecLenDist), catch proportions at each length for females, males and sexes combined
 (ExpCatchPropInLenClass, ExpCatchPropInLenClass_Fem, ExpCatchPropInLenClass_Mal), expected catches at age
 for females, males and sexes combined (ExpCatchAtAge, ExpCatchAtAge_Fem, ExpCatchAtAge_Mal), catches proportions

@@ -16,6 +16,7 @@ GetPerRecruitResults_AB(
   lenwt_b,
   WLrel_Type,
   EstWtAtAge,
+  ReprodScale,
   ReprodPattern,
   InitRatioFem,
   FinalSex_Pmax,
@@ -60,6 +61,8 @@ GetPerRecruitResults_AB(
 \item{WLrel_Type}{1=power, 2=log-log relationship (set to NA if inputting weights at ages directly)}
 
 \item{EstWtAtAge}{vector of weights at ages (set to NA if weight-length growth parameters specified)}
+
+\item{ReprodScale}{<- 1 # 1=default (standard calculations for spawning biomass), 2=hyperallometric reproductive scaling with female mass (i.e. BOFFF effects)}
 
 \item{ReprodPattern}{reproductive pattern, 1=gonochoristic, 2=protogynous (female to male sex change) hermaphroditism,
 3=protandrous hermaphroditism (male to female sex change)}
@@ -111,8 +114,9 @@ CombSex_SPR), unfished female and male per recruit survival at age (UnfishFemSur
 unfished female and male mature biomass at age (UnfishFemBiomAtAge, UnfishMalBiomAtAge), fished female and
 male spawning potential ratio (Fem_SPR, Mal_SPR), fished female and male per recruit survival at age
 (FishedFemSurvAtAge, FishedMalSurvAtAge), fished female and male mature biomass at age (FishedFemBiomAtAge,
-FishedMalBiomAtAge), female and male per recruit catches at age in numbers (FemCatchAtAgeNum, MalCatchAtAgeNum)
-and biomass (FemCatchAtAge, MalCatchAtAge), and for the extended model, equilibrium recruitment (Equil_Rec),
+FishedMalBiomAtAge), female and male per recruit retained catches at age in numbers (FemCatchAtAgeNum, MalCatchAtAgeNum),
+female and male per recruit released catches at age in numbers, (FemRelCatchAtAgeNum, MalRelCatchAtAgeNum),
+female and male per recruit retained catches at age in biomass (FemCatchAtAge, MalCatchAtAge), and for the extended model, equilibrium recruitment (Equil_Rec),
 equilibrium catch (Equil_Catch), equilibrium female and male spawning biomass (Equil_FemSpBiom, Equil_MalSpBiom) and
 relative female, male and combined sex spawning biomass (Equilmod_FemRelBiom, Equilmod_MalRelBiom, Equilmod_CombSexRelBiom),
 Beverton-Holt stock-recruitment parameters (BH_SRRa, BH_SRRb), equilibrium recruitment from Beverton-Holt relationship (BH_Equil_Rec),
@@ -152,6 +156,7 @@ ln_lenwt_a <- NA # for log-log relationship
 lenwt_b <- 3 # combined sexes - weight (g) vs length (mm, TL) relationship parameters
 WLrel_Type <- 1 # 1=power, 2=log-log relationship
 EstWtAtAge <- data.frame(EstFemWtAtAge=NA, EstMalWtAtAge=NA) # weight at age (from age 0), inputted as values in data frame
+ReprodScale <- 1 # 1=default (standard calculations for spawning biomass), 2=hyperallometric reproductive scaling with female mass (i.e. BOFFF effects)
 ReprodPattern <- 1 # 1 = gonochoristic (separate sexes), 2 = protogynous (female to male sex change), 3 = protandrous (male to female sex change)
 InitRatioFem <- 0.5 # Ratio of females to males at age zero
 FinalSex_Pmax <- NA # Logistic sex change relationship parameters (max probability of final sex)
@@ -163,17 +168,17 @@ EstMatAtAge <- data.frame(EstFemMatAtAge=NA, EstMalMatAtAge=NA) # maturity at ag
 sel_A50 <- c(2.5, 2.5) # females, males - Logistic age selectivity relationship parameters
 sel_A95 <- c(3.5, 3.5) # females, males - Logistic age selectivity relationship parameters
 EstSelAtAge <- data.frame(EstFemSelAtAge=NA, EstMalSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
-ret_Pmax <- c(1.0, 1.0) # maximum retention, values lower than 1 imply discarding of fish above MLL
-ret_A50 <- c(2.5, 2.5) # females, males - Logistic age fish retention at age parameters
-ret_A95 <- c(3.5, 3.5) # females, males - Logistic age fish retention at age parameters
-EstRetenAtAge <- data.frame(EstFemRetenAtAge=NA, EstMalRetenAtAge=NA) # fish retention at age (from age 0), inputted as values in data frame
+ret_Pmax <- NA  # maximum retention, values lower than 1 imply discarding of fish above MLL
+ret_A50 <- NA  # females, males - Logistic age fish retention at age parameters
+ret_A95 <- NA  # females, males - Logistic age fish retention at age parameters
+EstRetenAtAge <- data.frame(EstFemRetenAtAge=rep(1,MaxModelAge+1), EstMalRetenAtAge=rep(1,MaxModelAge+1)) # fish retention at age (from age 0), inputted as values in data frame
 DiscMort <- 0.0 # discard mortality (e.g. 50\% released fish die = 0.5)
 Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
 SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
 NatMort = 0.2 # natural mortality  (year-1)
 Current_F <- 0.07 # estimate of fishing mortality, e.g. from catch curve analysis
 Res = GetPerRecruitResults_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
-                           lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge,
+                           lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale,
                            ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95,
                            mat_A50, mat_A95, EstMatAtAge, sel_A50, sel_A95, EstSelAtAge, ret_Pmax, ret_A50, ret_A95,
                            EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, Current_F)
@@ -190,6 +195,7 @@ ln_lenwt_a <- -11.0 # for log-log relationship
 lenwt_b <- 3.0 # combined sexes - weight (g) vs length (mm, TL) relationship parameters
 WLrel_Type <- 2 # 1=power, 2=log-log relationship
 EstWtAtAge <- data.frame(EstFemWtAtAge=NA, EstMalWtAtAge=NA) # weight at age (from age 0), inputted as values in data frame
+ReprodScale <- 1 # 1=default (standard calculations for spawning biomass), 2=hyperallometric reproductive scaling with female mass (i.e. BOFFF effects)
 ReprodPattern <- 2 # 1 = gonochoristic (separate sexes), 2 = protogynous (female to male sex change), 3 = protandrous (male to female sex change)
 InitRatioFem <- 1 # Ratio of females to males at age zero
 FinalSex_Pmax <- 1 # Logistic sex change relationship parameters (max probability of final sex)
@@ -201,17 +207,17 @@ EstMatAtAge <- data.frame(EstFemMatAtAge=NA, EstMalMatAtAge=NA) # maturity at ag
 sel_A50 <- c(15, 15) # females, males - Logistic age selectivity relationship parameters
 sel_A95 <- c(25, 25) # females, males - Logistic age selectivity relationship parameters
 EstSelAtAge <- data.frame(EstFemSelAtAge=NA, EstMalSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
-ret_Pmax <- c(1.0, 1.0) # maximum retention, values lower than 1 imply discarding of fish above MLL
-ret_A50 <- c(15, 15) # females, males - Logistic age fish retention at age parameters (inflection point)
-ret_A95 <- c(25, 25) # females, males - Logistic age fish retention at age parameters (95\% of maximum retention)
-EstRetenAtAge <- # fish retention at age (from age 0), inputted as values in data frame
+ret_Pmax <- NA  # maximum retention, values lower than 1 imply discarding of fish above MLL
+ret_A50 <- NA  # females, males - Logistic age fish retention at age parameters
+ret_A95 <- NA  # females, males - Logistic age fish retention at age parameters
+EstRetenAtAge <- data.frame(EstFemRetenAtAge=rep(1,MaxModelAge+1), EstMalRetenAtAge=rep(1,MaxModelAge+1)) # fish retention at age (from age 0), inputted as values in data frame
 DiscMort <- 0.0 # discard mortality (e.g. 50\% released fish die = 0.5)
 Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
 SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
 NatMort = 0.07 # natural mortality  (year-1)
 Current_F <- 0.07 # estimate of fishing mortality, e.g. from catch curve analysis
 Res = GetPerRecruitResults_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
-                           lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge,
+                           lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale,
                            ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95,
                            mat_A50, mat_A95, EstMatAtAge, sel_A50, sel_A95, EstSelAtAge, ret_Pmax, ret_A50, ret_A95,
                            EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, Current_F)

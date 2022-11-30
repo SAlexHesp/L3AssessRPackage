@@ -52,7 +52,7 @@ and variance-covariance matrix (vcov.Params), selectivity at length (SelAtLength
 growth curve (MeanSizeAtAge), midpoint of each length class (midpt), mean length after 1 year from
 growth curve, given initial length (MeanEndingLength), mean change in length after 1 year,
 from initial length - note, assuming normal a distribution allows for possibility of negative growth
-if above asyptotic length (AnnGrowthSizeInc), length distribution of 1+ year old recruits (RecLenDist),
+if above asyptotic length (TimestepGrowthSizeInc), length distribution of 1+ year old recruits (RecLenDist),
 expected relative catches at length and age (Catch), expected catches at length (ExpCatchAtLen),
 catch proportions at length (ExpCatchPropInLenClass), expected catches at age (ExpCatchAtAge),
 catch proportions at age of females, males and sexes combined (ExpCatchPropAtAge, ExpCatchPropAtAge_Fem,

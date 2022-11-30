@@ -50,6 +50,6 @@ ObsAgeFreq = unlist(as.vector(Res$CatchSample))
 Init_FMort = 0.2
 Init_SelA50 = 5
 Init_SelA95 = 7
-ln_params = log(c(FMort, SelA50, SelA95))
+ln_params = log(c(Init_FMort, Init_SelA50, Init_SelA95))
 res=GetLogisticCatchCurveResults(ln_params, NatMort, Ages, ObsAgeFreq)
 }

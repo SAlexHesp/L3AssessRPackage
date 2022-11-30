@@ -17,6 +17,7 @@ PlotPerRecruit_Biom_with_err_LB(
   lenwt_b,
   WLrel_Type,
   EstWtAtAge,
+  ReprodScale,
   ReprodPattern,
   InitRatioFem,
   FinalSex_Pmax,
@@ -64,6 +65,8 @@ PlotPerRecruit_Biom_with_err_LB(
 \item{lenwt_b}{weight-length parameter}
 
 \item{WLrel_Type}{1=power, 2=log-log}
+
+\item{ReprodScale}{<- 1 # 1=default (standard calculations for spawning biomass), 2=hyperallometric reproductive scaling with female mass (i.e. BOFFF effects)}
 
 \item{ReprodPattern}{reproductive pattern, 1=gonochoristic, 2=protogynous (female to male sex change) hermaphroditism,
 3=protandrous hermaphroditism (male to female sex change)}
@@ -174,6 +177,7 @@ lenwt_b <- 3 # combined sexes - weight (g) vs length (mm, TL) relationship param
 WLrel_Type <- 1 # 1=power, 2=log-log relationship
 EstWtAtLen <- data.frame(EstFemWtAtLen=NA,
                          EstMalWtAtLen=NA) # weight at age (from age 0), inputted as values in data frame
+ReprodScale <- 1 # 1=default (standard calculations for spawning biomass), 2=hyperallometric reproductive scaling with female mass (i.e. BOFFF effects)
 ReprodPattern <- 1 # 1 = gonochoristic (separate sexes), 2 = protogynous (female to male sex change), 3 = protandrous (male to female sex change)
 InitRatioFem <- 0.5 # Ratio of females to males at age zero
 FinalSex_Pmax <- NA # Logistic sex change relationship parameters (max probability of final sex)
@@ -200,13 +204,13 @@ RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 nReps = 10 # number of resampling trials. Set to low number to test, then much higher for final analysis.
 FittedRes=GetPerRecruitResults_LB_with_err(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                      RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
-                                     EstWtAtLen, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
+                                     EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
                                      FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
                                       ret_L50, ret_L95, DiscMort, Steepness, Steepness_sd, SRrel_Type, NatMort, NatMort_sd,
                                       Current_F, Current_F_sd, nReps)
 # Plot. Note, can skip above step and set FittedRes=NA (plot function will be slower
 PlotPerRecruit_Biom_with_err_LB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
-                                            lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodPattern,
+                                            lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern,
                                             InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95, mat_A50, mat_A95,
                                             EstMatAtAge, sel_A50, sel_A95, EstSelAtAge, ret_Pmax, ret_A50, ret_A95,
                                             EstRetenAtAge, DiscMort, Steepness, Steepness_sd, SRrel_Type, NatMort, NatMort_sd,

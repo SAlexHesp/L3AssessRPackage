@@ -21,6 +21,7 @@ GetPerRecruitResults_LB_with_err(
   lenwt_b,
   WLrel_Type,
   EstWtAtLen,
+  ReprodScale,
   ReprodPattern,
   InitRatioFem,
   FinalSex_Pmax,
@@ -75,6 +76,8 @@ GetPerRecruitResults_LB_with_err(
 \item{WLrel_Type}{1=power, 2=log-log}
 
 \item{EstWtAtLen}{user-specified weights at lengths}
+
+\item{ReprodScale}{<- 1 # 1=default (standard calculations for spawning biomass), 2=hyperallometric reproductive scaling with female mass (i.e. BOFFF effects)}
 
 \item{ReprodPattern}{reproductive pattern, 1=gonochoristic, 2=protogynous (female to male sex change) hermaphroditism,
 3=protandrous hermaphroditism (male to female sex change)}
@@ -162,6 +165,7 @@ WLrel_Type <- 1 # 1=power, 2=log-log relationship
 EstWtAtLen <- data.frame(EstFemWtAtLen=NA,
                          EstMalWtAtLen=NA) # weight at age (from age 0), inputted as values in data frame
 ReprodPattern <- 1 # 1 = gonochoristic (separate sexes), 2 = protogynous (female to male sex change), 3 = protandrous (male to female sex change)
+ReprodScale <- 1 # 1=default (standard calculations for spawning biomass), 2=hyperallometric reproductive scaling with female mass (i.e. BOFFF effects)
 InitRatioFem <- 0.5 # Ratio of females to males at age zero
 FinalSex_Pmax <- NA # Logistic sex change relationship parameters (max probability of final sex)
 FinalSex_L50 <- NA # Logistic sex change relationship parameters (inflection point)
@@ -186,7 +190,7 @@ Current_F_sd <- 0.005
 nReps = 10 # number of resampling trials. Set to low number to test, then much higher for final analysis.
 GetPerRecruitResults_LB_with_err(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                  RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
-                                 EstWtAtLen, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
+                                 EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
                                  FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
                                  ret_L50, ret_L95, DiscMort, Steepness, Steepness_sd, SRrel_Type, NatMort, NatMort_sd,
                                  Current_F, Current_F_sd, nReps)
