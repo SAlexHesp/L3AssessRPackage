@@ -1,0 +1,44 @@
+[
+    {
+        "file": "C:/~/L3AssessRPackage/src/L3Analyses.cpp",
+        "file_last_write": 1668838805.0,
+        "definitions": [
+            {
+                "usr": "c:@F@CalcNLLCondAgeAtLength_cpp#1I#1I#I#I#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "CalcNLLCondAgeAtLength_cpp(const int, const int, int, int, int)",
+                "file": "C:/~/L3AssessRPackage/src/L3Analyses.cpp",
+                "line": 7,
+                "column": 8
+            },
+            {
+                "usr": "c:@F@CalcCatches_AgeAndLengthBasedCatchCurves_cpp#I#1d#I#1d#1I#1I#I#I#I#1d#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "CalcCatches_AgeAndLengthBasedCatchCurves_cpp(int, const double, int, const double, const int, const int, int, int, int, const double, int)",
+                "file": "C:/~/L3AssessRPackage/src/L3Analyses.cpp",
+                "line": 47,
+                "column": 6
+            },
+            {
+                "usr": "c:@F@CalcLTM_cpp#I#1d#I#I#I#1I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "CalcLTM_cpp(int, const double, int, int, int, const int)",
+                "file": "C:/~/L3AssessRPackage/src/L3Analyses.cpp",
+                "line": 172,
+                "column": 15
+            },
+            {
+                "usr": "c:@F@UpdateGrowthAndSurvival_cpp#1I#1d#1I#1I#1d#I#1d#I#I#I#I#I#I#I#1d#I#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "UpdateGrowthAndSurvival_cpp(const int, const double, const int, const int, const double, int, const double, int, int, int, int, int, int, int, const double, int, int)",
+                "file": "C:/~/L3AssessRPackage/src/L3Analyses.cpp",
+                "line": 201,
+                "column": 6
+            }
+        ]
+    }
+]
