@@ -354,6 +354,8 @@ For visualisation, model estimates of the proportion of fish in each length clas
 
 If an estimate of the proportion of fish that are caught and released by the fishery exists (e.g. from an observer monitoring program), then the value estimated by the model may be matched to this external estimate which, potentially, may improve estimates of the vulnerability and fishing mortality parameters. This may be achieved by adding an additional component to the objective function, matching the estimated value for the proportion of undersize fish released, to the observed value with associated standard deviation (assuming a normal distribution).
 
+Note that this catch curve routine was recently updated (Jan, 2023) to allow use of alternative model time step values (e.g. 1/12 of a year vs 1 year). The updated routine updates the survival and growth of the modelled population cohort according to the specified modelled time step (the mathematics outline above, which has not yet been updated, is correct for an annual timestep). For shorter-lived species (e.g. < 10 y), it is likely more appropriate to use a shorter model timestep (if samples are collected at intervals throughout the year), such that the modelled length compositions more closely match observed data, by allowing fish to grow throughout the year. 
+
 ### Apply length-based catch curve
 
 Key functions relevant to applying this method are:  
@@ -388,6 +390,8 @@ $$
 \hat{P_s}(l|a) = \frac{\hat{C}_{s,l,a}}{\sum_{l}\hat{C}_{s,l,a}}
 $$
 The overall log-likelihood is calculated as the sum of the log-likelihoods associated with the marginal length composition, $\lambda_1$ (as described above for the length-based catch curve method) and the conditional age at length log-likelihood, $\lambda_2$.
+
+Note that this catch curve routine was recently updated (Jan, 2023) to allow use of alternative model time step values (e.g. 1/12 of a year vs 1 year). The updated routine updates the survival and growth of the modelled population cohort according to the specified modelled time step (the mathematics outline above, which has not yet been updated, is correct for an annual timestep). For shorter-lived species (e.g. < 10 y), it is likely more appropriate to use a shorter model timestep (if samples are collected at intervals throughout the year), such that the modelled length compositions more closely match observed data, by allowing fish to grow throughout the year. 
 
 ### Apply length and age-based catch curve
 

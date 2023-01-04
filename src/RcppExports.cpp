@@ -10,24 +10,37 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
-// CalcNLLCondAgeAtLength_cpp
-double CalcNLLCondAgeAtLength_cpp(const int nLenCl, const int MaxAge, NumericMatrix ObsCatchFreqAtLengthAndAge, NumericMatrix ExpCatchPropLengthGivenAge, NumericVector ExpCatchPropAtAge);
-RcppExport SEXP _L3Assess_CalcNLLCondAgeAtLength_cpp(SEXP nLenClSEXP, SEXP MaxAgeSEXP, SEXP ObsCatchFreqAtLengthAndAgeSEXP, SEXP ExpCatchPropLengthGivenAgeSEXP, SEXP ExpCatchPropAtAgeSEXP) {
+// CalcExpCatchPropIntAgeGivenLength_cpp
+NumericMatrix CalcExpCatchPropIntAgeGivenLength_cpp(const int nLenCl, const int nAgeCl, NumericMatrix ExpRetCatchPropLengthGivenIntAge, NumericVector ExpRetCatchPropAtIntAge);
+RcppExport SEXP _L3Assess_CalcExpCatchPropIntAgeGivenLength_cpp(SEXP nLenClSEXP, SEXP nAgeClSEXP, SEXP ExpRetCatchPropLengthGivenIntAgeSEXP, SEXP ExpRetCatchPropAtIntAgeSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const int >::type nLenCl(nLenClSEXP);
-    Rcpp::traits::input_parameter< const int >::type MaxAge(MaxAgeSEXP);
-    Rcpp::traits::input_parameter< NumericMatrix >::type ObsCatchFreqAtLengthAndAge(ObsCatchFreqAtLengthAndAgeSEXP);
-    Rcpp::traits::input_parameter< NumericMatrix >::type ExpCatchPropLengthGivenAge(ExpCatchPropLengthGivenAgeSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type ExpCatchPropAtAge(ExpCatchPropAtAgeSEXP);
-    rcpp_result_gen = Rcpp::wrap(CalcNLLCondAgeAtLength_cpp(nLenCl, MaxAge, ObsCatchFreqAtLengthAndAge, ExpCatchPropLengthGivenAge, ExpCatchPropAtAge));
+    Rcpp::traits::input_parameter< const int >::type nAgeCl(nAgeClSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type ExpRetCatchPropLengthGivenIntAge(ExpRetCatchPropLengthGivenIntAgeSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type ExpRetCatchPropAtIntAge(ExpRetCatchPropAtIntAgeSEXP);
+    rcpp_result_gen = Rcpp::wrap(CalcExpCatchPropIntAgeGivenLength_cpp(nLenCl, nAgeCl, ExpRetCatchPropLengthGivenIntAge, ExpRetCatchPropAtIntAge));
+    return rcpp_result_gen;
+END_RCPP
+}
+// CalcNLLCondAgeAtLength_cpp
+double CalcNLLCondAgeAtLength_cpp(const int nLenCl, const int nAgeCl, NumericMatrix ObsCatchFreqAtLengthAndIntAge, NumericVector ExpRetCatchPropIntAgeGivenLength);
+RcppExport SEXP _L3Assess_CalcNLLCondAgeAtLength_cpp(SEXP nLenClSEXP, SEXP nAgeClSEXP, SEXP ObsCatchFreqAtLengthAndIntAgeSEXP, SEXP ExpRetCatchPropIntAgeGivenLengthSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const int >::type nLenCl(nLenClSEXP);
+    Rcpp::traits::input_parameter< const int >::type nAgeCl(nAgeClSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type ObsCatchFreqAtLengthAndIntAge(ObsCatchFreqAtLengthAndIntAgeSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type ExpRetCatchPropIntAgeGivenLength(ExpRetCatchPropIntAgeGivenLengthSEXP);
+    rcpp_result_gen = Rcpp::wrap(CalcNLLCondAgeAtLength_cpp(nLenCl, nAgeCl, ObsCatchFreqAtLengthAndIntAge, ExpRetCatchPropIntAgeGivenLength));
     return rcpp_result_gen;
 END_RCPP
 }
 // CalcCatches_AgeAndLengthBasedCatchCurves_cpp
-List CalcCatches_AgeAndLengthBasedCatchCurves_cpp(NumericVector params, const double NatMort, NumericVector RecLenDist, const double InitRecNumber, const int MaxAge, const int nLenCl, NumericVector midpt, NumericVector RetAtLength, NumericVector SelAtLength, const double DiscMort, NumericMatrix LTM);
-RcppExport SEXP _L3Assess_CalcCatches_AgeAndLengthBasedCatchCurves_cpp(SEXP paramsSEXP, SEXP NatMortSEXP, SEXP RecLenDistSEXP, SEXP InitRecNumberSEXP, SEXP MaxAgeSEXP, SEXP nLenClSEXP, SEXP midptSEXP, SEXP RetAtLengthSEXP, SEXP SelAtLengthSEXP, SEXP DiscMortSEXP, SEXP LTMSEXP) {
+List CalcCatches_AgeAndLengthBasedCatchCurves_cpp(NumericVector params, const double NatMort, NumericVector RecLenDist, const double InitRecNumber, const int MaxAge, const double TimeStep, const int nTimeSteps, const int nLenCl, NumericVector midpt, NumericVector RetAtLength, NumericVector SelAtLength, const double DiscMort, NumericMatrix LTM);
+RcppExport SEXP _L3Assess_CalcCatches_AgeAndLengthBasedCatchCurves_cpp(SEXP paramsSEXP, SEXP NatMortSEXP, SEXP RecLenDistSEXP, SEXP InitRecNumberSEXP, SEXP MaxAgeSEXP, SEXP TimeStepSEXP, SEXP nTimeStepsSEXP, SEXP nLenClSEXP, SEXP midptSEXP, SEXP RetAtLengthSEXP, SEXP SelAtLengthSEXP, SEXP DiscMortSEXP, SEXP LTMSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -36,13 +49,15 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< NumericVector >::type RecLenDist(RecLenDistSEXP);
     Rcpp::traits::input_parameter< const double >::type InitRecNumber(InitRecNumberSEXP);
     Rcpp::traits::input_parameter< const int >::type MaxAge(MaxAgeSEXP);
+    Rcpp::traits::input_parameter< const double >::type TimeStep(TimeStepSEXP);
+    Rcpp::traits::input_parameter< const int >::type nTimeSteps(nTimeStepsSEXP);
     Rcpp::traits::input_parameter< const int >::type nLenCl(nLenClSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type midpt(midptSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type RetAtLength(RetAtLengthSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type SelAtLength(SelAtLengthSEXP);
     Rcpp::traits::input_parameter< const double >::type DiscMort(DiscMortSEXP);
     Rcpp::traits::input_parameter< NumericMatrix >::type LTM(LTMSEXP);
-    rcpp_result_gen = Rcpp::wrap(CalcCatches_AgeAndLengthBasedCatchCurves_cpp(params, NatMort, RecLenDist, InitRecNumber, MaxAge, nLenCl, midpt, RetAtLength, SelAtLength, DiscMort, LTM));
+    rcpp_result_gen = Rcpp::wrap(CalcCatches_AgeAndLengthBasedCatchCurves_cpp(params, NatMort, RecLenDist, InitRecNumber, MaxAge, TimeStep, nTimeSteps, nLenCl, midpt, RetAtLength, SelAtLength, DiscMort, LTM));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -91,8 +106,9 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_L3Assess_CalcNLLCondAgeAtLength_cpp", (DL_FUNC) &_L3Assess_CalcNLLCondAgeAtLength_cpp, 5},
-    {"_L3Assess_CalcCatches_AgeAndLengthBasedCatchCurves_cpp", (DL_FUNC) &_L3Assess_CalcCatches_AgeAndLengthBasedCatchCurves_cpp, 11},
+    {"_L3Assess_CalcExpCatchPropIntAgeGivenLength_cpp", (DL_FUNC) &_L3Assess_CalcExpCatchPropIntAgeGivenLength_cpp, 4},
+    {"_L3Assess_CalcNLLCondAgeAtLength_cpp", (DL_FUNC) &_L3Assess_CalcNLLCondAgeAtLength_cpp, 4},
+    {"_L3Assess_CalcCatches_AgeAndLengthBasedCatchCurves_cpp", (DL_FUNC) &_L3Assess_CalcCatches_AgeAndLengthBasedCatchCurves_cpp, 13},
     {"_L3Assess_CalcLTM_cpp", (DL_FUNC) &_L3Assess_CalcLTM_cpp, 6},
     {"_L3Assess_UpdateGrowthAndSurvival_cpp", (DL_FUNC) &_L3Assess_UpdateGrowthAndSurvival_cpp, 17},
     {NULL, NULL, 0}
