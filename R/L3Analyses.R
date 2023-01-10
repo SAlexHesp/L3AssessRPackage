@@ -2352,8 +2352,8 @@ PlotLengthBasedCatchCurveResults <- function(params, MLL, SelectivityType, ObsCa
   plot(midpt, ObsRelCatchAtLen, "p", main=MainLabel, cex.main=1.2, pch=16, cex=0.8, xaxt = "n", yaxt = "n",
        xlab=list(xaxis_lab,cex=1.2),ylab=list(yaxis_lab,cex=1.2), frame=F, xlim=c(0,xmax), ylim=c(0,ymax))
   if (is.data.frame(GrowthParams)) {
-    lines(midpt, Res$ExpCatchPropInLenClass_Fem, lty="dotted", col="dark grey")
-    lines(midpt, Res$ExpCatchPropInLenClass_Mal, lty="dotted", col="blue")
+    lines(midpt, Res$ExpRetCatchPropInLenClass_Fem, lty="dotted", col="dark grey")
+    lines(midpt, Res$ExpRetCatchPropInLenClass_Mal, lty="dotted", col="blue")
     legend("bottomleft", legend=c("Female","Male"), y.intersp = 1.0, inset=c(0.05,0.05),
            cex = 0.8, bty="n", lty="dotted", col=c("dark grey","blue"))
   }
