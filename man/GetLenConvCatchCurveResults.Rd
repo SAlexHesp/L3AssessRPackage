@@ -49,6 +49,7 @@ Bertalanffy growth model or Schunute growth model (with a and b not equal to zer
 SampleSize=1000
 set.seed(123)
 MaxAge = 30
+TimeStep = 1 # model timestep (e.g. 1 = annual, 1/12 = monthly)
 NatMort = 4.22/MaxAge
 FishMort = 0.2
 MaxLen = 1500
@@ -77,8 +78,9 @@ b = 2.0 # growth - Schnute
 CVSizeAtAge = 0.08
 GrowthParams = c(y1, y2, a, b)
 RefnceAges = c(t1,t2)
-Res=SimLenAndAgeFreqData(SampleSize, MaxAge, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
+Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
                          L50, L95, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+
 ObsCatchFreqAtLen = as.vector(Res$ObsCatchFreqAtLen)
 MinFreq = 20 # set minimum frequency for larger lengths for analysis
 # note, this needs to be high enough so that data for ln(n/dt) vs relative age for essentially straight

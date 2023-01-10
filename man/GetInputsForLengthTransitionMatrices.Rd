@@ -6,6 +6,7 @@
 \usage{
 GetInputsForLengthTransitionMatrices(
   MaxAge,
+  TimeStep,
   nLenCl,
   midpt,
   GrowthModelType,
@@ -23,6 +24,8 @@ GetInputsForLengthTransitionMatrices(
 }
 \arguments{
 \item{MaxAge}{maximum age considered in model}
+
+\item{TimeStep}{model timestep (e.g. 1 = annual, 1/12 = monthly)}
 
 \item{nLenCl}{number of length classes}
 

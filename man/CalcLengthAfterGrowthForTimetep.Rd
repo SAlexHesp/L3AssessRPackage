@@ -15,6 +15,8 @@ CalcLengthAfterGrowthForTimetep(
 \arguments{
 \item{GrowthCurveType}{1=von Bertalanffy, 2=Schnute}
 
+\item{TimeStep}{model timestep (fraction of year)}
+
 \item{GrowthParamsForSex}{c(Linf,vbK) von Bertalanffy, or c(t1,t2,y1,y2,a,b) Schnute}
 
 \item{RefnceAgesForSex}{c(t1,t2)}

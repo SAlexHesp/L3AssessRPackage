@@ -16,7 +16,8 @@ GetAgeAndLengthBasedCatchCurveResults(
   SelectivityVec,
   DiscMort,
   MaxAge,
-  NatMort
+  NatMort,
+  TimeStep
 )
 }
 \arguments{
@@ -43,23 +44,27 @@ GetAgeAndLengthBasedCatchCurveResults(
 \item{MaxAge}{maximum age considered in model}
 
 \item{NatMort}{natural mortality}
+
+\item{TimeStep}{model timestep (e.g. 1 = annual, 1/12 = monthly)}
 }
 \value{
 negative log-likelihood (nll), nlminb convergence diagnostic (convergence)
 sample size (SampleSize), growth parameter estimates with lower and upper 95 percent
 confidence limits (ParamEst), point estimates for estimated parameters (params)
-and variance-covariance matrix (vcov.Params), selectivity at length (SelAtLength),
+and variance-covariance matrix (vcov.Params), gear selectivity at length (SelAtLength), retention
+at length (RetAtLength), selectivity of landings at length (SelLandAtLength),
 growth curve (MeanSizeAtAge), midpoint of each length class (midpt), mean length after 1 year from
 growth curve, given initial length (MeanEndingLength), mean change in length after 1 year,
 from initial length - note, assuming normal a distribution allows for possibility of negative growth
 if above asyptotic length (TimestepGrowthSizeInc), length distribution of 1+ year old recruits (RecLenDist),
-expected relative catches at length and age (Catch), expected catches at length (ExpCatchAtLen),
-catch proportions at length (ExpCatchPropInLenClass), expected catches at age (ExpCatchAtAge),
-catch proportions at age of females, males and sexes combined (ExpCatchPropAtAge, ExpCatchPropAtAge_Fem,
-ExpCatchPropAtAge_Mal), catch proportions at length and age for females, males and sexes combined
-(ExpCatchPropLengthGivenAge, ExpCatchPropLengthGivenAge_Fem, ExpCatchPropLengthGivenAge_Mal),
+expected retained catches at length and integer age class (RetCatchAtIntAgeLen), expected catches at length (ExpCatchAtLen),
+catch proportions at length (ExpCatchPropInLenClass), expected retained catches at integer age classes (RetCatchAtIntAge),
+catch proportions at integer age class of females, males and sexes combined (ExpRetCatchPropAtIntAge, ExpRetCatchPropAtIntAge_Fem,
+ExpRetCatchPropAtIntAge_Mal), catch proportions at length and integer age class for females, males and sexes combined
+(ExpRetCatchPropLengthGivenIntAge, ExpRetCatchPropLengthGivenIntAge_Fem, ExpRetCatchPropLengthGivenIntAge_Mal),
 observed catch frequency at length data (ObsCatchFreqAtLen), observed catch frequency at length and age
-(ObsCatchFreqAtLengthAndAge)
+(ObsCatchFreqAtLengthAndAge), approximate CV at length corresponding to maximum age (CV_LenAtMaxAge, FemCV_LenAtMaxAge,
+MalCV_LenAtMaxAge)
 }
 \description{
 This function fits a length-based catch curve with length-based selectivity, based on
@@ -78,10 +83,14 @@ set.seed(123)
 SampleSize=5000
 set.seed(123)
 MaxAge = 26
+TimeStep = 1 # model timestep (e.g. 1 = annual, 1/12 = monthly)
+MinAge = floor(TimeStep)
+nAgeCl = length(MinAge:MaxAge)
+nTimeSteps = length(seq(TimeStep,MaxAge,TimeStep))
 NatMort = 4.22/MaxAge
 FishMort = 0.2
 MaxLen = 1100
-LenInc = 50
+LenInc = 10
 MLL = NA
 SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
 L50 = 400 # selectivity
@@ -102,22 +111,22 @@ vbK = c(0.25,0.2)
 CVSizeAtAge = c(0.05,0.05)
 RefnceAges = NA
 GrowthParams = data.frame(Linf=Linf, vbK=vbK, CVSizeAtAge=CVSizeAtAge)
-Res=SimLenAndAgeFreqData(SampleSize, MaxAge, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
+Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
                          L50, L95, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 lbnd=Res$lbnd
 midpt=Res$midpt
 ubnd=Res$ubnd
 # # get data - 1 sex (or combined sexes)
 # ObsCatchFreqAtLen = Res$ObsCatchFreqAtLen # 1 sex
-# ObsCatchFreqAtLengthAndAge = as.matrix(Res$ObsCatchFreqAtLengthAndAge) # 1 sex
+# ObsCatchFreqAtLengthAndAge = as.matrix(Res$ObsCatchFreqAtLengthAndDecAge) # 1 sex
 # get data - 2 sexes
 ObsCatchFreqAtLen <- data.frame(matrix(nrow = 2, ncol = length(midpt))) # 2 sex
 colnames(ObsCatchFreqAtLen) <- midpt
 ObsCatchFreqAtLen[1,] = Res$ObsCatchFreqAtLen_Fem
 ObsCatchFreqAtLen[2,] = Res$ObsCatchFreqAtLen_Mal
-ObsCatchFreqAtLengthAndAge = array(c(unlist(Res$ObsCatchFreqAtLengthAndAge_Fem), unlist(Res$ObsCatchFreqAtLengthAndAge_Mal)),
-                                   c(MaxAge, length(midpt), 2), dimnames=list(rownames(Res$ObsCatchFreqAtLengthAndAge_Fem),
-                                                                              colnames(Res$ObsCatchFreqAtLengthAndAge_Fem)))
+ObsCatchFreqAtLengthAndAge = array(c(unlist(Res$ObsCatchFreqAtLengthAndDecAge_Fem), unlist(Res$ObsCatchFreqAtLengthAndDecAge_Mal)),
+                                   c(nTimeSteps, length(midpt), 2), dimnames=list(rownames(Res$ObsCatchFreqAtLengthAndDecAge_Fem),
+                                                                                  colnames(Res$ObsCatchFreqAtLengthAndDecAge_Fem)))
 # # get params - 1 sex
 # InitFishMort = 0.3 # specify starting parameters
 # InitL50 = 300
@@ -135,5 +144,5 @@ InitCVSizeAtAge = 0.05
 InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform (so F is always between 0 and 1)
 params = c(InitFishMort_logit, log(c(InitL50, InitL95, InitLinf, InitvbK, InitCVSizeAtAge)))
 FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, MLL, SelectivityType, ObsCatchFreqAtLen, ObsCatchFreqAtLengthAndAge,
-                                                lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort)
+                                                lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep)
 }

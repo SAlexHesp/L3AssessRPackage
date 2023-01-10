@@ -20,7 +20,8 @@ GetLengthBasedCatchCurveResults(
   DiscMort,
   CVSizeAtAge,
   MaxAge,
-  NatMort
+  NatMort,
+  TimeStep
 )
 }
 \arguments{
@@ -56,19 +57,23 @@ both sexes von Bertalanffy, or c(y1, y2, a, b) single sex Schnute, or data.frame
 \item{MaxAge}{maximum age considered in model}
 
 \item{NatMort}{natural mortality}
+
+\item{TimeStep}{model timestep (e.g. 1 = annual, 1/12 = monthly)}
 }
 \value{
 negative log-likelihood (nll), nlminb convergence diagnostic (convergence)
 sample size (SampleSize), growth parameter estimates with lower and upper 95 percent
 confidence limits (ParamEst), point estimates for estimated parameters (params)
-and variance-covariance matrix (vcov.Params), selectivity at length (SelAtLength),
-growth curve (MeanSizeAtAge), midpoint of each length class (midpt), mean length after 1 year from
-growth curve, given initial length (MeanEndingLength), mean change in length after 1 year,
+and variance-covariance matrix (vcov.Params), gear selectivity at length (SelAtLength), retention at length (RetAtLength),
+selectivity of landings at length (SelLandAtLength), growth curve (MeanSizeAtAge), midpoint of each length class (midpt),
+mean length after 1 year from growth curve, given initial length (MeanEndingLength), mean change in length after 1 year,
 from initial length - note, assuming normal a distribution allows for possibility of negative growth
 if above asymptotic length (TimestepGrowthSizeInc), length distribution of 1+ year old recruits (RecLenDist),
-expected catches, at length (ExpCatchAtLen), proportion of catch in each length classes for sexes combined
-and separate (ExpCatchPropInLenClass, ExpCatchPropInLenClass_Fem, ExpCatchPropInLenClass_Mal),
-observed catch in each length class for sexes combined (ObsCatchFreqAtLen), CV for modelled lengthsat age, around mean
+expected retained catches, at length (RetCatchAtLen), expected discarded catch at length (DiscCatchAtLen),
+expected total (discard plus retained) catches at length (TotCatchAtLen), proportion of catch in each length classes for sexes combined
+and separate (ExpRetCatchPropInLenClass, ExpRetCatchPropInLenClass_Fem, ExpRetCatchPropInLenClass_Mal),
+expected retained catch proportions given integer age (ExpRetCatchPropLengthGivenIntAge, ExpRetCatchPropLengthGivenIntAge_Fem,
+ExpRetCatchPropLengthGivenIntAge_Mal), observed catch in each length class for sexes combined (ObsCatchFreqAtLen), CV for modelled lengthsat age, around mean
 length at MaxAge, for sexes combined or separate (CV_LenAtMaxAge, FemCV_LenAtMaxAge, MalCV_LenAtMaxAge)
 }
 \description{
@@ -85,6 +90,7 @@ variance-covariance matrix, calculated using the MASS package.
 SampleSize=5000
 set.seed(123)
 MaxAge = 30
+TimeStep = 1 # model timestep (e.g. 1 = annual, 1/12 = monthly)
 NatMort = 4.22/MaxAge
 FishMort = 0.2
 MaxLen = 1500
@@ -132,7 +138,7 @@ RefnceAges = NA
 # CVSizeAtAge = c(0.08, 0.08)
 # GrowthParams = data.frame(y1=y1, y2=y2, a=a, b=b)
 # RefnceAges = data.frame(t1=t1,t2=t2)
-Res=SimLenAndAgeFreqData(SampleSize, MaxAge, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
+Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
                          L50, L95, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 ObsCatchFreqAtLen = Res$ObsCatchFreqAtLen
 midpt=Res$midpt
@@ -144,5 +150,5 @@ InitL50 = 600
 InitL95 = 700
 params = c(InitFishMort_logit, log(InitL50), log(InitL95))
 Res=GetLengthBasedCatchCurveResults(params, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsCatchFreqAtLen,
-                                          lbnd, ubnd, midpt, SelectivityVec, PropReleased, DiscMort, CVSizeAtAge, MaxAge, NatMort)
+                                          lbnd, ubnd, midpt, SelectivityVec, PropReleased, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
 }

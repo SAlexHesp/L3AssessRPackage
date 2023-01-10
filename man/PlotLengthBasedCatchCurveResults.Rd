@@ -20,6 +20,7 @@ PlotLengthBasedCatchCurveResults(
   RefnceAges,
   MaxAge,
   NatMort,
+  TimeStep,
   MainLabel,
   xaxis_lab,
   yaxis_lab,
@@ -60,6 +61,8 @@ c(y1, y2, a, b) single sex Schnute, or data.frame(y1=y1, y2=y2, a=a, b=b) separa
 
 \item{NatMort}{natural mortality}
 
+\item{TimeStep}{model timestep (e.g. 1 = annual, 1/12 = monthly)}
+
 \item{MainLabel}{plot label}
 
 \item{xaxis_lab}{y axis label}
@@ -91,6 +94,7 @@ Produce plot of fitted length-based catch curve to length composition data
 SampleSize=5000
 set.seed(123)
 MaxAge = 30
+TimeStep = 1 # model timestep (e.g. 1 = annual, 1/12 = monthly)
 NatMort = 4.22/MaxAge
 FishMort = 0.2
 MaxLen = 1500
@@ -137,7 +141,7 @@ RefnceAges = NA
 # CVSizeAtAge = c(0.08, 0.08)
 # GrowthParams = data.frame(y1=y1, y2=y2, a=a, b=b)
 # RefnceAges = data.frame(t1=t1,t2=t2)
-Res=SimLenAndAgeFreqData(SampleSize, MaxAge, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
+Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
                          L50, L95, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 ObsCatchFreqAtLen = Res$ObsCatchFreqAtLen
 midpt=Res$midpt
@@ -149,10 +153,10 @@ InitL50 = 600
 InitL95 = 700
 params = c(InitFishMort_logit, log(InitL50), log(InitL95))
 FittedRes=GetLengthBasedCatchCurveResults(params, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsCatchFreqAtLen,
-                                          lbnd, ubnd, midpt, SelectivityVec, PropReleased, DiscMort, CVSizeAtAge, MaxAge, NatMort)
+                                          lbnd, ubnd, midpt, SelectivityVec, PropReleased, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
 # Plot. Note, can skip above step and set FittedRes=NA (plot function will be slower)
 PlotLengthBasedCatchCurveResults(params, MLL, SelectivityType, ObsCatchFreqAtLen, lbnd, ubnd, midpt,
-                                 SelectivityVec, PropReleased, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, MaxAge, NatMort, MainLabel=NA,
+                                 SelectivityVec, PropReleased, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, MaxAge, NatMort, TimeStep, MainLabel=NA,
                                  xaxis_lab=NA, yaxis_lab=NA, xmax=1500, xint=500,
                                  ymax=0.15, yint=0.05, PlotCLs=TRUE, FittedRes, nReps=200)
 }

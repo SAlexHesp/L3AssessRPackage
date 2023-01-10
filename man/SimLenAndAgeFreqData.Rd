@@ -7,6 +7,7 @@
 SimLenAndAgeFreqData(
   SampleSize,
   MaxAge,
+  TimeStep,
   NatMort,
   FishMort,
   MaxLen,
@@ -27,6 +28,8 @@ SimLenAndAgeFreqData(
 \item{SampleSize}{required same size}
 
 \item{MaxAge}{maximum age}
+
+\item{TimeStep}{model timestep (e.g. 1 = annual, 1/12 = monthly)}
 
 \item{NatMort}{natural mortality}
 
@@ -71,12 +74,13 @@ Function simulates age and length frequency data with specified selectivity, mor
 set.seed(123)
 SampleSize=10000
 MaxAge = 20
+TimeStep = 1 # model timestep (e.g. 1 = annual, 1/12 = monthly)
 NatMort = 0.2
 FishMort = 0.2
 MaxLen = 1000
 LenInc = 20
 midpt = seq(0,MaxLen - LenInc, LenInc) + (LenInc/2)
-MLL=NA
+MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA, otherwise retention is knife-edged at MLL
 SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
 L50 = 300 # selectivity
 L95 = 500 # selectivity
@@ -88,6 +92,6 @@ vbK = 0.2
 CVSizeAtAge = 0.08
 GrowthParams = c(Linf, vbK)
 RefnceAges = NA
-Res=SimLenAndAgeFreqData(SampleSize, MaxAge, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
+Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
                          L50, L95, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 }

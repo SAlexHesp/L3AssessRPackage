@@ -19,7 +19,8 @@ AgeAndLengthBasedCatchCurvesCalcs(
   SelectivityVec,
   DiscMort,
   MaxAge,
-  NatMort
+  NatMort,
+  TimeStep
 )
 }
 \arguments{
@@ -51,19 +52,27 @@ both sexes von Bertalanffy, or c(y1, y2, a, b) single sex Schnute, or data.frame
 \item{MaxAge}{maximum age considered in model}
 
 \item{NatMort}{natural mortality}
+
+\item{TimeStep}{model timestep (e.g. 1 = annual, 1/12 = monthly)}
 }
 \value{
-selectivity at length (SelAtLength), mean size at age from growth curve (MeanSizeAtAge),
+gear selectivity at length (SelAtLength), selectivity of landings at length (SelLandAtLength),
+ mean size at age from growth curve (MeanSizeAtAge), retention probability at length (RetAtLength),
 mid points of length classes (midpt), mean length after 1 year of growth given initial length of midpt
 (MeanEndingLength), associated change in length after 1 year of growth (TimestepGrowthSizeInc), length distribution
-of 1+ year old recruits (RecLenDist), catch proportions at each length for females, males and sexes combined
-(ExpCatchPropInLenClass, ExpCatchPropInLenClass_Fem, ExpCatchPropInLenClass_Mal), expected catches at age
-for females, males and sexes combined (ExpCatchAtAge, ExpCatchAtAge_Fem, ExpCatchAtAge_Mal), catches proportions
-at age for females and males (ExpCatchPropAtAge_Fem, ExpCatchPropAtAge_Mal), relative catches at length and age
-(Catch), expected catch proportions at length given age for females, males and sexes combined
-(ExpCatchPropLengthGivenAge, ExpCatchPropLengthGivenAge_Fem, ExpCatchPropLengthGivenAge_Mal), penalty values
+of 1+ year old recruits (RecLenDist), retained catch proportions at each length for females, males and sexes combined
+(ExpRetCatchPropInLenClass, ExpRetCatchPropInLenClass_Fem, ExpRetCatchPropInLenClass_Mal), expected retained catches at integer
+age classes for females, males and sexes combined (RetCatchAtIntAge, RetCatchAtIntAge_Fem, RetCatchAtIntAge_Mal), retained
+catch proportions at integer age classes for females, males and sexes combined (ExpRetCatchPropAtIntAge, ExpRetCatchPropAtIntAge_Fem, ExpRetCatchPropAtIntAge_Mal),
+relative catches at length and age (Catch), expected catch proportions at length given integer age class for females, males and sexes combined
+(ExpRetCatchPropLengthGivenIntAge, ExpRetCatchPropLengthGivenIntAge_Fem, ExpRetCatchPropLengthGivenIntAge_Mal), penalty values
 for L50 and L95 selectivity parameters (L50_Pen, L95_Pen), growth model type, 1=single sex von Bertalanffy, 2=2 sex
-von Bertalanffy, 3=1 sex Schnute, 4=2 sex Schnute (GrowthModelType)
+von Bertalanffy, 3=1 sex Schnute, 4=2 sex Schnute (GrowthModelType), expected total (retained plus discarded) catches at
+integer age and length (TotCatchAtIntAgeLen, TotCatchAtIntAgeLen_Fem, TotCatchAtIntAgeLen_Mal), retained catches at
+length (RetCatchAtIntAgeLen, RetCatchAtIntAgeLen_Fem, RetCatchAtIntAgeLen_Mal), discarded catches at length (DiscCatchAtIntAgeLen,
+DiscCatchAtIntAgeLen_Fem, DiscCatchAtIntAgeLen_Mal), total catches (discarded plus retained) at length (TotCatchAtLen,
+TotCatchAtLen_Fem, TotCatchAtLen_Mal), retained catches at length (RetCatchAtLen, RetCatchAtLen_Fem, RetCatchAtLen_Mal),
+discarded catches at length (DiscCatchAtLen, DiscCatchAtLen_Fem, RetCatchAtLen_Mal)
 }
 \description{
 This function undertakes a range of calculations required by the length and age and lengths-based catch curves

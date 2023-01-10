@@ -17,6 +17,7 @@ PlotAgeLengthCatchCurve_Cond_AL(
   DiscMort,
   MaxAge,
   NatMort,
+  TimeStep,
   MainLabel,
   xaxis_lab,
   yaxis_lab,
@@ -51,6 +52,8 @@ PlotAgeLengthCatchCurve_Cond_AL(
 \item{MaxAge}{maximum age considered in model}
 
 \item{NatMort}{natural mortality}
+
+\item{TimeStep}{model timestep (e.g. 1 = annual, 1/12 = monthly)}
 
 \item{MainLabel}{plot label}
 
@@ -88,10 +91,14 @@ set.seed(123)
 SampleSize=5000
 set.seed(123)
 MaxAge = 26
+TimeStep = 1 # model timestep (e.g. 1 = annual, 1/12 = monthly)
+MinAge = floor(TimeStep)
+nAgeCl = length(MinAge:MaxAge)
+nTimeSteps = length(seq(TimeStep,MaxAge,TimeStep))
 NatMort = 4.22/MaxAge
 FishMort = 0.2
 MaxLen = 1100
-LenInc = 50
+LenInc = 10
 MLL = NA
 SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
 L50 = 400 # selectivity
@@ -112,22 +119,22 @@ vbK = c(0.25,0.2)
 CVSizeAtAge = c(0.05,0.05)
 RefnceAges = NA
 GrowthParams = data.frame(Linf=Linf, vbK=vbK)
-Res=SimLenAndAgeFreqData(SampleSize, MaxAge, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
+Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
                          L50, L95, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 lbnd=Res$lbnd
 midpt=Res$midpt
 ubnd=Res$ubnd
 # # get data - 1 sex (or combined sexes)
 # ObsCatchFreqAtLen = Res$ObsCatchFreqAtLen # 1 sex
-# ObsCatchFreqAtLengthAndAge = as.matrix(Res$ObsCatchFreqAtLengthAndAge) # 1 sex
+# ObsCatchFreqAtLengthAndAge = as.matrix(Res$ObsCatchFreqAtLengthAndDecAge) # 1 sex
 # get data - 2 sexes
 ObsCatchFreqAtLen <- data.frame(matrix(nrow = 2, ncol = length(midpt))) # 2 sex
 colnames(ObsCatchFreqAtLen) <- midpt
 ObsCatchFreqAtLen[1,] = Res$ObsCatchFreqAtLen_Fem
 ObsCatchFreqAtLen[2,] = Res$ObsCatchFreqAtLen_Mal
-ObsCatchFreqAtLengthAndAge = array(c(unlist(Res$ObsCatchFreqAtLengthAndAge_Fem), unlist(Res$ObsCatchFreqAtLengthAndAge_Mal)),
-                                   c(MaxAge, length(midpt), 2), dimnames=list(rownames(Res$ObsCatchFreqAtLengthAndAge_Fem),
-                                                                              colnames(Res$ObsCatchFreqAtLengthAndAge_Fem)))
+ObsCatchFreqAtLengthAndAge = array(c(unlist(Res$ObsCatchFreqAtLengthAndDecAge_Fem), unlist(Res$ObsCatchFreqAtLengthAndDecAge_Mal)),
+                                   c(nTimeSteps, length(midpt), 2), dimnames=list(rownames(Res$ObsCatchFreqAtLengthAndDecAge_Fem),
+                                                                                  colnames(Res$ObsCatchFreqAtLengthAndDecAge_Fem)))
 # # get params - 1 sex
 # InitFishMort = 0.3 # specify starting parameters
 # InitL50 = 300
@@ -149,7 +156,7 @@ FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, MLL, SelectivityType, Ob
 # Note, can skip above step and set FittedRes=NA (plot function will be slower)
 # plot
 PlotAgeLengthCatchCurve_Cond_AL(params, MLL, SelectivityType, ObsCatchFreqAtLen, ObsCatchFreqAtLengthAndAge,
-                                lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, MainLabel=NA,
+                                lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep, MainLabel=NA,
                                 xaxis_lab=NA, yaxis_lab=NA, xmax=40, xint=10,
                                 ymax=NA, yint=NA, FittedRes)
 }
