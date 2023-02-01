@@ -612,6 +612,42 @@ VisualiseGrowthApplyingLTM <- function (nFish, TimeStep, MaxAge, Growth_params, 
 #' params = c(InitFishMort_logit, log(InitL50), log(InitL95))
 #' Res=GetLengthBasedCatchCurveResults(params, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsCatchFreqAtLen,
 #'                                           lbnd, ubnd, midpt, SelectivityVec, PropReleased, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
+#' #
+#' # # Example with selectivity specified as a vector
+#' # # Simulate data
+#' # SampleSize=5000
+#' # set.seed(123)
+#' # MaxAge = 30
+#' # TimeStep = 1 # model timestep (e.g. 1 = annual, 1/12 = monthly)
+#' # NatMort = 4.22/MaxAge
+#' # FishMort = 0.2
+#' # MaxLen = 1500
+#' # LenInc = 20
+#' # MLL = NA
+#' # SelectivityType=1 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
+#' # lbnd = seq(0,MaxLen - LenInc, LenInc)
+#' # midpt = lbnd + (LenInc/2)
+#' # SelectivityVec = 1 / (1 + exp(-log(19)*(midpt-600)/(700-600)))
+#' # PropReleased = NA # vector including mean and sd
+#' # DiscMort = 0 # proportion of fish that die due to natural mortality
+#' #  # single sex, von Bertalanffy
+#' # GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute
+#' # Linf = 800
+#' # vbK = 0.2
+#' # CVSizeAtAge = 0.08
+#' # GrowthParams = c(Linf, vbK, CVSizeAtAge)
+#' # RefnceAges = NA
+#' # Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
+#' #                        L50, L95, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#' # ObsCatchFreqAtLen = Res$ObsCatchFreqAtLen
+#' # midpt=Res$midpt
+#' # lbnd=Res$lbnd
+#' # ubnd=Res$ubnd
+#' # InitFishMort = 0.25 # specify starting parameters
+#' # InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform
+#' # params = c(InitFishMort_logit)
+#' # Res=GetLengthBasedCatchCurveResults(params, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsCatchFreqAtLen,
+#' #                                      lbnd, ubnd, midpt, SelectivityVec, PropReleased, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
 #' @export
 GetLengthBasedCatchCurveResults <- function (params, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsCatchFreqAtLen,
                                              lbnd, ubnd, midpt, SelectivityVec, PropReleased, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
@@ -6475,7 +6511,7 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
   plot(Res$Ages,Res$FemPropMatAtAge,"l", pch=16,frame.plot=F,ylim=c(0,1),xlim=c(0,MaxModelAge),col="red",yaxt="n",xaxt="n",
        ylab="",xlab="",cex=0.8)
   if (DiscMort == 0) {
-    lines(Res$Ages, Res$FemRetProbAtAge, "l", col="red",lty="dotted", cex=0.8)
+    lines(Res$Ages, Res$FemSelLandAtAge, "l", col="red",lty="dotted", cex=0.8)
     legend('bottomright', col=c("red","red"),legend=c("Fem. mature","Fem. reten."),
            lty=c("solid","dotted"),bty='n', cex=0.8,lwd=1.75)
   } else {
@@ -6500,7 +6536,7 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
   plot(Res$Ages, Res$MalPropMatAtAge,"l", pch=16, frame.plot=F,ylim=c(0,1),xlim=c(0,MaxModelAge),col="blue",yaxt="n",xaxt="n",
        ylab="",xlab="", cex=0.8)
   if (DiscMort == 0) {
-    lines(Res$Ages, Res$MalRetProbAtAge, "l", col="blue",lty="dotted", cex=0.8)
+    lines(Res$Ages, Res$FemSelLandAtAge, "l", col="blue",lty="dotted", cex=0.8)
     legend('bottomright', col=c("blue","blue"),legend=c("Male mature","Male reten."),
            lty=c("solid","dotted"),bty='n', cex=0.8,lwd=1.75)
   } else {
@@ -6912,7 +6948,7 @@ PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
   plot(midpt,Res$FemPropMatAtLen,"l", pch=16,frame.plot=F,ylim=c(0,1),xlim=c(0,MaxLen),col="red",yaxt="n",xaxt="n",
        ylab="",xlab="",cex=0.8)
   if (DiscMort == 0) {
-    lines(midpt, Res$FemRetProbAtLen, "l", col="red",lty="dotted", cex=0.8)
+    lines(midpt, Res$FemSelLandAtLen, "l", col="red",lty="dotted", cex=0.8)
     legend('topleft', col=c("red","red"),legend=c("Fem. mature","Fem. reten."),
            lty=c("solid","dotted"),bty='n', cex=0.8,lwd=1.75)
   } else {
@@ -6937,7 +6973,7 @@ PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
   plot(midpt, Res$MalPropMatAtLen,"l", pch=16, frame.plot=F,ylim=c(0,1),xlim=c(0,MaxLen),col="blue",yaxt="n",xaxt="n",
        ylab="",xlab="", cex=0.8)
   if (DiscMort == 0) {
-    lines(midpt, Res$MalRetProbAtLen, "l", col="blue",lty="dotted", cex=0.8)
+    lines(midpt, Res$FemSelLandAtLen, "l", col="blue",lty="dotted", cex=0.8)
     legend('topleft', col=c("blue","blue"),legend=c("Male mature","Male reten."),
            lty=c("solid","dotted"),bty='n', cex=0.8,lwd=1.75)
   } else {

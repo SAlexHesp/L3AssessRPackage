@@ -8,13 +8,13 @@
         "-IC:/rtools40/mingw64/include",
         "-IC:/rtools40/mingw64/lib/gcc/x86_64-w64-mingw32/8.3.0/include-fixed",
         "-IC:/rtools40/mingw64/x86_64-w64-mingw32/include",
-        "-IC:/~/R-4.1.3/library/Rcpp/include",
+        "-IC:/~/R-4.1.2/library/Rcpp/include",
         "-std=gnu++11",
-        "-IC:/~/R-41~1.3/include",
+        "-IC:/~/R-41~1.2/include",
         "-DNDEBUG"
     ],
     "pch": "Rcpp",
     "is_cpp": true,
-    "hash": "1667094986",
-    "compiler": "2977220399556355138"
+    "hash": "1666235103",
+    "compiler": "15831801441610807778"
 }
