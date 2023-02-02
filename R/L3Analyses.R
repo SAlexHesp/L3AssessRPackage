@@ -1484,10 +1484,9 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, GrowthCurveType, GrowthPa
 #' MalCV_LenAtMaxAge)
 #'
 #' @examples
-#' set.seed(123)
 #' # Simulate data
-#' SampleSize=5000
 #' set.seed(123)
+#' SampleSize=5000
 #' MaxAge = 26
 #' TimeStep = 1 # model timestep (e.g. 1 = annual, 1/12 = monthly)
 #' MinAge = floor(TimeStep)
@@ -1551,6 +1550,49 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, GrowthCurveType, GrowthPa
 #' params = c(InitFishMort_logit, log(c(InitL50, InitL95, InitLinf, InitvbK, InitCVSizeAtAge)))
 #' FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, MLL, SelectivityType, ObsCatchFreqAtLen, ObsCatchFreqAtLengthAndAge,
 #'                                                 lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep)
+#' # # Example with specified selectivity vector
+#' # # Simulate data
+#' # set.seed(123)
+#' # SampleSize=5000
+#' # MaxAge = 26
+#' # TimeStep = 1 # model timestep (e.g. 1 = annual, 1/12 = monthly)
+#' # MinAge = floor(TimeStep)
+#' # nAgeCl = length(MinAge:MaxAge)
+#' # nTimeSteps = length(seq(TimeStep,MaxAge,TimeStep))
+#' # NatMort = 4.22/MaxAge
+#' # FishMort = 0.2
+#' # MaxLen = 1100
+#' # LenInc = 10
+#' # MLL = NA
+#' # SelectivityType=1 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
+#' # lbnd = seq(0,MaxLen - LenInc, LenInc)
+#' # midpt = lbnd + (LenInc/2)
+#' # SelectivityVec = 1 / (1 + exp(-log(19)*(midpt-400)/(500-400)))
+#' # DiscMort = 0
+#' # # single sex, von Bertalanffy
+#' # GrowthCurveType = 1 # 1 = von Bertalanffy
+#' # Linf = 800
+#' # vbK = 0.2
+#' # CVSizeAtAge = 0.08
+#' # GrowthParams = c(Linf, vbK, CVSizeAtAge)
+#' # RefnceAges = NA
+#' # Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
+#' #                          L50, L95, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#' # lbnd=Res$lbnd
+#' # midpt=Res$midpt
+#' # ubnd=Res$ubnd
+#' # # get data - 1 sex (or combined sexes)
+#' # ObsCatchFreqAtLen = Res$ObsCatchFreqAtLen # 1 sex
+#' # ObsCatchFreqAtLengthAndAge = as.matrix(Res$ObsCatchFreqAtLengthAndDecAge) # 1 sex
+#' # # get params - 1 sex
+#' # InitFishMort = 0.3 # specify starting parameters
+#' # InitLinf = 800
+#' # InitvbK = 0.2
+#' # InitCVSizeAtAge = 0.05
+#' # InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform (so F is always between 0 and 1)
+#' # params = c(InitFishMort_logit, log(c(InitLinf, InitvbK, InitCVSizeAtAge)))
+#' # FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, MLL, SelectivityType, ObsCatchFreqAtLen, ObsCatchFreqAtLengthAndAge,
+#' #                                                lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep)
 #' @export
 GetAgeAndLengthBasedCatchCurveResults <- function (params, MLL, SelectivityType, ObsCatchFreqAtLen, ObsCatchFreqAtLengthAndAge,
                                                    lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep)
@@ -2463,10 +2505,9 @@ PlotLengthBasedCatchCurveResults <- function(params, MLL, SelectivityType, ObsCa
 #' @return Plot of fitted age and length-based catch curve to marginal length composition
 #'
 #' @examples
-#' set.seed(123)
 #' # Simulate data
-#' SampleSize=5000
 #' set.seed(123)
+#' SampleSize=5000
 #' MaxAge = 26
 #' TimeStep = 1 # model timestep (e.g. 1 = annual, 1/12 = monthly)
 #' NatMort = 4.22/MaxAge
@@ -2718,9 +2759,7 @@ PlotAgeLengthCatchCurve_MargLength <- function(params, MLL, SelectivityType, Obs
 #' @examples
 #' # Simulate data
 #' set.seed(123)
-#' # Simulate data
 #' SampleSize=5000
-#' set.seed(123)
 #' MaxAge = 26
 #' TimeStep = 1 # model timestep (e.g. 1 = annual, 1/12 = monthly)
 #' MinAge = floor(TimeStep)
@@ -3017,9 +3056,7 @@ PlotAgeLengthCatchCurve_Growth <- function(params, MLL, SelectivityType, ObsCatc
 #' @examples
 #' # Simulate data
 #' set.seed(123)
-#' # Simulate data
 #' SampleSize=5000
-#' set.seed(123)
 #' MaxAge = 26
 #' TimeStep = 1 # model timestep (e.g. 1 = annual, 1/12 = monthly)
 #' MinAge = floor(TimeStep)
@@ -3212,9 +3249,7 @@ PlotAgeLengthCatchCurve_Selectivity <- function(params, MLL, SelectivityType, Ob
 #' @examples
 #' # Simulate data
 #' set.seed(123)
-#' # Simulate data
 #' SampleSize=5000
-#' set.seed(123)
 #' MaxAge = 26
 #' TimeStep = 1 # model timestep (e.g. 1 = annual, 1/12 = monthly)
 #' MinAge = floor(TimeStep)
@@ -3456,7 +3491,9 @@ PlotAgeLengthCatchCurve_Cond_AL <- function(params, MLL, SelectivityType, ObsCat
              pch=c(16,-1), col=c("black","blue"), bty='n', cex=0.8)
     }
   }
+
   # reset default par options
+  par(mfrow=c(1,1))
   par(.pardefault)
 }
 

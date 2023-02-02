@@ -92,9 +92,7 @@ the MASS package.
 \examples{
 # Simulate data
 set.seed(123)
-# Simulate data
 SampleSize=5000
-set.seed(123)
 MaxAge = 26
 TimeStep = 1 # model timestep (e.g. 1 = annual, 1/12 = monthly)
 MinAge = floor(TimeStep)

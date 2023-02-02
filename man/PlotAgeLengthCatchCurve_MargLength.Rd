@@ -91,10 +91,9 @@ and associated 95 percent confidence limits and associated variance-covariance m
 the MASS package.
 }
 \examples{
-set.seed(123)
 # Simulate data
-SampleSize=5000
 set.seed(123)
+SampleSize=5000
 MaxAge = 26
 TimeStep = 1 # model timestep (e.g. 1 = annual, 1/12 = monthly)
 NatMort = 4.22/MaxAge
