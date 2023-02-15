@@ -4334,7 +4334,7 @@ Calculate_NLL_LogisticCatchCurve <- function(ln_params) {
 #'
 #' This function fits a catch curve with an asymptotic, age-based logistic selectivity curve,
 #' to a sample of fish age frequency data, by minimising the negative log-likelihood associated
-#' with the parameters and data, using nlminb. It provides various statistical outputs in include
+#' with the parameters and data, using nlminb. It provides various statistical outputs including
 #' convergence statistics, parameter estimates and associated 95 percent confidence limits and associated
 #' variance-covariance matrix, calculated using the MASS package
 #'
@@ -4572,7 +4572,7 @@ PlotAgeBasedCatchCurveResults_NormalSpace <- function(RecAssump, MinFreq, MinAge
     xxxx=which(Ages==Res$LastAgeForLinearCC) #  # position of last age
   } # logistic
   if (CatchCurveModel == 3) {
-    Z_value = round(Res$ParamEst[1,1],digits=3)
+    Z_value = round(Res$ParamEst[1,1] + NatMort,digits=3)
     x=which(Ages==min(Ages)) # RecAge position
     xx=which(Ages==max(Ages)) # position of last age
     xxx=which(Ages==max(Ages)) #  # position of last age
@@ -4733,7 +4733,7 @@ PlotAgeBasedCatchCurveResults_LogSpace <- function(RecAssump, MinFreq, MinAge, M
   }
   # logistic selectivity
   if (CatchCurveModel == 3) {
-    Z_value = round(Res$EstZMort,digits=3)
+    Z_value = round(Res$ParamEst[1,1] + NatMort,digits=3)
     # x=which(Ages==min(which(log(Res$EstFreq_Zlow)>0))) # RecAge position
     x=min(which(log(Res$EstFreq_Zlow)>0)) # RecAge position
     xx=length(which(log(Res$EstFreq_Zlow) > -1)) # position of last age
