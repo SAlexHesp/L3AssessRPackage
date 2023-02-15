@@ -4344,13 +4344,13 @@ Calculate_NLL_LogisticCatchCurve <- function(ln_params) {
 #' @param ObsAgeFreq observed age frequency data
 #'
 #' @return negative log-likelihood (nll), nlminb convergence diagnostic (convergence)
-#' sample size (SampleSize), growth parameter estimates with lower and upper 95 percent
+#' sample size (SampleSize), parameter estimates with lower and upper 95 percent
 #' confidence limits (ParamEst), point estimates for parameters estimated in log space (Estlnparams),
 #' variance-covariance matrix for estimated parameters (vcov.Params), standard errors for estimated
 #' parameters (lnEstFMort_se, lnEstSelA50_se, lnEstFSelA95_se), selectivity at age (SelAtAge), fishing
 #' mortality at age (FAtAge), estimated frequencies at age with associated 95 percent confidence limits
 #' (EstFreq, EstFreq_Zlow, EstFreq_Zup), random values of parameters in log space from parametric resampling,
-#' using rmultinom function (lnparams.sims), and associated median and lower 2.5 and upper 95.5 percentiles
+#' using rmultinom function (lnparams.sims), and associated median and lower 2.5 and upper 97.5 percentiles
 #' of estimates for frequency at age (EstFreq.sim), selectivity parameters in normal space (SelA50.sim, SelA95.sim),
 #' fishing mortality (FMort.sim) and total mortality (EstZMort.sim)
 #'
@@ -4570,9 +4570,9 @@ PlotAgeBasedCatchCurveResults_NormalSpace <- function(RecAssump, MinFreq, MinAge
     xx=which(Ages==Res$LastAgeForLinearCC) # position of last age
     xxx=which(Ages==Res$LastAgeForLinearCC) #  # position of last age
     xxxx=which(Ages==Res$LastAgeForLinearCC) #  # position of last age
-  }
+  } # logistic
   if (CatchCurveModel == 3) {
-    Z_value = round(Res$EstZMort,digits=3)
+    Z_value = round(Res$ParamEst[1,1],digits=3)
     x=which(Ages==min(Ages)) # RecAge position
     xx=which(Ages==max(Ages)) # position of last age
     xxx=which(Ages==max(Ages)) #  # position of last age
