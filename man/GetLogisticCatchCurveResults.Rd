@@ -17,20 +17,20 @@ GetLogisticCatchCurveResults(ln_params, NatMort, Ages, ObsAgeFreq)
 }
 \value{
 negative log-likelihood (nll), nlminb convergence diagnostic (convergence)
-sample size (SampleSize), growth parameter estimates with lower and upper 95 percent
+sample size (SampleSize), parameter estimates with lower and upper 95 percent
 confidence limits (ParamEst), point estimates for parameters estimated in log space (Estlnparams),
 variance-covariance matrix for estimated parameters (vcov.Params), standard errors for estimated
 parameters (lnEstFMort_se, lnEstSelA50_se, lnEstFSelA95_se), selectivity at age (SelAtAge), fishing
 mortality at age (FAtAge), estimated frequencies at age with associated 95 percent confidence limits
 (EstFreq, EstFreq_Zlow, EstFreq_Zup), random values of parameters in log space from parametric resampling,
-using rmultinom function (lnparams.sims), and associated median and lower 2.5 and upper 95.5 percentiles
+using rmultinom function (lnparams.sims), and associated median and lower 2.5 and upper 97.5 percentiles
 of estimates for frequency at age (EstFreq.sim), selectivity parameters in normal space (SelA50.sim, SelA95.sim),
 fishing mortality (FMort.sim) and total mortality (EstZMort.sim)
 }
 \description{
 This function fits a catch curve with an asymptotic, age-based logistic selectivity curve,
 to a sample of fish age frequency data, by minimising the negative log-likelihood associated
-with the parameters and data, using nlminb. It provides various statistical outputs in include
+with the parameters and data, using nlminb. It provides various statistical outputs including
 convergence statistics, parameter estimates and associated 95 percent confidence limits and associated
 variance-covariance matrix, calculated using the MASS package
 }

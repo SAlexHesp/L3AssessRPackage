@@ -6688,7 +6688,7 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
   axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
   mtext(expression(paste(plain("Biom. at age (kg"),plain(")"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
   mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
-  legend('topright', col=c("red","red"),lty=c("solid","dotted"),legend=c("Fem. unfish","Mal. unfish"),bty='n', cex=1.0,lwd=1.75)
+  legend('topright', col=c("red","red"),lty=c("solid","dotted"),legend=c("Fem. unfish","Fem unfish"),bty='n', cex=1.0,lwd=1.75)
 
   # plot fished and unfished mature male biomass at age given specified current fully-selected fishing mortality
   ylims = Get_yaxis_scale(Res$UnfishMalBiomAtAge)
@@ -6706,7 +6706,7 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
   axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
   mtext(expression(paste(plain("Biom. at age (kg"),plain(")"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
   mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
-  legend('topright', col=c("blue","blue"),lty=c("solid","dotted"),legend=c("Fem. unfish","Mal. unfish"),bty='n', cex=1.0,lwd=1.75)
+  legend('topright', col=c("blue","blue"),lty=c("solid","dotted"),legend=c("Mal. unfish","Mal. unfish"),bty='n', cex=1.0,lwd=1.75)
   #Plot 3:
 
   # plot female and male catch at age, given specified current fully-selected fishing mortality
@@ -7704,23 +7704,18 @@ PlotPerRecruit_Biom_no_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzer
                              SRrel_Type, NatMort, Current_F)
 
   # F vs SPR and Brel
-  # plot(Res$FishMort, Res$Fem_SPRResults, "l", frame.plot=F, ylim=c(0, 1), xlim=c(0, max(Res$FishMort)),
-  #      col="black", yaxt="n", xaxt="n", ylab="", xlab="")
-  # lines(Res$FishMort, Res$Equilmod_FemRelBiomResults, col="black", lty="dotted")
-  # points(Current_F, Res$Fem_SPR, cex=1.2, col="black", pch=16)
-
-  plot(Res$FishMort, Res$Equilmod_FemRelBiomResults, "l", frame.plot=F, ylim=c(0, 1), xlim=c(0, max(Res$FishMort)),
+  xmax = max(Res$FishMort)
+  if (NatMort < 0.15) xmax = 1.0
+  plot(Res$FishMort, Res$Equilmod_FemRelBiomResults, "l", frame.plot=F, ylim=c(0, 1), xlim=c(0, xmax),
        col="black", yaxt="n", xaxt="n", ylab="", xlab="")
   points(Current_F, Res$Equilmod_FemRelBiom, cex=1.2, col="black", pch=16)
-  axis(1, at=seq(0, max(Res$FishMort), 0.5), cex.axis=1, lwd=1.75, lab=F)
+  axis(1, at=seq(0, xmax, 0.5), cex.axis=1, lwd=1.75, lab=F)
   axis(2, at=seq(0, 1, 0.2), cex.axis=1, lwd=1.75, lab=F)
-  axis(1, at=seq(0, max(Res$FishMort), 0.5), labels = seq(0, max(Res$FishMort), 0.5),
+  axis(1, at=seq(0, xmax, 0.5), labels = seq(0, xmax, 0.5),
        cex.axis=1, line=0.5, las=1, lwd=1.5, tick=F)
   axis(2, at=seq(0, 1, 0.2), cex.axis=1, line=0.5, las=1, lwd=1.5, tick=F)
   mtext(expression(paste(plain("Relative spawning biomass"))), las=3, side=2, line=3, cex=1, lwd=1.75)
   mtext(expression(paste(italic("F") ~ (year^{-1}))), las=1, side=1, line=3, cex=1, lwd=1.75)
-  # legend("topright", col=c("black", "black"), lty=c("solid", "dotted"), legend=c("SPR", "Rel. biomass"),
-  #        bty="n", cex=0.8, lwd=1.75, inset = 0.05)
   legend("topleft", col="black", pch = 16, lty=0, legend="Estimate",
   bty="n", cex=0.8, inset = 0.05)
 
@@ -7849,12 +7844,14 @@ PlotPerRecruit_Biom_no_err_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, mid
                                 ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F)
 
   # F vs SPR and Brel
-  plot(Res$FishMort, Res$Equilmod_FemRelBiomResults, "l", frame.plot=F, ylim=c(0, 1), xlim=c(0, max(Res$FishMort)),
+  xmax = max(Res$FishMort)
+  if (NatMort < 0.15) xmax = 1.0
+  plot(Res$FishMort, Res$Equilmod_FemRelBiomResults, "l", frame.plot=F, ylim=c(0, 1), xlim=c(0, xmax),
        col="black", yaxt="n", xaxt="n", ylab="", xlab="")
   points(Current_F, Res$Equilmod_FemRelBiom, cex=1.2, col="black", pch=16)
-  axis(1, at=seq(0, max(Res$FishMort), 0.5), cex.axis=1, lwd=1.75, lab=F)
+  axis(1, at=seq(0, xmax, 0.5), cex.axis=1, lwd=1.75, lab=F)
   axis(2, at=seq(0, 1, 0.2), cex.axis=1, lwd=1.75, lab=F)
-  axis(1, at=seq(0, max(Res$FishMort), 0.5), labels = seq(0, max(Res$FishMort), 0.5),
+  axis(1, at=seq(0, xmax, 0.5), labels = seq(0, xmax, 0.5),
        cex.axis=1, line=0.5, las=1, lwd=1.5, tick=F)
   axis(2, at=seq(0, 1, 0.2), cex.axis=1, line=0.5, las=1, lwd=1.5, tick=F)
   mtext(expression(paste(plain("Relative spawning biomass"))), las=3, side=2, line=3, cex=1, lwd=1.75)
@@ -8461,7 +8458,8 @@ PlotPerRecruit_Biom_with_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
   }
   points(Current_F, Res$EstEquilRelFemSpBiom, cex=1.2, col="black", pch=16)
   arrows(Current_F, Res$Low95EquilRelFemSpBiom, Current_F, Res$Upp95EquilRelFemSpBiom, length=0.05, angle=90, code=3)
-  polygon(c(res$FishMort,rev(res$FishMort)),c(EqB_lw,rev(EqB_hi)), col=grey(0.5,0.25),
+  x=which(res$FishMort==xmax)
+  polygon(c(res$FishMort[1:x],rev(res$FishMort[1:x])),c(EqB_lw[1:x],rev(EqB_hi[1:x])), col=grey(0.5,0.25),
           border=grey(0.5,0.25))
   axis(1, at=seq(0, xmax, xint), cex.axis=1, lwd=1, lab=F, line=-0.3)
   axis(2, at=seq(0, ymax, yint), cex.axis=1, lwd=1, lab=F, line=-0.3)
@@ -8652,7 +8650,8 @@ PlotPerRecruit_Biom_with_err_LB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
   }
   points(Current_F, Res$EstEquilRelFemSpBiom, cex=1.2, col="black", pch=16)
   arrows(Current_F, Res$Low95EquilRelFemSpBiom, Current_F, Res$Upp95EquilRelFemSpBiom, length=0.05, angle=90, code=3)
-  polygon(c(Res$PerRec_FValues,rev(Res$PerRec_FValues)),c(EqB_lw,rev(EqB_hi)), col=grey(0.5,0.25),
+  x=which(Res$PerRec_FValues==xmax)
+  polygon(c(Res$PerRec_FValues[1:x],rev(Res$PerRec_FValues[1:x])),c(EqB_lw[1:x],rev(EqB_hi[1:x])), col=grey(0.5,0.25),
           border=grey(0.5,0.25))
   axis(1, at=seq(0, xmax, xint), cex.axis=1, lwd=1, lab=F, line=-0.3)
   axis(2, at=seq(0, ymax, yint), cex.axis=1, lwd=1, lab=F, line=-0.3)
