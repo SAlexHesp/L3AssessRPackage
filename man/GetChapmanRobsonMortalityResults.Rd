@@ -4,10 +4,18 @@
 \alias{GetChapmanRobsonMortalityResults}
 \title{Estimate total mortality applying the Chapman & Robson (1960) mortality estimator}
 \usage{
-GetChapmanRobsonMortalityResults(RecAssump, MinAge, MaxAge, ObsAgeFreq)
+GetChapmanRobsonMortalityResults(
+  RecAssump,
+  SpecRecAge,
+  MinAge,
+  MaxAge,
+  ObsAgeFreq
+)
 }
 \arguments{
-\item{RecAssump}{0=age at peak frequency, 1=age at peak frequency + 1}
+\item{RecAssump}{0=age at peak frequency, 1=age at peak frequency + 1, 2=specified age at full recruitment}
+
+\item{SpecRecAge}{specified at at full recruitment, set to NA when RecAssump is set to 0 or 1}
 
 \item{MinAge}{minimum age}
 
@@ -40,5 +48,5 @@ SelA95 = 8
 SampleSize = 1000 # required number of fish for age sample
 Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
 ObsAgeFreq = unlist(as.vector(Res$CatchSample))
-res=GetChapmanRobsonMortalityResults(RecAssump=0, MinAge, MaxAge, ObsAgeFreq)
+res=GetChapmanRobsonMortalityResults(RecAssump=0, SpecRecAge=NA, MinAge, MaxAge, ObsAgeFreq)
 }

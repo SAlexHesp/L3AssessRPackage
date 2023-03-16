@@ -4,10 +4,12 @@
 \alias{GetLinearCatchCurveResults}
 \title{Fit linear catch curve and get results}
 \usage{
-GetLinearCatchCurveResults(RecAssump, MinFreq, Ages, ObsAgeFreq)
+GetLinearCatchCurveResults(RecAssump, SpecRecAge, MinFreq, Ages, ObsAgeFreq)
 }
 \arguments{
 \item{RecAssump}{0=age at peak frequency, 1=age at peak frequency + 1}
+
+\item{SpecRecAge}{specified age at full recruitment. Set to NA if RecAssump = 0 or 1.}
 
 \item{MinFreq}{minimum frequency of fish for including data for old fish}
 
@@ -47,5 +49,5 @@ SelA95 = 8
 SampleSize = 1000 # required number of fish for age sample
 Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
 ObsAgeFreq = unlist(as.vector(Res$CatchSample))
-res=GetLinearCatchCurveResults(RecAssump=0, MinFreq=1, Ages, ObsAgeFreq)
+res=GetLinearCatchCurveResults(RecAssump=0, SpecRecAge=NA, MinFreq=1, Ages, ObsAgeFreq)
 }

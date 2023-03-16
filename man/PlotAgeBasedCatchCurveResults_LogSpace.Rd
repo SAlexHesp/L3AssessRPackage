@@ -6,6 +6,7 @@
 \usage{
 PlotAgeBasedCatchCurveResults_LogSpace(
   RecAssump,
+  SpecRecAge,
   MinFreq,
   MinAge,
   MaxAge,
@@ -25,6 +26,8 @@ PlotAgeBasedCatchCurveResults_LogSpace(
 }
 \arguments{
 \item{RecAssump}{0=age at peak frequency, 1=age at peak frequency + 1}
+
+\item{SpecRecAge}{specified at at full recruitment, set to NA when RecAssump is set to 0 or 1}
 
 \item{MinFreq}{minimum frequency of fish for including data for old fish}
 
@@ -91,7 +94,7 @@ Init_FMort = 0.2
 Init_SelA50 = 5
 Init_SelA95 = 7
 ln_params = log(c(Init_FMort, Init_SelA50, SelA95))
-PlotAgeBasedCatchCurveResults_LogSpace(RecAssump, MinFreq, MinAge, MaxAge, NatMort,
+PlotAgeBasedCatchCurveResults_LogSpace(RecAssump, SpecRecAge=NA, MinFreq, MinAge, MaxAge, NatMort,
                                        ObsAgeFreq, CatchCurveModel, MainLabel=NA,
                                        xaxis_lab=NA, yaxis_lab=NA, ymin=NA, xmax=NA, xint=NA,
                                        ymax=NA, yint=NA, PlotCLs=T)

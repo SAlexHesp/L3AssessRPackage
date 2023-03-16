@@ -4051,6 +4051,7 @@ CalcLastAgeForLinearCatchCurve <- function (MinFreq, RecAge, Ages, ObsAgeFreq)
 #' data using the lm function
 #'
 #' @param RecAssump 0=age at peak frequency, 1=age at peak frequency + 1
+#' @param SpecRecAge specified age at full recruitment. Set to NA if RecAssump = 0 or 1.
 #' @param MinFreq minimum frequency of fish for including data for old fish
 #' @param Ages ages for analysis
 #' @param ObsAgeFreq observed age frequency
@@ -4076,12 +4077,16 @@ CalcLastAgeForLinearCatchCurve <- function (MinFreq, RecAge, Ages, ObsAgeFreq)
 #' SampleSize = 1000 # required number of fish for age sample
 #' Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
 #' ObsAgeFreq = unlist(as.vector(Res$CatchSample))
-#' res=GetLinearCatchCurveResults(RecAssump=0, MinFreq=1, Ages, ObsAgeFreq)
+#' res=GetLinearCatchCurveResults(RecAssump=0, SpecRecAge=NA, MinFreq=1, Ages, ObsAgeFreq)
 #' @export
-GetLinearCatchCurveResults <- function(RecAssump, MinFreq, Ages, ObsAgeFreq) {
+GetLinearCatchCurveResults <- function(RecAssump, SpecRecAge, MinFreq, Ages, ObsAgeFreq) {
 
   # get recruitment age, given recruitment assumption
-  RecAge=CalcRecruitmentAge(RecAssump, Ages, ObsAgeFreq)
+  if (RecAssump==2) {
+    RecAge = SpecRecAge
+  } else {
+    RecAge=CalcRecruitmentAge(RecAssump, Ages, ObsAgeFreq)
+  }
 
   # calculate last age to be considered in analysis, given minimum frequency
   LastAgeForLinearCC=CalcLastAgeForLinearCatchCurve(MinFreq, RecAge, Ages, ObsAgeFreq)
@@ -4161,7 +4166,8 @@ GetLinearCatchCurveResults <- function(RecAssump, MinFreq, Ages, ObsAgeFreq) {
 #' This function provides an estimate of total mortality, applying the Chapman & Robson (1960) mortality
 #' estimator, with associated 95 percent confidence limits. Additional variables are returned for plotting
 #'
-#' @param RecAssump 0=age at peak frequency, 1=age at peak frequency + 1
+#' @param RecAssump 0=age at peak frequency, 1=age at peak frequency + 1, 2=specified age at full recruitment
+#' @param SpecRecAge specified at at full recruitment, set to NA when RecAssump is set to 0 or 1
 #' @param MinAge minimum age
 #' @param MaxAge maximum age
 #' @param ObsAgeFreq observed age frequency
@@ -4186,14 +4192,19 @@ GetLinearCatchCurveResults <- function(RecAssump, MinFreq, Ages, ObsAgeFreq) {
 #' SampleSize = 1000 # required number of fish for age sample
 #' Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
 #' ObsAgeFreq = unlist(as.vector(Res$CatchSample))
-#' res=GetChapmanRobsonMortalityResults(RecAssump=0, MinAge, MaxAge, ObsAgeFreq)
+#' res=GetChapmanRobsonMortalityResults(RecAssump=0, SpecRecAge=NA, MinAge, MaxAge, ObsAgeFreq)
 #' @export
-GetChapmanRobsonMortalityResults <- function(RecAssump, MinAge, MaxAge, ObsAgeFreq)
+GetChapmanRobsonMortalityResults <- function(RecAssump, SpecRecAge, MinAge, MaxAge, ObsAgeFreq)
 {
   Ages = MinAge:MaxAge
   MaxAgeInSample = max(Ages)
   FishAges <- rep(Ages, ObsAgeFreq)
-  RecAge = CalcRecruitmentAge(RecAssump, Ages, ObsAgeFreq)
+
+  if (RecAssump==2) {
+    RecAge = SpecRecAge
+  } else {
+    RecAge = CalcRecruitmentAge(RecAssump, Ages, ObsAgeFreq)
+  }
   x = which(Ages == RecAge)
   Ages_minus_RecAge <- FishAges - RecAge
   CRAges <- Ages_minus_RecAge[which(Ages_minus_RecAge >= 0)]
@@ -4468,6 +4479,7 @@ GetLogisticCatchCurveResults <- function (ln_params, NatMort, Ages, ObsAgeFreq)
 #' This function produces plots of outputs of age-based catch curve analyses in normal space
 #'
 #' @param RecAssump 0=age at peak frequency, 1=age at peak frequency + 1
+#' @param SpecRecAge specified at at full recruitment, set to NA when RecAssump is set to 0 or 1
 #' @param MinFreq minimum frequency of fish for including data for old fish
 #' @param MinAge minimum age
 #' @param MaxAge maximum age
@@ -4516,12 +4528,12 @@ GetLogisticCatchCurveResults <- function (ln_params, NatMort, Ages, ObsAgeFreq)
 #' Init_SelA50 = 5
 #' Init_SelA95 = 7
 #' ln_params = log(c(Init_FMort, Init_SelA50, SelA95))
-#' PlotAgeBasedCatchCurveResults_NormalSpace(RecAssump, MinFreq, MinAge, MaxAge, NatMort,
+#' PlotAgeBasedCatchCurveResults_NormalSpace(RecAssump, SpecRecAge=NA, MinFreq, MinAge, MaxAge, NatMort,
 #'                                           ObsAgeFreq, CatchCurveModel, MainLabel=NA,
 #'                                           xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA,
 #'                                          ymax=NA, yint=NA, PlotCLs=T)
 #' @export
-PlotAgeBasedCatchCurveResults_NormalSpace <- function(RecAssump, MinFreq, MinAge, MaxAge, NatMort,
+PlotAgeBasedCatchCurveResults_NormalSpace <- function(RecAssump, SpecRecAge, MinFreq, MinAge, MaxAge, NatMort,
                                                       ObsAgeFreq, CatchCurveModel, MainLabel,
                                                       xaxis_lab, yaxis_lab, xmax, xint,
                                                       ymax, yint, PlotCLs) {
@@ -4540,12 +4552,12 @@ PlotAgeBasedCatchCurveResults_NormalSpace <- function(RecAssump, MinFreq, MinAge
 
   # Chapman-Robson
   if (CatchCurveModel == 1) {
-    Res = GetChapmanRobsonMortalityResults(RecAssump, MinAge, MaxAge, ObsAgeFreq)
+    Res = GetChapmanRobsonMortalityResults(RecAssump, SpecRecAge, MinAge, MaxAge, ObsAgeFreq)
     if (is.na(MainLabel)) MainLabel = "Chapman & Robson"
   }
   # Linear
   if (CatchCurveModel == 2) {
-    Res = GetLinearCatchCurveResults(RecAssump, MinFreq, Ages, ObsAgeFreq)
+    Res = GetLinearCatchCurveResults(RecAssump, SpecRecAge, MinFreq, Ages, ObsAgeFreq)
     if (is.na(MainLabel)) MainLabel = "Linear"
   }
   # logistic age-based selectivity
@@ -4617,6 +4629,7 @@ PlotAgeBasedCatchCurveResults_NormalSpace <- function(RecAssump, MinFreq, MinAge
 #' This function produces plots of outputs of age-based catch curve analyses in log space
 #'
 #' @param RecAssump 0=age at peak frequency, 1=age at peak frequency + 1
+#' @param SpecRecAge specified at at full recruitment, set to NA when RecAssump is set to 0 or 1
 #' @param MinFreq minimum frequency of fish for including data for old fish
 #' @param MinAge minimum age
 #' @param MaxAge maximum age
@@ -4665,12 +4678,12 @@ PlotAgeBasedCatchCurveResults_NormalSpace <- function(RecAssump, MinFreq, MinAge
 #' Init_SelA50 = 5
 #' Init_SelA95 = 7
 #' ln_params = log(c(Init_FMort, Init_SelA50, SelA95))
-#' PlotAgeBasedCatchCurveResults_LogSpace(RecAssump, MinFreq, MinAge, MaxAge, NatMort,
+#' PlotAgeBasedCatchCurveResults_LogSpace(RecAssump, SpecRecAge=NA, MinFreq, MinAge, MaxAge, NatMort,
 #'                                        ObsAgeFreq, CatchCurveModel, MainLabel=NA,
 #'                                        xaxis_lab=NA, yaxis_lab=NA, ymin=NA, xmax=NA, xint=NA,
 #'                                        ymax=NA, yint=NA, PlotCLs=T)
 #' @export
-PlotAgeBasedCatchCurveResults_LogSpace <- function(RecAssump, MinFreq, MinAge, MaxAge, NatMort,
+PlotAgeBasedCatchCurveResults_LogSpace <- function(RecAssump, SpecRecAge, MinFreq, MinAge, MaxAge, NatMort,
                                                    ObsAgeFreq, CatchCurveModel, MainLabel,
                                                    xaxis_lab, yaxis_lab, ymin, xmax, xint,
                                                    ymax, yint, PlotCLs) {
@@ -4690,12 +4703,12 @@ PlotAgeBasedCatchCurveResults_LogSpace <- function(RecAssump, MinFreq, MinAge, M
 
   # Chapman-Robson
   if (CatchCurveModel == 1) {
-    Res = GetChapmanRobsonMortalityResults(RecAssump, MinAge, MaxAge, ObsAgeFreq)
+    Res = GetChapmanRobsonMortalityResults(RecAssump, SpecRecAge, MinAge, MaxAge, ObsAgeFreq)
     if (is.na(MainLabel)) MainLabel = "Chapman & Robson"
   }
   # Linear
   if (CatchCurveModel == 2) {
-    Res = GetLinearCatchCurveResults(RecAssump, MinFreq, Ages, ObsAgeFreq)
+    Res = GetLinearCatchCurveResults(RecAssump, SpecRecAge, MinFreq, Ages, ObsAgeFreq)
     if (is.na(MainLabel)) MainLabel = "Linear"
   }
   # logistic age-based selectivity
