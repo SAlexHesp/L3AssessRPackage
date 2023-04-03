@@ -525,6 +525,7 @@ VisualiseGrowthApplyingLTM <- function (nFish, TimeStep, MaxAge, Growth_params, 
 #' @param midpt mid points of length classes
 #' @param SelectivityVec selectivity at length
 #' @param PropReleased proportion of fish that are released
+#' @param MeanLenReleased proportion of fish that are released
 #' @param DiscMort Proportion of fish that die following to capture and release
 #' @param CVSizeAtAge coefficient of variation (CV), common across all mean lengths at age
 #' @param MaxAge maximum age considered in model
@@ -562,6 +563,7 @@ VisualiseGrowthApplyingLTM <- function (nFish, TimeStep, MaxAge, Growth_params, 
 #' L95 = 700 # selectivity
 #' SelectivityVec = NA
 #' PropReleased = NA # vector including mean and sd
+#' MeanLenReleased = NA # vector including mean and sd
 #' DiscMort = 0 # proportion of fish that die due to natural mortality
 #' # single sex, von Bertalanffy
 #' GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute
@@ -611,7 +613,7 @@ VisualiseGrowthApplyingLTM <- function (nFish, TimeStep, MaxAge, Growth_params, 
 #' InitL95 = 700
 #' params = c(InitFishMort_logit, log(InitL50), log(InitL95))
 #' Res=GetLengthBasedCatchCurveResults(params, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsCatchFreqAtLen,
-#'                                           lbnd, ubnd, midpt, SelectivityVec, PropReleased, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
+#'                                           lbnd, ubnd, midpt, SelectivityVec, PropReleased, MeanLenReleased, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
 #' #
 #' # # Example with selectivity specified as a vector
 #' # # Simulate data
@@ -629,6 +631,7 @@ VisualiseGrowthApplyingLTM <- function (nFish, TimeStep, MaxAge, Growth_params, 
 #' # midpt = lbnd + (LenInc/2)
 #' # SelectivityVec = 1 / (1 + exp(-log(19)*(midpt-600)/(700-600)))
 #' # PropReleased = NA # vector including mean and sd
+#' # MeanLenReleased = NA # vector including mean and sd
 #' # DiscMort = 0 # proportion of fish that die due to natural mortality
 #' #  # single sex, von Bertalanffy
 #' # GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute
@@ -647,10 +650,10 @@ VisualiseGrowthApplyingLTM <- function (nFish, TimeStep, MaxAge, Growth_params, 
 #' # InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform
 #' # params = c(InitFishMort_logit)
 #' # Res=GetLengthBasedCatchCurveResults(params, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsCatchFreqAtLen,
-#' #                                      lbnd, ubnd, midpt, SelectivityVec, PropReleased, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
+#' #                                      lbnd, ubnd, midpt, SelectivityVec, PropReleased, MeanLenReleased, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
 #' @export
 GetLengthBasedCatchCurveResults <- function (params, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsCatchFreqAtLen,
-                                             lbnd, ubnd, midpt, SelectivityVec, PropReleased, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
+                                             lbnd, ubnd, midpt, SelectivityVec, PropReleased, MeanLenReleased, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
 {
   nlmb <- nlminb(params, CalcObjFunc_LengthBasedCatchCurve,
                  gradient = NULL, hessian = TRUE)
@@ -696,6 +699,13 @@ GetLengthBasedCatchCurveResults <- function (params, GrowthCurveType, GrowthPara
   TotCatchAtLen = res$TotCatchAtLen # total catch
   DiscCatchAtLen = res$DiscCatchAtLen # discarded catch
 
+  if (!is.na(PropReleased[1])) {
+    EstPropReleased = sum(res$DiscCatchAtLen) / sum(res$TotCatchAtLen)
+  }
+  if (!is.na(MeanLenReleased[1])) {
+    ExpMeanLenReleased = sum((res$DiscCatchAtLen * res$midpt)) / sum(res$DiscCatchAtLen)
+  }
+
   # calculate approximate cv for lengths at max age (growth diagnostic)
   # single / combined sex
   MinAge = floor(TimeStep)
@@ -737,6 +747,7 @@ GetLengthBasedCatchCurveResults <- function (params, GrowthCurveType, GrowthPara
     CV_LenAtMaxAge = NA
   }
 
+
   Results = list(nll = nll,
                  convergence = convergence,
                  SampleSize = SampleSize,
@@ -763,7 +774,9 @@ GetLengthBasedCatchCurveResults <- function (params, GrowthCurveType, GrowthPara
                  MalCV_LenAtMaxAge=MalCV_LenAtMaxAge,
                  RetCatchAtLen = RetCatchAtLen,
                  DiscCatchAtLen = DiscCatchAtLen,
-                 TotCatchAtLen = TotCatchAtLen)
+                 TotCatchAtLen = TotCatchAtLen,
+                 EstPropReleased = EstPropReleased,
+                 ExpMeanLenReleased = ExpMeanLenReleased)
 
   return(Results)
 }
@@ -790,10 +803,19 @@ CalcObjFunc_LengthBasedCatchCurve <- function(params) {
     NLL_PropReleased = -dnorm(EstPropReleased, PropReleased[1], PropReleased[2], log=TRUE)
   }
 
-  NLL = CalcNLLMargLengthComposition(ObsCatchFreqAtLen, ExpRetCatchPropInLenClass) + NLL_PropReleased + Res$L50_Pen + Res$L95_Pen
+  NLL_MeanLenReleased = 0
+  if (!is.na(MeanLenReleased[1])) {
+    ExpMeanLenReleased = sum((Res$DiscCatchAtLen * Res$midpt)) / sum(Res$DiscCatchAtLen)
+    NLL_MeanLenReleased = -dnorm(ExpMeanLenReleased, MeanLenReleased[1], MeanLenReleased[2], log=TRUE)
+    # cat("MeanLenReleased ", MeanLenReleased[1], " ExpMeanLenReleased ", ExpMeanLenReleased, '\n')
+  }
+
+  NLL = CalcNLLMargLengthComposition(ObsCatchFreqAtLen, ExpRetCatchPropInLenClass) + NLL_PropReleased +
+    + NLL_MeanLenReleased + Res$L50_Pen + Res$L95_Pen
 
   cat("NLL", NLL, "FMort", 1/(1+exp(-params[1])), " L50 ", exp(params[2]), " L95 ", exp(params[3]),
-      " NLL_PropReleased ", NLL_PropReleased, " L50_Pen ", Res$L50_Pen, " L95_Pen " ,Res$L95_Pen, '\n')
+      " NLL_PropReleased ", NLL_PropReleased, " NLL_MeanLenReleased ", NLL_MeanLenReleased,
+      " L50_Pen ", Res$L50_Pen, " L95_Pen " ,Res$L95_Pen, '\n')
 
   return(NLL)
 
@@ -2287,6 +2309,9 @@ SimLenAndAgeFreqData <- function(SampleSize, MaxAge, TimeStep, NatMort, FishMort
 #' @param ubnd upper bounds of length classes
 #' @param midpt mid points of length classes
 #' @param SelectivityVec selectivity at length
+#' @param PropReleased selectivity at length
+#' @param MeanLenReleased selectivity at length
+#' @param DiscMort selectivity at length
 #' @param GrowthCurveType 1=von Bertalanffy, 2=Schnute
 #' @param GrowthParams c(Linf, vbK) single sex von Bertalanffy, or data.frame(Linf=Linf, vbK=vbK) separate sex von Bertalanffy,
 #' c(y1, y2, a, b) single sex Schnute, or data.frame(y1=y1, y2=y2, a=a, b=b) separate sex Schnute
@@ -2323,6 +2348,7 @@ SimLenAndAgeFreqData <- function(SampleSize, MaxAge, TimeStep, NatMort, FishMort
 #' L95 = 700 # selectivity
 #' SelectivityVec = NA
 #' PropReleased = NA # vector including mean and sd
+#' MeanLenReleased = NA # vector including mean and sd
 #' DiscMort = 0
 #' # single sex, von Bertalanffy
 #' GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute
@@ -2371,15 +2397,15 @@ SimLenAndAgeFreqData <- function(SampleSize, MaxAge, TimeStep, NatMort, FishMort
 #' InitL95 = 700
 #' params = c(InitFishMort_logit, log(InitL50), log(InitL95))
 #' FittedRes=GetLengthBasedCatchCurveResults(params, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsCatchFreqAtLen,
-#'                                           lbnd, ubnd, midpt, SelectivityVec, PropReleased, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
+#'                                           lbnd, ubnd, midpt, SelectivityVec, PropReleased, MeanLenReleased, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
 #' # Plot. Note, can skip above step and set FittedRes=NA (plot function will be slower)
 #' PlotLengthBasedCatchCurveResults(params, MLL, SelectivityType, ObsCatchFreqAtLen, lbnd, ubnd, midpt,
-#'                                  SelectivityVec, PropReleased, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, MaxAge, NatMort, TimeStep, MainLabel=NA,
+#'                                  SelectivityVec, PropReleased, MeanLenReleased, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, MaxAge, NatMort, TimeStep, MainLabel=NA,
 #'                                  xaxis_lab=NA, yaxis_lab=NA, xmax=1500, xint=500,
 #'                                  ymax=0.15, yint=0.05, PlotCLs=TRUE, FittedRes, nReps=200)
 #' @export
 PlotLengthBasedCatchCurveResults <- function(params, MLL, SelectivityType, ObsCatchFreqAtLen, lbnd, ubnd, midpt,
-                                             SelectivityVec, PropReleased, DiscMort, GrowthCurveType, GrowthParams, RefnceAges,
+                                             SelectivityVec, PropReleased, MeanLenReleased, DiscMort, GrowthCurveType, GrowthParams, RefnceAges,
                                              MaxAge, NatMort, TimeStep, MainLabel, xaxis_lab, yaxis_lab, xmax, xint,
                                              ymax, yint, PlotCLs, FittedRes, nReps) {
 
@@ -2389,7 +2415,7 @@ PlotLengthBasedCatchCurveResults <- function(params, MLL, SelectivityType, ObsCa
     res =  FittedRes
   } else {
     res=GetLengthBasedCatchCurveResults(params, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsCatchFreqAtLen,
-                                        lbnd, ubnd, midpt, SelectivityVec, PropReleased, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
+                                        lbnd, ubnd, midpt, SelectivityVec, PropReleased, MeanLenReleased, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
   }
 
   params = res$params
@@ -2438,6 +2464,8 @@ PlotLengthBasedCatchCurveResults <- function(params, MLL, SelectivityType, ObsCa
   if (PlotCLs == TRUE) {
     sm1 = spline(Res$midpt, EstProp.sim_low, n=100, method="natural")
     sm2 = spline(Res$midpt, EstProp.sim_up, n=100, method="natural")
+    sm1$y[which(sm1$y<0)]=0
+    sm2$y[which(sm2$y<0)]=0
     x = c(sm1$x, rev(sm2$x)) # using shading for 95% CLs
     y = c(sm1$y, rev(sm2$y))
     polygon(x,y, col="pink",border=NA)

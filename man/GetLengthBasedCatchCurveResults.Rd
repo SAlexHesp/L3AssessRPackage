@@ -17,6 +17,7 @@ GetLengthBasedCatchCurveResults(
   midpt,
   SelectivityVec,
   PropReleased,
+  MeanLenReleased,
   DiscMort,
   CVSizeAtAge,
   MaxAge,
@@ -49,6 +50,8 @@ both sexes von Bertalanffy, or c(y1, y2, a, b) single sex Schnute, or data.frame
 \item{SelectivityVec}{selectivity at length}
 
 \item{PropReleased}{proportion of fish that are released}
+
+\item{MeanLenReleased}{proportion of fish that are released}
 
 \item{DiscMort}{Proportion of fish that die following to capture and release}
 
@@ -101,6 +104,7 @@ L50 = 600 # selectivity
 L95 = 700 # selectivity
 SelectivityVec = NA
 PropReleased = NA # vector including mean and sd
+MeanLenReleased = NA # vector including mean and sd
 DiscMort = 0 # proportion of fish that die due to natural mortality
 # single sex, von Bertalanffy
 GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute
@@ -150,7 +154,7 @@ InitL50 = 600
 InitL95 = 700
 params = c(InitFishMort_logit, log(InitL50), log(InitL95))
 Res=GetLengthBasedCatchCurveResults(params, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsCatchFreqAtLen,
-                                          lbnd, ubnd, midpt, SelectivityVec, PropReleased, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
+                                          lbnd, ubnd, midpt, SelectivityVec, PropReleased, MeanLenReleased, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
 #
 # # Example with selectivity specified as a vector
 # # Simulate data
@@ -168,6 +172,7 @@ Res=GetLengthBasedCatchCurveResults(params, GrowthCurveType, GrowthParams, Refnc
 # midpt = lbnd + (LenInc/2)
 # SelectivityVec = 1 / (1 + exp(-log(19)*(midpt-600)/(700-600)))
 # PropReleased = NA # vector including mean and sd
+# MeanLenReleased = NA # vector including mean and sd
 # DiscMort = 0 # proportion of fish that die due to natural mortality
 #  # single sex, von Bertalanffy
 # GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute
@@ -186,5 +191,5 @@ Res=GetLengthBasedCatchCurveResults(params, GrowthCurveType, GrowthParams, Refnc
 # InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform
 # params = c(InitFishMort_logit)
 # Res=GetLengthBasedCatchCurveResults(params, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsCatchFreqAtLen,
-#                                      lbnd, ubnd, midpt, SelectivityVec, PropReleased, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
+#                                      lbnd, ubnd, midpt, SelectivityVec, PropReleased, MeanLenReleased, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
 }

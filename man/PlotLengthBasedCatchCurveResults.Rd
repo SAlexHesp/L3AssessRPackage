@@ -14,6 +14,7 @@ PlotLengthBasedCatchCurveResults(
   midpt,
   SelectivityVec,
   PropReleased,
+  MeanLenReleased,
   DiscMort,
   GrowthCurveType,
   GrowthParams,
@@ -49,6 +50,12 @@ PlotLengthBasedCatchCurveResults(
 \item{midpt}{mid points of length classes}
 
 \item{SelectivityVec}{selectivity at length}
+
+\item{PropReleased}{selectivity at length}
+
+\item{MeanLenReleased}{selectivity at length}
+
+\item{DiscMort}{selectivity at length}
 
 \item{GrowthCurveType}{1=von Bertalanffy, 2=Schnute}
 
@@ -105,6 +112,7 @@ L50 = 600 # selectivity
 L95 = 700 # selectivity
 SelectivityVec = NA
 PropReleased = NA # vector including mean and sd
+MeanLenReleased = NA # vector including mean and sd
 DiscMort = 0
 # single sex, von Bertalanffy
 GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute
@@ -153,10 +161,10 @@ InitL50 = 600
 InitL95 = 700
 params = c(InitFishMort_logit, log(InitL50), log(InitL95))
 FittedRes=GetLengthBasedCatchCurveResults(params, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsCatchFreqAtLen,
-                                          lbnd, ubnd, midpt, SelectivityVec, PropReleased, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
+                                          lbnd, ubnd, midpt, SelectivityVec, PropReleased, MeanLenReleased, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
 # Plot. Note, can skip above step and set FittedRes=NA (plot function will be slower)
 PlotLengthBasedCatchCurveResults(params, MLL, SelectivityType, ObsCatchFreqAtLen, lbnd, ubnd, midpt,
-                                 SelectivityVec, PropReleased, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, MaxAge, NatMort, TimeStep, MainLabel=NA,
+                                 SelectivityVec, PropReleased, MeanLenReleased, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, MaxAge, NatMort, TimeStep, MainLabel=NA,
                                  xaxis_lab=NA, yaxis_lab=NA, xmax=1500, xint=500,
                                  ymax=0.15, yint=0.05, PlotCLs=TRUE, FittedRes, nReps=200)
 }
