@@ -699,9 +699,11 @@ GetLengthBasedCatchCurveResults <- function (params, GrowthCurveType, GrowthPara
   TotCatchAtLen = res$TotCatchAtLen # total catch
   DiscCatchAtLen = res$DiscCatchAtLen # discarded catch
 
+  EstPropReleased = NA
   if (!is.na(PropReleased[1])) {
     EstPropReleased = sum(res$DiscCatchAtLen) / sum(res$TotCatchAtLen)
   }
+  ExpMeanLenReleased = NA
   if (!is.na(MeanLenReleased[1])) {
     ExpMeanLenReleased = sum((res$DiscCatchAtLen * res$midpt)) / sum(res$DiscCatchAtLen)
   }
