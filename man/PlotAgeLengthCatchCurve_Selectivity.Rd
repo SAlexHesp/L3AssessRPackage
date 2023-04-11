@@ -142,19 +142,19 @@ ObsCatchFreqAtLengthAndAge = array(c(unlist(Res$ObsCatchFreqAtLengthAndDecAge_Fe
 # # get params - 1 sex
 # InitFishMort = 0.3 # specify starting parameters
 # InitL50 = 300
-# InitL95 = 500
+# InitDelta = 200 # L95-L50
 # InitLinf = 800
 # InitvbK = 0.2
 # InitCVSizeAtAge = 0.05
 # get params - 2 sexes
 InitFishMort = 0.3 # specify starting parameters
 InitL50 = 300
-InitL95 = 500
+InitDelta = 200 # L95-L50
 InitLinf = c(800,800)
 InitvbK = c(0.25,0.25)
 InitCVSizeAtAge = 0.05
 InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform (so F is always between 0 and 1)
-params = c(InitFishMort_logit, log(c(InitL50, InitL95, InitLinf, InitvbK, InitCVSizeAtAge)))
+params = c(InitFishMort_logit, log(c(InitL50, InitDelta, InitLinf, InitvbK, InitCVSizeAtAge)))
 FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, MLL, SelectivityType, ObsCatchFreqAtLen, ObsCatchFreqAtLengthAndAge,
                                                 lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep)
 # Note, can skip above step and set FittedRes=NA (plot function will be slower)

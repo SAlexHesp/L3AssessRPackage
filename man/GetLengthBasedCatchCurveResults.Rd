@@ -77,7 +77,12 @@ expected total (discard plus retained) catches at length (TotCatchAtLen), propor
 and separate (ExpRetCatchPropInLenClass, ExpRetCatchPropInLenClass_Fem, ExpRetCatchPropInLenClass_Mal),
 expected retained catch proportions given integer age (ExpRetCatchPropLengthGivenIntAge, ExpRetCatchPropLengthGivenIntAge_Fem,
 ExpRetCatchPropLengthGivenIntAge_Mal), observed catch in each length class for sexes combined (ObsCatchFreqAtLen), CV for modelled lengthsat age, around mean
-length at MaxAge, for sexes combined or separate (CV_LenAtMaxAge, FemCV_LenAtMaxAge, MalCV_LenAtMaxAge)
+length at MaxAge, for sexes combined or separate (CV_LenAtMaxAge, FemCV_LenAtMaxAge, MalCV_LenAtMaxAge), fishing mortality
+at length, for sexes combined or separate (FAtLen, FAtLen_Fem, FAtLen_Mal), total mortality at length, for sexes combined
+or separate (ZAtLen, ZAtLen_Fem, ZAtLen_Mal), fishing mortality associated with landings at length, for sexes combined or
+separate (FAtLen, FAtLen_Fem, FAtLen_Mal), fishing mortality associated with capture and retention at length, for sexes combined or
+separate (FAtLenReten, FAtLenReten_Fem, FAtLenReten_Mal), fishing mortality associated with capture and discarding at
+length, for sexes combined or separate (FAtLenDisc, FAtLenDisc_Fem, FAtLenDisc_Mal)
 }
 \description{
 This function fits a length-based catch curve with length-based selectivity, based on
@@ -151,8 +156,8 @@ ubnd=Res$ubnd
 InitFishMort = 0.25 # specify starting parameters
 InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform
 InitL50 = 600
-InitL95 = 700
-params = c(InitFishMort_logit, log(InitL50), log(InitL95))
+InitDelta = 100
+params = c(InitFishMort_logit, log(InitL50), log(InitDelta))
 Res=GetLengthBasedCatchCurveResults(params, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsCatchFreqAtLen,
                                           lbnd, ubnd, midpt, SelectivityVec, PropReleased, MeanLenReleased, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
 #

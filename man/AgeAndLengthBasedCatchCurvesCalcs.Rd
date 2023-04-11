@@ -72,7 +72,12 @@ integer age and length (TotCatchAtIntAgeLen, TotCatchAtIntAgeLen_Fem, TotCatchAt
 length (RetCatchAtIntAgeLen, RetCatchAtIntAgeLen_Fem, RetCatchAtIntAgeLen_Mal), discarded catches at length (DiscCatchAtIntAgeLen,
 DiscCatchAtIntAgeLen_Fem, DiscCatchAtIntAgeLen_Mal), total catches (discarded plus retained) at length (TotCatchAtLen,
 TotCatchAtLen_Fem, TotCatchAtLen_Mal), retained catches at length (RetCatchAtLen, RetCatchAtLen_Fem, RetCatchAtLen_Mal),
-discarded catches at length (DiscCatchAtLen, DiscCatchAtLen_Fem, RetCatchAtLen_Mal)
+discarded catches at length (DiscCatchAtLen, DiscCatchAtLen_Fem, RetCatchAtLen_Mal), fishing mortality
+at length, for sexes combined or separate (FAtLen, FAtLen_Fem, FAtLen_Mal), total mortality at length, for sexes combined
+or separate (ZAtLen, ZAtLen_Fem, ZAtLen_Mal), fishing mortality associated with landings at length, for sexes combined or
+separate (FAtLen, FAtLen_Fem, FAtLen_Mal), fishing mortality associated with capture and retention at length, for sexes combined or
+separate (FAtLenReten, FAtLenReten_Fem, FAtLenReten_Mal), fishing mortality associated with capture and discarding at
+length, for sexes combined or separate (FAtLenDisc, FAtLenDisc_Fem, FAtLenDisc_Mal)
 }
 \description{
 This function undertakes a range of calculations required by the length and age and lengths-based catch curves

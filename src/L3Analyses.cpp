@@ -182,7 +182,11 @@ List CalcCatches_AgeAndLengthBasedCatchCurves_cpp(NumericVector params, const do
                       Named("RetCatchAtLen") = RetCatchAtLen,
                       Named("DiscCatchAtLen") = DiscCatchAtLen,
                       Named("TotCatchAtLen") = TotCatchAtLen,
-                      Named("Fish_NPerRec") = Fish_NPerRec);
+                      Named("Fish_NPerRec") = Fish_NPerRec,
+                      Named("FAtLen") = FAtLen,
+                      Named("ZAtLen") = ZAtLen,
+                      Named("FAtLenReten") = FAtLenReten,
+                      Named("FAtLenDisc") = FAtLenDisc);
 
 } // end function
 
