@@ -8,8 +8,8 @@ PlotAgeLengthCatchCurve_Growth(
   params,
   MLL,
   SelectivityType,
-  ObsCatchFreqAtLen,
-  ObsCatchFreqAtLengthAndAge,
+  ObsRetCatchFreqAtLen,
+  ObsRetCatchFreqAtLengthAndAge,
   lbnd,
   ubnd,
   midpt,
@@ -37,9 +37,9 @@ PlotAgeLengthCatchCurve_Growth(
 
 \item{SelectivityType}{1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve}
 
-\item{ObsCatchFreqAtLen}{observed frequencies in length classes}
+\item{ObsRetCatchFreqAtLen}{observed frequencies in length classes}
 
-\item{ObsCatchFreqAtLengthAndAge}{observed frequencies in length and age classes}
+\item{ObsRetCatchFreqAtLengthAndAge}{observed frequencies in length and age classes}
 
 \item{lbnd}{lower bounds of length classes}
 
@@ -128,14 +128,14 @@ lbnd=Res$lbnd
 midpt=Res$midpt
 ubnd=Res$ubnd
 # # get data - 1 sex (or combined sexes)
-# ObsCatchFreqAtLen = Res$ObsCatchFreqAtLen # 1 sex
-# ObsCatchFreqAtLengthAndAge = as.matrix(Res$ObsCatchFreqAtLengthAndDecAge) # 1 sex
+# ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen # 1 sex
+# ObsRetCatchFreqAtLengthAndAge = as.matrix(Res$ObsCatchFreqAtLengthAndDecAge) # 1 sex
 # get data - 2 sexes
-ObsCatchFreqAtLen <- data.frame(matrix(nrow = 2, ncol = length(midpt))) # 2 sex
-colnames(ObsCatchFreqAtLen) <- midpt
-ObsCatchFreqAtLen[1,] = Res$ObsCatchFreqAtLen_Fem
-ObsCatchFreqAtLen[2,] = Res$ObsCatchFreqAtLen_Mal
-ObsCatchFreqAtLengthAndAge = array(c(unlist(Res$ObsCatchFreqAtLengthAndDecAge_Fem), unlist(Res$ObsCatchFreqAtLengthAndDecAge_Mal)),
+ObsRetCatchFreqAtLen <- data.frame(matrix(nrow = 2, ncol = length(midpt))) # 2 sex
+colnames(ObsRetCatchFreqAtLen) <- midpt
+ObsCatchFreqAtLen[1,] = Res$ObsRetCatchFreqAtLen_Fem
+ObsCatchFreqAtLen[2,] = Res$ObsRetCatchFreqAtLen_Mal
+ObsRetCatchFreqAtLengthAndAge = array(c(unlist(Res$ObsCatchFreqAtLengthAndDecAge_Fem), unlist(Res$ObsCatchFreqAtLengthAndDecAge_Mal)),
                                    c(nTimeSteps, length(midpt), 2), dimnames=list(rownames(Res$ObsCatchFreqAtLengthAndDecAge_Fem),
                                                                                   colnames(Res$ObsCatchFreqAtLengthAndDecAge_Fem)))
 # # get params - 1 sex
@@ -154,10 +154,10 @@ InitvbK = c(0.25,0.25)
 InitCVSizeAtAge = 0.05
 InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform (so F is always between 0 and 1)
 params = c(InitFishMort_logit, log(c(InitL50, InitDelta, InitLinf, InitvbK, InitCVSizeAtAge)))
-FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, MLL, SelectivityType, ObsCatchFreqAtLen, ObsCatchFreqAtLengthAndAge,
+FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, MLL, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
                                                 lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep)
 # plot
-PlotAgeLengthCatchCurve_Growth(params, MLL, SelectivityType, ObsCatchFreqAtLen, ObsCatchFreqAtLengthAndAge,
+PlotAgeLengthCatchCurve_Growth(params, MLL, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
                                lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep, MainLabel=NA,
                                xaxis_lab=NA, yaxis_lab=NA, xmax=40, xint=10,
                                ymax=1000, yint=200, PlotCLs=TRUE, FittedRes, nReps=200)

@@ -7,7 +7,7 @@
 Calcs_LenCovertCatchCurve_Schnute(
   GrowthParams,
   RefnceAges,
-  ObsCatchFreqAtLen,
+  ObsRetCatchFreqAtLen,
   MinFreq,
   lbnd,
   midpt,
@@ -19,7 +19,7 @@ Calcs_LenCovertCatchCurve_Schnute(
 
 \item{RefnceAges}{c(t1,t2) Schnute growth curve reference ages}
 
-\item{ObsCatchFreqAtLen}{observed frequencies in length classes}
+\item{ObsRetCatchFreqAtLen}{observed frequencies in length classes}
 
 \item{MinFreq}{minimum frequency to include}
 

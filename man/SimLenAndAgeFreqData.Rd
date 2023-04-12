@@ -25,7 +25,7 @@ SimLenAndAgeFreqData(
 )
 }
 \arguments{
-\item{SampleSize}{required same size}
+\item{SampleSize}{required same size (this will generate the same specified number of retained catches (lengths and ages) and discarded catches (lengths)}
 
 \item{MaxAge}{maximum age}
 
@@ -62,9 +62,9 @@ c(y1, y2, a, b) single sex Schnute, or data.frame(y1=y1, y2=y2, a=a, b=b) separa
 }
 \value{
 Observed catch frequency at age, ObsCatchFreqAtAge (Vector), Observed catch proportions at
-age, ObsRelCatchAtAge (Vectors), Observed catch frequency at length, ObsCatchFreqAtLen (Vector),
+age, ObsRelCatchAtAge (Vectors), Observed catch frequency at length, ObsRetCatchFreqAtLen (Vector),
 observed catch proportions at length, ObsRelCatchAtLen (Vectors), Observed catch frequency at length
-and age, ObsCatchFreqAtLengthAndAge (Matrix), age classes, ObsAgeCl (Vector), length class
+and age, ObsRetCatchFreqAtLengthAndAge (Matrix), age classes, ObsAgeCl (Vector), length class
 mid points, ObslenClMidPt (Vector)
 }
 \description{

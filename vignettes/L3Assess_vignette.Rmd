@@ -261,12 +261,14 @@ $$
 V_{s,l} = 1/(1+\exp(-\log_e(19)(l_s-L_{50,s}^{\mathrm{V}})/(L_{95,s}^{\mathrm{V}}-L_{50,s}^{\mathrm{V}})))
 $$
 
-where $L_{50,s}^{\mathrm{V}}$ and $L_{95,s}^{\mathrm{V}}$ are the lengths at which 50 and 95% of fish of sex $s$ are selected by the gear. In cases where a minimum legal length (MLL) applies, most/all fishers comply with this regulation and high-grading of fish is negligible, it may be assumed that the probability of a fish of either sex $ψ_{s,l}$, is zero, if that midpoint of its length class is below the MLL, and one if it is equal to or above the MLL. Where an MLL applies, the selectivity of  landings, $\phi_{s,l}$ for fish of sex $s$ at the midpoint of length class $l$, is calculated as
+where $L_{50,s}^{\mathrm{V}}$ and $L_{95,s}^{\mathrm{V}}$ are the lengths at which 50 and 95% of fish of sex $s$ are selected by the gear. Note that, for more robust optimisation, $$L_{95,s}^{\mathrm{V}}-L_{50,s}^{\mathrm{V}}$$ is inputted by the user as a single parameter value.
+
+If an MLL does not apply, the probability of any fish being retained, if caught, may set (by the user) to one, regardless of its sex and length. In cases where a minimum legal length (MLL) applies, the vast majority of fishers comply with this regulation and high-grading of fish is likely to be negligible, the probability, of fish of sex $s$ at the midpoint of length class $l$, being retained in catches, is set to zero or one, depending on whether the midpoint of its length class is below or above the MLL, respectively. The selectivity of landings, for fish of sex class $s$ in length class $l$, is calculated as
 
 $$
 \phi_{s,l}=\psi_{s,l}V_{s,l}
 $$
-If an MLL does not apply, the values of $\phi_{s,l}$ are set to one. The selectivity of discarding is calculated as
+where $\psi_{s,l}$ denotes the probability of fish being retained, according to its sex and length. The selectivity of discarding is calculated as
 
 $$
 \delta_{s,l}=V_{s,l}(1-\psi_{s,l})
@@ -321,16 +323,16 @@ N_{s,l,a} = \left\{
 \right.
 $$
 
-The estimated catch numbers of fish of sex $s$ in length class $l$ at age $a$, as calculated from the Baranov catch equation, is
+The estimated numbers of fish of sex $s$ in length class $l$ at age $a$ in retained catches, as calculated from the Baranov catch equation, is
 
 $$
-\hat{C}_{s,l,a} = (F_{s,l}^R/Z_{s,l})(1-\exp(-Z_{s,l}))N_{s,l,a}
+\hat{C}_{s,l}^R = \sum_a(F_{s,l}^R/Z_{s,l})(1-\exp(-Z_{s,l}))N_{s,l,a}
 $$
 
 The numbers of fish that are caught and discarded, which may either survive or die, are calculated as
 
 $$
-\hat{C}_{s,l,a} = (F_{s,l}^{D*}/Z_{s,l})(1-\exp(-Z_{s,l}))N_{s,l,a}
+\hat{C}_{s,l}^{D*} = (F_{s,l}^{D*}/Z_{s,l})(1-\exp(-Z_{s,l}))N_{s,l,a}
 $$
 
 The above numbers may be used to estimate (if sufficient information exists in the data), the proportion of fish that are caught and released. 
@@ -341,20 +343,56 @@ The observed length composition, to which the model is fitted, is assumed to con
 For combined sexes, the expected proportions of fish in each length class, $\hat{P}_l$, is
 
 $$
-\hat{P}_l = \sum_s\sum_a\bigg(\frac{\hat{C}_{s,l,a}}{\sum_{l}\hat{C}_{s,l,a}}\bigg)
+\hat{P}_l = \sum_s\sum_a\Bigg(\frac{\hat{C}_{s,l,a}}{\sum_{l}\hat{C}_{s,l,a}}\Bigg)
 $$
-The multinomial log-likelihood associated with the length composition data, $\lambda_1$, is
+The (multinomial) negative log-likelihood associated with the length composition data, $\lambda_1$, is
 
 $$
-\lambda_1 = C_l\log_e(\hat{P}_l)
+\lambda_1 = -\Big(C_l\log_e(\hat{P}_l)\Big)
 $$
 where $C_l$ is the observed catch frequency. The model is fitted by minimsing the negative log-likelihood using nlminb in R, by estimating the fully-selected fishing mortality $F^*$, and selectivity parameters, $L_{50}^{\mathrm{sel}}$ and $L_{95}^{\mathrm{sel}}$. Estimates of asymptotic standard errors, $\sigma$ are derived from the variance-covariance matrix (i.e. from the inverted Hessian matrix produced by nlminb). Approximate 95% confidence intervals for the estimated parameters are calculated as $1.96\sigma$.  
 
+Two sources of auxillary information, that may be available for a fished stock, may be inputted, that might enable the parameters of a logisitic curve, for estimating $V_{s,l}$, to be estimated. These include estimates, from observed data, on the proportion of fish that are caught and released (and associated standard deviation), and/or on the mean length of fish (and associated standard deviation), of such fish.
+
+The estimated proportion of fish that are caught, and then released (which may survive or die), is calculated as 
+
+$$
+\hat{\rho} = \Bigg(\frac{\sum_{s}\sum_{l}\hat{C}_{s,l}^{D*}}{\sum_{s}\sum_{l}(\hat{C}_{s,l}^R+\hat{C}_{s,l}^{D*})}\Bigg)
+$$
+
+The mean size of fish that are caught, and then released (which may survive or die), is calculated as
+
+$$
+\hat{\kappa} = \Bigg(\frac{\sum_{s}\sum_{l}\hat{C}_{s,l}^{D*}l_s}{\sum_{s}\sum_{l}\hat{C}_{s,l}^{D*}}\Bigg)
+$$
+The negative log-likelihood associated with a model estimate for $\hat{\rho}$, assumed to be normally distributed, is
+
+$$
+\lambda_2 = -\log_e\Bigg(\frac{1}{\sigma_\rho\sqrt{2{\pi}}}\exp\bigg[\frac{(\hat{\rho}-\rho)^2}{2\sigma_\rho^2}\bigg]\Bigg)
+$$
+where $\rho$ and $\sigma_{\rho}$ are the observed proportion and associated standard deviation inputted by the user, if available. 
+
+Similarly, if an estimate for mean size of caught and released fish, and an associated standard deviation value are available, the negative-log likelihood for $\hat{\kappa}$ is
+
+$$
+\lambda_3 = -\log_e\Bigg(\frac{1}{\sigma_\kappa\sqrt{2{\pi}}}\exp\bigg[\frac{(\hat{\kappa}-\kappa)^2}{2\sigma_\kappa^2}\bigg]\Bigg)
+$$
+Note that, in reality, $\hat{\kappa}$ is likely to be right-skewed rather than normally-distributed, and thus the impact of using this option on results should be considered carefully.
+
+The overall negative log-likelihood, $\lambda$, is calculated as
+
+$$
+\lambda = \lambda_1 + \lambda_2 + \lambda_3
+$$
+where $\lambda_2$ and $\lambda_3$ are set to zero if assocaited observed data are not inputted by the user.
+
+### Estimating uncertainty for model outputs
+
 For visualisation, model estimates of the proportion of fish in each length class, with associated 95% confidence intervals, are also calculated using a parametric resampling approach, assuming the estimated model parameters conform to a multivariate normal distribution. The mvrnorm function within the MASS package is used together with the values of the estimated model parameters and associated variance-covariance matrix to generate 200 random values of each of the model parameters. These, in turn, are used to produce 200 sets of model estimates for the expected proportion of fish in each length class. The lower and upper 95 confidence limits for $\hat{f_a}$ are taken as the 2.5 and 97.5 percentiles of the 200 estimates for $\hat{P}_l$, respectively. 
 
-If an estimate of the proportion of fish that are caught and released by the fishery exists (e.g. from an observer monitoring program), then the value estimated by the model may be matched to this external estimate which, potentially, may improve estimates of the vulnerability and fishing mortality parameters. This may be achieved by adding an additional component to the objective function, matching the estimated value for the proportion of undersize fish released, to the observed value with associated standard deviation (assuming a normal distribution).
 
-Note that this catch curve routine was recently updated (Jan, 2023) to allow use of alternative model time step values (e.g. 1/12 of a year vs 1 year). The updated routine updates the survival and growth of the modelled population cohort according to the specified modelled time step (the mathematics outline above, which has not yet been updated, is correct for an annual timestep). For shorter-lived species (e.g. < 10 y), it is likely more appropriate to use a shorter model timestep (if samples are collected at intervals throughout the year), such that the modelled length compositions more closely match observed data, by allowing fish to grow throughout the year. 
+Note that this catch curve routine was recently updated to allow use of alternative model time step values (e.g. 1/12 of a year vs 1 year). The updated routine updates the survival and growth of the modelled population cohort according to the specified modelled time step (the mathematics outline above, which has not yet been updated, is correct for an annual timestep). For shorter-lived species (e.g. < 10 y), it is likely more appropriate to use a shorter model timestep (if samples are collected at intervals throughout the year), such that the modelled length compositions more closely match observed data, by allowing fish to grow throughout the year. 
+
 
 ### Apply length-based catch curve
 
@@ -362,7 +400,9 @@ Key functions relevant to applying this method are:
 SimLenAndAgeFreqData()  
 VisualiseGrowthApplyingLTM()  
 GetLengthBasedCatchCurveResults()  
-PlotLengthBasedCatchCurveResults()  
+PlotLengthBasedCatchCurve_RetCatch()  
+PlotLengthBasedCatchCurve_Selectivity()  
+PlotLengthBasedCatchCurve_Mortality()  
 Refer to help files and example code, showing function inputs and outputs.
 
 ### Length and age-based catch curve

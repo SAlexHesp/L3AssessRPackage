@@ -11,13 +11,13 @@ GetLengthBasedCatchCurveResults(
   RefnceAges,
   MLL,
   SelectivityType,
-  ObsCatchFreqAtLen,
+  ObsRetCatchFreqAtLen,
   lbnd,
   ubnd,
   midpt,
   SelectivityVec,
   PropReleased,
-  MeanLenReleased,
+  ObsDiscCatchFreqAtLen,
   DiscMort,
   CVSizeAtAge,
   MaxAge,
@@ -39,7 +39,7 @@ both sexes von Bertalanffy, or c(y1, y2, a, b) single sex Schnute, or data.frame
 
 \item{SelectivityType}{1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve}
 
-\item{ObsCatchFreqAtLen}{observed frequency of fish at length in sample}
+\item{ObsRetCatchFreqAtLen}{observed frequency of fish at length in sample}
 
 \item{lbnd}{lower bounds of length classes}
 
@@ -51,7 +51,7 @@ both sexes von Bertalanffy, or c(y1, y2, a, b) single sex Schnute, or data.frame
 
 \item{PropReleased}{proportion of fish that are released}
 
-\item{MeanLenReleased}{proportion of fish that are released}
+\item{ObsDiscCatchFreqAtLen}{proportion of fish that are released}
 
 \item{DiscMort}{Proportion of fish that die following to capture and release}
 
@@ -76,7 +76,7 @@ expected retained catches, at length (RetCatchAtLen), expected discarded catch a
 expected total (discard plus retained) catches at length (TotCatchAtLen), proportion of catch in each length classes for sexes combined
 and separate (ExpRetCatchPropInLenClass, ExpRetCatchPropInLenClass_Fem, ExpRetCatchPropInLenClass_Mal),
 expected retained catch proportions given integer age (ExpRetCatchPropLengthGivenIntAge, ExpRetCatchPropLengthGivenIntAge_Fem,
-ExpRetCatchPropLengthGivenIntAge_Mal), observed catch in each length class for sexes combined (ObsCatchFreqAtLen), CV for modelled lengthsat age, around mean
+ExpRetCatchPropLengthGivenIntAge_Mal), observed catch in each length class for sexes combined (ObsRetCatchFreqAtLen), CV for modelled lengthsat age, around mean
 length at MaxAge, for sexes combined or separate (CV_LenAtMaxAge, FemCV_LenAtMaxAge, MalCV_LenAtMaxAge), fishing mortality
 at length, for sexes combined or separate (FAtLen, FAtLen_Fem, FAtLen_Mal), total mortality at length, for sexes combined
 or separate (ZAtLen, ZAtLen_Fem, ZAtLen_Mal), fishing mortality associated with landings at length, for sexes combined or
@@ -109,7 +109,7 @@ L50 = 600 # selectivity
 L95 = 700 # selectivity
 SelectivityVec = NA
 PropReleased = NA # vector including mean and sd
-MeanLenReleased = NA # vector including mean and sd
+ObsDiscCatchFreqAtLen = NA # vector including mean and sd
 DiscMort = 0 # proportion of fish that die due to natural mortality
 # single sex, von Bertalanffy
 GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute
@@ -149,7 +149,7 @@ RefnceAges = NA
 # RefnceAges = data.frame(t1=t1,t2=t2)
 Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
                          L50, L95, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
-ObsCatchFreqAtLen = Res$ObsCatchFreqAtLen
+ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen
 midpt=Res$midpt
 lbnd=Res$lbnd
 ubnd=Res$ubnd
@@ -158,8 +158,8 @@ InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform
 InitL50 = 600
 InitDelta = 100
 params = c(InitFishMort_logit, log(InitL50), log(InitDelta))
-Res=GetLengthBasedCatchCurveResults(params, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsCatchFreqAtLen,
-                                          lbnd, ubnd, midpt, SelectivityVec, PropReleased, MeanLenReleased, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
+Res=GetLengthBasedCatchCurveResults(params, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
+                                          lbnd, ubnd, midpt, SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
 #
 # # Example with selectivity specified as a vector
 # # Simulate data
@@ -177,7 +177,7 @@ Res=GetLengthBasedCatchCurveResults(params, GrowthCurveType, GrowthParams, Refnc
 # midpt = lbnd + (LenInc/2)
 # SelectivityVec = 1 / (1 + exp(-log(19)*(midpt-600)/(700-600)))
 # PropReleased = NA # vector including mean and sd
-# MeanLenReleased = NA # vector including mean and sd
+# ObsDiscCatchFreqAtLen = NA # vector including mean and sd
 # DiscMort = 0 # proportion of fish that die due to natural mortality
 #  # single sex, von Bertalanffy
 # GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute
@@ -188,13 +188,13 @@ Res=GetLengthBasedCatchCurveResults(params, GrowthCurveType, GrowthParams, Refnc
 # RefnceAges = NA
 # Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
 #                        L50, L95, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
-# ObsCatchFreqAtLen = Res$ObsCatchFreqAtLen
+# ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen
 # midpt=Res$midpt
 # lbnd=Res$lbnd
 # ubnd=Res$ubnd
 # InitFishMort = 0.25 # specify starting parameters
 # InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform
 # params = c(InitFishMort_logit)
-# Res=GetLengthBasedCatchCurveResults(params, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsCatchFreqAtLen,
-#                                      lbnd, ubnd, midpt, SelectivityVec, PropReleased, MeanLenReleased, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
+# Res=GetLengthBasedCatchCurveResults(params, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
+#                                      lbnd, ubnd, midpt, SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
 }

@@ -8,7 +8,7 @@ GetLenConvCatchCurveResults(
   ModelType,
   GrowthParams,
   RefnceAges,
-  ObsCatchFreqAtLen,
+  ObsRetCatchFreqAtLen,
   MinFreq,
   lbnd,
   midpt,
@@ -22,7 +22,7 @@ GetLenConvCatchCurveResults(
 
 \item{RefnceAges}{Schnute growth curve reference ages}
 
-\item{ObsCatchFreqAtLen}{observed frequencies in length classes}
+\item{ObsRetCatchFreqAtLen}{observed frequencies in length classes}
 
 \item{MinFreq}{minimum frequency to include}
 
@@ -81,7 +81,7 @@ RefnceAges = c(t1,t2)
 Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
                          L50, L95, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 
-ObsCatchFreqAtLen = as.vector(Res$ObsCatchFreqAtLen)
+ObsRetCatchFreqAtLen = as.vector(Res$ObsRetCatchFreqAtLen)
 MinFreq = 20 # set minimum frequency for larger lengths for analysis
 # note, this needs to be high enough so that data for ln(n/dt) vs relative age for essentially straight
 # line - if not, Z will be biased!!!
@@ -89,6 +89,6 @@ midpt=Res$midpt
 lbnd=Res$lbnd
 ubnd=Res$ubnd
 ModelType = 2 # 1 = von Bertalanffy growth curve (Pauly), 2 = length-converted catch curve - Schnute growth curve)
-res=GetLenConvCatchCurveResults(ModelType, GrowthParams, RefnceAges, ObsCatchFreqAtLen,
+res=GetLenConvCatchCurveResults(ModelType, GrowthParams, RefnceAges, ObsRetCatchFreqAtLen,
                                 MinFreq, lbnd, midpt, ubnd)
 }

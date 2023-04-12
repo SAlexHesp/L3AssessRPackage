@@ -8,8 +8,8 @@ GetAgeAndLengthBasedCatchCurveResults(
   params,
   MLL,
   SelectivityType,
-  ObsCatchFreqAtLen,
-  ObsCatchFreqAtLengthAndAge,
+  ObsRetCatchFreqAtLen,
+  ObsRetCatchFreqAtLengthAndAge,
   lbnd,
   ubnd,
   midpt,
@@ -27,9 +27,9 @@ GetAgeAndLengthBasedCatchCurveResults(
 
 \item{SelectivityType}{1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve}
 
-\item{ObsCatchFreqAtLen}{observed frequencies in length classes}
+\item{ObsRetCatchFreqAtLen}{observed frequencies in length classes}
 
-\item{ObsCatchFreqAtLengthAndAge}{observed frequencies in length and age classes}
+\item{ObsRetCatchFreqAtLengthAndAge}{observed frequencies in length and age classes}
 
 \item{lbnd}{lower bounds of length classes}
 
@@ -62,8 +62,8 @@ catch proportions at length (ExpCatchPropInLenClass), expected retained catches 
 catch proportions at integer age class of females, males and sexes combined (ExpRetCatchPropAtIntAge, ExpRetCatchPropAtIntAge_Fem,
 ExpRetCatchPropAtIntAge_Mal), catch proportions at length and integer age class for females, males and sexes combined
 (ExpRetCatchPropLengthGivenIntAge, ExpRetCatchPropLengthGivenIntAge_Fem, ExpRetCatchPropLengthGivenIntAge_Mal),
-observed catch frequency at length data (ObsCatchFreqAtLen), observed catch frequency at length and age
-(ObsCatchFreqAtLengthAndAge), approximate CV at length corresponding to maximum age (CV_LenAtMaxAge, FemCV_LenAtMaxAge,
+observed catch frequency at length data (ObsRetCatchFreqAtLen), observed catch frequency at length and age
+(ObsRetCatchFreqAtLengthAndAge), approximate CV at length corresponding to maximum age (CV_LenAtMaxAge, FemCV_LenAtMaxAge,
 MalCV_LenAtMaxAge)
 }
 \description{
@@ -116,14 +116,14 @@ lbnd=Res$lbnd
 midpt=Res$midpt
 ubnd=Res$ubnd
 # # get data - 1 sex (or combined sexes)
-# ObsCatchFreqAtLen = Res$ObsCatchFreqAtLen # 1 sex
-# ObsCatchFreqAtLengthAndAge = as.matrix(Res$ObsCatchFreqAtLengthAndDecAge) # 1 sex
+# ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen # 1 sex
+# ObsRetCatchFreqAtLengthAndAge = as.matrix(Res$ObsCatchFreqAtLengthAndDecAge) # 1 sex
 # get data - 2 sexes
-ObsCatchFreqAtLen <- data.frame(matrix(nrow = 2, ncol = length(midpt))) # 2 sex
-colnames(ObsCatchFreqAtLen) <- midpt
-ObsCatchFreqAtLen[1,] = Res$ObsCatchFreqAtLen_Fem
-ObsCatchFreqAtLen[2,] = Res$ObsCatchFreqAtLen_Mal
-ObsCatchFreqAtLengthAndAge = array(c(unlist(Res$ObsCatchFreqAtLengthAndDecAge_Fem), unlist(Res$ObsCatchFreqAtLengthAndDecAge_Mal)),
+ObsRetCatchFreqAtLen <- data.frame(matrix(nrow = 2, ncol = length(midpt))) # 2 sex
+colnames(ObsRetCatchFreqAtLen) <- midpt
+ObsCatchFreqAtLen[1,] = Res$ObsRetCatchFreqAtLen_Fem
+ObsCatchFreqAtLen[2,] = Res$ObsRetCatchFreqAtLen_Mal
+ObsRetCatchFreqAtLengthAndAge = array(c(unlist(Res$ObsCatchFreqAtLengthAndDecAge_Fem), unlist(Res$ObsCatchFreqAtLengthAndDecAge_Mal)),
                                    c(nTimeSteps, length(midpt), 2), dimnames=list(rownames(Res$ObsCatchFreqAtLengthAndDecAge_Fem),
                                                                                   colnames(Res$ObsCatchFreqAtLengthAndDecAge_Fem)))
 # # get params - 1 sex
@@ -142,7 +142,7 @@ InitvbK = c(0.25,0.25)
 InitCVSizeAtAge = 0.05
 InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform (so F is always between 0 and 1)
 params = c(InitFishMort_logit, log(c(InitL50, InitDelta, InitLinf, InitvbK, InitCVSizeAtAge)))
-FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, MLL, SelectivityType, ObsCatchFreqAtLen, ObsCatchFreqAtLengthAndAge,
+FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, MLL, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
                                                 lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep)
 # # Example with specified selectivity vector
 # # Simulate data
@@ -176,8 +176,8 @@ FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, MLL, SelectivityType, Ob
 # midpt=Res$midpt
 # ubnd=Res$ubnd
 # # get data - 1 sex (or combined sexes)
-# ObsCatchFreqAtLen = Res$ObsCatchFreqAtLen # 1 sex
-# ObsCatchFreqAtLengthAndAge = as.matrix(Res$ObsCatchFreqAtLengthAndDecAge) # 1 sex
+# ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen # 1 sex
+# ObsRetCatchFreqAtLengthAndAge = as.matrix(Res$ObsCatchFreqAtLengthAndDecAge) # 1 sex
 # # get params - 1 sex
 # InitFishMort = 0.3 # specify starting parameters
 # InitLinf = 800
@@ -185,6 +185,6 @@ FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, MLL, SelectivityType, Ob
 # InitCVSizeAtAge = 0.05
 # InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform (so F is always between 0 and 1)
 # params = c(InitFishMort_logit, log(c(InitLinf, InitvbK, InitCVSizeAtAge)))
-# FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, MLL, SelectivityType, ObsCatchFreqAtLen, ObsCatchFreqAtLengthAndAge,
+# FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, MLL, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
 #                                                lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep)
 }

@@ -4,10 +4,10 @@
 \alias{CalcNLLMargLengthComposition}
 \title{Get NLL for marginal length composition data}
 \usage{
-CalcNLLMargLengthComposition(ObsCatchFreqAtLen, ExpRetCatchPropInLenClass)
+CalcNLLMargLengthComposition(ObsRetCatchFreqAtLen, ExpRetCatchPropInLenClass)
 }
 \arguments{
-\item{ObsCatchFreqAtLen}{observed frequencies of fish in length classes}
+\item{ObsRetCatchFreqAtLen}{observed frequencies of fish in length classes}
 
 \item{ExpCatchPropInLenClass}{observed catch proportions in length classes}
 }

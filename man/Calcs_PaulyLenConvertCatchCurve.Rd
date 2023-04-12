@@ -6,7 +6,7 @@
 \usage{
 Calcs_PaulyLenConvertCatchCurve(
   GrowthParams,
-  ObsCatchFreqAtLen,
+  ObsRetCatchFreqAtLen,
   MinFreq,
   lbnd,
   midpt,
@@ -16,7 +16,7 @@ Calcs_PaulyLenConvertCatchCurve(
 \arguments{
 \item{GrowthParams}{c(Linf,vbK) von Bertalanffy growth parameters}
 
-\item{ObsCatchFreqAtLen}{observed frequencies in length classes}
+\item{ObsRetCatchFreqAtLen}{observed frequencies in length classes}
 
 \item{MinFreq}{minimum frequency to include}
 

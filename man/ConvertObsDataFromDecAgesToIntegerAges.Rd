@@ -8,7 +8,7 @@ ConvertObsDataFromDecAgesToIntegerAges(
   TimeStep,
   MaxAge,
   nLenCl,
-  ObsCatchFreqAtLengthAndAge
+  ObsRetCatchFreqAtLengthAndAge
 )
 }
 \arguments{
@@ -18,7 +18,7 @@ ConvertObsDataFromDecAgesToIntegerAges(
 
 \item{nLenCl}{number of length classes}
 
-\item{ObsCatchFreqAtLengthAndAge}{observed decimal age and length frequency data}
+\item{ObsRetCatchFreqAtLengthAndAge}{observed decimal age and length frequency data}
 }
 \value{
 ObsCatchFreqAtLengthAndIntAge
