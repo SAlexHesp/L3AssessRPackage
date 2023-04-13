@@ -95,7 +95,7 @@ variance-covariance matrix, calculated using the MASS package.
 }
 \examples{
 # Simulate data
-SampleSize=5000
+SampleSize=5000 # sample size for retained catches (and same number for released fish, if an MLL is specified)
 set.seed(123)
 MaxAge = 30
 TimeStep = 1 # model timestep (e.g. 1 = annual, 1/12 = monthly)
@@ -103,13 +103,11 @@ NatMort = 4.22/MaxAge
 FishMort = 0.2
 MaxLen = 1500
 LenInc = 20
-MLL = NA
+MLL = NA  # minimum legal length. If a value is specified, lengths for caught and released fish will also be generated
 SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
 L50 = 600 # selectivity
 L95 = 700 # selectivity
 SelectivityVec = NA
-PropReleased = NA # vector including mean and sd
-ObsDiscCatchFreqAtLen = NA # vector including mean and sd
 DiscMort = 0 # proportion of fish that die due to natural mortality
 # single sex, von Bertalanffy
 GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute
@@ -150,6 +148,8 @@ RefnceAges = NA
 Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
                          L50, L95, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen
+ObsRetCatchFreqAtLen = NA # (or set to Res$ObsRetCatchFreqAtLen)
+PropReleased = NA # proportion of fish released, vector including mean and sd (option probably now obselete)
 midpt=Res$midpt
 lbnd=Res$lbnd
 ubnd=Res$ubnd

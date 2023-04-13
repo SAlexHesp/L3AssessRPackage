@@ -100,69 +100,41 @@ Produce plot of fitted length-based catch curve to length composition data
 # Simulate data
 SampleSize=5000
 set.seed(123)
-MaxAge = 30
+MaxAge = 40
 TimeStep = 1 # model timestep (e.g. 1 = annual, 1/12 = monthly)
 NatMort = 4.22/MaxAge
-FishMort = 0.2
-MaxLen = 1500
+FishMort = 0.15
+MaxLen = 1200
 LenInc = 20
 MLL = NA
 SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
-L50 = 600 # selectivity
-L95 = 700 # selectivity
+L50 = 300 # selectivity
+L95 = 350 # selectivity
 SelectivityVec = NA
-PropReleased = NA # vector including mean and sd
-ObsDiscCatchFreqAtLen = NA # vector including mean and sd
-DiscMort = 0
+DiscMort = 0.5
 # single sex, von Bertalanffy
 GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute
-Linf = 800
-vbK = 0.2
+Linf = 900
+vbK = 0.11
 CVSizeAtAge = 0.08
 GrowthParams = c(Linf, vbK)
 RefnceAges = NA
-# # 2 sexes, von Bertalanffy
-# GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute
-# Linf = c(700,850)
-# vbK = c(0.3,0.2)
-# CVSizeAtAge = c(0.08,0.08)
-# GrowthParams = data.frame(Linf=Linf, vbK=vbK)
-# RefnceAges = NA
-# # 1 sex, Schnute
-# GrowthCurveType = 2 # 1 = von Bertalanffy, 2 = Schnute
-# t1 = 1 # growth - Schnute
-# t2 = 10 # growth - Schnute
-# y1 = 400 # growth - Schnute
-# y2 = 1000 # growth - Schnute
-# a = 0.1 # growth - Schnute
-# b = 2.0 # growth - Schnute#' # GrowthParams = c(y1, y2, a, b)
-# RefnceAges = c(t1,t2)
-# CVSizeAtAge = 0.08
-# # 2 sexes, Schnute
-# GrowthCurveType = 2 # 1 = von Bertalanffy, 2 = Schnute
-# t1 = c(1,1) # growth - Schnute
-# t2 = c(10,10) # growth - Schnute
-# y1 = c(435.3,400.3) # growth - Schnute
-# y2 = c(1089.1,1034.5) # growth - Schnute
-# a = c(0.044,0.136) # growth - Schnute
-# b = c(2.748,1.971) # growth - Schnute
-# CVSizeAtAge = c(0.08, 0.08)
-# GrowthParams = data.frame(y1=y1, y2=y2, a=a, b=b)
-# RefnceAges = data.frame(t1=t1,t2=t2)
 Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
                          L50, L95, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen
+ObsDiscCatchFreqAtLen = Res$ObsDiscCatchFreqAtLen
+PropReleased=NA
 midpt=Res$midpt
 lbnd=Res$lbnd
 ubnd=Res$ubnd
 InitFishMort = 0.25 # specify starting parameters
 InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform
-InitL50 = 600
-InitL95 = 700
-params = c(InitFishMort_logit, log(InitL50), log(InitL95))
+InitL50 = 300
+InitDelta = 100
+params = c(InitFishMort_logit, log(InitL50), log(InitDelta))
 FittedRes=GetLengthBasedCatchCurveResults(params, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
-                                          lbnd, ubnd, midpt, SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
-# Plot. Note, can skip above step and set FittedRes=NA (plot function will be slower)
+                                          lbnd, ubnd, midpt, SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge,
+                                          MaxAge, NatMort, TimeStep)
 PlotLengthBasedCatchCurve_RetCatch(params, MLL, SelectivityType, ObsRetCatchFreqAtLen, lbnd, ubnd, midpt,
                                  SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, MaxAge, NatMort, TimeStep, MainLabel=NA,
                                  xaxis_lab=NA, yaxis_lab=NA, xmax=1500, xint=500,

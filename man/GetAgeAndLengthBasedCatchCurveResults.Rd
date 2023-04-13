@@ -121,8 +121,8 @@ ubnd=Res$ubnd
 # get data - 2 sexes
 ObsRetCatchFreqAtLen <- data.frame(matrix(nrow = 2, ncol = length(midpt))) # 2 sex
 colnames(ObsRetCatchFreqAtLen) <- midpt
-ObsCatchFreqAtLen[1,] = Res$ObsRetCatchFreqAtLen_Fem
-ObsCatchFreqAtLen[2,] = Res$ObsRetCatchFreqAtLen_Mal
+ObsRetCatchFreqAtLen[1,] = Res$ObsRetCatchFreqAtLen_Fem
+ObsRetCatchFreqAtLen[2,] = Res$ObsRetCatchFreqAtLen_Mal
 ObsRetCatchFreqAtLengthAndAge = array(c(unlist(Res$ObsCatchFreqAtLengthAndDecAge_Fem), unlist(Res$ObsCatchFreqAtLengthAndDecAge_Mal)),
                                    c(nTimeSteps, length(midpt), 2), dimnames=list(rownames(Res$ObsCatchFreqAtLengthAndDecAge_Fem),
                                                                                   colnames(Res$ObsCatchFreqAtLengthAndDecAge_Fem)))

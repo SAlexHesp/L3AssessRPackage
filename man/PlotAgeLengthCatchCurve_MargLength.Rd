@@ -96,10 +96,10 @@ set.seed(123)
 SampleSize=5000
 MaxAge = 26
 TimeStep = 1 # model timestep (e.g. 1 = annual, 1/12 = monthly)
-NatMort = 4.22/MaxAge
 MinAge = floor(TimeStep)
 nAgeCl = length(MinAge:MaxAge)
 nTimeSteps = length(seq(TimeStep,MaxAge,TimeStep))
+NatMort = 4.22/MaxAge
 FishMort = 0.2
 MaxLen = 1100
 LenInc = 10
@@ -110,19 +110,19 @@ L95 = 450 # selectivity
 SelectivityVec = NA
 DiscMort = 0
 # # single sex, von Bertalanffy
-# GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute (no yet implemented for this method)
+# GrowthCurveType = 1 # 1 = von Bertalanffy
 # Linf = 800
 # vbK = 0.2
 # CVSizeAtAge = 0.08
-# GrowthParams = c(Linf, vbK)
+# GrowthParams = c(Linf, vbK, CVSizeAtAge)
 # RefnceAges = NA
 # 2 sexes, von Bertalanffy
-GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute (no yet implemented for this method)
+GrowthCurveType = 1 # 1 = von Bertalanffy
 Linf = c(700,850)
 vbK = c(0.25,0.2)
 CVSizeAtAge = c(0.05,0.05)
 RefnceAges = NA
-GrowthParams = data.frame(Linf=Linf, vbK=vbK)
+GrowthParams = data.frame(Linf=Linf, vbK=vbK, CVSizeAtAge=CVSizeAtAge)
 Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
                          L50, L95, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 lbnd=Res$lbnd
@@ -134,22 +134,22 @@ ubnd=Res$ubnd
 # get data - 2 sexes
 ObsRetCatchFreqAtLen <- data.frame(matrix(nrow = 2, ncol = length(midpt))) # 2 sex
 colnames(ObsRetCatchFreqAtLen) <- midpt
-ObsCatchFreqAtLen[1,] = Res$ObsRetCatchFreqAtLen_Fem
-ObsCatchFreqAtLen[2,] = Res$ObsRetCatchFreqAtLen_Mal
+ObsRetCatchFreqAtLen[1,] = Res$ObsRetCatchFreqAtLen_Fem
+ObsRetCatchFreqAtLen[2,] = Res$ObsRetCatchFreqAtLen_Mal
 ObsRetCatchFreqAtLengthAndAge = array(c(unlist(Res$ObsCatchFreqAtLengthAndDecAge_Fem), unlist(Res$ObsCatchFreqAtLengthAndDecAge_Mal)),
                                    c(nTimeSteps, length(midpt), 2), dimnames=list(rownames(Res$ObsCatchFreqAtLengthAndDecAge_Fem),
                                                                                   colnames(Res$ObsCatchFreqAtLengthAndDecAge_Fem)))
 # # get params - 1 sex
 # InitFishMort = 0.3 # specify starting parameters
 # InitL50 = 300
-# InitDelta = 100 # L95-L50
+# InitDelta = 200 # L95-L50
 # InitLinf = 800
 # InitvbK = 0.2
 # InitCVSizeAtAge = 0.05
 # get params - 2 sexes
 InitFishMort = 0.3 # specify starting parameters
 InitL50 = 300
-InitDelta = 100 # L95-L50
+InitDelta = 200 # L95-L50
 InitLinf = c(800,800)
 InitvbK = c(0.25,0.25)
 InitCVSizeAtAge = 0.05

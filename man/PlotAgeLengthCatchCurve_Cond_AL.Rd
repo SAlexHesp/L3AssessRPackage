@@ -104,19 +104,19 @@ L95 = 450 # selectivity
 SelectivityVec = NA
 DiscMort = 0
 # # single sex, von Bertalanffy
-# GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute (no yet implemented for this method)
+# GrowthCurveType = 1 # 1 = von Bertalanffy
 # Linf = 800
 # vbK = 0.2
 # CVSizeAtAge = 0.08
-# GrowthParams = c(Linf, vbK)
+# GrowthParams = c(Linf, vbK, CVSizeAtAge)
 # RefnceAges = NA
 # 2 sexes, von Bertalanffy
-GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute (no yet implemented for this method)
+GrowthCurveType = 1 # 1 = von Bertalanffy
 Linf = c(700,850)
 vbK = c(0.25,0.2)
 CVSizeAtAge = c(0.05,0.05)
 RefnceAges = NA
-GrowthParams = data.frame(Linf=Linf, vbK=vbK)
+GrowthParams = data.frame(Linf=Linf, vbK=vbK, CVSizeAtAge=CVSizeAtAge)
 Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
                          L50, L95, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 lbnd=Res$lbnd
@@ -128,31 +128,30 @@ ubnd=Res$ubnd
 # get data - 2 sexes
 ObsRetCatchFreqAtLen <- data.frame(matrix(nrow = 2, ncol = length(midpt))) # 2 sex
 colnames(ObsRetCatchFreqAtLen) <- midpt
-ObsCatchFreqAtLen[1,] = Res$ObsRetCatchFreqAtLen_Fem
-ObsCatchFreqAtLen[2,] = Res$ObsRetCatchFreqAtLen_Mal
+ObsRetCatchFreqAtLen[1,] = Res$ObsRetCatchFreqAtLen_Fem
+ObsRetCatchFreqAtLen[2,] = Res$ObsRetCatchFreqAtLen_Mal
 ObsRetCatchFreqAtLengthAndAge = array(c(unlist(Res$ObsCatchFreqAtLengthAndDecAge_Fem), unlist(Res$ObsCatchFreqAtLengthAndDecAge_Mal)),
                                    c(nTimeSteps, length(midpt), 2), dimnames=list(rownames(Res$ObsCatchFreqAtLengthAndDecAge_Fem),
                                                                                   colnames(Res$ObsCatchFreqAtLengthAndDecAge_Fem)))
 # # get params - 1 sex
 # InitFishMort = 0.3 # specify starting parameters
 # InitL50 = 300
-# InitDelta = 100 # L95-L50
+# InitDelta = 200 # L95-L50
 # InitLinf = 800
 # InitvbK = 0.2
 # InitCVSizeAtAge = 0.05
 # get params - 2 sexes
 InitFishMort = 0.3 # specify starting parameters
 InitL50 = 300
-InitDelta = 100 # L95-L50
+InitDelta = 200 # L95-L50
 InitLinf = c(800,800)
 InitvbK = c(0.25,0.25)
 InitCVSizeAtAge = 0.05
 InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform (so F is always between 0 and 1)
 params = c(InitFishMort_logit, log(c(InitL50, InitDelta, InitLinf, InitvbK, InitCVSizeAtAge)))
 FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, MLL, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
-                                                lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort)
-# Note, can skip above step and set FittedRes=NA (plot function will be slower)
-# plot
+                                                lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep)
+# Plot. Note, can skip above step and set FittedRes=NA (plot function will be slower)
 PlotAgeLengthCatchCurve_Cond_AL(params, MLL, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
                                 lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep, MainLabel=NA,
                                 xaxis_lab=NA, yaxis_lab=NA, xmax=40, xint=10,

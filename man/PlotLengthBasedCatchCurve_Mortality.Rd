@@ -91,13 +91,11 @@ NatMort = 4.22/MaxAge
 FishMort = 0.15
 MaxLen = 1200
 LenInc = 20
-MLL = 500
+MLL = NA
 SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
 L50 = 300 # selectivity
 L95 = 350 # selectivity
 SelectivityVec = NA
-PropReleased = c(0.55,0.1) # NA # vector including mean and sd
-ObsDiscCatchFreqAtLen = c(400,10) # vector including mean and sd
 DiscMort = 0.5
 # single sex, von Bertalanffy
 GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute
@@ -109,16 +107,19 @@ RefnceAges = NA
 Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
                          L50, L95, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen
+ObsDiscCatchFreqAtLen = Res$ObsDiscCatchFreqAtLen
+PropReleased=NA
 midpt=Res$midpt
 lbnd=Res$lbnd
 ubnd=Res$ubnd
 InitFishMort = 0.25 # specify starting parameters
 InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform
 InitL50 = 300
-InitL95 = 400
-params = c(InitFishMort_logit, log(InitL50), log(InitL95))
+InitDelta = 100
+params = c(InitFishMort_logit, log(InitL50), log(InitDelta))
 FittedRes=GetLengthBasedCatchCurveResults(params, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
-                                          lbnd, ubnd, midpt, SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
+                                          lbnd, ubnd, midpt, SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge,
+                                          MaxAge, NatMort, TimeStep)
 PlotLengthBasedCatchCurve_Mortality(params, MLL, SelectivityType, ObsRetCatchFreqAtLen, lbnd, ubnd, midpt, SelectivityVec,
                                     PropReleased, ObsDiscCatchFreqAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges,
                                     MaxAge, NatMort, TimeStep, xmax=NA, xint=NA, ymax=NA, yint=NA, FittedRes)
