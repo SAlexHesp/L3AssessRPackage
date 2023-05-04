@@ -14,8 +14,8 @@ SimLenAndAgeFreqData(
   LenInc,
   MLL,
   SelectivityType,
-  L50,
-  L95,
+  SelParams,
+  RetenParams,
   SelectivityVec,
   DiscMort,
   GrowthCurveType,
@@ -25,7 +25,8 @@ SimLenAndAgeFreqData(
 )
 }
 \arguments{
-\item{SampleSize}{required same size (this will generate the same specified number of retained catches (lengths and ages) and discarded catches (lengths)}
+\item{SampleSize}{required same size, single value generates same number of retained and discarded fish,
+# can also specify vector, e.g. SampleSize=c(10000, 2000), produces 10000 retained fish, 2000 discarded fish}
 
 \item{MaxAge}{maximum age}
 
@@ -43,10 +44,6 @@ SimLenAndAgeFreqData(
 
 \item{SelectivityType}{1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve}
 
-\item{L50}{length at 50 percent selectivity}
-
-\item{L95}{length at 95 percent selectivity}
-
 \item{SelectivityVec}{selectivity at length, set to NA if selectivity parameters inputted}
 
 \item{DiscMort}{Proportion of fish that die following to capture and release}
@@ -59,6 +56,10 @@ c(y1, y2, a, b) single sex Schnute, or data.frame(y1=y1, y2=y2, a=a, b=b) separa
 \item{RefnceAges}{Schnute reference ages, either c(t1,t2) single sex, c(t1=t1, t2=t2) separate sex, or set to NA if using von Bertalanffy model}
 
 \item{CVSizeAtAge}{coefficient of variation for mean lengths at age}
+
+\item{L50}{length at 50 percent selectivity}
+
+\item{L95}{length at 95 percent selectivity}
 }
 \value{
 Observed catch frequency at age, ObsCatchFreqAtAge (Vector), Observed catch proportions at
@@ -72,7 +73,8 @@ Function simulates age and length frequency data with specified selectivity, mor
 }
 \examples{
 set.seed(123)
-SampleSize=10000
+SampleSize=10000 # generate 10000 retained fish and 10000 discarded fish,
+# can also specify vector, e.g. SampleSize=c(10000, 2000), produces 10000 retained fish, 2000 discarded fish
 MaxAge = 20
 TimeStep = 1 # model timestep (e.g. 1 = annual, 1/12 = monthly)
 NatMort = 0.2
@@ -80,11 +82,11 @@ FishMort = 0.2
 MaxLen = 1000
 LenInc = 20
 midpt = seq(0,MaxLen - LenInc, LenInc) + (LenInc/2)
-MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA, otherwise retention is knife-edged at MLL
+MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified is knife-edged at MLL
 SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
-L50 = 300 # selectivity
-L95 = 500 # selectivity
 SelectivityVec = NA # selectivity vector
+SelParams = c(300, 500) # L50, L95 for gear selectivity
+RetenParams = c(NA, NA) # L50, L95 for retention
 DiscMort = 0.5
 GrowthCurveType = 1 # 1 = von Bert, 2 = Schnute
 Linf = 800
@@ -93,5 +95,5 @@ CVSizeAtAge = 0.08
 GrowthParams = c(Linf, vbK)
 RefnceAges = NA
 Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-                         L50, L95, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+                         SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 }

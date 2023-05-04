@@ -103,11 +103,11 @@ NatMort = 4.22/MaxAge
 FishMort = 0.2
 MaxLen = 1500
 LenInc = 20
-MLL = NA  # minimum legal length. If a value is specified, lengths for caught and released fish will also be generated
+MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified
 SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
-L50 = 600 # selectivity
-L95 = 700 # selectivity
-SelectivityVec = NA
+SelectivityVec = NA # selectivity vector
+SelParams = c(300, 500) # L50, L95 for gear selectivity
+RetenParams = c(NA, NA) # L50, L95 for retention
 DiscMort = 0 # proportion of fish that die due to natural mortality
 # single sex, von Bertalanffy
 GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute
@@ -146,7 +146,7 @@ RefnceAges = NA
 # GrowthParams = data.frame(y1=y1, y2=y2, a=a, b=b)
 # RefnceAges = data.frame(t1=t1,t2=t2)
 Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-                         L50, L95, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+                         SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen
 ObsRetCatchFreqAtLen = NA # (or set to Res$ObsRetCatchFreqAtLen)
 PropReleased = NA # proportion of fish released, vector including mean and sd (option probably now obselete)
@@ -171,13 +171,13 @@ Res=GetLengthBasedCatchCurveResults(params, GrowthCurveType, GrowthParams, Refnc
 # FishMort = 0.2
 # MaxLen = 1500
 # LenInc = 20
-# MLL = NA
-# SelectivityType=1 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
+# MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified
+# SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
 # lbnd = seq(0,MaxLen - LenInc, LenInc)
 # midpt = lbnd + (LenInc/2)
 # SelectivityVec = 1 / (1 + exp(-log(19)*(midpt-600)/(700-600)))
-# PropReleased = NA # vector including mean and sd
-# ObsDiscCatchFreqAtLen = NA # vector including mean and sd
+# SelParams = c(NA, NA) # L50, L95 for gear selectivity
+# RetenParams = c(NA, NA) # L50, L95 for retention
 # DiscMort = 0 # proportion of fish that die due to natural mortality
 #  # single sex, von Bertalanffy
 # GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute
@@ -187,8 +187,9 @@ Res=GetLengthBasedCatchCurveResults(params, GrowthCurveType, GrowthParams, Refnc
 # GrowthParams = c(Linf, vbK, CVSizeAtAge)
 # RefnceAges = NA
 # Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#                        L50, L95, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#                        SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 # ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen
+# ObsDiscCatchFreqAtLen = NA # vector including mean and sd
 # midpt=Res$midpt
 # lbnd=Res$lbnd
 # ubnd=Res$ubnd

@@ -91,11 +91,11 @@ NatMort = 4.22/MaxAge
 FishMort = 0.15
 MaxLen = 1200
 LenInc = 20
-MLL = NA
+MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified is knife-edged at MLL
 SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
-L50 = 300 # selectivity
-L95 = 350 # selectivity
-SelectivityVec = NA
+SelectivityVec = NA # selectivity vector
+SelParams = c(300, 500) # L50, L95 for gear selectivity
+RetenParams = c(NA, NA) # L50, L95 for retention
 DiscMort = 0.5
 # single sex, von Bertalanffy
 GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute
@@ -105,7 +105,7 @@ CVSizeAtAge = 0.08
 GrowthParams = c(Linf, vbK)
 RefnceAges = NA
 Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-                         L50, L95, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+                         SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen
 ObsDiscCatchFreqAtLen = Res$ObsDiscCatchFreqAtLen
 PropReleased=NA

@@ -1,0 +1,97 @@
+#
+# We wanted to test four scenarios  -
+#   * FIT WITHOUT MLL AND DISC INFO
+# * FIT LBSPR (Hordyk)
+# * FIT WITH MLL and NO DISC INFO
+# * FIT WITH MLL AND DISC INFO
+
+
+# install.packages("C:/~/L3Assess_0.1.0.tar.gz", source = TRUE, repos=NULL)
+rm(list=ls())
+library(L3Assess)
+
+MaxAge = 25 # setting a bit higher than max age
+TimeStep = 1/2 # model timestep (e.g. 1 = annual, 1/12 = monthly)
+NatMort = 4.22/19 # 0.2221053
+MaxLen = 1000
+LenInc = 20
+MLL = NA # 300
+SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
+SelectivityVec = NA
+GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute
+Linf = c(561,588)
+vbK = c(0.14,0.17)
+CVSizeAtAge = c(0.05,0.05)
+GrowthParams = data.frame(Linf=Linf, vbK=vbK, CVSizeAtAge=CVSizeAtAge)
+RefnceAges = NA
+SelParams = c(200, 300) # L50, L95 for gear selectivity
+# SelParams = c(300, 450) # L50, L95 for gear selectivity
+RetenParams = c(290, 310) # L50, L95 for retention
+L95 = 450
+FishMort = NatMort
+DiscMort = 0.5
+SampleSize = c(10000,2000) # retained, discarded fish
+Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
+                         SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+
+Res$RetAtLength
+Res$DiscCatchAtLen
+
+ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen
+ObsDiscCatchFreqAtLen = Res$ObsDiscCatchFreqAtLen
+lbnd = Res$lbnd
+midpt = Res$midpt
+ubnd = Res$ubnd
+
+sum(ObsRetCatchFreqAtLen)
+sum(ObsDiscCatchFreqAtLen)
+
+plot(midpt,ObsRetCatchFreqAtLen,"o", ylim=c(0,2500))
+points(midpt,ObsDiscCatchFreqAtLen,"o", col=2)
+points(midpt,ObsDiscCatchFreqAtLen+ObsRetCatchFreqAtLen,"o", col=3)
+
+
+InitFishMort = 0.5 # specify starting parameters
+InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform
+InitL50_sel = 200
+InitDelta_sel = 20
+InitL50_ret = 400
+InitDelta_ret = 20
+PropReleased = NA
+params = c(InitFishMort_logit, log(InitL50_sel), log(InitDelta_sel))
+# params = c(InitFishMort_logit, log(InitL50_sel), log(InitDelta_sel), log(InitL50_ret), log(PropReleased))
+CatchCurveType=1
+FittedRes=GetLengthBasedCatchCurveResults(params, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
+                                          lbnd, ubnd, midpt, SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
+
+PlotLengthBasedCatchCurve_Mortality(params, MLL, SelectivityType, ObsRetCatchFreqAtLen, lbnd, ubnd, midpt, SelectivityVec,
+                                    PropReleased, ObsDiscCatchFreqAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges,
+                                    MaxAge, NatMort, TimeStep, xmax=NA, xint=NA, ymax=NA, yint=NA, FittedRes)
+
+PlotLengthBasedCatchCurve_Selectivity(params, MLL, SelectivityType, ObsRetCatchFreqAtLen, lbnd, ubnd, midpt, SelectivityVec,
+                                      PropReleased, ObsDiscCatchFreqAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges,
+                                      MaxAge, NatMort, TimeStep, MainLabel=NA, xaxis_lab=NA, yaxis_lab=NA, xmax=1200, xint=200,
+                                      ymax=1.0, yint=0.2, PlotCLs=TRUE, FittedRes, nReps=200)
+
+PlotLengthBasedCatchCurve_RetCatch(params, MLL, SelectivityType, ObsRetCatchFreqAtLen, lbnd, ubnd, midpt,
+                                   SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, MaxAge, NatMort, TimeStep, MainLabel=NA,
+                                   xaxis_lab=NA, yaxis_lab=NA, xmax=700, xint=100,
+                                   ymax=0.15, yint=0.05, PlotCLs=FALSE, FittedRes, nReps=200)
+
+
+## disable MLL
+
+MLL = NA
+InitFishMort = 0.5 # specify starting parameters
+InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform
+InitL50 = 200
+InitDelta = 20
+InitL50_2 = 200
+InitDelta_2 = 20
+PropReleased = NA
+params = c(InitFishMort_logit, log(InitL50), log(InitDelta))
+
+FittedRes=GetLengthBasedCatchCurveResults(params, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
+                                          lbnd, ubnd, midpt, SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
+
+#CRASH
