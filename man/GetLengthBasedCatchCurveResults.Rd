@@ -148,7 +148,7 @@ RefnceAges = NA
 Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen
-ObsRetCatchFreqAtLen = NA # (or set to Res$ObsRetCatchFreqAtLen)
+ObsDiscCatchFreqAtLen = NA # (or set to Res$ObsRetCatchFreqAtLen)
 PropReleased = NA # proportion of fish released, vector including mean and sd (option probably now obselete)
 midpt=Res$midpt
 lbnd=Res$lbnd

@@ -52,11 +52,8 @@ double CalcNLLCondAgeAtLength_cpp(const int nLenCl, const int nAgeCl,
   temp = 0.0;
   for (i=0; i<nLenCl; i++) {
     for (t=0; t<nAgeCl; t++) {
-      if (ObsCatchFreqAtLengthAndIntAge(t,i) > 0) {
-        temp = temp + (ObsCatchFreqAtLengthAndIntAge(t,i) * log(ExpRetCatchPropIntAgeGivenLength(t,i) + 1E-4));
-        //std::cout << "  i " << i << " t " << t << " obs num " << ObsCatchFreqAtLengthAndIntAge(t,i) <<
-        //  " Exp prop " << ExpRetCatchPropIntAgeGivenLength(t,i) << std::endl;
-      }
+      temp = temp + (ObsCatchFreqAtLengthAndIntAge(t,i) * log(ExpRetCatchPropIntAgeGivenLength(t,i) + 1E-4));
+      std::cout << "  i " << i << " t " << t << " " << log(ExpRetCatchPropIntAgeGivenLength(t,i)) << std::endl;
     } // t
   } // i
 

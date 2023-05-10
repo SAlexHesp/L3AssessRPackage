@@ -606,7 +606,7 @@ VisualiseGrowthApplyingLTM <- function (nFish, TimeStep, MaxAge, Growth_params, 
 #' Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
 #'                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen
-#' ObsRetCatchFreqAtLen = NA # (or set to Res$ObsRetCatchFreqAtLen)
+#' ObsDiscCatchFreqAtLen = NA # (or set to Res$ObsRetCatchFreqAtLen)
 #' PropReleased = NA # proportion of fish released, vector including mean and sd (option probably now obselete)
 #' midpt=Res$midpt
 #' lbnd=Res$lbnd
@@ -909,7 +909,7 @@ CalcObjFunc_AgeAndLengthBasedCatchCurve <- function(params) {
     } else {
       ObsCatchFreqAtLengthAndIntAge = ConvertObsDataFromDecAgesToIntegerAges(TimeStep, MaxAge, nLenCl, ObsRetCatchFreqAtLengthAndAge)
     }
-    CondAgeAtLengthNLL = CalcNLLCondAgeAtLength_cpp(nLenCl, nAgeCl, ObsRetCatchFreqAtLengthAndAge, ObsCatchFreqAtLengthAndIntAge)
+    CondAgeAtLengthNLL = CalcNLLCondAgeAtLength_cpp(nLenCl, nAgeCl, ObsRetCatchFreqAtLengthAndAge, ExpRetCatchPropIntAgeGivenLength)
   }
   if (GrowthModelType == 2 | GrowthModelType == 4) {
 
@@ -2119,6 +2119,7 @@ SimLenAndAgeFreqData <- function(SampleSize, MaxAge, TimeStep, NatMort, FishMort
     L95=SelParams[2]
     SelAtLength = CalcLogisticSelOrReten(L50, L95, midpt)
   }
+  # cat("SelAtLength",SelAtLength,'\n')
 
   # retention
   if (!is.na(RetenParams[1])) { # calculate retention curve
@@ -2133,6 +2134,7 @@ SimLenAndAgeFreqData <- function(SampleSize, MaxAge, TimeStep, NatMort, FishMort
       RetAtLength[which(midpt>=MLL)]=1
     }
   }
+  # cat("RetAtLength",RetAtLength,'\n')
 
   # size distribution of 1+ recruits
   RecLenDist = CalcSizeDistOfRecruits(MeanSizeAtAge, CVSizeAtAge, lbnd, ubnd, midpt, nLenCl)
@@ -2209,8 +2211,12 @@ SimLenAndAgeFreqData <- function(SampleSize, MaxAge, TimeStep, NatMort, FishMort
   ObsRetCatchFreqAtLen = ObsRetCatchFreqAtLen_Fem + ObsRetCatchFreqAtLen_Mal # combined sexes
   ObsRelCatchAtLen = ObsRetCatchFreqAtLen/sum(ObsRetCatchFreqAtLen)
 
+  # is.na(MLL)
+  # is.na(SelParams)
+  # is.na(RetenParams)
+
   # generate observed discarded catch frequencies at length
-  if (is.na(MLL) & is.na(SelParams[1])) {
+  if (is.na(MLL) & is.na(RetenParams[1])) {
     ObsDiscCatchFreqAtLen = NA
     ObsDiscCatchFreqAtLen_Fem = NA
     ObsDiscCatchFreqAtLen_Mal = NA
@@ -2221,6 +2227,9 @@ SimLenAndAgeFreqData <- function(SampleSize, MaxAge, TimeStep, NatMort, FishMort
     } else {
       DiscSampleSize = SampleSize # set discarded fish sample size equal to retained fish sample size
     }
+    # cat("DiscSampleSize",DiscSampleSize,'\n')
+    # cat("DiscCatchAtLen_Fem",DiscCatchAtLen_Fem,'\n')
+    # cat("ExpDiscCatchPropAtLen_Fem",ExpDiscCatchPropAtLen_Fem,'\n')
 
     DiscSampleSize_Fem = DiscSampleSize * (sum(DiscCatchAtLen_Fem) / (sum(DiscCatchAtLen_Fem) + sum(DiscCatchAtLen_Mal)))
     DiscSampleSize_Fem = round(DiscSampleSize_Fem,0)
