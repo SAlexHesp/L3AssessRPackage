@@ -6418,9 +6418,17 @@ CalcYPRAndSPRForFMort_LB<- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
   FishMalSpawnBiom <- sum(Fish_MalBiomAtAge)
   FishCombSexSpawnBiom <- FishFemSpawnBiom + FishMalSpawnBiom
 
-  # calculate catch yield
+  # calculate catch yield (biomass)
   FemCatchBiom = (FemLandFAtLen/FemZAtLen) * (1-exp(-FemZAtLen)) * Fish_FemNPerRec * FemWtAtLen
   MalCatchBiom = (MalLandFAtLen/MalZAtLen) * (1-exp(-MalZAtLen)) * Fish_MalNPerRec * MalWtAtLen
+
+  # calculate catch yield (numbers)
+  FemCatchNum = (FemLandFAtLen/FemZAtLen) * (1-exp(-FemZAtLen)) * Fish_FemNPerRec
+  MalCatchNum = (MalLandFAtLen/MalZAtLen) * (1-exp(-MalZAtLen)) * Fish_MalNPerRec
+
+  # calculate mean size of catch
+  FemMeanCatchLen = sum((FemCatchNum * midpt)) / sum(FemCatchNum)
+  MalMeanCatchLen = sum((MalCatchNum * midpt)) / sum(MalCatchNum)
 
   # calculate yield per recruit in kg
   YPR <- max(0,sum(FemCatchBiom) + sum(MalCatchBiom))
@@ -6501,6 +6509,10 @@ CalcYPRAndSPRForFMort_LB<- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
                  Fish_MalBiomAtAge=Fish_MalBiomAtAge,
                  FemCatchBiom=FemCatchBiom,
                  MalCatchBiom=MalCatchBiom,
+                 FemCatchNum=FemCatchNum,
+                 MalCatchNum=MalCatchNum,
+                 FemMeanCatchLen=FemMeanCatchLen,
+                 MalMeanCatchLen=MalMeanCatchLen,
                  YPR = YPR,
                  Fem_SPR = Fem_SPR,
                  Mal_SPR = Mal_SPR,
@@ -6982,6 +6994,9 @@ GetPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
   Equilmod_MalRelBiomResults <- rep(0,nFVals)
   Equilmod_CombSexRelBiomResults <- rep(0,nFVals)
 
+  FemMeanCatchLenResults <- rep(0,nFVals) # mean length of catch
+  MalMeanCatchLenResults <- rep(0,nFVals)
+
   for (k in 1:nFVals) {
     FMort = FishMort[k]
     Res = CalcYPRAndSPRForFMort_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
@@ -7002,6 +7017,9 @@ GetPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
     Equilmod_FemRelBiomResults[k] = Res$Equilmod_FemRelBiom
     Equilmod_MalRelBiomResults[k] = Res$Equilmod_MalRelBiom
     Equilmod_CombSexRelBiomResults[k] = Res$Equilmod_CombSexRelBiom
+    # mean lengths of catches
+    FemMeanCatchLenResults[k] <- Res$FemMeanCatchLen # mean length of catch
+    MalMeanCatchLenResults[k] <- Res$MalMeanCatchLen
   }
 
   maxypr <- max(YPRResults) # maximum yield per recruit
@@ -7055,6 +7073,10 @@ GetPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
                  Fish_MalBiomAtAge=Res2$Fish_MalBiomAtAge,
                  FemCatchBiom = Res2$FemCatchBiom,
                  MalCatchBiom = Res2$MalCatchBiom,
+                 FemMeanCatchLen = Res2$FemMeanCatchLen,
+                 MalMeanCatchLen = Res2$MalMeanCatchLen,
+                 FemMeanCatchLenResults = FemMeanCatchLenResults,
+                 MalMeanCatchLenResults = MalMeanCatchLenResults,
                  Equil_Rec = Res2$Equil_Rec,
                  Equil_Catch = Res2$Equil_Catch,
                  Equil_FemSpBiom = Res2$Equil_FemSpBiom,
