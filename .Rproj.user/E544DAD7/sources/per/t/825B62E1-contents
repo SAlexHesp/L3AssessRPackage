@@ -31,20 +31,53 @@
  #' @return list object with minimum and maximum x axis values and x axis interval
  Get_xaxis_scale <- function(x_data) {
 
-   xx = floor(log10(max(x_data)))
-   temp_xmin = floor(min(0.8 * x_data))
-   xmin = round(temp_xmin, -xx)
-   temp_xmax = ceiling(1.2*max(x_data))
-   temp_xmax2 = round(temp_xmax, -xx)
-   xint = (temp_xmax2-xmin)/4
-   xmax = xmin + (4 * xint)
+   # modified from code provided by
+   # https://peltiertech.com/calculate-nice-axis-scales-in-excel-vba/
+
+   xmax_data = max(1.1 * x_data)
+   xmin_data = min(x_data)
+
+   xpow = log10(xmax_data-xmin_data)
+   xint = 10 ^ (xpow-round(xpow,0))
+
+   if (xint>=0 & xint<2.5) {
+     xint = 0.2
+   }
+   if (xint>=2.5 & xint<5) {
+     xint = 0.5
+   }
+   if (xint>=5 & xint<7.5) {
+     xint = 1
+   }
+   if (xint>=7.5) {
+     xint = 2
+   }
+
+   xint = xint * 10^round(xpow,0) # major ticks
+   xmin = xint * round(xmin_data/xint,0)
+   xmax = xint * (round(xmax_data / xint,0) + 1)
+
    results = list(xmin = xmin,
                   xmax = xmax,
                   xint = xint)
 
-
-   return(results)
  }
+
+ # Get_xaxis_scale <- function(x_data) {
+ #
+ #   xx = floor(log10(max(x_data)))
+ #   temp_xmin = floor(min(0.8 * x_data))
+ #   xmin = round(temp_xmin, -xx)
+ #   temp_xmax = ceiling(1.2*max(x_data))
+ #   temp_xmax2 = round(temp_xmax, -xx)
+ #   xint = (temp_xmax2-xmin)/4
+ #   xmax = xmin + (4 * xint)
+ #   results = list(xmin = xmin,
+ #                  xmax = xmax,
+ #                  xint = xint)
+ #
+ #    return(results)
+ #  }
 
  #' Get maximum and minimum y values and y interval
  #'
@@ -57,24 +90,58 @@
  #' @return list object with minimum and maximum y axis values and y axis interval
  Get_yaxis_scale <- function(y_data) {
 
-   xx = floor(log10(max(y_data)))
-   ymin = floor(min(0.8 * y_data))
-   temp_ymax = ceiling(max(1.2 * y_data))
-   temp_ymax2 = round(temp_ymax, -xx)
-   xxx = (temp_ymax2-ymin)/4
-   if (temp_ymax > 10) {
-     yint = round(xxx, xx)
-   } else {
-     yint = round(xxx, -xx)
+   # modified from code provided by
+   # https://peltiertech.com/calculate-nice-axis-scales-in-excel-vba/
+
+   ymax_data = max(1.1 * y_data)
+   ymin_data = min(y_data)
+
+   ypow = log10(ymax_data-ymin_data)
+   yint = 10 ^ (ypow-round(ypow,0))
+
+   if (yint>=0 & yint<2.5) {
+     yint = 0.2
    }
-   ymax = ymin + (4 * yint)
+   if (yint>=2.5 & yint<5) {
+     yint = 0.5
+   }
+   if (yint>=5 & yint<7.5) {
+     yint = 1
+   }
+   if (yint>=7.5) {
+     yint = 2
+   }
+
+   yint = yint * 10^round(ypow,0) # major ticks
+   ymin = yint * round(ymin_data/yint,0)
+   ymax = yint * (round(ymax_data / yint,0) + 1)
 
    results = list(ymin = ymin,
                   ymax = ymax,
                   yint = yint)
 
-   return(results)
  }
+
+ # Get_yaxis_scale <- function(y_data) {
+ #
+ #   xx = floor(log10(max(y_data)))
+ #   ymin = floor(min(0.8 * y_data))
+ #   temp_ymax = ceiling(max(1.2 * y_data))
+ #   temp_ymax2 = round(temp_ymax, -xx)
+ #   xxx = (temp_ymax2-ymin)/4
+ #   if (temp_ymax > 10) {
+ #     yint = round(xxx, xx)
+ #   } else {
+ #     yint = round(xxx, -xx)
+ #   }
+ #   ymax = ymin + (4 * yint)
+ #
+ #   results = list(ymin = ymin,
+ #                  ymax = ymax,
+ #                  yint = yint)
+ #
+ #   return(results)
+ # }
 
 # **************************
 # growth functions
@@ -400,7 +467,9 @@ CalcSizeDistOfRecruits <- function(MeanSizeAtAge, CVSizeAtAge, lbnd, ubnd, midpt
 #' @param MinAge minimum age
 #' @param MinAge maximum age
 #' @param CVSizeAtAge coefficient of variation (CV), common across all mean lengths at age
+#' @param lbnd mid points of length classes
 #' @param midpt mid points of length classes
+#' @param ubnd mid points of length classes
 #' @param nLenCl number of length classes
 #' @param MainLabel plot label
 #' @param xaxis_lab y axis label
@@ -428,11 +497,11 @@ CalcSizeDistOfRecruits <- function(MeanSizeAtAge, CVSizeAtAge, lbnd, ubnd, midpt
 #' CVSizeAtAge = 0.05
 #' nFish = 100
 #' TimeStep = 1
-#' VisualiseGrowthApplyingLTM(nFish, TimeStep, MaxAge, Growth_params, CVSizeAtAge, midpt, nLenCl, MainLabel=NA,
-#'                            xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA, ymax=NA, yint=NA)
+#' VisualiseGrowthApplyingLTM(nFish, TimeStep, MaxAge, Growth_params, CVSizeAtAge, lbnd, midpt, ubnd,
+#'                            nLenCl, MainLabel=NA, xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA, ymax=NA, yint=NA)
 #' @export
-VisualiseGrowthApplyingLTM <- function (nFish, TimeStep, MaxAge, Growth_params, CVSizeAtAge, midpt, nLenCl, MainLabel,
-                                        xaxis_lab, yaxis_lab, xmax, xint, ymax, yint) {
+VisualiseGrowthApplyingLTM <- function (nFish, TimeStep, MaxAge, Growth_params, CVSizeAtAge, lbnd, midpt, ubnd,
+                                        nLenCl, MainLabel, xaxis_lab, yaxis_lab, xmax, xint, ymax, yint) {
 
   # a bit of code to check growth transition matrix is likely to
   # give sensible results - not part of catch curve model
@@ -6136,6 +6205,7 @@ CalcWeightAtLengthForPerRecruitAnalysis <- function(lenwt_a, ln_lenwt_a, lenwt_b
 #' @return TimestepGrowthSizeInc
 GetLTMInputsForPerRecruitAnalysis <- function(GrowthCurveType, TimeStep, MaxModelAge, GrowthParams, RefnceAges, midpt) {
 
+  nLenCl = length(midpt)
   MeanEndingLength <- data.frame(matrix(nrow = 2, ncol = nLenCl))
   colnames(MeanEndingLength) <- midpt
   MeanEndingLength <- as.matrix(MeanEndingLength)
@@ -6295,7 +6365,7 @@ CalcYPRAndSPRForFMort_LB<- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
 
   # number of model time steps
   nTimeSteps <- 1 + (MaxModelAge / TimeStep)
-  Ages <- seq(TimeStep,MaxModelAge,TimeStep)
+  Ages <- seq(TimeStep,MaxModelAge, TimeStep)
 
   # set up storage
   RecLenDist <- data.frame(matrix(nrow = 2, ncol = nLenCl))
@@ -7288,12 +7358,14 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
     ylims = Get_yaxis_scale(c(0,Res$MalLenAtAge))
   }
   ymax = ylims$ymax; yint = ylims$yint
+  xlims = Get_xaxis_scale(Res$Ages)
+  xmax = xlims$xmax; xint = xlims$xint
   plot(Res$Ages,Res$FemLenAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,MaxModelAge),
        col="red",yaxt="n",xaxt="n",ylab="",xlab="")
   lines(Res$Ages, Res$MalLenAtAge,col="blue")
-  axis(1,at=seq(0,MaxModelAge,1), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+  axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
   axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(1,at=seq(0,MaxModelAge,1), labels=seq(0,MaxModelAge,1),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
+  axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
   axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
   mtext(expression(paste(plain("Total length (mm"),plain(")"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
   mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
@@ -7308,18 +7380,22 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
     ylims = Get_yaxis_scale(Res$MalWtAtAge)
   }
   ymax = ylims$ymax; yint = ylims$yint
+  xlims = Get_xaxis_scale(Res$Ages)
+  xmax = xlims$xmax; xint = xlims$xint
   plot(Res$Ages,Res$FemWtAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,MaxModelAge),col="red",yaxt="n",xaxt="n",
        ylab="",xlab="")
   lines(Res$Ages,Res$MalWtAtAge,col="blue")
-  axis(1,at=seq(0,MaxModelAge,1), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+  axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
   axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(1,at=seq(0,MaxModelAge,1), labels=seq(0,MaxModelAge,1),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
+  axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
   axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
   mtext(expression(paste(plain("Total weight (kg"),plain(")"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
   mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
   legend('bottomright', col=c("red","blue"),legend=c("Female","Male"),bty='n', cex=0.8,lwd=1.75)
 
   # plot female maturity and selectivity at age
+  xlims = Get_xaxis_scale(Res$Ages)
+  xmax = xlims$xmax; xint = xlims$xint
   plot(Res$Ages,Res$FemPropMatAtAge,"l", pch=16,frame.plot=F,ylim=c(0,1),xlim=c(0,MaxModelAge),col="red",yaxt="n",xaxt="n",
        ylab="",xlab="",cex=0.8)
   if (DiscMort == 0) {
@@ -7332,9 +7408,9 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
     legend('bottomright', col=c("red","red","brown"),legend=c("Fem. mature","Fem. land.","Fem. disc."),
            lty=c("solid","dotted","dotted"),bty='n', cex=0.8,lwd=1.75)
   }
-  axis(1,at=seq(0,MaxModelAge,1), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+  axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
   axis(2,at=seq(0,1,0.5), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(1,at=seq(0,MaxModelAge,1), labels=seq(0,MaxModelAge,1),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
+  axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
   axis(2,at=seq(0,1,0.5), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
   mtext(expression(paste(plain("Proportion"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
   mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
@@ -7345,6 +7421,8 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
   }
 
   # plot male maturity and selectivity at age
+  xlims = Get_xaxis_scale(Res$Ages)
+  xmax = xlims$xmax; xint = xlims$xint
   plot(Res$Ages, Res$MalPropMatAtAge,"l", pch=16, frame.plot=F,ylim=c(0,1),xlim=c(0,MaxModelAge),col="blue",yaxt="n",xaxt="n",
        ylab="",xlab="", cex=0.8)
   if (DiscMort == 0) {
@@ -7357,9 +7435,9 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
     legend('bottomright', col=c("blue","blue","purple"),legend=c("Male mature","Male land.", "Male disc."),
            lty=c("solid","dotted","dotted"),bty='n', cex=0.8,lwd=1.75)
   }
-  axis(1,at=seq(0,MaxModelAge,1), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+  axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
   axis(2,at=seq(0,1,0.5), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(1,at=seq(0,MaxModelAge,1), labels=seq(0,MaxModelAge,1),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
+  axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
   axis(2,at=seq(0,1,0.5), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
   mtext(expression(paste(plain("Proportion"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
   mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
@@ -7376,15 +7454,17 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
   # plot female mortality at age
   ylims = Get_yaxis_scale(Res$FemFAtAge)
   ymax = ylims$ymax; yint = ylims$yint
+  xlims = Get_xaxis_scale(Res$Ages)
+  xmax = xlims$xmax; xint = xlims$xint
   plot(Res$Ages, Res$FemFAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,MaxModelAge),col="red",yaxt="n",xaxt="n",
        ylab="",xlab="")
   # lines(Res$Ages,Res$FemZAtAge,lty="dotted",col="red")
   lines(Res$Ages,Res$FemDiscFAtAge,lty="dotted",col="brown")
   lines(Res$Ages,Res$FemLandFAtAge,lty="dotted",col="purple")
   lines(Res$Ages,rep(NatMort,length(Res$Ages)),lty="dashed")
-  axis(1,at=seq(0,MaxModelAge,1), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+  axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
   axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(1,at=seq(0,MaxModelAge,1), labels=seq(0,MaxModelAge,1),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
+  axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
   axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
   mtext(expression(paste(plain("Mortality") ~ (year^{-1}))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
   mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
@@ -7394,15 +7474,17 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
   # plot male mortality at age
   ylims = Get_yaxis_scale(Res$MalFAtAge)
   ymax = ylims$ymax; yint = ylims$yint
+  xlims = Get_xaxis_scale(Res$Ages)
+  xmax = xlims$xmax; xint = xlims$xint
   plot(Res$Ages, Res$MalFAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,MaxModelAge),col="blue",yaxt="n",xaxt="n",
        ylab="",xlab="")
   # lines(Res$Ages, Res$MalZAtAge,lty="dotted",col="blue")
   lines(Res$Ages,Res$MalDiscFAtAge,lty="dotted",col="brown")
   lines(Res$Ages,Res$MalLandFAtAge,lty="dotted",col="purple")
   lines(Res$Ages,rep(NatMort,length(Res$Ages)),lty="dashed")
-  axis(1,at=seq(0,MaxModelAge,1), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+  axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
   axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(1,at=seq(0,MaxModelAge,1), labels=seq(0,MaxModelAge,1),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
+  axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
   axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
   mtext(expression(paste(plain("Mortality") ~ (year^{-1}))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
   mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
@@ -7416,12 +7498,14 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
     ymax=1
     yint=0.2
   }
+  xlims = Get_xaxis_scale(Res$Ages)
+  xmax = xlims$xmax; xint = xlims$xint
   plot(Res$Ages, Res$UnfishFemSurvAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,MaxModelAge),col="red",yaxt="n",xaxt="n",
        ylab="",xlab="")
   lines(Res$Ages, Res$FishedFemSurvAtAge,col="red",lty="dotted")
-  axis(1,at=seq(0,MaxModelAge,1), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+  axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
   axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(1,at=seq(0,MaxModelAge,1), labels=seq(0,MaxModelAge,1),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
+  axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
   axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
   mtext(expression(paste(plain("Rel. survival"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
   mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
@@ -7435,12 +7519,14 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
     ymax=1
     yint=0.2
   }
+  xlims = Get_xaxis_scale(Res$Ages)
+  xmax = xlims$xmax; xint = xlims$xint
   plot(Res$Ages, Res$UnfishMalSurvAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,MaxModelAge),col="blue",yaxt="n",xaxt="n",
        ylab="",xlab="")
   lines(Res$Ages, Res$FishedMalSurvAtAge,col="blue",lty="dotted")
-  axis(1,at=seq(0,MaxModelAge,1), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+  axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
   axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(1,at=seq(0,MaxModelAge,1), labels=seq(0,MaxModelAge,1),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
+  axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
   axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
   mtext(expression(paste(plain("Rel. survival"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
   mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
@@ -7454,20 +7540,24 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
     ymax = round(1.4 * max(Res$UnfishFemBiomAtAge),1)
     yint = ymax/4
   }
+  xlims = Get_xaxis_scale(Res$Ages)
+  xmax = xlims$xmax; xint = xlims$xint
   plot(Res$Ages, Res$UnfishFemBiomAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,MaxModelAge),
        col="red",yaxt="n",xaxt="n",ylab="",xlab="")
   lines(Res$Ages, Res$FishedFemBiomAtAge,col="red",lty="dotted")
-  axis(1,at=seq(0,MaxModelAge,1), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+  axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
   axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(1,at=seq(0,MaxModelAge,1), labels=seq(0,MaxModelAge,1),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
+  axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
   axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
-  mtext(expression(paste(plain("Biom. at age (kg"),plain(")"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
+  mtext(expression(paste(plain("Mat. biom. at age (kg"),plain(")"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
   mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
   legend('topright', col=c("red","red"),lty=c("solid","dotted"),legend=c("Fem. unfish","Fem unfish"),bty='n', cex=1.0,lwd=1.75)
 
   # plot fished and unfished mature male biomass at age given specified current fully-selected fishing mortality
   ylims = Get_yaxis_scale(Res$UnfishMalBiomAtAge)
   ymax = ylims$ymax; yint = ylims$yint
+  xlims = Get_xaxis_scale(Res$Ages)
+  xmax = xlims$xmax; xint = xlims$xint
   if (ymax == 0) {
     ymax = round(1.4 * max(Res$UnfishFemBiomAtAge),1)
     yint = ymax/4
@@ -7475,11 +7565,11 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
   plot(Res$Ages, Res$UnfishMalBiomAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,MaxModelAge),
        col="blue",yaxt="n",xaxt="n",ylab="",xlab="")
   lines(Res$Ages, Res$FishedMalBiomAtAge,col="blue",lty="dotted")
-  axis(1,at=seq(0,MaxModelAge,1), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+  axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
   axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(1,at=seq(0,MaxModelAge,1), labels=seq(0,MaxModelAge,1),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
+  axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
   axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
-  mtext(expression(paste(plain("Biom. at age (kg"),plain(")"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
+  mtext(expression(paste(plain("Mat. biom. at age (kg"),plain(")"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
   mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
   legend('topright', col=c("blue","blue"),lty=c("solid","dotted"),legend=c("Mal. unfish","Mal. unfish"),bty='n', cex=1.0,lwd=1.75)
   #Plot 3:
@@ -7492,12 +7582,14 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
   MalCatchNumAtAgeProp <- Res$MalCatchAtAgeNum / sum(Res$MalCatchAtAgeNum)
   ylims = Get_yaxis_scale(FemCatchNumAtAgeProp)
   ymax = ylims$ymax; yint = ylims$yint
+  xlims = Get_xaxis_scale(Res$Ages)
+  xmax = xlims$xmax; xint = xlims$xint
   plot(Res$Ages, FemCatchNumAtAgeProp,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,MaxModelAge),
        col="red",yaxt="n",xaxt="n",ylab="",xlab="")
   lines(Res$Ages, MalCatchNumAtAgeProp,col="blue","l")
-  axis(1,at=seq(0,MaxModelAge,1), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+  axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
   axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(1,at=seq(0,MaxModelAge,1), labels=seq(0,MaxModelAge,1),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
+  axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
   axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
   mtext("Catch at age Prop.",las=3,side=2,line=2,cex=0.7,lwd=1.75)
   mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)

@@ -10,7 +10,9 @@ VisualiseGrowthApplyingLTM(
   MaxAge,
   Growth_params,
   CVSizeAtAge,
+  lbnd,
   midpt,
+  ubnd,
   nLenCl,
   MainLabel,
   xaxis_lab,
@@ -28,7 +30,11 @@ VisualiseGrowthApplyingLTM(
 
 \item{CVSizeAtAge}{coefficient of variation (CV), common across all mean lengths at age}
 
+\item{lbnd}{mid points of length classes}
+
 \item{midpt}{mid points of length classes}
+
+\item{ubnd}{mid points of length classes}
 
 \item{nLenCl}{number of length classes}
 
@@ -75,6 +81,6 @@ Growth_params = c(Linf, vbK, tzero) # currently only set up for von Bertalanffy 
 CVSizeAtAge = 0.05
 nFish = 100
 TimeStep = 1
-VisualiseGrowthApplyingLTM(nFish, TimeStep, MaxAge, Growth_params, CVSizeAtAge, midpt, nLenCl, MainLabel=NA,
-                           xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA, ymax=NA, yint=NA)
+VisualiseGrowthApplyingLTM(nFish, TimeStep, MaxAge, Growth_params, CVSizeAtAge, lbnd, midpt, ubnd,
+                           nLenCl, MainLabel=NA, xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA, ymax=NA, yint=NA)
 }
