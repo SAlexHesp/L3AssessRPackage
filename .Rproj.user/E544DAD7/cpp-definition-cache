@@ -7,48 +7,54 @@
                 "usr": "c:@F@CalcExpCatchPropIntAgeGivenLength_cpp#1I#1I#I#I#",
                 "kind": 6,
                 "parent_name": "",
-                "name": "CalcExpCatchPropIntAgeGivenLength_cpp(const int, const int, int, int)",
+                "name": "CalcExpCatchPropIntAgeGivenLength_cpp(const int, const int, Rcpp::NumericMatrix, Rcpp::NumericVector)",
                 "file": "C:/~/L3AssessRPackage/src/L3Analyses.cpp",
                 "line": 6,
-                "column": 15
+                "column": 15,
+                "hidden": false
             },
             {
                 "usr": "c:@F@CalcNLLCondAgeAtLength_cpp#1I#1I#I#I#",
                 "kind": 6,
                 "parent_name": "",
-                "name": "CalcNLLCondAgeAtLength_cpp(const int, const int, int, int)",
+                "name": "CalcNLLCondAgeAtLength_cpp(const int, const int, Rcpp::NumericMatrix, Rcpp::NumericVector)",
                 "file": "C:/~/L3AssessRPackage/src/L3Analyses.cpp",
                 "line": 40,
-                "column": 8
+                "column": 8,
+                "hidden": false
             },
             {
                 "usr": "c:@F@CalcCatches_AgeAndLengthBasedCatchCurves_cpp#I#1d#I#1d#1I#1d#1I#1I#I#I#I#1d#I#",
                 "kind": 6,
                 "parent_name": "",
-                "name": "CalcCatches_AgeAndLengthBasedCatchCurves_cpp(int, const double, int, const double, const int, const double, const int, const int, int, int, int, const double, int)",
+                "name": "CalcCatches_AgeAndLengthBasedCatchCurves_cpp(Rcpp::NumericVector, const double, Rcpp::NumericVector, const double, const int, const double, const int, const int, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, const double, Rcpp::NumericMatrix)",
                 "file": "C:/~/L3AssessRPackage/src/L3Analyses.cpp",
                 "line": 70,
-                "column": 6
+                "column": 6,
+                "hidden": false
             },
             {
                 "usr": "c:@F@CalcLTM_cpp#I#1d#I#I#I#1I#",
                 "kind": 6,
                 "parent_name": "",
-                "name": "CalcLTM_cpp(int, const double, int, int, int, const int)",
+                "name": "CalcLTM_cpp(Rcpp::NumericVector, const double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, const int)",
                 "file": "C:/~/L3AssessRPackage/src/L3Analyses.cpp",
                 "line": 199,
-                "column": 15
+                "column": 15,
+                "hidden": false
             },
             {
                 "usr": "c:@F@UpdateGrowthAndSurvival_cpp#1I#1d#1I#1I#1d#I#1d#I#I#I#I#I#I#I#1d#I#I#",
                 "kind": 6,
                 "parent_name": "",
-                "name": "UpdateGrowthAndSurvival_cpp(const int, const double, const int, const int, const double, int, const double, int, int, int, int, int, int, int, const double, int, int)",
+                "name": "UpdateGrowthAndSurvival_cpp(const int, const double, const int, const int, const double, Rcpp::NumericMatrix, const double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, const double, Rcpp::NumericVector, Rcpp::NumericVector)",
                 "file": "C:/~/L3AssessRPackage/src/L3Analyses.cpp",
                 "line": 228,
-                "column": 6
+                "column": 6,
+                "hidden": false
             }
-        ]
+        ],
+        "hidden": false
     },
     {
         "file": "C:/~/L3AssessRPackage/src/copy prev version/L3Analyses.cpp",
@@ -58,29 +64,33 @@
                 "usr": "c:@F@CalcNLLCondAgeAtLength_cpp#1I#1I#I#I#I#",
                 "kind": 6,
                 "parent_name": "",
-                "name": "CalcNLLCondAgeAtLength_cpp(const int, const int, int, int, int)",
+                "name": "CalcNLLCondAgeAtLength_cpp(const int, const int, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector)",
                 "file": "C:/~/L3AssessRPackage/src/copy prev version/L3Analyses.cpp",
                 "line": 5,
-                "column": 8
+                "column": 8,
+                "hidden": false
             },
             {
                 "usr": "c:@F@CalcCatches_AgeAndLengthBasedCatchCurves_cpp#I#1d#I#1d#1I#1I#I#I#I#1d#I#",
                 "kind": 6,
                 "parent_name": "",
-                "name": "CalcCatches_AgeAndLengthBasedCatchCurves_cpp(int, const double, int, const double, const int, const int, int, int, int, const double, int)",
+                "name": "CalcCatches_AgeAndLengthBasedCatchCurves_cpp(Rcpp::NumericVector, const double, Rcpp::NumericVector, const double, const int, const int, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, const double, Rcpp::NumericMatrix)",
                 "file": "C:/~/L3AssessRPackage/src/copy prev version/L3Analyses.cpp",
                 "line": 45,
-                "column": 6
+                "column": 6,
+                "hidden": false
             },
             {
                 "usr": "c:@F@CalcLTM_cpp#I#1d#I#I#I#1I#",
                 "kind": 6,
                 "parent_name": "",
-                "name": "CalcLTM_cpp(int, const double, int, int, int, const int)",
+                "name": "CalcLTM_cpp(Rcpp::NumericVector, const double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, const int)",
                 "file": "C:/~/L3AssessRPackage/src/copy prev version/L3Analyses.cpp",
                 "line": 170,
-                "column": 15
+                "column": 15,
+                "hidden": false
             }
-        ]
+        ],
+        "hidden": false
     }
 ]

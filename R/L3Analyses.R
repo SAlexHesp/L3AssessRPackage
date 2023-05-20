@@ -6362,6 +6362,8 @@ CalcYPRAndSPRForFMort_LB<- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
                                     FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
                                     ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, FMort) {
 
+  if (FMort < 0.0001) FMort = 0.0001 # set negligible fishing mortality for unfished stock,
+  # to allow calculations associated with expected catch size distribtion, i.e. from a survey
 
   # number of model time steps
   nTimeSteps <- 1 + (MaxModelAge / TimeStep)
@@ -6501,6 +6503,25 @@ CalcYPRAndSPRForFMort_LB<- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
   FemMeanCatchLen = sum((FemCatchNum * midpt)) / sum(FemCatchNum)
   MalMeanCatchLen = sum((MalCatchNum * midpt)) / sum(MalCatchNum)
 
+  # get approx. 95 60% confidence intervals for mean catch length
+  Probs = FemCatchNum/sum(FemCatchNum)
+  FemLenFreq = as.vector(rmultinom(1,10000,Probs))
+  FemFishLen = rep(midpt, FemLenFreq)
+  MalLenFreq = as.vector(rmultinom(1,10000,Probs))
+  MalFishLen = rep(midpt, MalLenFreq)
+  FemMeanCatchLen.95ci = FemMeanCatchLen + c(-1.96,1.96) * (sd(FemFishLen)/sqrt(10000))
+  MalMeanCatchLen.95ci = MalMeanCatchLen + c(-1.96,1.96) * (sd(MalFishLen)/sqrt(10000))
+
+  # calculate standard error of the prediction
+  FemMSE = sqrt(sum((FemFishLen-FemMeanCatchLen)^2) / (10000 - 2))
+  MalMSE = sqrt(sum((MalFishLen-MalMeanCatchLen)^2) / (10000 - 2))
+
+  # 60 and 95% prediction intervals for mean catch length
+  FemMeanCatchLen.95pi = FemMeanCatchLen + c(-1.96,1.96) * FemMSE * (sqrt(1 + (1/10000)))
+  MalMeanCatchLen.95pi = MalMeanCatchLen + c(-1.96,1.96) * MalMSE * (sqrt(1 + (1/10000)))
+  FemMeanCatchLen.60pi = FemMeanCatchLen + c(-0.84,0.84) * FemMSE * (sqrt(1 + (1/10000)))
+  MalMeanCatchLen.60pi = MalMeanCatchLen + c(-0.84,0.84) * MalMSE * (sqrt(1 + (1/10000)))
+
   # calculate yield per recruit in kg
   YPR <- max(0,sum(FemCatchBiom) + sum(MalCatchBiom))
 
@@ -6585,6 +6606,12 @@ CalcYPRAndSPRForFMort_LB<- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
                  MalCatchNum=MalCatchNum,
                  FemMeanCatchLen=FemMeanCatchLen,
                  MalMeanCatchLen=MalMeanCatchLen,
+                 FemMeanCatchLen.95ci=FemMeanCatchLen.95ci,
+                 MalMeanCatchLen.95ci=MalMeanCatchLen.95ci,
+                 FemMeanCatchLen.95pi=FemMeanCatchLen.95pi,
+                 MalMeanCatchLen.95pi=MalMeanCatchLen.95pi,
+                 FemMeanCatchLen.60pi=FemMeanCatchLen.60pi,
+                 MalMeanCatchLen.60pi=MalMeanCatchLen.60pi,
                  YPR = YPR,
                  Fem_SPR = Fem_SPR,
                  Mal_SPR = Mal_SPR,
@@ -7068,9 +7095,22 @@ GetPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
 
   FemMeanCatchLenResults <- rep(0,nFVals) # mean length of catch
   MalMeanCatchLenResults <- rep(0,nFVals)
+  FemMeanCatchLenResults.lw95ci <- rep(0,nFVals) # 95 percent confidence limits
+  FemMeanCatchLenResults.up95ci <- rep(0,nFVals)
+  MalMeanCatchLenResults.lw95ci <- rep(0,nFVals)
+  MalMeanCatchLenResults.up95ci <- rep(0,nFVals)
+  FemMeanCatchLenResults.lw95pi <- rep(0,nFVals) # 95 percent confidence prediction limits
+  FemMeanCatchLenResults.up95pi <- rep(0,nFVals)
+  MalMeanCatchLenResults.lw95pi <- rep(0,nFVals)
+  MalMeanCatchLenResults.up95pi <- rep(0,nFVals)
+  FemMeanCatchLenResults.lw60pi <- rep(0,nFVals) # 60 percent confidence prediction limits
+  FemMeanCatchLenResults.up60pi <- rep(0,nFVals)
+  MalMeanCatchLenResults.lw60pi <- rep(0,nFVals)
+  MalMeanCatchLenResults.up60pi <- rep(0,nFVals)
 
   for (k in 1:nFVals) {
     FMort = FishMort[k]
+    # cat("k",k,"FMort",FMort,'\n')
     Res = CalcYPRAndSPRForFMort_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                    RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                                    EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
@@ -7092,6 +7132,18 @@ GetPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
     # mean lengths of catches
     FemMeanCatchLenResults[k] <- Res$FemMeanCatchLen # mean length of catch
     MalMeanCatchLenResults[k] <- Res$MalMeanCatchLen
+    FemMeanCatchLenResults.lw95ci[k] <- Res$FemMeanCatchLen.95ci[1] # 95 percent confidence limits
+    FemMeanCatchLenResults.up95ci[k] <- Res$FemMeanCatchLen.95ci[2]
+    MalMeanCatchLenResults.lw95ci[k] <- Res$MalMeanCatchLen.95ci[1]
+    MalMeanCatchLenResults.up95ci[k] <- Res$MalMeanCatchLen.95ci[2]
+    FemMeanCatchLenResults.lw95pi[k] <- Res$FemMeanCatchLen.95pi[1] # 95 percent confidence prediction limits
+    FemMeanCatchLenResults.up95pi[k] <- Res$FemMeanCatchLen.95pi[2]
+    MalMeanCatchLenResults.lw95pi[k] <- Res$MalMeanCatchLen.95pi[1]
+    MalMeanCatchLenResults.up95pi[k] <- Res$MalMeanCatchLen.95pi[2]
+    FemMeanCatchLenResults.lw60pi[k] <- Res$FemMeanCatchLen.60pi[1] # 60 percent confidence prediction limits
+    FemMeanCatchLenResults.up60pi[k] <- Res$FemMeanCatchLen.60pi[2]
+    MalMeanCatchLenResults.lw60pi[k] <- Res$MalMeanCatchLen.60pi[1]
+    MalMeanCatchLenResults.up60pi[k] <- Res$MalMeanCatchLen.60pi[2]
   }
 
   maxypr <- max(YPRResults) # maximum yield per recruit
@@ -7115,6 +7167,7 @@ GetPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
 
   # get results for current F
   FMort = Current_F
+  # cat("2: FMort",FMort,'\n')
   Res2 = CalcYPRAndSPRForFMort_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                   RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                                   EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
@@ -7150,6 +7203,18 @@ GetPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
                  MalMeanCatchLen = Res2$MalMeanCatchLen,
                  FemMeanCatchLenResults = FemMeanCatchLenResults,
                  MalMeanCatchLenResults = MalMeanCatchLenResults,
+                 FemMeanCatchLenResults.lw95ci = FemMeanCatchLenResults.lw95ci,
+                 FemMeanCatchLenResults.up95ci = FemMeanCatchLenResults.up95ci,
+                 MalMeanCatchLenResults.lw95ci = MalMeanCatchLenResults.lw95ci,
+                 MalMeanCatchLenResults.up95ci = MalMeanCatchLenResults.up95ci,
+                 FemMeanCatchLenResults.lw95pi = FemMeanCatchLenResults.lw95pi,
+                 FemMeanCatchLenResults.up95pi = FemMeanCatchLenResults.up95pi,
+                 MalMeanCatchLenResults.lw95pi = MalMeanCatchLenResults.lw95pi,
+                 MalMeanCatchLenResults.up95pi = MalMeanCatchLenResults.up95pi,
+                 FemMeanCatchLenResults.lw60pi = FemMeanCatchLenResults.lw60pi,
+                 FemMeanCatchLenResults.up60pi = FemMeanCatchLenResults.up60pi,
+                 MalMeanCatchLenResults.lw60pi =MalMeanCatchLenResults.lw60pi,
+                 MalMeanCatchLenResults.up60pi =MalMeanCatchLenResults.up60pi,
                  Equil_Rec = Res2$Equil_Rec,
                  Equil_Catch = Res2$Equil_Catch,
                  Equil_FemSpBiom = Res2$Equil_FemSpBiom,
