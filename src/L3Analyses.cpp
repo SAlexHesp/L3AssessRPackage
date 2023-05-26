@@ -126,15 +126,18 @@ List CalcCatches_AgeAndLengthBasedCatchCurves_cpp(NumericVector params, const do
     FAtLenDisc(i) = SelDiscAtLength(i) * FishMort;
 
     // calculate retained catch at length (in numbers)
-    RetCatchAtDecAgeLen(0,i) = Fish_NPerRecAtDecAgeLen(0,i) * (FAtLenReten(i) / ZAtLen(i)) * (1 - exp(-ZAtLen(i)*TimeStep));
+    RetCatchAtDecAgeLen(0,i) = Fish_NPerRecAtDecAgeLen(0,i) * (FAtLenReten(i) / ZAtLen(i)) *
+                                 (1 - exp(-ZAtLen(i)*TimeStep));
     RetCatchAtLen(i) = RetCatchAtLen(i) + RetCatchAtDecAgeLen(0,i);
 
     // calculate discarded catch at length  (in numbers)
-    DiscCatchAtDecAgeLen(0,i) = Fish_NPerRecAtDecAgeLen(0,i) * (FAtLenDisc(i) / ZAtLen(i)) * (1 - exp(-ZAtLen(i)*TimeStep));
+    DiscCatchAtDecAgeLen(0,i) = Fish_NPerRecAtDecAgeLen(0,i) * (FAtLenDisc(i) / ZAtLen(i)) *
+                                 (1 - exp(-ZAtLen(i)*TimeStep));
     DiscCatchAtLen(i) = DiscCatchAtLen(i) + DiscCatchAtDecAgeLen(0,i);
 
     // approximate total catches (caught + released)  (in numbers)
-    TotCatchAtDecAgeLen(0,i) = Fish_NPerRecAtDecAgeLen(0,i) * (FAtLenCapt(i) / ZAtLen(i)) * (1 - exp(-ZAtLen(i)*TimeStep));
+    TotCatchAtDecAgeLen(0,i) = Fish_NPerRecAtDecAgeLen(0,i) * (FAtLenCapt(i) / ZAtLen(i)) *
+                                   (1 - exp(-ZAtLen(i)*TimeStep));
     TotCatchAtLen(i) = TotCatchAtLen(i) + TotCatchAtDecAgeLen(0,i);
     //std::cout << " i " << i << " RecLenDist " << RecLenDist(i) <<
     //  " SelAtLength " << SelAtLength(i) <<" FAtLen " << FAtLen(i) << std::endl;
@@ -166,15 +169,18 @@ List CalcCatches_AgeAndLengthBasedCatchCurves_cpp(NumericVector params, const do
       // add numbers per recruit at length, over timesteps to get marginal length distribution
       Fish_NPerRec(i) = Fish_NPerRec(i) + Fish_NPerRecAtDecAgeLen(t,i);
       // calculate catch at length for timestep (in numbers)
-      RetCatchAtDecAgeLen(t,i) = Fish_NPerRecAtDecAgeLen(t,i) * (FAtLenReten(i) / ZAtLen(i)) * (1 - exp(-ZAtLen(i)*TimeStep));
+      RetCatchAtDecAgeLen(t,i) = Fish_NPerRecAtDecAgeLen(t,i) * (FAtLenReten(i) / ZAtLen(i)) *
+                                   (1 - exp(-ZAtLen(i)*TimeStep));
       RetCatchAtLen(i) = RetCatchAtLen(i) + RetCatchAtDecAgeLen(t,i);
 
       // calculate discarded catch at length  (in numbers)
-      DiscCatchAtDecAgeLen(t,i) = Fish_NPerRecAtDecAgeLen(t,i) * (FAtLenDisc(i) / ZAtLen(i)) * (1 - exp(-ZAtLen(i)*TimeStep));
+      DiscCatchAtDecAgeLen(t,i) = Fish_NPerRecAtDecAgeLen(t,i) * (FAtLenDisc(i) / ZAtLen(i)) *
+                                  (1 - exp(-ZAtLen(i)*TimeStep));
       DiscCatchAtLen(i) = DiscCatchAtLen(i) + DiscCatchAtDecAgeLen(t,i);
 
       // total catches (caught + released)
-      TotCatchAtDecAgeLen(t,i) = Fish_NPerRecAtDecAgeLen(t,i) * (FAtLenCapt(i) / ZAtLen(i)) * (1 - exp(-ZAtLen(i)*TimeStep));
+      TotCatchAtDecAgeLen(t,i) = Fish_NPerRecAtDecAgeLen(t,i) * (FAtLenCapt(i) / ZAtLen(i)) *
+                                  (1 - exp(-ZAtLen(i)*TimeStep));
       TotCatchAtLen(i) = TotCatchAtLen(i) + TotCatchAtDecAgeLen(t,i);
     } // i
   } // t
