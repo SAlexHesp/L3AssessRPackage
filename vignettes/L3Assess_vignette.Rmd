@@ -23,7 +23,7 @@ Fig_Path = "C:/~/L3AssessPackage/vignettes/"
 ```
 
 # Introduction
-#### Last updated April 2023 (Alex Hesp - DPIRD)
+#### Last updated May 2023 (Alex Hesp - DPIRD)
 
 This package is intended as a toolbox of methods with analyses for conducting "level 3" assessments in Western Australia. These methods are typically "equilibrium" approaches, used when size and/or age data are available, together with information on various biological attributes of species, such as estimates of natural mortality, growth and maturity.  
 
@@ -409,7 +409,7 @@ PlotLengthBasedCatchCurve_Selectivity()
 PlotLengthBasedCatchCurve_Mortality()  
 Refer to help files and example code, showing function inputs and outputs.
 
-### Length and age-based catch curve
+## Length and age-based catch curve
 
 This model applies the same set of equations as described above for the length-based catch curve, but is fitted using a modified objective function with two components, the first associated with the marginal length composition (as described above), and the second, with conditional ages-at-length. The approach estimates logistic selectivity parameters ($L_{50}$ and $L_{95}$), von Bertalanffy growth parameters ($L_{\infty,s}$ and $k,s$) and fully-selected fishing mortality ($F^*$). As with the above length-based model, this model is also sex-structured, allowing growth to be estimated simultaneously for both sexes, whilst assuming common length-based selectivity and fully-selected fishing mortality. Single sex data can also be inputted, allowing for growth, selectivity and fishing mortality to be estimated separately for each sex. 
 
@@ -442,8 +442,11 @@ Note that this catch curve routine was recently updated (Jan, 2023) to allow use
 Key functions relevant to applying this method are:  
 SimLenAndAgeFreqData()  
 VisualiseGrowthApplyingLTM()  
-GetAgeAndLengthBasedCatchCurveResults ()  
-PlotAgeAndLengthBasedCatchCurveResults ()  
+GetAgeAndLengthBasedCatchCurveResults()
+PlotAgeLengthCatchCurve_Growth()  
+PlotAgeLengthCatchCurve_Selectivity()  
+PlotAgeLengthCatchCurve_Cond_AL()  
+PlotAgeLengthCatchCurve_MargLength()   
 Refer to help files and example code, showing function inputs and outputs.
 
 ### Length-converted catch curve (regression approach)

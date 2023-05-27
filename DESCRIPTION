@@ -2,7 +2,7 @@ Package: L3Assess
 Type: Package
 Title: Catch curve and per recruit analyses
 Version: 0.1.0
-Date: 2022-02-23
+Date: 2023-05-27
 Author: Alex Hesp
 Maintainer: Alex Hesp <Alex.Hesp@dpird.wa.gov.au>
 Description: A range of age and length based catch curve analyses, and per recruit analysis

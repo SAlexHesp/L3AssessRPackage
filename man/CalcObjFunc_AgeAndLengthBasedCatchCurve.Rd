@@ -13,5 +13,6 @@ CalcObjFunc_AgeAndLengthBasedCatchCurve(params)
 negative log-likelihood (NLL)
 }
 \description{
-#keywords internal
+Get NLL for age and length-based catch curve
 }
+\keyword{internal}
