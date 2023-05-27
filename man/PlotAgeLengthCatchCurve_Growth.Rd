@@ -140,8 +140,8 @@ ObsRetCatchFreqAtLengthAndAge = array(c(unlist(Res$ObsCatchFreqAtLengthAndDecAge
                                                                                   colnames(Res$ObsCatchFreqAtLengthAndDecAge_Fem)))
 # # get params - 1 sex
 # InitFishMort = 0.3 # specify starting parameters
-# InitL50 = 300
-# InitDelta = 200 # L95-L50
+# InitL50 = 320
+# InitDelta = 50 # L95-L50
 # InitLinf = 800
 # InitvbK = 0.2
 # InitCVSizeAtAge = 0.05

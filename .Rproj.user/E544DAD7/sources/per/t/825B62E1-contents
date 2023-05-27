@@ -1712,8 +1712,8 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, GrowthCurveType, GrowthPa
 #' MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified is knife-edged at MLL
 #' SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
 #' SelectivityVec = NA # selectivity vector
-#' SelParams = c(300, 500) # L50, L95 for gear selectivity
-#' RetenParams = c(NA, NA) # L50, L95 for retention
+#' SelParams = c(300, 50) # L50, L95-L50 for gear selectivity
+#' RetenParams = c(NA, NA) # L50, L95-L50 for retention
 #' DiscMort = 0
 #' # # single sex, von Bertalanffy
 #' # GrowthCurveType = 1 # 1 = von Bertalanffy
@@ -1747,15 +1747,15 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, GrowthCurveType, GrowthPa
 #'                                                                                   colnames(Res$ObsCatchFreqAtLengthAndDecAge_Fem)))
 #' # # get params - 1 sex
 #' # InitFishMort = 0.3 # specify starting parameters
-#' # InitL50 = 300
-#' # InitDelta = 200 # L95-L50
+#' # InitL50 = 320
+#' # InitDelta = 50 # L95-L50
 #' # InitLinf = 800
 #' # InitvbK = 0.2
 #' # InitCVSizeAtAge = 0.05
 #' # get params - 2 sexes
 #' InitFishMort = 0.3 # specify starting parameters
-#' InitL50 = 300
-#' InitDelta = 200 # L95-L50
+#' InitL50 = 320
+#' InitDelta = 50 # L95-L50
 #' InitLinf = c(800,800)
 #' InitvbK = c(0.25,0.25)
 #' InitCVSizeAtAge = 0.05
@@ -3386,8 +3386,8 @@ PlotLengthBasedCatchCurve_Mortality <- function(params, MLL, SelectivityType, Ob
 #'                                                                                   colnames(Res$ObsCatchFreqAtLengthAndDecAge_Fem)))
 #' # # get params - 1 sex
 #' # InitFishMort = 0.3 # specify starting parameters
-#' # InitL50 = 300
-#' # InitDelta = 200 # L95-L50
+#' # InitL50 = 320
+#' # InitDelta = 50 # L95-L50
 #' # InitLinf = 800
 #' # InitvbK = 0.2
 #' # InitCVSizeAtAge = 0.05
@@ -3638,8 +3638,8 @@ PlotAgeLengthCatchCurve_MargLength <- function(params, MLL, SelectivityType, Obs
 #'                                                                                   colnames(Res$ObsCatchFreqAtLengthAndDecAge_Fem)))
 #' # # get params - 1 sex
 #' # InitFishMort = 0.3 # specify starting parameters
-#' # InitL50 = 300
-#' # InitDelta = 200 # L95-L50
+#' # InitL50 = 320
+#' # InitDelta = 50 # L95-L50
 #' # InitLinf = 800
 #' # InitvbK = 0.2
 #' # InitCVSizeAtAge = 0.05
@@ -3935,8 +3935,8 @@ PlotAgeLengthCatchCurve_Growth <- function(params, MLL, SelectivityType, ObsRetC
 #'                                                                                   colnames(Res$ObsCatchFreqAtLengthAndDecAge_Fem)))
 #' # # get params - 1 sex
 #' # InitFishMort = 0.3 # specify starting parameters
-#' # InitL50 = 300
-#' # InitDelta = 200 # L95-L50
+#' # InitL50 = 320
+#' # InitDelta = 50 # L95-L50
 #' # InitLinf = 800
 #' # InitvbK = 0.2
 #' # InitCVSizeAtAge = 0.05
@@ -4128,8 +4128,8 @@ PlotAgeLengthCatchCurve_Selectivity <- function(params, MLL, SelectivityType, Ob
 #'                                                                                   colnames(Res$ObsCatchFreqAtLengthAndDecAge_Fem)))
 #' # # get params - 1 sex
 #' # InitFishMort = 0.3 # specify starting parameters
-#' # InitL50 = 300
-#' # InitDelta = 200 # L95-L50
+#' # InitL50 = 320
+#' # InitDelta = 50 # L95-L50
 #' # InitLinf = 800
 #' # InitvbK = 0.2
 #' # InitCVSizeAtAge = 0.05
