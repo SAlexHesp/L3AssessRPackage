@@ -63,22 +63,6 @@
 
  }
 
- # Get_xaxis_scale <- function(x_data) {
- #
- #   xx = floor(log10(max(x_data)))
- #   temp_xmin = floor(min(0.8 * x_data))
- #   xmin = round(temp_xmin, -xx)
- #   temp_xmax = ceiling(1.2*max(x_data))
- #   temp_xmax2 = round(temp_xmax, -xx)
- #   xint = (temp_xmax2-xmin)/4
- #   xmax = xmin + (4 * xint)
- #   results = list(xmin = xmin,
- #                  xmax = xmax,
- #                  xint = xint)
- #
- #    return(results)
- #  }
-
  #' Get maximum and minimum y values and y interval
  #'
  #' Used for setting plot defaults
@@ -122,26 +106,6 @@
 
  }
 
- # Get_yaxis_scale <- function(y_data) {
- #
- #   xx = floor(log10(max(y_data)))
- #   ymin = floor(min(0.8 * y_data))
- #   temp_ymax = ceiling(max(1.2 * y_data))
- #   temp_ymax2 = round(temp_ymax, -xx)
- #   xxx = (temp_ymax2-ymin)/4
- #   if (temp_ymax > 10) {
- #     yint = round(xxx, xx)
- #   } else {
- #     yint = round(xxx, -xx)
- #   }
- #   ymax = ymin + (4 * yint)
- #
- #   results = list(ymin = ymin,
- #                  ymax = ymax,
- #                  yint = yint)
- #
- #   return(results)
- # }
 
 # **************************
 # growth functions
@@ -5400,9 +5364,9 @@ PlotAgeBasedCatchCurveResults_NormalSpace <- function(RecAssump, SpecRecAge, Min
   if (CatchCurveModel == 1) {
     Z_value = round(Res$ZMort,digits=3)
     x=which(Ages==Res$RecAge) # RecAge position
-    xx=length(which(Res$EstFreq_Zup>0)) # position of last age
-    xxx=length(which(Res$EstFreq_Zlow>0)) # position of last age
-    xxxx=length(which(Res$EstFreq>0)) # position of last age
+    xx=length(which(Res$EstFreq_Zup>0))+x # position of last age
+    xxx=length(which(Res$EstFreq_Zlow>0))+x # position of last age
+    xxxx=length(which(Res$EstFreq>0))+x # position of last age
   }
   # Linear
   if (CatchCurveModel == 2) {
@@ -6294,54 +6258,61 @@ GetLTMInputsForPerRecruitAnalysis <- function(GrowthCurveType, TimeStep, MaxMode
 CalcPerRecruitFishLenAndFishWtStats<- function(midpt, FemCatchNum, MalCatchNum, CombSexCatchNum,
                                                FemWtAtLen, MalWtAtLen) {
 
-
-  # calculate mean size of catch
-  FemMeanCatchLen = sum(FemCatchNum * midpt) / sum(FemCatchNum)
-  MalMeanCatchLen = sum(MalCatchNum * midpt) / sum(MalCatchNum)
-  CombSexMeanCatchLen = sum((CombSexCatchNum * midpt)) / sum(CombSexCatchNum)
-  PerRecMeanCatchLen = data.frame(FemMeanCatchLen=FemMeanCatchLen,
-                            MalMeanCatchLen=MalMeanCatchLen,
-                            CombSexMeanCatchLen=CombSexMeanCatchLen)
-
-  # get approx. 95 60% confidence intervals for mean catch length
+  # get approx. 95 and 60% confidence intervals for mean catch length
   FemProbs = FemCatchNum/sum(FemCatchNum)
   FemLenFreq = as.vector(rmultinom(1,10000,FemProbs))
   FemFishLen = rep(midpt, FemLenFreq)
   FemFishWt = rep(FemWtAtLen, FemLenFreq)
-  MalProbs = FemCatchNum/sum(FemCatchNum)
+  MalProbs = MalCatchNum/sum(MalCatchNum)
   MalLenFreq = as.vector(rmultinom(1,10000,MalProbs))
   MalFishLen = rep(midpt, MalLenFreq)
   MalFishWt = rep(MalWtAtLen, MalLenFreq)
   CombSexProbs = CombSexCatchNum/sum(CombSexCatchNum)
   CombSexLenFreq = as.vector(rmultinom(1,10000,CombSexProbs))
   CombSexFishLen = rep(midpt, CombSexLenFreq)
+  FishWtsBothSexes = c(FemFishWt, MalFishWt)
+  CombSexFishWt = sample(FishWtsBothSexes, 10000, replace = FALSE, prob=NULL)
 
   # random fish lengths
   PerRecRandFishLen = data.frame(FemFishLen=FemFishLen,
                                  MalFishLen=MalFishLen,
                                  CombSexFishLen=CombSexFishLen)
 
-
-  # expected mean catch weight
-  FemMeanCatchWt = sum(FemCatchNum * FemWtAtLen) / sum(FemCatchNum)
-  MalMeanCatchWt = sum(MalCatchNum * MalWtAtLen) / sum(MalCatchNum)
-  CombSexMeanCatchWt = mean(c(FemFishWt,MalFishWt))
-  PerRecMeanCatchWt = data.frame(FemMeanCatchWt=FemMeanCatchWt,
-                                 MalMeanCatchWt=MalMeanCatchWt,
-                                 CombSexMeanCatchWt=CombSexMeanCatchWt)
-
+  # random fish weights
   PerRecRandFishWt = data.frame(FemFishWt=FemFishWt,
-                                MalFishWt=MalFishWt)
+                                MalFishWt=MalFishWt,
+                                CombSexFishWt=CombSexFishWt)
 
   # random fish length frequency distribution
   PerRecLenFreq = data.frame(FemLenFreq=FemLenFreq,
                              MalLenFreq=MalLenFreq,
                              CombSexLenFreq=CombSexLenFreq)
 
+  # calculate mean catch length
+  # FemMeanCatchLen = sum(FemCatchNum * midpt) / sum(FemCatchNum)
+  # MalMeanCatchLen = sum(MalCatchNum * midpt) / sum(MalCatchNum)
+  # CombSexMeanCatchLen = sum((CombSexCatchNum * midpt)) / sum(CombSexCatchNum)
+  FemMeanCatchLen = mean(FemFishLen)
+  MalMeanCatchLen = mean(MalFishLen)
+  CombSexMeanCatchLen = mean(CombSexFishLen)
+  PerRecMeanCatchLen = data.frame(FemMeanCatchLen=FemMeanCatchLen,
+                                  MalMeanCatchLen=MalMeanCatchLen,
+                                  CombSexMeanCatchLen=CombSexMeanCatchLen)
+
+  # calculate mean catch weight
+  # FemMeanCatchWt = sum(FemCatchNum * FemWtAtLen) / sum(FemCatchNum)
+  # MalMeanCatchWt = sum(MalCatchNum * MalWtAtLen) / sum(MalCatchNum)
+  FemMeanCatchWt = mean(FemFishWt)
+  MalMeanCatchWt = mean(MalFishWt)
+  CombSexMeanCatchWt = mean(CombSexFishWt)
+  PerRecMeanCatchWt = data.frame(FemMeanCatchWt=FemMeanCatchWt,
+                                 MalMeanCatchWt=MalMeanCatchWt,
+                                 CombSexMeanCatchWt=CombSexMeanCatchWt)
+
   # 95 percent confidence limits for mean length
   FemMeanCatchLen.95ci = FemMeanCatchLen + c(-1.96,1.96) * (sd(FemFishLen)/sqrt(10000))
   MalMeanCatchLen.95ci = MalMeanCatchLen + c(-1.96,1.96) * (sd(MalFishLen)/sqrt(10000))
-  CombSexMeanCatchLen.95ci = CombSexMeanCatchLen + c(-1.96,1.96) * (sd(CombSexFishLen)/sqrt(20000))
+  CombSexMeanCatchLen.95ci = CombSexMeanCatchLen + c(-1.96,1.96) * (sd(CombSexFishLen)/sqrt(10000))
   MeanCatchLen.95ci = data.frame(FemMeanCatchLen.95ci=FemMeanCatchLen.95ci,
                                  MalMeanCatchLen.95ci=MalMeanCatchLen.95ci,
                                  CombSexMeanCatchLen.95ci=CombSexMeanCatchLen.95ci)
@@ -6349,7 +6320,7 @@ CalcPerRecruitFishLenAndFishWtStats<- function(midpt, FemCatchNum, MalCatchNum, 
   # 95 percent confidence limits for mean weight
   FemMeanCatchWt.95ci = FemMeanCatchWt + c(-1.96,1.96) * (sd(FemFishWt)/sqrt(10000))
   MalMeanCatchWt.95ci = MalMeanCatchWt + c(-1.96,1.96) * (sd(MalFishWt)/sqrt(10000))
-  CombSexMeanCatchWt.95ci = CombSexMeanCatchWt + c(-1.96,1.96) * (sd(c(FemFishWt,MalFishWt))/sqrt(20000))
+  CombSexMeanCatchWt.95ci = CombSexMeanCatchWt + c(-1.96,1.96) * (sd(CombSexFishWt)/sqrt(10000))
   MeanCatchWt.95ci = data.frame(FemMeanCatchWt.95ci=FemMeanCatchWt.95ci,
                                 MalMeanCatchWt.95ci=MalMeanCatchWt.95ci,
                                 CombSexMeanCatchWt.95ci=CombSexMeanCatchWt.95ci)
@@ -6357,19 +6328,19 @@ CalcPerRecruitFishLenAndFishWtStats<- function(midpt, FemCatchNum, MalCatchNum, 
   # calculate standard error of the prediction
   FemMSE = sqrt(sum((FemFishLen-FemMeanCatchLen)^2) / (10000 - 2))
   MalMSE = sqrt(sum((MalFishLen-MalMeanCatchLen)^2) / (10000 - 2))
-  CombSexMSE = sqrt(sum((CombSexFishLen-CombSexMeanCatchLen)^2) / (20000 - 2))
+  CombSexMSE = sqrt(sum((CombSexFishLen-CombSexMeanCatchLen)^2) / (10000 - 2))
 
   # 60 and 95 percent prediction intervals for mean catch length
   FemMeanCatchLen.95pi = FemMeanCatchLen + c(-1.96,1.96) * FemMSE * (sqrt(1 + (1/10000)))
   MalMeanCatchLen.95pi = MalMeanCatchLen + c(-1.96,1.96) * MalMSE * (sqrt(1 + (1/10000)))
-  CombSexMeanCatchLen.95pi = CombSexMeanCatchLen + c(-1.96,1.96) * CombSexMSE * (sqrt(1 + (1/20000)))
+  CombSexMeanCatchLen.95pi = CombSexMeanCatchLen + c(-1.96,1.96) * CombSexMSE * (sqrt(1 + (1/10000)))
   MeanCatchLen.95pi = data.frame(FemMeanCatchLen.95pi=FemMeanCatchLen.95pi,
                                  MalMeanCatchLen.95pi=MalMeanCatchLen.95pi,
                                  CombSexMeanCatchLen.95pi=CombSexMeanCatchLen.95pi)
 
   FemMeanCatchLen.60pi = FemMeanCatchLen + c(-0.84,0.84) * FemMSE * (sqrt(1 + (1/10000)))
   MalMeanCatchLen.60pi = MalMeanCatchLen + c(-0.84,0.84) * MalMSE * (sqrt(1 + (1/10000)))
-  CombSexMeanCatchLen.60pi = CombSexMeanCatchLen + c(-0.84,0.84) * CombSexMSE * (sqrt(1 + (1/20000)))
+  CombSexMeanCatchLen.60pi = CombSexMeanCatchLen + c(-0.84,0.84) * CombSexMSE * (sqrt(1 + (1/10000)))
   MeanCatchLen.60pi = data.frame(FemMeanCatchLen.60pi=FemMeanCatchLen.60pi,
                                  MalMeanCatchLen.60pi=MalMeanCatchLen.60pi,
                                  CombSexMeanCatchLen.60pi=CombSexMeanCatchLen.60pi)
@@ -6377,22 +6348,31 @@ CalcPerRecruitFishLenAndFishWtStats<- function(midpt, FemCatchNum, MalCatchNum, 
   # calculate standard error of the prediction, for weight
   FemMSEwt = sqrt(sum((FemFishWt - FemMeanCatchWt)^2) / (10000 - 2))
   MalMSEwt = sqrt(sum((MalFishWt - MalMeanCatchWt)^2) / (10000 - 2))
-  CombSexMSEwt = sqrt(sum((c(FemFishWt,MalFishWt) - CombSexMeanCatchWt)^2) / (20000 - 2))
+  CombSexMSEwt = sqrt(sum((CombSexFishWt - CombSexMeanCatchWt)^2) / (10000 - 2))
 
   # 60 and 95 percent prediction intervals for mean catch weight
   FemMeanCatchWt.95pi = FemMeanCatchWt + c(-1.96,1.96) * FemMSEwt * (sqrt(1 + (1/10000)))
   MalMeanCatchWt.95pi = MalMeanCatchWt + c(-1.96,1.96) * MalMSEwt * (sqrt(1 + (1/10000)))
-  CombSexMeanCatchWt.95pi = CombSexMeanCatchWt + c(-1.96,1.96) * CombSexMSEwt * (sqrt(1 + (1/20000)))
+  CombSexMeanCatchWt.95pi = CombSexMeanCatchWt + c(-1.96,1.96) * CombSexMSEwt * (sqrt(1 + (1/10000)))
   MeanCatchWt.95pi = data.frame(FemMeanCatchWt.95pi=FemMeanCatchWt.95pi,
                                 MalMeanCatchWt.95pi=MalMeanCatchWt.95pi,
                                 CombSexMeanCatchWt.95pi=CombSexMeanCatchWt.95pi)
 
   FemMeanCatchWt.60pi = FemMeanCatchWt + c(-0.84,0.84) * FemMSEwt * (sqrt(1 + (1/10000)))
   MalMeanCatchWt.60pi = MalMeanCatchWt + c(-0.84,0.84) * MalMSEwt * (sqrt(1 + (1/10000)))
-  CombSexMeanCatchWt.60pi = CombSexMeanCatchWt + c(-0.84,0.84) * CombSexMSEwt * (sqrt(1 + (1/20000)))
+  CombSexMeanCatchWt.60pi = CombSexMeanCatchWt + c(-0.84,0.84) * CombSexMSEwt * (sqrt(1 + (1/10000)))
   MeanCatchWt.60pi = data.frame(FemMeanCatchWt.60pi=FemMeanCatchWt.60pi,
                                 MalMeanCatchWt.60pi=MalMeanCatchWt.60pi,
                                 CombSexMeanCatchWt.60pi=CombSexMeanCatchWt.60pi)
+
+  # save random fish lengths and ages
+  RandFishLen = data.frame(FemFishLen=FemFishLen,
+                           MalFishLen=MalFishLen,
+                           CombSexFishLen=CombSexFishLen)
+
+  RandFishWt = data.frame(FemFishWt=FemFishWt,
+                          MalFishWt=MalFishWt,
+                          CombSexFishWt=CombSexFishWt)
 
   Results = list(PerRecRandFishLen=PerRecRandFishLen,
                  PerRecLenFreq=PerRecLenFreq,
@@ -6404,7 +6384,9 @@ CalcPerRecruitFishLenAndFishWtStats<- function(midpt, FemCatchNum, MalCatchNum, 
                  PerRecMeanCatchWt=PerRecMeanCatchWt,
                  MeanCatchWt.95ci=MeanCatchWt.95ci,
                  MeanCatchWt.60pi=MeanCatchWt.60pi,
-                 MeanCatchWt.95pi=MeanCatchWt.95pi)
+                 MeanCatchWt.95pi=MeanCatchWt.95pi,
+                 RandFishLen = RandFishLen,
+                 RandFishWt = RandFishWt)
 
   return(Results)
 
@@ -6668,6 +6650,7 @@ CalcYPRAndSPRForFMort_LB<- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
   # Random data and stats for expected lengths and weights in catches
   CatchLenWtRes = CalcPerRecruitFishLenAndFishWtStats(midpt, FemCatchNum, MalCatchNum, CombSexCatchNum,
                                                  FemWtAtLen, MalWtAtLen)
+
   PerRecRandFishLen = CatchLenWtRes$PerRecRandFishLen
   PerRecLenFreq = CatchLenWtRes$PerRecLenFreq
   PerRecMeanCatchLen = CatchLenWtRes$PerRecMeanCatchLen
@@ -6679,6 +6662,8 @@ CalcYPRAndSPRForFMort_LB<- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
   MeanCatchWt.95ci = CatchLenWtRes$MeanCatchWt.95ci
   MeanCatchWt.60pi = CatchLenWtRes$MeanCatchWt.60pi
   MeanCatchWt.95pi = CatchLenWtRes$MeanCatchWt.95pi
+  RandFishLen = CatchLenWtRes$RandFishLen
+  RandFishWt = CatchLenWtRes$RandFishWt
 
   # calculate yield per recruit in kg
   YPR <- max(0,sum(FemCatchBiom) + sum(MalCatchBiom))
@@ -6738,7 +6723,7 @@ CalcYPRAndSPRForFMort_LB<- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
   # calculate equilibrium model SPR
   Equilmod_FemRelBiom <- max(0,Equil_FemSpBiom / UnfishFemSpawnBiom)
   Equilmod_MalRelBiom <- max(0,Equil_MalSpBiom / UnfishMalSpawnBiom)
-  Equilmod_CombSexRelBiom <- (Equil_FemSpBiom + Equil_MalSpBiom) / (UnfishFemSpawnBiom + UnfishMalSpawnBiom)
+  Equilmod_CombSexRelBiom <- max(0,(Equil_FemSpBiom + Equil_MalSpBiom) / (UnfishFemSpawnBiom + UnfishMalSpawnBiom))
 
   Results = list(RecLenDist=RecLenDist,
                  PropFemAtLen=PropFemAtLen,
@@ -6770,11 +6755,13 @@ CalcYPRAndSPRForFMort_LB<- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
                  MeanCatchLen.95ci=MeanCatchLen.95ci,
                  MeanCatchLen.60pi=MeanCatchLen.60pi,
                  MeanCatchLen.95pi=MeanCatchLen.95pi,
+                 RandFishLen = RandFishLen,
                  PerRecRandFishWt=PerRecRandFishWt,
                  PerRecMeanCatchWt=PerRecMeanCatchWt,
                  MeanCatchWt.95ci=MeanCatchWt.95ci,
                  MeanCatchWt.60pi=MeanCatchWt.60pi,
                  MeanCatchWt.95pi=MeanCatchWt.95pi,
+                 RandFishWt = RandFishWt,
                  YPR = YPR,
                  Fem_SPR = Fem_SPR,
                  Mal_SPR = Mal_SPR,
@@ -7256,51 +7243,51 @@ GetPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
   Equilmod_MalRelBiomResults <- rep(0,nFVals)
   Equilmod_CombSexRelBiomResults <- rep(0,nFVals)
 
-  FemMeanCatchLenResults <- rep(0,nFVals) # mean length of catch
-  MalMeanCatchLenResults <- rep(0,nFVals)
-  CombSexMeanCatchLenResults <- rep(0,nFVals)
-  FemMeanCatchLenResults.lw95ci <- rep(0,nFVals) # 95 percent confidence limits
-  FemMeanCatchLenResults.up95ci <- rep(0,nFVals)
-  MalMeanCatchLenResults.lw95ci <- rep(0,nFVals)
-  MalMeanCatchLenResults.up95ci <- rep(0,nFVals)
-  CombSexMeanCatchLenResults.lw95ci <- rep(0,nFVals)
-  CombSexMeanCatchLenResults.up95ci <- rep(0,nFVals)
-  FemMeanCatchLenResults.lw60pi <- rep(0,nFVals) # 60 percent confidence prediction limits
-  FemMeanCatchLenResults.up60pi <- rep(0,nFVals)
-  MalMeanCatchLenResults.lw60pi <- rep(0,nFVals)
-  MalMeanCatchLenResults.up60pi <- rep(0,nFVals)
-  CombSexMeanCatchLenResults.lw60pi <- rep(0,nFVals)
-  CombSexMeanCatchLenResults.up60pi <- rep(0,nFVals)
-  FemMeanCatchLenResults.lw95pi <- rep(0,nFVals) # 95 percent confidence prediction limits
-  FemMeanCatchLenResults.up95pi <- rep(0,nFVals)
-  MalMeanCatchLenResults.lw95pi <- rep(0,nFVals)
-  MalMeanCatchLenResults.up95pi <- rep(0,nFVals)
-  CombSexMeanCatchLenResults.lw95pi <- rep(0,nFVals)
-  CombSexMeanCatchLenResults.up95pi <- rep(0,nFVals)
+  FemMeanCatchLen <- rep(0,nFVals) # mean length of catch
+  MalMeanCatchLen <- rep(0,nFVals)
+  CombSexMeanCatchLen <- rep(0,nFVals)
+  FemMeanCatchLen.lw95ci <- rep(0,nFVals) # 95 percent confidence limits
+  FemMeanCatchLen.up95ci <- rep(0,nFVals)
+  MalMeanCatchLen.lw95ci <- rep(0,nFVals)
+  MalMeanCatchLen.up95ci <- rep(0,nFVals)
+  CombSexMeanCatchLen.lw95ci <- rep(0,nFVals)
+  CombSexMeanCatchLen.up95ci <- rep(0,nFVals)
+  FemMeanCatchLen.lw60pi <- rep(0,nFVals) # 60 percent confidence prediction limits
+  FemMeanCatchLen.up60pi <- rep(0,nFVals)
+  MalMeanCatchLen.lw60pi <- rep(0,nFVals)
+  MalMeanCatchLen.up60pi <- rep(0,nFVals)
+  CombSexMeanCatchLen.lw60pi <- rep(0,nFVals)
+  CombSexMeanCatchLen.up60pi <- rep(0,nFVals)
+  FemMeanCatchLen.lw95pi <- rep(0,nFVals) # 95 percent confidence prediction limits
+  FemMeanCatchLen.up95pi <- rep(0,nFVals)
+  MalMeanCatchLen.lw95pi <- rep(0,nFVals)
+  MalMeanCatchLen.up95pi <- rep(0,nFVals)
+  CombSexMeanCatchLen.lw95pi <- rep(0,nFVals)
+  CombSexMeanCatchLen.up95pi <- rep(0,nFVals)
 
-  FemMeanCatchWtResults <- rep(0,nFVals) # mean weight of catch
-  MalMeanCatchWtResults <- rep(0,nFVals)
-  CombSexMeanCatchWtResults <- rep(0,nFVals)
-  FemMeanCatchWtResults.lw95ci <- rep(0,nFVals) # 95 percent confidence limits
-  FemMeanCatchWtResults.up95ci <- rep(0,nFVals)
-  MalMeanCatchWtResults.lw95ci <- rep(0,nFVals)
-  MalMeanCatchWtResults.up95ci <- rep(0,nFVals)
-  CombSexMeanCatchWtResults.lw95ci <- rep(0,nFVals)
-  CombSexMeanCatchWtResults.up95ci <- rep(0,nFVals)
-  FemMeanCatchWtResults.lw60pi <- rep(0,nFVals) # 60 percent confidence prediction limits
-  FemMeanCatchWtResults.up60pi <- rep(0,nFVals)
-  MalMeanCatchWtResults.lw60pi <- rep(0,nFVals)
-  MalMeanCatchWtResults.up60pi <- rep(0,nFVals)
-  CombSexMeanCatchWtResults.lw60pi <- rep(0,nFVals)
-  CombSexMeanCatchWtResults.up60pi <- rep(0,nFVals)
-  FemMeanCatchWtResults.lw95pi <- rep(0,nFVals) # 95 percent confidence prediction limits
-  FemMeanCatchWtResults.up95pi <- rep(0,nFVals)
-  MalMeanCatchWtResults.lw95pi <- rep(0,nFVals)
-  MalMeanCatchWtResults.up95pi <- rep(0,nFVals)
-  CombSexMeanCatchWtResults.lw95pi <- rep(0,nFVals)
-  CombSexMeanCatchWtResults.up95pi <- rep(0,nFVals)
+  FemMeanCatchWt <- rep(0,nFVals) # mean weight of catch
+  MalMeanCatchWt <- rep(0,nFVals)
+  CombSexMeanCatchWt <- rep(0,nFVals)
+  FemMeanCatchWt.lw95ci <- rep(0,nFVals) # 95 percent confidence limits
+  FemMeanCatchWt.up95ci <- rep(0,nFVals)
+  MalMeanCatchWt.lw95ci <- rep(0,nFVals)
+  MalMeanCatchWt.up95ci <- rep(0,nFVals)
+  CombSexMeanCatchWt.lw95ci <- rep(0,nFVals)
+  CombSexMeanCatchWt.up95ci <- rep(0,nFVals)
+  FemMeanCatchWt.lw60pi <- rep(0,nFVals) # 60 percent confidence prediction limits
+  FemMeanCatchWt.up60pi <- rep(0,nFVals)
+  MalMeanCatchWt.lw60pi <- rep(0,nFVals)
+  MalMeanCatchWt.up60pi <- rep(0,nFVals)
+  CombSexMeanCatchWt.lw60pi <- rep(0,nFVals)
+  CombSexMeanCatchWt.up60pi <- rep(0,nFVals)
+  FemMeanCatchWt.lw95pi <- rep(0,nFVals) # 95 percent confidence prediction limits
+  FemMeanCatchWt.up95pi <- rep(0,nFVals)
+  MalMeanCatchWt.lw95pi <- rep(0,nFVals)
+  MalMeanCatchWt.up95pi <- rep(0,nFVals)
+  CombSexMeanCatchWt.lw95pi <- rep(0,nFVals)
+  CombSexMeanCatchWt.up95pi <- rep(0,nFVals)
 
-  k=1
+
   for (k in 1:nFVals) {
     FMort = FishMort[k]
     # cat("k",k,"FMort",FMort,'\n')
@@ -7323,123 +7310,99 @@ GetPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
     Equilmod_MalRelBiomResults[k] = Res$Equilmod_MalRelBiom
     Equilmod_CombSexRelBiomResults[k] = Res$Equilmod_CombSexRelBiom
 
-    FemMeanCatchLenResults[k] <- Res$PerRecMeanCatchLen$FemMeanCatchLen
-    MalMeanCatchLenResults[k] <- Res$PerRecMeanCatchLen$MalMeanCatchLen
-    CombSexMeanCatchLenResults[k] <- Res$PerRecMeanCatchLen$CombSexMeanCatchLen
-    FemMeanCatchLenResults.lw95ci[k] <- Res$MeanCatchLen.95ci$FemMeanCatchLen.95ci[1]   # 95 percent confidence limits
-    FemMeanCatchLenResults.up95ci[k] <- Res$MeanCatchLen.95ci$FemMeanCatchLen.95ci[2]
-    MalMeanCatchLenResults.lw95ci[k] <- Res$MeanCatchLen.95ci$MalMeanCatchLen.95ci[1]
-    MalMeanCatchLenResults.up95ci[k] <- Res$MeanCatchLen.95ci$MalMeanCatchLen.95ci[2]
-    CombSexMeanCatchLenResults.lw95ci[k] <- Res$MeanCatchLen.95ci$CombSexMeanCatchLen.95ci[1]
-    CombSexMeanCatchLenResults.up95ci[k] <- Res$MeanCatchLen.95ci$CombSexMeanCatchLen.95ci[2]
-    FemMeanCatchLenResults.lw60pi[k] <- Res$MeanCatchLen.60pi$FemMeanCatchLen.60pi[1] # 60 percent confidence prediction limits
-    FemMeanCatchLenResults.up60pi[k] <- Res$MeanCatchLen.60pi$FemMeanCatchLen.60pi[2]
-    MalMeanCatchLenResults.lw60pi[k] <- Res$MeanCatchLen.60pi$MalMeanCatchLen.60pi[1]
-    MalMeanCatchLenResults.up60pi[k] <- Res$MeanCatchLen.60pi$MalMeanCatchLen.60pi[2]
-    CombSexMeanCatchLenResults.lw60pi[k] <- Res$MeanCatchLen.60pi$CombSexMeanCatchLen.60pi[1]
-    CombSexMeanCatchLenResults.up60pi[k] <- Res$MeanCatchLen.60pi$CombSexMeanCatchLen.60pi[2]
-    FemMeanCatchLenResults.lw95pi[k] <- Res$MeanCatchLen.95pi$FemMeanCatchLen.95pi[1] # 95 percent confidence prediction limits
-    FemMeanCatchLenResults.up95pi[k] <- Res$MeanCatchLen.95pi$FemMeanCatchLen.95pi[2]
-    MalMeanCatchLenResults.lw95pi[k] <- Res$MeanCatchLen.95pi$MalMeanCatchLen.95pi[1]
-    MalMeanCatchLenResults.up95pi[k] <- Res$MeanCatchLen.95pi$MalMeanCatchLen.95pi[2]
-    CombSexMeanCatchLenResults.lw95pi[k] <- Res$MeanCatchLen.95pi$CombSexMeanCatchLen.95pi[1]
-    CombSexMeanCatchLenResults.up95pi[k] <- Res$MeanCatchLen.95pi$CombSexMeanCatchLen.95pi[2]
+    FemMeanCatchLen[k] <- Res$PerRecMeanCatchLen$FemMeanCatchLen
+    MalMeanCatchLen[k] <- Res$PerRecMeanCatchLen$MalMeanCatchLen
+    CombSexMeanCatchLen[k] <- Res$PerRecMeanCatchLen$CombSexMeanCatchLen
+    FemMeanCatchLen.lw95ci[k] <- Res$MeanCatchLen.95ci$FemMeanCatchLen.95ci[1]   # 95 percent confidence limits
+    FemMeanCatchLen.up95ci[k] <- Res$MeanCatchLen.95ci$FemMeanCatchLen.95ci[2]
+    MalMeanCatchLen.lw95ci[k] <- Res$MeanCatchLen.95ci$MalMeanCatchLen.95ci[1]
+    MalMeanCatchLen.up95ci[k] <- Res$MeanCatchLen.95ci$MalMeanCatchLen.95ci[2]
+    CombSexMeanCatchLen.lw95ci[k] <- Res$MeanCatchLen.95ci$CombSexMeanCatchLen.95ci[1]
+    CombSexMeanCatchLen.up95ci[k] <- Res$MeanCatchLen.95ci$CombSexMeanCatchLen.95ci[2]
+    FemMeanCatchLen.lw60pi[k] <- Res$MeanCatchLen.60pi$FemMeanCatchLen.60pi[1] # 60 percent confidence prediction limits
+    FemMeanCatchLen.up60pi[k] <- Res$MeanCatchLen.60pi$FemMeanCatchLen.60pi[2]
+    MalMeanCatchLen.lw60pi[k] <- Res$MeanCatchLen.60pi$MalMeanCatchLen.60pi[1]
+    MalMeanCatchLen.up60pi[k] <- Res$MeanCatchLen.60pi$MalMeanCatchLen.60pi[2]
+    CombSexMeanCatchLen.lw60pi[k] <- Res$MeanCatchLen.60pi$CombSexMeanCatchLen.60pi[1]
+    CombSexMeanCatchLen.up60pi[k] <- Res$MeanCatchLen.60pi$CombSexMeanCatchLen.60pi[2]
+    FemMeanCatchLen.lw95pi[k] <- Res$MeanCatchLen.95pi$FemMeanCatchLen.95pi[1] # 95 percent confidence prediction limits
+    FemMeanCatchLen.up95pi[k] <- Res$MeanCatchLen.95pi$FemMeanCatchLen.95pi[2]
+    MalMeanCatchLen.lw95pi[k] <- Res$MeanCatchLen.95pi$MalMeanCatchLen.95pi[1]
+    MalMeanCatchLen.up95pi[k] <- Res$MeanCatchLen.95pi$MalMeanCatchLen.95pi[2]
+    CombSexMeanCatchLen.lw95pi[k] <- Res$MeanCatchLen.95pi$CombSexMeanCatchLen.95pi[1]
+    CombSexMeanCatchLen.up95pi[k] <- Res$MeanCatchLen.95pi$CombSexMeanCatchLen.95pi[2]
 
-    FemMeanCatchWtResults[k] <- Res$PerRecMeanCatchWt$FemMeanCatchWt # mean weight of catch
-    MalMeanCatchWtResults[k] <- Res$PerRecMeanCatchWt$MalMeanCatchWt
-    CombSexMeanCatchWtResults[k] <- Res$PerRecMeanCatchWt$CombSexMeanCatchWt
-    FemMeanCatchWtResults.lw95ci[k] <- Res$MeanCatchWt.95ci$FemMeanCatchWt.95ci[1] # 95 percent confidence limits
-    FemMeanCatchWtResults.up95ci[k] <- Res$MeanCatchWt.95ci$FemMeanCatchWt.95ci[2]
-    MalMeanCatchWtResults.lw95ci[k] <- Res$MeanCatchWt.95ci$MalMeanCatchWt.95ci[1]
-    MalMeanCatchWtResults.up95ci[k] <- Res$MeanCatchWt.95ci$MalMeanCatchWt.95ci[2]
-    CombSexMeanCatchWtResults.lw95ci[k] <- Res$MeanCatchWt.95ci$CombSexMeanCatchWt.95ci[1]
-    CombSexMeanCatchWtResults.up95ci[k] <- Res$MeanCatchWt.95ci$CombSexMeanCatchWt.95ci[2]
-    FemMeanCatchWtResults.lw60pi[k] <- Res$MeanCatchWt.60pi$FemMeanCatchWt.60pi[1] # 60 percent confidence prediction limits
-    FemMeanCatchWtResults.up60pi[k] <- Res$MeanCatchWt.60pi$FemMeanCatchWt.60pi[2]
-    MalMeanCatchWtResults.lw60pi[k] <- Res$MeanCatchWt.60pi$MalMeanCatchWt.60pi[1]
-    MalMeanCatchWtResults.up60pi[k] <- Res$MeanCatchWt.60pi$MalMeanCatchWt.60pi[2]
-    CombSexMeanCatchWtResults.lw60pi[k] <- Res$MeanCatchWt.60pi$CombSexMeanCatchWt.60pi[1]
-    CombSexMeanCatchWtResults.up60pi[k] <- Res$MeanCatchWt.60pi$CombSexMeanCatchWt.60pi[2]
-    FemMeanCatchWtResults.lw95pi[k] <- Res$MeanCatchWt.95pi$FemMeanCatchWt.95pi[1] # 95 percent confidence prediction limits
-    FemMeanCatchWtResults.up95pi[k] <- Res$MeanCatchWt.95pi$FemMeanCatchWt.95pi[2]
-    MalMeanCatchWtResults.lw95pi[k] <- Res$MeanCatchWt.95pi$MalMeanCatchWt.95pi[1]
-    MalMeanCatchWtResults.up95pi[k] <- Res$MeanCatchWt.95pi$FemMeanCatchWt.95pi[2]
-    CombSexMeanCatchWtResults.lw95pi[k] <- Res$MeanCatchWt.95pi$CombSexMeanCatchWt.95pi[1]
-    CombSexMeanCatchWtResults.up95pi[k] <- Res$MeanCatchWt.95pi$CombSexMeanCatchWt.95pi[2]
+    FemMeanCatchWt[k] <- Res$PerRecMeanCatchWt$FemMeanCatchWt # mean weight of catch
+    MalMeanCatchWt[k] <- Res$PerRecMeanCatchWt$MalMeanCatchWt
+    CombSexMeanCatchWt[k] <- Res$PerRecMeanCatchWt$CombSexMeanCatchWt
+    FemMeanCatchWt.lw95ci[k] <- Res$MeanCatchWt.95ci$FemMeanCatchWt.95ci[1] # 95 percent confidence limits
+    FemMeanCatchWt.up95ci[k] <- Res$MeanCatchWt.95ci$FemMeanCatchWt.95ci[2]
+    MalMeanCatchWt.lw95ci[k] <- Res$MeanCatchWt.95ci$MalMeanCatchWt.95ci[1]
+    MalMeanCatchWt.up95ci[k] <- Res$MeanCatchWt.95ci$MalMeanCatchWt.95ci[2]
+    CombSexMeanCatchWt.lw95ci[k] <- Res$MeanCatchWt.95ci$CombSexMeanCatchWt.95ci[1]
+    CombSexMeanCatchWt.up95ci[k] <- Res$MeanCatchWt.95ci$CombSexMeanCatchWt.95ci[2]
+    FemMeanCatchWt.lw60pi[k] <- Res$MeanCatchWt.60pi$FemMeanCatchWt.60pi[1] # 60 percent confidence prediction limits
+    FemMeanCatchWt.up60pi[k] <- Res$MeanCatchWt.60pi$FemMeanCatchWt.60pi[2]
+    MalMeanCatchWt.lw60pi[k] <- Res$MeanCatchWt.60pi$MalMeanCatchWt.60pi[1]
+    MalMeanCatchWt.up60pi[k] <- Res$MeanCatchWt.60pi$MalMeanCatchWt.60pi[2]
+    CombSexMeanCatchWt.lw60pi[k] <- Res$MeanCatchWt.60pi$CombSexMeanCatchWt.60pi[1]
+    CombSexMeanCatchWt.up60pi[k] <- Res$MeanCatchWt.60pi$CombSexMeanCatchWt.60pi[2]
+    FemMeanCatchWt.lw95pi[k] <- Res$MeanCatchWt.95pi$FemMeanCatchWt.95pi[1] # 95 percent confidence prediction limits
+    FemMeanCatchWt.up95pi[k] <- Res$MeanCatchWt.95pi$FemMeanCatchWt.95pi[2]
+    MalMeanCatchWt.lw95pi[k] <- Res$MeanCatchWt.95pi$MalMeanCatchWt.95pi[1]
+    MalMeanCatchWt.up95pi[k] <- Res$MeanCatchWt.95pi$FemMeanCatchWt.95pi[2]
+    CombSexMeanCatchWt.lw95pi[k] <- Res$MeanCatchWt.95pi$CombSexMeanCatchWt.95pi[1]
+    CombSexMeanCatchWt.up95pi[k] <- Res$MeanCatchWt.95pi$CombSexMeanCatchWt.95pi[2]
   }
 
   # Length results
   MeanCatchLenResults = data.frame(FishMort=FishMort,
-                                   FemMeanCatchLenResults=FemMeanCatchLenResults,
-                                   MalMeanCatchLenResults=MalMeanCatchLenResults,
-                                   CombSexMeanCatchLenResults=CombSexMeanCatchLenResults)
-
-  MeanCatchLenResults.lw95ci = data.frame(FishMort=FishMort,
-                                          FemMeanCatchLenResults.lw95ci=FemMeanCatchLenResults.lw95ci,
-                                          MalMeanCatchLenResults.lw95ci=MalMeanCatchLenResults.lw95ci,
-                                          CombSexMeanCatchLenResults.lw95ci=CombSexMeanCatchLenResults.lw95ci)
-
-  MeanCatchLenResults.up95ci = data.frame(FishMort=FishMort,
-                                          FemMeanCatchLenResults.up95ci=FemMeanCatchLenResults.up95ci,
-                                          MalMeanCatchLenResults.up95ci=MalMeanCatchLenResults.up95ci,
-                                          CombSexMeanCatchLenResults.up95ci=CombSexMeanCatchLenResults.up95ci)
-
-  MeanCatchLenResults.lw60pi = data.frame(FishMort=FishMort,
-                                          FemMeanCatchLenResults.lw60pi=FemMeanCatchLenResults.lw60pi,
-                                          MalMeanCatchLenResults.lw60pi=MalMeanCatchLenResults.lw60pi,
-                                          CombSexMeanCatchLenResults.lw60pi=CombSexMeanCatchLenResults.lw60pi)
-
-  MeanCatchLenResults.up60pi = data.frame(FishMort=FishMort,
-                                          FemMeanCatchLenResults.up60pi=FemMeanCatchLenResults.up60pi,
-                                          MalMeanCatchLenResults.up60pi=MalMeanCatchLenResults.up60pi,
-                                          CombSexMeanCatchLenResults.up60pi=CombSexMeanCatchLenResults.up60pi)
-
-  MeanCatchLenResults.lw95pi = data.frame(FishMort=FishMort,
-                                          FemMeanCatchLenResults.lw95pi=FemMeanCatchLenResults.lw95pi,
-                                          MalMeanCatchLenResults.lw95pi=MalMeanCatchLenResults.lw95pi,
-                                          CombSexMeanCatchLenResults.lw95pi=CombSexMeanCatchLenResults.lw95pi)
-
-  MeanCatchLenResults.up95pi = data.frame(FishMort=FishMort,
-                                          FemMeanCatchLenResults.up95pi=FemMeanCatchLenResults.up95pi,
-                                          MalMeanCatchLenResults.up95pi=MalMeanCatchLenResults.up95pi,
-                                          CombSexMeanCatchLenResults.up95pi=CombSexMeanCatchLenResults.up95pi)
+                                   FemMeanCatchLen=FemMeanCatchLen,
+                                   MalMeanCatchLen=MalMeanCatchLen,
+                                   CombSexMeanCatchLen=CombSexMeanCatchLen,
+                                   FemMeanCatchLen.lw95ci=FemMeanCatchLen.lw95ci,
+                                   MalMeanCatchLen.lw95ci=MalMeanCatchLen.lw95ci,
+                                   CombSexMeanCatchLen.lw95ci=CombSexMeanCatchLen.lw95ci,
+                                   FemMeanCatchLen.up95ci=FemMeanCatchLen.up95ci,
+                                   MalMeanCatchLen.up95ci=MalMeanCatchLen.up95ci,
+                                   CombSexMeanCatchLen.up95ci=CombSexMeanCatchLen.up95ci,
+                                   FemMeanCatchLen.lw60pi=FemMeanCatchLen.lw60pi,
+                                   MalMeanCatchLen.lw60pi=MalMeanCatchLen.lw60pi,
+                                   CombSexMeanCatchLen.lw60pi=CombSexMeanCatchLen.lw60pi,
+                                   FemMeanCatchLen.up60pi=FemMeanCatchLen.up60pi,
+                                   MalMeanCatchLen.up60pi=MalMeanCatchLen.up60pi,
+                                   CombSexMeanCatchLen.up60pi=CombSexMeanCatchLen.up60pi,
+                                   FemMeanCatchLen.lw95pi=FemMeanCatchLen.lw95pi,
+                                   MalMeanCatchLen.lw95pi=MalMeanCatchLen.lw95pi,
+                                   CombSexMeanCatchLen.lw95pi=CombSexMeanCatchLen.lw95pi,
+                                   FemMeanCatchLen.up95pi=FemMeanCatchLen.up95pi,
+                                   MalMeanCatchLen.up95pi=MalMeanCatchLen.up95pi,
+                                   CombSexMeanCatchLen.up95pi=CombSexMeanCatchLen.up95pi)
 
 
   # weight results
   MeanCatchWtResults = data.frame(FishMort=FishMort,
-                                  FemMeanCatchWtResults=FemMeanCatchWtResults,
-                                  MalMeanCatchWtResults=MalMeanCatchWtResults,
-                                  CombSexMeanCatchWtResults=CombSexMeanCatchWtResults)
-
-  MeanCatchWtResults.lw95ci = data.frame(FishMort=FishMort,
-                                          FemMeanCatchWtResults.lw95ci=FemMeanCatchWtResults.lw95ci,
-                                          MalMeanCatchWtResults.lw95ci=MalMeanCatchWtResults.lw95ci,
-                                          CombSexMeanCatchWtResults.lw95ci=CombSexMeanCatchWtResults.lw95ci)
-
-  MeanCatchWtResults.up95ci = data.frame(FishMort=FishMort,
-                                          FemMeanCatchWtResults.up95ci=FemMeanCatchWtResults.up95ci,
-                                          MalMeanCatchWtResults.up95ci=MalMeanCatchWtResults.up95ci,
-                                          CombSexMeanCatchWtResults.up95ci=CombSexMeanCatchWtResults.up95ci)
-
-  MeanCatchWtResults.lw60pi = data.frame(FishMort=FishMort,
-                                          FemMeanCatchWtResults.lw60pi=FemMeanCatchWtResults.lw60pi,
-                                          MalMeanCatchWtResults.lw60pi=MalMeanCatchWtResults.lw60pi,
-                                          CombSexMeanCatchWtResults.lw60pi=CombSexMeanCatchWtResults.lw60pi)
-
-  MeanCatchWtResults.up60pi = data.frame(FishMort=FishMort,
-                                          FemMeanCatchWtResults.up60pi=FemMeanCatchWtResults.up60pi,
-                                          MalMeanCatchWtResults.up60pi=MalMeanCatchWtResults.up60pi,
-                                          CombSexMeanCatchWtResults.up60pi=CombSexMeanCatchWtResults.up60pi)
-
-  MeanCatchWtResults.lw95pi = data.frame(FishMort=FishMort,
-                                          FemMeanCatchWtResults.lw95pi=FemMeanCatchWtResults.lw95pi,
-                                          MalMeanCatchWtResults.lw95pi=MalMeanCatchWtResults.lw95pi,
-                                          CombSexMeanCatchWtResults.lw95pi=CombSexMeanCatchWtResults.lw95pi)
-
-  MeanCatchWtResults.up95pi = data.frame(FishMort=FishMort,
-                                         FemMeanCatchWtResults.up95pi=FemMeanCatchWtResults.up95pi,
-                                         MalMeanCatchWtResults.up95pi=MalMeanCatchWtResults.up95pi,
-                                         CombSexMeanCatchWtResults.up95pi=CombSexMeanCatchWtResults.up95pi)
+                                  FemMeanCatchWt=FemMeanCatchWt,
+                                  MalMeanCatchWt=MalMeanCatchWt,
+                                  CombSexMeanCatchWt=CombSexMeanCatchWt,
+                                  FemMeanCatchWt.lw95ci=FemMeanCatchWt.lw95ci,
+                                  MalMeanCatchWt.lw95ci=MalMeanCatchWt.lw95ci,
+                                  CombSexMeanCatchWt.lw95ci=CombSexMeanCatchWt.lw95ci,
+                                  FemMeanCatchWt.up95ci=FemMeanCatchWt.up95ci,
+                                  MalMeanCatchWt.up95ci=MalMeanCatchWt.up95ci,
+                                  CombSexMeanCatchWt.up95ci=CombSexMeanCatchWt.up95ci,
+                                  FemMeanCatchWt.lw60pi=FemMeanCatchWt.lw60pi,
+                                  MalMeanCatchWt.lw60pi=MalMeanCatchWt.lw60pi,
+                                  CombSexMeanCatchWt.lw60pi=CombSexMeanCatchWt.lw60pi,
+                                  FemMeanCatchWt.up60pi=FemMeanCatchWt.up60pi,
+                                  MalMeanCatchWt.up60pi=MalMeanCatchWt.up60pi,
+                                  CombSexMeanCatchWt.up60pi=CombSexMeanCatchWt.up60pi,
+                                  FemMeanCatchWt.lw95pi=FemMeanCatchWt.lw95pi,
+                                  MalMeanCatchWt.lw95pi=MalMeanCatchWt.lw95pi,
+                                  CombSexMeanCatchWt.lw95pi=CombSexMeanCatchWt.lw95pi,
+                                  FemMeanCatchWt.up95pi=FemMeanCatchWt.up95pi,
+                                  MalMeanCatchWt.up95pi=MalMeanCatchWt.up95pi,
+                                  CombSexMeanCatchWt.up95pi=CombSexMeanCatchWt.up95pi)
 
   maxypr <- max(YPRResults) # maximum yield per recruit
   maxeqCatch <- max(EquilCatchResults) # maximum equilibrium catch
@@ -7506,19 +7469,7 @@ GetPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
                  MeanCatchWt.60pi = Res2$MeanCatchWt.60pi,
                  MeanCatchWt.95pi = Res2$MeanCatchWt.95pi,
                  MeanCatchLenResults = MeanCatchLenResults,
-                 MeanCatchLenResults.lw95ci = MeanCatchLenResults.lw95ci,
-                 MeanCatchLenResults.up95ci = MeanCatchLenResults.up95ci,
-                 MeanCatchLenResults.lw60pi = MeanCatchLenResults.lw60pi,
-                 MeanCatchLenResults.up60pi = MeanCatchLenResults.up60pi,
-                 MeanCatchLenResults.lw95pi = MeanCatchLenResults.lw95pi,
-                 MeanCatchLenResults.up95pi = MeanCatchLenResults.up95pi,
                  MeanCatchWtResults=MeanCatchWtResults,
-                 MeanCatchWtResults.lw95pi = MeanCatchWtResults.lw95pi,
-                 MeanCatchWtResults.up95pi = MeanCatchWtResults.up95pi,
-                 MeanCatchWtResults.lw95ci = MeanCatchWtResults.lw95ci,
-                 MeanCatchWtResults.up95ci = MeanCatchWtResults.up95ci,
-                 MeanCatchWtResults.lw60pi = MeanCatchWtResults.lw60pi,
-                 MeanCatchWtResults.up60pi = MeanCatchWtResults.up60pi,
                  Equil_Rec = Res2$Equil_Rec,
                  Equil_Catch = Res2$Equil_Catch,
                  Equil_FemSpBiom = Res2$Equil_FemSpBiom,
@@ -9446,32 +9397,101 @@ GetPerRecruitResults_LB_with_err <- function(MaxModelAge, TimeStep, lbnd, ubnd, 
 
     if (i == 1) {
       Fem_SPR_Vals = rep(0, nReps)
+      Mal_SPR_Vals = rep(0, nReps)
+      CombSex_SPR_Vals = rep(0, nReps)
+
       Equil_RelFemSpBiom_Vals = rep(0, nReps)
+      Equil_RelMalSpBiom_Vals = rep(0, nReps)
+      Equil_RelCombSexSpBiom_Vals = rep(0, nReps)
+
       BMSY_Vals = rep(0,nReps)
       Sim_FemSPR = data.frame(matrix(nrow=nReps, ncol=length(PREst$FishMort)))
       colnames(Sim_FemSPR) = PREst$FishMort
       Sim_Equil_RelFemSpBiom = as.matrix(Sim_FemSPR)
+      Sim_Equil_RelMalSpBiom = Sim_Equil_RelFemSpBiom
+      Sim_Equil_RelCombSexSpBiom = Sim_Equil_RelFemSpBiom
     }
 
     Fem_SPR_Vals[i] = PREst$Fem_SPR
+    Mal_SPR_Vals[i] = PREst$Mal_SPR
+    CombSex_SPR_Vals[i] = PREst$CombSex_SPR
+
     Equil_RelFemSpBiom_Vals[i] = PREst$Equilmod_FemRelBiom
+    Equil_RelMalSpBiom_Vals[i] = PREst$Equilmod_MalRelBiom
+    Equil_RelCombSexSpBiom_Vals[i] = PREst$Equilmod_CombSexRelBiom
+
     BMSY_Vals[i] = PREst$BMSY_Thresh
     Sim_FemSPR[i,] = PREst$Fem_SPRResults
     Sim_Equil_RelFemSpBiom[i,] = PREst$Equilmod_FemRelBiomResults
+    Sim_Equil_RelMalSpBiom[i,] = PREst$Equilmod_MalRelBiomResults
+    Sim_Equil_RelCombSexSpBiom[i,] = PREst$Equilmod_CombSexRelBiomResults
 
     cat("i",i,'\n')
   }
 
   # Save key outputs (median and 95% confidence levels)
-  EstFemSPR = round(median(Fem_SPR_Vals),3)
+  EstMedFemSPR = round(median(Fem_SPR_Vals),3)
   EstLow95FemSPR = as.numeric(round(quantile(Fem_SPR_Vals, 0.025),3))
   EstUp95FemSPR = as.numeric(round(quantile(Fem_SPR_Vals, 0.975),3))
-  EstEquilRelFemSpBiom = round(median(Equil_RelFemSpBiom_Vals),3)
+  EstFemSPR = data.frame(EstMedFemSPR=EstMedFemSPR,
+                         EstLow95FemSPR=EstLow95FemSPR,
+                         EstUp95FemSPR=EstUp95FemSPR)
+
+  EstMedMalSPR = round(median(Mal_SPR_Vals),3)
+  EstLow95MalSPR = as.numeric(round(quantile(Mal_SPR_Vals, 0.025),3))
+  EstUp95MalSPR = as.numeric(round(quantile(Mal_SPR_Vals, 0.975),3))
+  EstMalSPR = data.frame(EstMedMalSPR=EstMedMalSPR,
+                         EstLow95MalSPR=EstLow95MalSPR,
+                         EstUp95MalSPR=EstUp95MalSPR)
+
+  EstMedCombSexSPR = round(median(CombSex_SPR_Vals),3)
+  EstLow95CombSexSPR = as.numeric(round(quantile(CombSex_SPR_Vals, 0.025),3))
+  EstUp95CombSexSPR = as.numeric(round(quantile(CombSex_SPR_Vals, 0.975),3))
+  EstCombSexSPR = data.frame(EstMedCombSexSPR=EstMedCombSexSPR,
+                         EstLow95CombSexSPR=EstLow95CombSexSPR,
+                         EstUp95CombSexSPR=EstUp95CombSexSPR)
+
+  EstMedEquilRelFemSpBiom = round(median(Equil_RelFemSpBiom_Vals),3)
   Low95EquilRelFemSpBiom = as.numeric(round(quantile(Equil_RelFemSpBiom_Vals, 0.025),3))
   Upp95EquilRelFemSpBiom = as.numeric(round(quantile(Equil_RelFemSpBiom_Vals, 0.975),3))
-  EstBMSYratio = round(median(BMSY_Vals),3)
-  ResSummary_with_err <- data.frame(EstFemSPR, EstLow95FemSPR, EstUp95FemSPR, EstEquilRelFemSpBiom, Low95EquilRelFemSpBiom, Upp95EquilRelFemSpBiom, EstBMSYratio)
-  colnames(ResSummary_with_err)=c("SPR", "LowSPR", "UppSPR", "EquilSB", "LowEquilSB", "UppEquilSB", "BMSYratio")
+  EstEquilRelFemSpBiom = data.frame(EstMedEquilRelFemSpBiom=EstMedEquilRelFemSpBiom,
+                                    Low95EquilRelFemSpBiom=Low95EquilRelFemSpBiom,
+                                    Upp95EquilRelFemSpBiom=Upp95EquilRelFemSpBiom)
+
+  EstMedEquilRelMalSpBiom = round(median(Equil_RelMalSpBiom_Vals),3)
+  Low95EquilRelMalSpBiom = as.numeric(round(quantile(Equil_RelMalSpBiom_Vals, 0.025),3))
+  Upp95EquilRelMalSpBiom = as.numeric(round(quantile(Equil_RelMalSpBiom_Vals, 0.975),3))
+  EstEquilRelMalSpBiom = data.frame(EstMedEquilRelMalSpBiom=EstMedEquilRelMalSpBiom,
+                                    Low95EquilRelMalSpBiom=Low95EquilRelMalSpBiom,
+                                    Upp95EquilRelMalSpBiom=Upp95EquilRelMalSpBiom)
+
+  EstMedEquilRelCombSexSpBiom = round(median(Equil_RelCombSexSpBiom_Vals),3)
+  Low95EquilRelCombSexSpBiom = as.numeric(round(quantile(Equil_RelCombSexSpBiom_Vals, 0.025),3))
+  Upp95EquilRelCombSexSpBiom = as.numeric(round(quantile(Equil_RelCombSexSpBiom_Vals, 0.975),3))
+  EstEquilRelCombSexSpBiom = data.frame(EstMedEquilRelCombSexSpBiom=EstMedEquilRelCombSexSpBiom,
+                                        Low95EquilRelCombSexSpBiom=Low95EquilRelCombSexSpBiom,
+                                        Upp95EquilRelCombSexSpBiom=Upp95EquilRelCombSexSpBiom)
+
+
+  EstMedBMSYratio = round(median(BMSY_Vals),3)
+  Low95EstBMSYratio = as.numeric(round(quantile(BMSY_Vals, 0.025),3))
+  Upp95EstBMSYratio = as.numeric(round(quantile(BMSY_Vals, 0.975),3))
+
+  ResSummary_with_err <- data.frame(EstMedFemSPR, EstLow95FemSPR, EstUp95FemSPR,
+                                    EstMedMalSPR, EstLow95MalSPR, EstUp95MalSPR,
+                                    EstMedCombSexSPR, EstLow95CombSexSPR, EstUp95CombSexSPR,
+                                    EstMedEquilRelFemSpBiom, Low95EquilRelFemSpBiom, Upp95EquilRelFemSpBiom,
+                                    EstMedEquilRelMalSpBiom, Low95EquilRelMalSpBiom, Upp95EquilRelMalSpBiom,
+                                    EstMedEquilRelCombSexSpBiom, Low95EquilRelCombSexSpBiom, Upp95EquilRelCombSexSpBiom,
+                                    EstMedBMSYratio, Low95EstBMSYratio, Upp95EstBMSYratio)
+
+  colnames(ResSummary_with_err)=c("Fem_SPR", "Fem_LowSPR", "Fem_UppSPR",
+                                  "Mal_SPR", "Mal_LowSPR", "Mal_UppSPR",
+                                  "CombSex_SPR", "CombSex_LowSPR", "CombSex_UppSPR",
+                                  "Fem_EquilSB", "Fem_LowEquilSB", "Fem_UppEquilSB",
+                                  "Mal_EquilSB", "Mal_LowEquilSB", "Mal_UppEquilSB",
+                                  "CombSex_EquilSB", "CombSex_LowEquilSB", "CombSex_UppEquilSB",
+                                  "BMSYratio", "BMSYratio_Low", "BMSYratio_Upp")
 
   Results = list(PerRec_FValues = PREst$FishMort,
                  Fem_SPR_Vals=Fem_SPR_Vals,
@@ -9479,13 +9499,15 @@ GetPerRecruitResults_LB_with_err <- function(MaxModelAge, TimeStep, lbnd, ubnd, 
                  BMSY_Vals=BMSY_Vals,
                  Sim_FemSPR=Sim_FemSPR,
                  Sim_Equil_RelFemSpBiom=Sim_Equil_RelFemSpBiom,
+                 Sim_Equil_RelMalSpBiom=Sim_Equil_RelMalSpBiom,
+                 Sim_Equil_RelCombSexSpBiom=Sim_Equil_RelCombSexSpBiom,
                  EstFemSPR=EstFemSPR,
-                 EstLow95FemSPR=EstLow95FemSPR,
-                 EstUp95FemSPR=EstUp95FemSPR,
+                 EstMalSPR=EstMalSPR,
+                 EstCombSexSPR=EstCombSexSPR,
                  EstEquilRelFemSpBiom=EstEquilRelFemSpBiom,
-                 Low95EquilRelFemSpBiom=Low95EquilRelFemSpBiom,
-                 Upp95EquilRelFemSpBiom=Upp95EquilRelFemSpBiom,
-                 EstBMSYratio=EstBMSYratio,
+                 EstEquilRelMalSpBiom=EstEquilRelMalSpBiom,
+                 EstEquilRelCombSexSpBiom=EstEquilRelCombSexSpBiom,
+                 EstMedBMSYratio=EstMedBMSYratio,
                  ResSummary_with_err=ResSummary_with_err)
 
   return(Results)
@@ -9828,6 +9850,7 @@ PlotPerRecruit_Biom_with_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
 #' NatMort_sd <- 0.025
 #' Current_F <- 0.1 # estimate of fishing mortality, e.g. from catch curve analysis
 #' Current_F_sd <- 0.005
+#' PlotOpt <- 1 # 1=females, 2=males, 3=combined sex
 #' RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 #' nReps = 10 # number of resampling trials. Set to low number to test, then much higher for final analysis.
 #' FittedRes=GetPerRecruitResults_LB_with_err(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
@@ -9842,7 +9865,7 @@ PlotPerRecruit_Biom_with_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
 #'                                             InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95, mat_A50, mat_A95,
 #'                                             EstMatAtAge, sel_A50, sel_A95, EstSelAtAge, ret_Pmax, ret_A50, ret_A95,
 #'                                             EstRetenAtAge, DiscMort, Steepness, Steepness_sd, SRrel_Type, NatMort, NatMort_sd,
-#'                                             Current_F, Current_F_sd, RefPointPlotOpt, FittedRes, nReps, MainLabel=NA,
+#'                                             Current_F, Current_F_sd, PlotOpt, RefPointPlotOpt, FittedRes, nReps, MainLabel=NA,
 #'                                             xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA, ymax=NA, yint=NA)
 #' @export
 PlotPerRecruit_Biom_with_err_LB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
@@ -9850,7 +9873,7 @@ PlotPerRecruit_Biom_with_err_LB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
                                             InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95, mat_A50, mat_A95,
                                             EstMatAtAge, sel_A50, sel_A95, EstSelAtAge, ret_Pmax, ret_A50, ret_A95,
                                             EstRetenAtAge, DiscMort, Steepness, Steepness_sd, SRrel_Type, NatMort, NatMort_sd,
-                                            Current_F, Current_F_sd, RefPointPlotOpt, FittedRes, nReps, MainLabel,
+                                            Current_F, Current_F_sd, PlotOpt, RefPointPlotOpt, FittedRes, nReps, MainLabel,
                                             xaxis_lab, yaxis_lab, xmax, xint, ymax, yint) {
 
 
@@ -9881,13 +9904,66 @@ PlotPerRecruit_Biom_with_err_LB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
   if (is.na(ymax)) ymax = 1
   if (is.na(yint)) yint = 0.2
 
+  if (PlotOpt==1) { # plot females
+    EqB_med = apply(Res$Sim_Equil_RelFemSpBiom,2,quantile, probs=c(0.5))
+    EqB_lw = apply(Res$Sim_Equil_RelFemSpBiom,2,quantile, probs=c(0.025))
+    EqB_hi = apply(Res$Sim_Equil_RelFemSpBiom,2,quantile, probs=c(0.975))
+    plot(Res$PerRec_FValues, EqB_med, "l", frame.plot=F, ylim=c(0,ymax), xlim=c(0,xmax),
+         col="red", yaxt="n", xaxt="n", ylab="", xlab="", main=MainLabel)
+    x=which(Res$PerRec_FValues==xmax)
+    polygon(c(Res$PerRec_FValues[1:x],rev(Res$PerRec_FValues[1:x])),c(EqB_lw[1:x],rev(EqB_hi[1:x])),
+            col="lightpink", border="lightpink")
+    lines(Res$PerRec_FValues, EqB_med,col="red")
+    points(Current_F, Res$EstEquilRelFemSpBiom[1], cex=1.2, col="red", pch=16)
+    lw=as.numeric(Res$EstEquilRelFemSpBiom[2]); up=as.numeric(Res$EstEquilRelFemSpBiom[3])
+    arrows(Current_F, lw, Current_F, up,length=0.05, angle=90, code=3,col="red")
+    legend("topleft", col="red", pch = 16, legend="Estimate - females",
+           bty="n", cex=1,0, lty=0, inset = 0.05)
 
-  # Plot per recruit outputs with uncertainty
-  EqB_med = apply(Res$Sim_Equil_RelFemSpBiom,2,quantile, probs=c(0.5))
-  EqB_lw = apply(Res$Sim_Equil_RelFemSpBiom,2,quantile, probs=c(0.025))
-  EqB_hi = apply(Res$Sim_Equil_RelFemSpBiom,2,quantile, probs=c(0.975))
-  plot(Res$PerRec_FValues, EqB_med, "l", frame.plot=F, ylim=c(0,ymax), xlim=c(0,xmax),
-       col="black", yaxt="n", xaxt="n", ylab="", xlab="", main=MainLabel)
+  }
+
+  if (PlotOpt==2) { # plot males
+    EqB_med = apply(Res$Sim_Equil_RelMalSpBiom,2,quantile, probs=c(0.5))
+    EqB_lw = apply(Res$Sim_Equil_RelMalSpBiom,2,quantile, probs=c(0.025))
+    EqB_hi = apply(Res$Sim_Equil_RelMalSpBiom,2,quantile, probs=c(0.975))
+    plot(Res$PerRec_FValues, EqB_med, "l", frame.plot=F, ylim=c(0,ymax), xlim=c(0,xmax),
+         col="blue", yaxt="n", xaxt="n", ylab="", xlab="", main=MainLabel)
+    x=which(Res$PerRec_FValues==xmax)
+    polygon(c(Res$PerRec_FValues[1:x],rev(Res$PerRec_FValues[1:x])),c(EqB_lw[1:x],rev(EqB_hi[1:x])),
+            col="lightblue", border="lightblue")
+    lines(Res$PerRec_FValues, EqB_med,col="blue")
+    lw=as.numeric(Res$EstEquilRelMalSpBiom[2]); up=as.numeric(Res$EstEquilRelMalSpBiom[3])
+    arrows(Current_F, lw, Current_F, up,length=0.05, angle=90, code=3,col="blue")
+    points(Current_F, Res$EstEquilRelMalSpBiom[1], cex=1.2, col="blue", pch=16)
+    legend("topleft", col="blue", pch = 16, legend="Estimate - males",
+           bty="n", cex=1,0, lty=0, inset = 0.05)
+  }
+
+  if (PlotOpt==3) { # plot combined sex
+    EqB_med = apply(Res$Sim_Equil_RelCombSexSpBiom,2,quantile, probs=c(0.5))
+    EqB_lw = apply(Res$Sim_Equil_RelCombSexSpBiom,2,quantile, probs=c(0.025))
+    EqB_hi = apply(Res$Sim_Equil_RelCombSexSpBiom,2,quantile, probs=c(0.975))
+    plot(Res$PerRec_FValues, EqB_med, "l", frame.plot=F, ylim=c(0,ymax), xlim=c(0,xmax),
+         col="black", yaxt="n", xaxt="n", ylab="", xlab="", main=MainLabel)
+    x=which(Res$PerRec_FValues==xmax)
+    polygon(c(Res$PerRec_FValues[1:x],rev(Res$PerRec_FValues[1:x])),c(EqB_lw[1:x],rev(EqB_hi[1:x])),
+            col="lightgrey", border="lightgrey")
+    lines(Res$PerRec_FValues, EqB_med,col="black")
+    lw=as.numeric(Res$EstEquilRelCombSexSpBiom[2]); up=as.numeric(Res$EstEquilRelCombSexSpBiom[3])
+    arrows(Current_F, lw, Current_F, up,length=0.05, angle=90, code=3,col="black")
+    points(Current_F, Res$EstEquilRelCombSexSpBiom[1], cex=1.2, col="black", pch=16)
+    legend("topleft", col="black", pch = 16, legend="Estimate - combined sex",
+           bty="n", cex=1,0, lty=0, inset = 0.05)
+  }
+
+  axis(1, at=seq(0, xmax, xint), cex.axis=1, lwd=1, lab=F, line=-0.3)
+  axis(2, at=seq(0, ymax, yint), cex.axis=1, lwd=1, lab=F, line=-0.3)
+  axis(1, at=seq(0, xmax, xint), labels = seq(0, xmax, xint),
+       cex.axis=1, line=-0.5, las=1, lwd=1, tick=F)
+  axis(2, at=seq(0, ymax, yint), cex.axis=1, line=-0.5, las=1, lwd=1, tick=F)
+  mtext(yaxis_lab, las=3, side=2, line=3, cex=1.2, lwd=1.75)
+  mtext(xaxis_lab, las=1, side=1, line=3, cex=1.2, lwd=1.75)
+
   if (RefPointPlotOpt == 1) {
     lines(abline(h = 0.4, col = "green"))
     lines(abline(h = 0.3, col = "orange"))
@@ -9902,20 +9978,7 @@ PlotPerRecruit_Biom_with_err_LB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
     legend("topright", col = c("green", "orange", "red"), lty = c("solid", "solid", "solid"),
            legend = c("1.2BMSY", "BMSY",  "0.5BMSY"), bty = "n", cex = 0.8, lwd = 1.75)
   }
-  points(Current_F, Res$EstEquilRelFemSpBiom, cex=1.2, col="black", pch=16)
-  arrows(Current_F, Res$Low95EquilRelFemSpBiom, Current_F, Res$Upp95EquilRelFemSpBiom, length=0.05, angle=90, code=3)
-  x=which(Res$PerRec_FValues==xmax)
-  polygon(c(Res$PerRec_FValues[1:x],rev(Res$PerRec_FValues[1:x])),c(EqB_lw[1:x],rev(EqB_hi[1:x])), col=grey(0.5,0.25),
-          border=grey(0.5,0.25))
-  axis(1, at=seq(0, xmax, xint), cex.axis=1, lwd=1, lab=F, line=-0.3)
-  axis(2, at=seq(0, ymax, yint), cex.axis=1, lwd=1, lab=F, line=-0.3)
-  axis(1, at=seq(0, xmax, xint), labels = seq(0, xmax, xint),
-       cex.axis=1, line=-0.5, las=1, lwd=1, tick=F)
-  axis(2, at=seq(0, ymax, yint), cex.axis=1, line=-0.5, las=1, lwd=1, tick=F)
-  mtext(yaxis_lab, las=3, side=2, line=3, cex=1.2, lwd=1.75)
-  mtext(xaxis_lab, las=1, side=1, line=3, cex=1.2, lwd=1.75)
-  legend("topleft", col="black", pch = 16, legend="Estimate",
-         bty="n", cex=1,0, lty=0, inset = 0.05)
+
 
 }
 
