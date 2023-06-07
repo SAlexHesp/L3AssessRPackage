@@ -162,8 +162,8 @@ FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, MLL, SelectivityType, Ob
 # lbnd = seq(0,MaxLen - LenInc, LenInc)
 # midpt = lbnd + (LenInc/2)
 # SelectivityVec = 1 / (1 + exp(-log(19)*(midpt-400)/(500-400)))
-# SelParams = c(NA, NA) # L50, L95 for gear selectivity
-# RetenParams = c(NA, NA) # L50, L95 for retention
+# SelParams = c(NA, NA) # L50, L95-L50 for gear selectivity
+# RetenParams = c(NA, NA) # L50, L95-L50 for retention
 # DiscMort = 0
 # # single sex, von Bertalanffy
 # GrowthCurveType = 1 # 1 = von Bertalanffy

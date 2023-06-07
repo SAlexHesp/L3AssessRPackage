@@ -55,8 +55,8 @@ LenInc = 50
 MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified is knife-edged at MLL
 SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
 SelectivityVec = NA # selectivity vector
-SelParams = c(300, 500) # L50, L95 for gear selectivity
-RetenParams = c(NA, NA) # L50, L95 for retention
+SelParams = c(300, 200) # L50, L95-L50 for gear selectivity
+RetenParams = c(NA, NA) # L50, L95-L50 for retention
 DiscMort = 0
 # # von Bertalanffy
 # GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute

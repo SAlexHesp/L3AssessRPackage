@@ -106,8 +106,8 @@ LenInc = 20
 MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified
 SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
 SelectivityVec = NA # selectivity vector
-SelParams = c(300, 500) # L50, L95 for gear selectivity
-RetenParams = c(NA, NA) # L50, L95 for retention
+SelParams = c(300, 200) # L50, L95-L50 for gear selectivity
+RetenParams = c(NA, NA) # L50, L95-L50 for retention
 DiscMort = 0 # proportion of fish that die due to natural mortality
 # single sex, von Bertalanffy
 GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute
@@ -176,8 +176,8 @@ Res=GetLengthBasedCatchCurveResults(params, GrowthCurveType, GrowthParams, Refnc
 # lbnd = seq(0,MaxLen - LenInc, LenInc)
 # midpt = lbnd + (LenInc/2)
 # SelectivityVec = 1 / (1 + exp(-log(19)*(midpt-600)/(700-600)))
-# SelParams = c(NA, NA) # L50, L95 for gear selectivity
-# RetenParams = c(NA, NA) # L50, L95 for retention
+# SelParams = c(NA, NA) # L50, L95-L50 for gear selectivity
+# RetenParams = c(NA, NA) # L50, L95-L50 for retention
 # DiscMort = 0 # proportion of fish that die due to natural mortality
 #  # single sex, von Bertalanffy
 # GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute
