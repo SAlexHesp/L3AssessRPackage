@@ -39,6 +39,7 @@ PlotPerRecruit_Biom_no_err_LB(
   Steepness,
   SRrel_Type,
   NatMort,
+  PlotOpt,
   RefPointPlotOpt,
   Current_F
 )
@@ -111,6 +112,8 @@ PlotPerRecruit_Biom_no_err_LB(
 
 \item{NatMort}{natural mortality}
 
+\item{PlotOpt}{# 1=females, 2=males, 3=combined sex}
+
 \item{RefPointPlotOpt}{plotting option for reference points, 0=don't plot, 1=plot defaults, 2=plot BMSY ref points}
 
 \item{Current_F}{estimated current fishing mortality}
@@ -162,11 +165,12 @@ DiscMort <- 0.25 # discard mortality (e.g. 50\% released fish die = 0.5)
 Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
 SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
 NatMort = 4.22 / MaxModelAge # natural mortality  (year-1)
+PlotOpt <- 1 # 1=females, 2=males, 3=combined sex
 RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 Current_F = 0.2
 PlotPerRecruit_Biom_no_err_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                           RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                                           EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
                                           FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-                                          ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, RefPointPlotOpt, Current_F)
+                                          ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, PlotOpt, RefPointPlotOpt, Current_F)
 }

@@ -6745,7 +6745,7 @@ CalcYPRAndSPRForFMort_LB<- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
                  Fish_MalBiomAtAge=Fish_MalBiomAtAge,
                  FemCatchBiom=FemCatchBiom,
                  MalCatchBiom=MalCatchBiom,
-                 FemCatchBiom=FemCatchBiom,
+                 CombSexCatchBiom=CombSexCatchBiom,
                  FemCatchNum=FemCatchNum,
                  MalCatchNum=MalCatchNum,
                  CombSexCatchNum=CombSexCatchNum,
@@ -8768,8 +8768,8 @@ PlotPerRecruit_ExpCatchSizeDistns_LB <- function(MaxModelAge, TimeStep, lbnd, ub
 #' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
 #' SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
 #' NatMort = 4.22 / MaxModelAge # natural mortality  (year-1)
-#' L50val = 500 # length at which fish is 50 percent of maximum value to fishers
-#' L95val = 650 # length at which fish is 95 percent of maximum value to fishers
+#' MinFishWtOfVal = 100 # size of fish below which fish has no value
+#' ValScaleFact = 1.3 # amount by which value scales according to size, above minimum size of value
 #' FittedRes = Get_Relative_Value_Per_Recruit_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
 #'                                               RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
 #'                                               EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
@@ -8779,13 +8779,14 @@ PlotPerRecruit_ExpCatchSizeDistns_LB <- function(MaxModelAge, TimeStep, lbnd, ub
 #                               RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
 #                               EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
 #                               FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-#                               ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, L50val, L95val, FittedRes)
+#                               ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, MinFishWtOfVal, ValScaleFact, FittedRes)
 #' @export
 PlotValuePerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                           RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                                           EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
                                           FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-                                          ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, L50val, L95val, FittedRes) {
+                                          ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, MinFishWtOfVal, ValScaleFact,
+                                          FittedRes) {
 
 
   if (is.list(FittedRes)) {
@@ -8795,7 +8796,7 @@ PlotValuePerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, mid
                                             RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                                             EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
                                             FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-                                            ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, L50val, L95val)
+                                            ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, MinFishWtOfVal, ValScaleFact)
   }
 
   RelValAtLen=Res$RelValAtLen
@@ -8806,14 +8807,15 @@ PlotValuePerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, mid
   Equilmod_FemRelBiomResults=Res$Equilmod_FemRelBiomResults
   YPRResults=Res$YPRResults
   EquilCatchResults=Res$EquilCatchResults
+  MinFishLenOfVal = Res$MinFishLenOfVal
 
   Res=CalcYPRAndSPRForFMort_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                                EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
                                FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
                                ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, OptFishMort)
-  FemWtAtLen=Res$FemWtAtLen
-  MalWtAtLen=Res$MalWtAtLen
+
+  WtAtLen = (Res$FemWtAtLen + Res$MalWtAtLen)/2
 
   # plot relationship between fish length and relative value of fish, considered by fishers
   par(mfrow=c(2,2))
@@ -8822,30 +8824,37 @@ PlotValuePerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, mid
   xlims = Get_xaxis_scale(midpt)
   xmax = max(ubnd)
   xint = xlims$xint
-  ymax = 1.0
-  yint = 0.2
-  plot(midpt,RelValAtLen,"l",xlab=xaxis_lab, ylab=yaxis_lab,yaxt="n",xaxt="n",bty="n",
-       xlim=c(0,xmax),ylim=c(0,ymax))
+  ylims = Get_yaxis_scale(RelValAtLen)
+  ymax = ylims$ymax
+  yint = ylims$yint
+  plot(midpt,RelValAtLen,"p",pch=16,xlab=xaxis_lab, ylab=yaxis_lab,yaxt="n",xaxt="n",bty="n",
+       xlim=c(0,xmax),ylim=c(0,ymax),cex=0.6)
   axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1,lab=F) # y axis
-  axis(2,at=seq(0,1,yint), cex.axis=0.8, lwd=1,lab=F) # y axis
+  axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1,lab=F) # y axis
   axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
-  axis(2,at=seq(0,1,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
+  axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
+  # abline(v=Res$MinFishLenOfVal,lty="dotted")
+  legend('topright', legend=paste("Min. len. of val. =",round(MinFishLenOfVal,0),"mm"),
+         lty=-1,bty='n', cex=0.8, pch=-1)
 
   # plot relationship between fish length and relative value of fish, considered by fishers
   xaxis_lab = "Fish weight, kg"
   yaxis_lab = "Relative value"
-  xlims = Get_xaxis_scale(FemWtAtLen)
+  xlims = Get_xaxis_scale(WtAtLen)
   xmax = xlims$xmax
   xint = xlims$xint
-  ymax = 1.0
-  yint = 0.2
-  plot(FemWtAtLen,RelValAtLen,"l",xlab=xaxis_lab, ylab=yaxis_lab,yaxt="n",xaxt="n",bty="n",
-       xlim=c(0,xmax),ylim=c(0,ymax))
+  ylims = Get_yaxis_scale(RelValAtLen)
+  ymax = ylims$ymax
+  yint = ylims$yint
+  plot(WtAtLen,RelValAtLen,"p",pch=16,xlab=xaxis_lab, ylab=yaxis_lab,yaxt="n",xaxt="n",bty="n",
+       xlim=c(0,xmax),ylim=c(0,ymax),cex=0.6)
   axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1,lab=F) # y axis
-  axis(2,at=seq(0,1,yint), cex.axis=0.8, lwd=1,lab=F) # y axis
+  axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1,lab=F) # y axis
   axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
-  axis(2,at=seq(0,1,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
-
+  axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
+  # abline(v=MinFishWtOfVal/1000,lty="dotted")
+  legend('topright', legend=paste("Min. wt. of val. =",MinFishWtOfVal/1000,"kg"),
+         lty=-1,bty='n', cex=0.8, pch=-1)
 
   # plot relationship between fishing mortality and equilbrium catch
   xaxis_lab = "Fishing mortality"
@@ -8982,23 +8991,56 @@ PlotValuePerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, mid
 #' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
 #' SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
 #' NatMort = 4.22 / MaxModelAge # natural mortality  (year-1)
-#' L50val = 500 # length at which fish is 50 percent of maximum value to fishers
-#' L95val = 650 # length at which fish is 95 percent of maximum value to fishers
+#' MinFishWtOfVal = 100 # size of fish below which fish has no value
+#' ValScaleFact = 1.2 # amount by which value scales according to size, above mininum size of value
 #' Res = Get_Relative_Value_Per_Recruit_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
 #'                                           RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
 #'                                           EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
 #'                                           FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-#'                                           ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, L50val, L95val)
+#'                                           ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, MinFishWtOfVal, ValScaleFact)
 #' @export
 Get_Relative_Value_Per_Recruit_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                               RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                                               EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
                                               FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-                                              ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, L50val, L95val) {
+                                              ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, MinFishWtOfVal, ValScaleFact) {
+
+  # get weight length relationships
+  Res=CalcYPRAndSPRForFMort_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
+                               RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
+                               EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
+                               FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
+                               ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, FMort=0.01)
+
+
+  if (is.na(EstWtAtLen[1,1])) {
+    if (WLrel_Type == 1) { # power relationship
+      # already have params needed
+    }
+    if (WLrel_Type == 2) { # log-log relationship
+      lenwt_a = exp(ln_lenwt_a)
+    }
+  }
+  if (!is.na(EstWtAtLen[1,1])) {
+    # average calculated female and male weights at lengths in case these are a different, to simplify analysis
+    WtAtLen = 1000*((Res$MalWtAtLen + Res$FemWtAtLen)/2) # in g
+    ln_Wt = log(WtAtLen)
+    ln_len = log(midpt)
+    mod1=lm(ln_Wt~ln_len)
+    lenwt_a=(exp(mod1$coefficients[1]))
+    lenwt_b=mod1$coefficients[2]
+  }
+
+  # calculate length at minimum weight considered to be of value, e.g. filletable size
+  MinFishLenOfVal = (MinFishWtOfVal/lenwt_a)^(1/lenwt_b)
 
   # allocate a 'relative value' of a fish, to fishers, according to its size
-  MaxLen=max(midpt)
-  RelValAtLen = 1/(1+exp(-log(19)*(midpt-L50val)/(L95val-L50val)))
+  ValAtLen = MinFishLenOfVal+((midpt-MinFishLenOfVal)^ValScaleFact)
+  x=which(midpt<MinFishLenOfVal)
+  ValAtLen[x]=0
+  # calculate value according to, relative to smallest size of fish considered to be of value
+  RelValAtLen = ValAtLen / midpt
+  # plot(midpt,RelValAtLen,"l")
 
   FishMort <- seq(0,2,0.01)
   nFVals = length(FishMort)
@@ -9016,7 +9058,7 @@ Get_Relative_Value_Per_Recruit_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd,
                                  FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
                                  ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, FMort)
 
-    RelValPerRecAtFMort[i] = sum(Res$CombSexCatchNum*RelValAtLen*Res$Equil_Rec)
+    RelValPerRecAtFMort[i] = sum(Res$CombSexCatchBiom*RelValAtLen*Res$Equil_Rec)
 
     # for comparison, also save female SPR and relbiom, and ypr and eq catch
     Fem_SPRResults[i] = Res$Fem_SPR
@@ -9038,12 +9080,12 @@ Get_Relative_Value_Per_Recruit_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd,
                  Fem_SPRResults = Fem_SPRResults,
                  Equilmod_FemRelBiomResults = Equilmod_FemRelBiomResults,
                  YPRResults = YPRResults,
-                 EquilCatchResults = EquilCatchResults)
+                 EquilCatchResults = EquilCatchResults,
+                 MinFishLenOfVal = MinFishLenOfVal)
 
   return(Results)
 
 }
-
 
 #' Deterministic plot of equilibrium yield vs F from extended age-based per recruit analysis
 #' with a stock-recruitment relationship
@@ -9417,6 +9459,7 @@ legend("topleft", col="black", pch = c(16,1), lty=0, legend=c("Est_EqYield","Est
 #' @param Steepness steepness parameter of Beverton-Holt or Ricker stock-recruitment relationship
 #' @param SRrel_Type 1 = Beverton-Holt, 2=Ricker stock-recruitment relationship
 #' @param NatMort natural mortality
+#' @param PlotOpt # 1=females, 2=males, 3=combined sex
 #' @param RefPointPlotOpt plotting option for reference points, 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 #' @param Current_F estimate of current fishing mortality
 #'
@@ -9457,14 +9500,15 @@ legend("topleft", col="black", pch = c(16,1), lty=0, legend=c("Est_EqYield","Est
 #' DiscMort <- 0.0 # discard mortality (e.g. 50% released fish die = 0.5)
 #' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
 #' SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
-#' NatMort = 0.2 # natural mortality  (year-1)
+#' NatMort <- 0.2 # natural mortality  (year-1)
 #' Current_F <- 0.2 # estimate of fishing mortality, e.g. from catch curve analysis
+#' PlotOpt <- 1 # 1=females, 2=males, 3=combined sex
 #' RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 #' PlotPerRecruit_Biom_no_err_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
 #'                       lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale,
 #'                       ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95,
 #'                       mat_A50, mat_A95, EstMatAtAge, sel_A50, sel_A95, EstSelAtAge, ret_Pmax, ret_A50, ret_A95,
-#'                       EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, RefPointPlotOpt, Current_F)
+#'                       EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, PlotOpt, RefPointPlotOpt, Current_F)
 #' # # Example 2: hermaphroditic species
 #' # InitRecruit <- 1 # Initial recruitment
 #' # MaxModelAge <- 100 # maximum age considered by model, years
@@ -9497,20 +9541,21 @@ legend("topleft", col="black", pch = c(16,1), lty=0, legend=c("Est_EqYield","Est
 #' # DiscMort <- 0.0 # discard mortality (e.g. 50% released fish die = 0.5)
 #' # Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
 #' # SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
-#' # NatMort = 0.07 # natural mortality  (year-1)
+#' # NatMort <- 0.07 # natural mortality  (year-1)
 #' # Current_F <- 0.07 # estimate of fishing mortality, e.g. from catch curve analysis
+#' # PlotOpt <- 1 # 1=females, 2=males, 3=combined sex
 #' # RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 #' # PlotPerRecruit_Biom_no_err_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
 #' #                       lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale,
 #' #                       ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95,
 #' #                       mat_A50, mat_A95, EstMatAtAge, sel_A50, sel_A95, EstSelAtAge, ret_Pmax, ret_A50, ret_A95,
-#' #                       EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, RefPointPlotOpt, Current_F)
+#' #                       EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, PlotOpt, RefPointPlotOpt, Current_F)
 #' @export
 PlotPerRecruit_Biom_no_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
                                        lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale,
                                        ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95,
                                        mat_A50, mat_A95, EstMatAtAge, sel_A50, sel_A95, EstSelAtAge, ret_Pmax, ret_A50, ret_A95,
-                                       EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, RefPointPlotOpt, Current_F) {
+                                       EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, PlotOpt, RefPointPlotOpt, Current_F) {
 
   Res = GetPerRecruitResults_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
                              lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale,
@@ -9522,9 +9567,30 @@ PlotPerRecruit_Biom_no_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzer
   # F vs SPR and Brel
   xmax = max(Res$FishMort)
   if (NatMort < 0.15) xmax = 1.0
-  plot(Res$FishMort, Res$Equilmod_FemRelBiomResults, "l", frame.plot=F, ylim=c(0, 1), xlim=c(0, xmax),
-       col="black", yaxt="n", xaxt="n", ylab="", xlab="")
-  points(Current_F, Res$Equilmod_FemRelBiom, cex=1.2, col="black", pch=16)
+
+  if (PlotOpt == 1) { # females
+    plot(Res$FishMort, Res$Equilmod_FemRelBiomResults, "l", frame.plot=F, ylim=c(0, 1), xlim=c(0, xmax),
+         col="black", yaxt="n", xaxt="n", ylab="", xlab="")
+    points(Current_F, Res$Equilmod_FemRelBiom, cex=1.2, col="black", pch=16)
+    legend("topleft", col="black", pch = 16, lty=0, legend="Estimate - females",
+           bty="n", cex=0.8, inset = 0.05)
+  }
+  if (PlotOpt == 2) { # males
+    plot(Res$FishMort, Res$Equilmod_MalRelBiomResults, "l", frame.plot=F, ylim=c(0, 1), xlim=c(0, xmax),
+         col="black", yaxt="n", xaxt="n", ylab="", xlab="")
+    points(Current_F, Res$Equilmod_MalRelBiom, cex=1.2, col="black", pch=16)
+    legend("topleft", col="black", pch = 16, lty=0, legend="Estimate - males",
+           bty="n", cex=0.8, inset = 0.05)
+  }
+  if (PlotOpt == 3) { # combined sex
+    plot(Res$FishMort, Res$Equilmod_CombSexRelBiomResults, "l", frame.plot=F, ylim=c(0, 1), xlim=c(0, xmax),
+         col="black", yaxt="n", xaxt="n", ylab="", xlab="")
+    points(Current_F, Res$Equilmod_CombSexRelBiom, cex=1.2, col="black", pch=16)
+    legend("topleft", col="black", pch = 16, lty=0, legend="Estimate - comb. sex",
+           bty="n", cex=0.8, inset = 0.05)
+  }
+
+
   axis(1, at=seq(0, xmax, 0.5), cex.axis=1, lwd=1.75, lab=F)
   axis(2, at=seq(0, 1, 0.2), cex.axis=1, lwd=1.75, lab=F)
   axis(1, at=seq(0, xmax, 0.5), labels = seq(0, xmax, 0.5),
@@ -9532,10 +9598,7 @@ PlotPerRecruit_Biom_no_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzer
   axis(2, at=seq(0, 1, 0.2), cex.axis=1, line=0.5, las=1, lwd=1.5, tick=F)
   mtext(expression(paste(plain("Relative spawning biomass"))), las=3, side=2, line=3, cex=1, lwd=1.75)
   mtext(expression(paste(italic("F") ~ (year^{-1}))), las=1, side=1, line=3, cex=1, lwd=1.75)
-  legend("topleft", col="black", pch = 16, lty=0, legend="Estimate",
-  bty="n", cex=0.8, inset = 0.05)
 
-  # RefPointPlotOpt <- 0 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
   if (RefPointPlotOpt == 1) {
     lines(abline(h=0.4, col="green"))
     lines(abline(h=0.3, col="orange"))
@@ -9593,6 +9656,7 @@ PlotPerRecruit_Biom_no_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzer
 #' @param Steepness steepness parameter of Beverton-Holt or Ricker stock-recruitment relationship
 #' @param SRrel_Type 1 = Beverton-Holt, 2=Ricker stock-recruitment relationship
 #' @param NatMort natural mortality
+#' @param PlotOpt # 1=females, 2=males, 3=combined sex
 #' @param RefPointPlotOpt plotting option for reference points, 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 #' @param Current_F estimated current fishing mortality
 #'
@@ -9639,19 +9703,20 @@ PlotPerRecruit_Biom_no_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzer
 #' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
 #' SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
 #' NatMort = 4.22 / MaxModelAge # natural mortality  (year-1)
+#' PlotOpt <- 1 # 1=females, 2=males, 3=combined sex
 #' RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 #' Current_F = 0.2
 #' PlotPerRecruit_Biom_no_err_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
 #'                                           RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
 #'                                           EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
 #'                                           FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-#'                                           ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, RefPointPlotOpt, Current_F)
+#'                                           ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, PlotOpt, RefPointPlotOpt, Current_F)
 #' @export
 PlotPerRecruit_Biom_no_err_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                           RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                                           EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
                                           FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-                                          ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, RefPointPlotOpt, Current_F) {
+                                          ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, PlotOpt, RefPointPlotOpt, Current_F) {
 
   Res = GetPerRecruitResults_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                 RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
@@ -9662,9 +9727,29 @@ PlotPerRecruit_Biom_no_err_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, mid
   # F vs SPR and Brel
   xmax = max(Res$FishMort)
   if (NatMort < 0.15) xmax = 1.0
-  plot(Res$FishMort, Res$Equilmod_FemRelBiomResults, "l", frame.plot=F, ylim=c(0, 1), xlim=c(0, xmax),
-       col="black", yaxt="n", xaxt="n", ylab="", xlab="")
-  points(Current_F, Res$Equilmod_FemRelBiom, cex=1.2, col="black", pch=16)
+
+  if (PlotOpt==1) { # plot females
+    plot(Res$FishMort, Res$Equilmod_FemRelBiomResults, "l", frame.plot=F, ylim=c(0, 1), xlim=c(0, xmax),
+         col="black", yaxt="n", xaxt="n", ylab="", xlab="")
+    points(Current_F, Res$Equilmod_FemRelBiom, cex=1.2, col="black", pch=16)
+    legend("topleft", col="black", pch = 16, lty=0, legend="Estimate - females",
+           bty="n", cex=0.8, inset = 0.05)
+  }
+  if (PlotOpt==2) { # plot males
+    plot(Res$FishMort, Res$Equilmod_MalRelBiomResults, "l", frame.plot=F, ylim=c(0, 1), xlim=c(0, xmax),
+         col="black", yaxt="n", xaxt="n", ylab="", xlab="")
+    points(Current_F, Res$Equilmod_MalRelBiom, cex=1.2, col="black", pch=16)
+    legend("topleft", col="black", pch = 16, lty=0, legend="Estimate - males",
+           bty="n", cex=0.8, inset = 0.05)
+  }
+  if (PlotOpt==3) { # plot males
+    plot(Res$FishMort, Res$Equilmod_CombSexRelBiomResults, "l", frame.plot=F, ylim=c(0, 1), xlim=c(0, xmax),
+         col="black", yaxt="n", xaxt="n", ylab="", xlab="")
+    points(Current_F, Res$Equilmod_CombSexRelBiom, cex=1.2, col="black", pch=16)
+    legend("topleft", col="black", pch = 16, lty=0, legend="Estimate - comb. sex",
+           bty="n", cex=0.8, inset = 0.05)
+  }
+
   axis(1, at=seq(0, xmax, 0.5), cex.axis=1, lwd=1.75, lab=F)
   axis(2, at=seq(0, 1, 0.2), cex.axis=1, lwd=1.75, lab=F)
   axis(1, at=seq(0, xmax, 0.5), labels = seq(0, xmax, 0.5),
@@ -9672,8 +9757,6 @@ PlotPerRecruit_Biom_no_err_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, mid
   axis(2, at=seq(0, 1, 0.2), cex.axis=1, line=0.5, las=1, lwd=1.5, tick=F)
   mtext(expression(paste(plain("Relative spawning biomass"))), las=3, side=2, line=3, cex=1, lwd=1.75)
   mtext(expression(paste(italic("F") ~ (year^{-1}))), las=1, side=1, line=3, cex=1, lwd=1.75)
-  legend("topleft", col="black", pch = 16, lty=0, legend="Estimate",
-         bty="n", cex=0.8, inset = 0.05)
 
   # RefPointPlotOpt <- 0 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
   if (RefPointPlotOpt == 1) {
@@ -10403,6 +10486,7 @@ PlotPerRecruit_Biom_with_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
 #' @param NatMort_sd standard deviation for natural mortality
 #' @param Current_F estimated current fishing mortality
 #' @param Current_F_sd standard deviation for estimated current fishing mortality
+#' @param PlotOpt # 1=females, 2=males, 3=combined sex
 #' @param RefPointPlotOpt # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 #' @param FittedRes option to input per recruit results into plot function to increase speed, can set to NA
 #' @param nReps number of resamping trials
@@ -10563,7 +10647,7 @@ PlotPerRecruit_Biom_with_err_LB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
     lw=as.numeric(Res$EstEquilRelCombSexSpBiom[2]); up=as.numeric(Res$EstEquilRelCombSexSpBiom[3])
     arrows(Current_F, lw, Current_F, up,length=0.05, angle=90, code=3,col="black")
     points(Current_F, Res$EstEquilRelCombSexSpBiom[1], cex=1.2, col="black", pch=16)
-    legend("topleft", col="black", pch = 16, legend="Estimate - combined sex",
+    legend("topleft", col="black", pch = 16, legend="Estimate - comb. sex",
            bty="n", cex=1,0, lty=0, inset = 0.05)
   }
 

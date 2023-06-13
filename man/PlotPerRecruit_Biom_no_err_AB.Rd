@@ -37,6 +37,7 @@ PlotPerRecruit_Biom_no_err_AB(
   Steepness,
   SRrel_Type,
   NatMort,
+  PlotOpt,
   RefPointPlotOpt,
   Current_F
 )
@@ -105,6 +106,8 @@ PlotPerRecruit_Biom_no_err_AB(
 
 \item{NatMort}{natural mortality}
 
+\item{PlotOpt}{# 1=females, 2=males, 3=combined sex}
+
 \item{RefPointPlotOpt}{plotting option for reference points, 0=don't plot, 1=plot defaults, 2=plot BMSY ref points}
 
 \item{Current_F}{estimate of current fishing mortality}
@@ -150,14 +153,15 @@ EstRetenAtAge <- data.frame(EstFemRetenAtAge=rep(1,MaxModelAge+1), EstMalRetenAt
 DiscMort <- 0.0 # discard mortality (e.g. 50\% released fish die = 0.5)
 Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
 SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
-NatMort = 0.2 # natural mortality  (year-1)
+NatMort <- 0.2 # natural mortality  (year-1)
 Current_F <- 0.2 # estimate of fishing mortality, e.g. from catch curve analysis
+PlotOpt <- 1 # 1=females, 2=males, 3=combined sex
 RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 PlotPerRecruit_Biom_no_err_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
                       lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale,
                       ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95,
                       mat_A50, mat_A95, EstMatAtAge, sel_A50, sel_A95, EstSelAtAge, ret_Pmax, ret_A50, ret_A95,
-                      EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, RefPointPlotOpt, Current_F)
+                      EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, PlotOpt, RefPointPlotOpt, Current_F)
 # # Example 2: hermaphroditic species
 # InitRecruit <- 1 # Initial recruitment
 # MaxModelAge <- 100 # maximum age considered by model, years
@@ -190,12 +194,13 @@ PlotPerRecruit_Biom_no_err_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtA
 # DiscMort <- 0.0 # discard mortality (e.g. 50\% released fish die = 0.5)
 # Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
 # SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
-# NatMort = 0.07 # natural mortality  (year-1)
+# NatMort <- 0.07 # natural mortality  (year-1)
 # Current_F <- 0.07 # estimate of fishing mortality, e.g. from catch curve analysis
+# PlotOpt <- 1 # 1=females, 2=males, 3=combined sex
 # RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 # PlotPerRecruit_Biom_no_err_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
 #                       lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale,
 #                       ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95,
 #                       mat_A50, mat_A95, EstMatAtAge, sel_A50, sel_A95, EstSelAtAge, ret_Pmax, ret_A50, ret_A95,
-#                       EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, RefPointPlotOpt, Current_F)
+#                       EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, PlotOpt, RefPointPlotOpt, Current_F)
 }

@@ -38,8 +38,8 @@ PlotValuePerRecruitResults_LB(
   Steepness,
   SRrel_Type,
   NatMort,
-  L50val,
-  L95val,
+  MinFishWtOfVal,
+  ValScaleFact,
   FittedRes
 )
 }
@@ -161,8 +161,8 @@ DiscMort <- 0.25 # discard mortality (e.g. 50\% released fish die = 0.5)
 Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
 SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
 NatMort = 4.22 / MaxModelAge # natural mortality  (year-1)
-L50val = 500 # length at which fish is 50 percent of maximum value to fishers
-L95val = 650 # length at which fish is 95 percent of maximum value to fishers
+MinFishWtOfVal = 100 # size of fish below which fish has no value
+ValScaleFact = 1.3 # amount by which value scales according to size, above minimum size of value
 FittedRes = Get_Relative_Value_Per_Recruit_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                               RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                                               EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,

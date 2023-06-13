@@ -94,6 +94,8 @@ PlotPerRecruit_Biom_with_err_LB(
 
 \item{Current_F_sd}{standard deviation for estimated current fishing mortality}
 
+\item{PlotOpt}{# 1=females, 2=males, 3=combined sex}
+
 \item{RefPointPlotOpt}{# 0=don't plot, 1=plot defaults, 2=plot BMSY ref points}
 
 \item{FittedRes}{option to input per recruit results into plot function to increase speed, can set to NA}
