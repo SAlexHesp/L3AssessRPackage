@@ -41,6 +41,7 @@ PlotPerRecruit_Biom_with_err_AB(
   NatMort_sd,
   Current_F,
   Current_F_sd,
+  PlotOpt,
   RefPointPlotOpt,
   FittedRes,
   nReps,
@@ -125,6 +126,8 @@ PlotPerRecruit_Biom_with_err_AB(
 
 \item{Current_F_sd}{error for estimate of current fishing mortality}
 
+\item{PlotOpt}{# 1=females, 2=males, 3=combined sex}
+
 \item{RefPointPlotOpt}{plotting option for reference points, 0=don't plot, 1=plot defaults, 2=plot BMSY ref points}
 
 \item{nReps}{number of random parameter sets from parametric resampling to generate per recruit outputs with error}
@@ -189,6 +192,7 @@ NatMort <- 0.2 # natural mortality  (year-1)
 NatMort_sd <- 0.025
 Current_F <- 0.1 # estimate of fishing mortality, e.g. from catch curve analysis
 Current_F_sd <- 0.005
+PlotOpt <- 1 # 1=females, 2=males, 3=combined sex
 RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 nReps = 50
 FittedRes=GetPerRecruitResults_AB_with_err(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
@@ -203,7 +207,7 @@ PlotPerRecruit_Biom_with_err_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenA
                                             InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95, mat_A50, mat_A95,
                                             EstMatAtAge, sel_A50, sel_A95, EstSelAtAge, ret_Pmax, ret_A50, ret_A95,
                                             EstRetenAtAge, DiscMort, Steepness, Steepness_sd, SRrel_Type, NatMort, NatMort_sd,
-                                            Current_F, Current_F_sd, RefPointPlotOpt, FittedRes, nReps, MainLabel=NA,
+                                            Current_F, Current_F_sd, PlotOpt, RefPointPlotOpt, FittedRes, nReps, MainLabel=NA,
                                             xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA, ymax=NA, yint=NA)
 # # Example. Non-hermaphroditic species
 # InitRecruit <- 1 # Initial recruitment
@@ -242,6 +246,7 @@ PlotPerRecruit_Biom_with_err_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenA
 # NatMort_sd <- 0.025
 # Current_F <- 0.1 # estimate of fishing mortality, e.g. from catch curve analysis
 # Current_F_sd <- 0.005
+# PlotOpt <- 1 # 1=females, 2=males, 3=combined sex
 # RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 # nReps = 50
 FittedRes=GetPerRecruitResults_AB_with_err(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
@@ -256,6 +261,6 @@ PlotPerRecruit_Biom_with_err_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenA
                                             InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95, mat_A50, mat_A95,
                                             EstMatAtAge, sel_A50, sel_A95, EstSelAtAge, ret_Pmax, ret_A50, ret_A95,
                                             EstRetenAtAge, DiscMort, Steepness, Steepness_sd, SRrel_Type, NatMort, NatMort_sd,
-                                            Current_F, Current_F_sd, RefPointPlotOpt, FittedRes, nReps, MainLabel=NA,
+                                            Current_F, Current_F_sd, PlotOpt, RefPointPlotOpt, FittedRes, nReps, MainLabel=NA,
                                             xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA, ymax=NA, yint=NA)
 }

@@ -9823,14 +9823,12 @@ PlotPerRecruit_Biom_no_err_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, mid
 #' @param Current_F_sd error for estimate of current fishing mortality
 #' @param nReps number of random parameter sets from parametric resampling to generate per recruit outputs with error
 #'
-#' @return range of fishing mortality values for calculating per recruit quantities (PerRec_FValues)
-#' estimated female SPR and equilibrium relative biomass values for trials with random M, h and F,
-#' (Fem_SPR_Vals, Equil_RelFemSpBiom_Vals), estimated relative biomass at maximum sustainable yield
-#' by trial (BMSY_Vals), estimated female spawning potential ratio values by F for each trial (Sim_FemSPR)
-#' estimated female relative biomass values by F for each trial (Sim_Equil_RelFemSpBiom), median,
-#' lower 95 and upper 95 percentile values for SPR for current F (EstFemSPR, EstLow95FemSPR, EstUp95FemSPR), median,
-#' lower 95 and upper 95 percentile values for equilibrium relative female spawning biomass, median
-#' BMSY ratio (EstBMSYratio), summary matrix containing key outputs from analysis (ResSummary_with_err)
+#' @return fishing mortality values for analysis (PerRec_FValues), female SPR estimates vs F (Fem_SPR_Vals)
+#' estimates of equilbrium female spawning biomass vs F (Equil_RelFemSpBiom_Vals), estimated BMSY values (BMSY_Vals)
+#' resampled female SPR values vs F (Sim_FemSPR=Sim_FemSPR), resampled equilbrium female, male and combined sex
+#' spawning biomass values vs F (Sim_Equil_RelFemSpBiom, Sim_Equil_RelMalSpBiom, Sim_Equil_RelCombSexSpBiom),
+#' median female, male and combined sex SPR values vs F (EstFemSPR, EstMalSPR, EstCombSexSPR), median BMSY ratio estimate
+#' (EstMedBMSYratio), summary of estimates with associated 95 percent confidence limits (ResSummary_with_err).
 #'
 #' @examples
 #' # Example. Non-hermaphroditic species
@@ -9906,33 +9904,101 @@ GetPerRecruitResults_AB_with_err <- function(MaxModelAge, TimeStep, Linf, vbK, t
 
     if (i == 1) {
       Fem_SPR_Vals = rep(0, nReps)
+      Mal_SPR_Vals = rep(0, nReps)
+      CombSex_SPR_Vals = rep(0, nReps)
       Equil_RelFemSpBiom_Vals = rep(0, nReps)
+      Equil_RelMalSpBiom_Vals = rep(0, nReps)
+      Equil_RelCombSexSpBiom_Vals = rep(0, nReps)
       BMSY_Vals = rep(0,nReps)
       Sim_FemSPR = data.frame(matrix(nrow=nReps, ncol=length(PREst$FishMort)))
       colnames(Sim_FemSPR) = PREst$FishMort
       Sim_FemSPR = as.matrix(Sim_FemSPR)
-      Sim_Equil_RelFemSpBiom = Sim_FemSPR
+      Sim_Equil_RelFemSpBiom = as.matrix(Sim_FemSPR)
+      Sim_Equil_RelMalSpBiom = Sim_Equil_RelFemSpBiom
+      Sim_Equil_RelCombSexSpBiom = Sim_Equil_RelFemSpBiom
     }
 
     Fem_SPR_Vals[i] = PREst$Fem_SPR
+    Mal_SPR_Vals[i] = PREst$Mal_SPR
+    CombSex_SPR_Vals[i] = PREst$CombSex_SPR
+
     Equil_RelFemSpBiom_Vals[i] = PREst$Equilmod_FemRelBiom
-    BMSY_Vals[i] = PREst$BMSY_Thresh
+    Equil_RelMalSpBiom_Vals[i] = PREst$Equilmod_MalRelBiom
+    Equil_RelCombSexSpBiom_Vals[i] = PREst$Equilmod_CombSexRelBiom
+
     Sim_FemSPR[i,] = PREst$Fem_SPRResults
     Sim_Equil_RelFemSpBiom[i,] = PREst$Equilmod_FemRelBiomResults
+    Sim_Equil_RelMalSpBiom[i,] = PREst$Equilmod_MalRelBiomResults
+    Sim_Equil_RelCombSexSpBiom[i,] = PREst$Equilmod_CombSexRelBiomResults
+
+    BMSY_Vals[i] = PREst$BMSY_Thresh
 
     cat("i",i,'\n')
   }
 
   # Save key outputs (median and 95% confidence levels)
-  EstFemSPR = round(median(Fem_SPR_Vals),3)
+  EstMedFemSPR = round(median(Fem_SPR_Vals),3)
   EstLow95FemSPR = as.numeric(round(quantile(Fem_SPR_Vals, 0.025),3))
   EstUp95FemSPR = as.numeric(round(quantile(Fem_SPR_Vals, 0.975),3))
-  EstEquilRelFemSpBiom = round(median(Equil_RelFemSpBiom_Vals),3)
+  EstFemSPR = data.frame(EstMedFemSPR=EstMedFemSPR,
+                         EstLow95FemSPR=EstLow95FemSPR,
+                         EstUp95FemSPR=EstUp95FemSPR)
+
+  EstMedMalSPR = round(median(Mal_SPR_Vals),3)
+  EstLow95MalSPR = as.numeric(round(quantile(Mal_SPR_Vals, 0.025),3))
+  EstUp95MalSPR = as.numeric(round(quantile(Mal_SPR_Vals, 0.975),3))
+  EstMalSPR = data.frame(EstMedMalSPR=EstMedMalSPR,
+                         EstLow95MalSPR=EstLow95MalSPR,
+                         EstUp95MalSPR=EstUp95MalSPR)
+
+  EstMedCombSexSPR = round(median(CombSex_SPR_Vals),3)
+  EstLow95CombSexSPR = as.numeric(round(quantile(CombSex_SPR_Vals, 0.025),3))
+  EstUp95CombSexSPR = as.numeric(round(quantile(CombSex_SPR_Vals, 0.975),3))
+  EstCombSexSPR = data.frame(EstMedCombSexSPR=EstMedCombSexSPR,
+                             EstLow95CombSexSPR=EstLow95CombSexSPR,
+                             EstUp95CombSexSPR=EstUp95CombSexSPR)
+
+  EstMedEquilRelFemSpBiom = round(median(Equil_RelFemSpBiom_Vals),3)
   Low95EquilRelFemSpBiom = as.numeric(round(quantile(Equil_RelFemSpBiom_Vals, 0.025),3))
   Upp95EquilRelFemSpBiom = as.numeric(round(quantile(Equil_RelFemSpBiom_Vals, 0.975),3))
-  EstBMSYratio = round(median(BMSY_Vals),3)
-  ResSummary_with_err <- data.frame(EstFemSPR, EstLow95FemSPR, EstUp95FemSPR, EstEquilRelFemSpBiom, Low95EquilRelFemSpBiom, Upp95EquilRelFemSpBiom, EstBMSYratio)
-  colnames(ResSummary_with_err)=c("Fem_SPR", "Fem_LowSPR", "Fem_UppSPR", "EquilSB", "LowEquilSB", "UppEquilSB", "BMSYratio")
+  EstEquilRelFemSpBiom = data.frame(EstMedEquilRelFemSpBiom=EstMedEquilRelFemSpBiom,
+                                    Low95EquilRelFemSpBiom=Low95EquilRelFemSpBiom,
+                                    Upp95EquilRelFemSpBiom=Upp95EquilRelFemSpBiom)
+
+  EstMedEquilRelMalSpBiom = round(median(Equil_RelMalSpBiom_Vals),3)
+  Low95EquilRelMalSpBiom = as.numeric(round(quantile(Equil_RelMalSpBiom_Vals, 0.025),3))
+  Upp95EquilRelMalSpBiom = as.numeric(round(quantile(Equil_RelMalSpBiom_Vals, 0.975),3))
+  EstEquilRelMalSpBiom = data.frame(EstMedEquilRelMalSpBiom=EstMedEquilRelMalSpBiom,
+                                    Low95EquilRelMalSpBiom=Low95EquilRelMalSpBiom,
+                                    Upp95EquilRelMalSpBiom=Upp95EquilRelMalSpBiom)
+
+  EstMedEquilRelCombSexSpBiom = round(median(Equil_RelCombSexSpBiom_Vals),3)
+  Low95EquilRelCombSexSpBiom = as.numeric(round(quantile(Equil_RelCombSexSpBiom_Vals, 0.025),3))
+  Upp95EquilRelCombSexSpBiom = as.numeric(round(quantile(Equil_RelCombSexSpBiom_Vals, 0.975),3))
+  EstEquilRelCombSexSpBiom = data.frame(EstMedEquilRelCombSexSpBiom=EstMedEquilRelCombSexSpBiom,
+                                        Low95EquilRelCombSexSpBiom=Low95EquilRelCombSexSpBiom,
+                                        Upp95EquilRelCombSexSpBiom=Upp95EquilRelCombSexSpBiom)
+
+
+  EstMedBMSYratio = round(median(BMSY_Vals),3)
+  Low95EstBMSYratio = as.numeric(round(quantile(BMSY_Vals, 0.025),3))
+  Upp95EstBMSYratio = as.numeric(round(quantile(BMSY_Vals, 0.975),3))
+
+  ResSummary_with_err <- data.frame(EstMedFemSPR, EstLow95FemSPR, EstUp95FemSPR,
+                                    EstMedMalSPR, EstLow95MalSPR, EstUp95MalSPR,
+                                    EstMedCombSexSPR, EstLow95CombSexSPR, EstUp95CombSexSPR,
+                                    EstMedEquilRelFemSpBiom, Low95EquilRelFemSpBiom, Upp95EquilRelFemSpBiom,
+                                    EstMedEquilRelMalSpBiom, Low95EquilRelMalSpBiom, Upp95EquilRelMalSpBiom,
+                                    EstMedEquilRelCombSexSpBiom, Low95EquilRelCombSexSpBiom, Upp95EquilRelCombSexSpBiom,
+                                    EstMedBMSYratio, Low95EstBMSYratio, Upp95EstBMSYratio)
+
+  colnames(ResSummary_with_err)=c("Fem_SPR", "Fem_LowSPR", "Fem_UppSPR",
+                                  "Mal_SPR", "Mal_LowSPR", "Mal_UppSPR",
+                                  "CombSex_SPR", "CombSex_LowSPR", "CombSex_UppSPR",
+                                  "Fem_EquilSB", "Fem_LowEquilSB", "Fem_UppEquilSB",
+                                  "Mal_EquilSB", "Mal_LowEquilSB", "Mal_UppEquilSB",
+                                  "CombSex_EquilSB", "CombSex_LowEquilSB", "CombSex_UppEquilSB",
+                                  "BMSYratio", "BMSYratio_Low", "BMSYratio_Upp")
 
   Results = list(PerRec_FValues = PREst$FishMort,
                  Fem_SPR_Vals=Fem_SPR_Vals,
@@ -9940,13 +10006,15 @@ GetPerRecruitResults_AB_with_err <- function(MaxModelAge, TimeStep, Linf, vbK, t
                  BMSY_Vals=BMSY_Vals,
                  Sim_FemSPR=Sim_FemSPR,
                  Sim_Equil_RelFemSpBiom=Sim_Equil_RelFemSpBiom,
+                 Sim_Equil_RelMalSpBiom=Sim_Equil_RelMalSpBiom,
+                 Sim_Equil_RelCombSexSpBiom=Sim_Equil_RelCombSexSpBiom,
                  EstFemSPR=EstFemSPR,
-                 EstLow95FemSPR=EstLow95FemSPR,
-                 EstUp95FemSPR=EstUp95FemSPR,
+                 EstMalSPR=EstMalSPR,
+                 EstCombSexSPR=EstCombSexSPR,
                  EstEquilRelFemSpBiom=EstEquilRelFemSpBiom,
-                 Low95EquilRelFemSpBiom=Low95EquilRelFemSpBiom,
-                 Upp95EquilRelFemSpBiom=Upp95EquilRelFemSpBiom,
-                 EstBMSYratio=EstBMSYratio,
+                 EstEquilRelMalSpBiom=EstEquilRelMalSpBiom,
+                 EstEquilRelCombSexSpBiom=EstEquilRelCombSexSpBiom,
+                 EstMedBMSYratio=EstMedBMSYratio,
                  ResSummary_with_err=ResSummary_with_err)
 
   return(Results)
@@ -10004,12 +10072,11 @@ GetPerRecruitResults_AB_with_err <- function(MaxModelAge, TimeStep, Linf, vbK, t
 #'
 #' @return fishing mortality values for analysis (PerRec_FValues), female SPR estimates vs F (Fem_SPR_Vals)
 #' estimates of equilbrium female spawning biomass vs F (Equil_RelFemSpBiom_Vals), estimated BMSY values (BMSY_Vals)
-#' resampled female SPR values vs F (Sim_FemSPR=Sim_FemSPR), resampled equilbrium female spawning biomass values vs F (Sim_Equil_RelFemSpBiom),
-#' median female SPR values vs F (EstFemSPR), low 95 percent female SPR values vs F (EstLow95FemSPR), upper 95 percent
-#' female SPR values vs F (EstUp95FemSPR), median equilibrium relative female spawning biomass vs F (EstEquilRelFemSpBiom)
-#' low 95 percent female relative female spawning biomass vs F (Low95EquilRelFemSpBiom), upper 95 percent relative female
-#' spawning biomass vs F (Upp95EquilRelFemSpBiom), BMSY ratio estimates (EstBMSYratio), summary data frame with estimates
-#' and associated 95 percent confidence limits.
+#' resampled female SPR values vs F (Sim_FemSPR=Sim_FemSPR), resampled equilbrium female, male and combined sex
+#' spawning biomass values vs F (Sim_Equil_RelFemSpBiom, Sim_Equil_RelMalSpBiom, Sim_Equil_RelCombSexSpBiom),
+#' median female, male and combined sex SPR values vs F (EstFemSPR, EstMalSPR, EstCombSexSPR), median BMSY ratio estimate
+#' (EstMedBMSYratio), summary of estimates with associated 95 percent confidence limits (ResSummary_with_err).
+#'
 #'
 #' @examples
 #' MaxModelAge <- 20 # maximum age considered by model, years
@@ -10248,6 +10315,7 @@ GetPerRecruitResults_LB_with_err <- function(MaxModelAge, TimeStep, lbnd, ubnd, 
 #' @param SRrel_Type 1 = Beverton-Holt, 2=Ricker stock-recruitment relationship
 #' @param NatMort natural mortality
 #' @param NatMort_sd specified error for natural mortality
+#' @param PlotOpt # 1=females, 2=males, 3=combined sex
 #' @param RefPointPlotOpt plotting option for reference points, 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 #' @param Current_F estimate of current fishing mortality
 #' @param Current_F_sd error for estimate of current fishing mortality
@@ -10301,6 +10369,7 @@ GetPerRecruitResults_LB_with_err <- function(MaxModelAge, TimeStep, lbnd, ubnd, 
 #' NatMort_sd <- 0.025
 #' Current_F <- 0.1 # estimate of fishing mortality, e.g. from catch curve analysis
 #' Current_F_sd <- 0.005
+#' PlotOpt <- 1 # 1=females, 2=males, 3=combined sex
 #' RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 #' nReps = 50
 #' FittedRes=GetPerRecruitResults_AB_with_err(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
@@ -10315,7 +10384,7 @@ GetPerRecruitResults_LB_with_err <- function(MaxModelAge, TimeStep, lbnd, ubnd, 
 #'                                             InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95, mat_A50, mat_A95,
 #'                                             EstMatAtAge, sel_A50, sel_A95, EstSelAtAge, ret_Pmax, ret_A50, ret_A95,
 #'                                             EstRetenAtAge, DiscMort, Steepness, Steepness_sd, SRrel_Type, NatMort, NatMort_sd,
-#'                                             Current_F, Current_F_sd, RefPointPlotOpt, FittedRes, nReps, MainLabel=NA,
+#'                                             Current_F, Current_F_sd, PlotOpt, RefPointPlotOpt, FittedRes, nReps, MainLabel=NA,
 #'                                             xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA, ymax=NA, yint=NA)
 #' # # Example. Non-hermaphroditic species
 #' # InitRecruit <- 1 # Initial recruitment
@@ -10354,6 +10423,7 @@ GetPerRecruitResults_LB_with_err <- function(MaxModelAge, TimeStep, lbnd, ubnd, 
 #' # NatMort_sd <- 0.025
 #' # Current_F <- 0.1 # estimate of fishing mortality, e.g. from catch curve analysis
 #' # Current_F_sd <- 0.005
+#' # PlotOpt <- 1 # 1=females, 2=males, 3=combined sex
 #' # RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 #' # nReps = 50
 #' FittedRes=GetPerRecruitResults_AB_with_err(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
@@ -10368,7 +10438,7 @@ GetPerRecruitResults_LB_with_err <- function(MaxModelAge, TimeStep, lbnd, ubnd, 
 #'                                             InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95, mat_A50, mat_A95,
 #'                                             EstMatAtAge, sel_A50, sel_A95, EstSelAtAge, ret_Pmax, ret_A50, ret_A95,
 #'                                             EstRetenAtAge, DiscMort, Steepness, Steepness_sd, SRrel_Type, NatMort, NatMort_sd,
-#'                                             Current_F, Current_F_sd, RefPointPlotOpt, FittedRes, nReps, MainLabel=NA,
+#'                                             Current_F, Current_F_sd, PlotOpt, RefPointPlotOpt, FittedRes, nReps, MainLabel=NA,
 #'                                             xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA, ymax=NA, yint=NA)
 #' @export
 PlotPerRecruit_Biom_with_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
@@ -10376,7 +10446,7 @@ PlotPerRecruit_Biom_with_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
                                             InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95, mat_A50, mat_A95,
                                             EstMatAtAge, sel_A50, sel_A95, EstSelAtAge, ret_Pmax, ret_A50, ret_A95,
                                             EstRetenAtAge, DiscMort, Steepness, Steepness_sd, SRrel_Type, NatMort, NatMort_sd,
-                                            Current_F, Current_F_sd, RefPointPlotOpt, FittedRes, nReps, MainLabel,
+                                            Current_F, Current_F_sd, PlotOpt, RefPointPlotOpt, FittedRes, nReps, MainLabel,
                                             xaxis_lab, yaxis_lab, xmax, xint, ymax, yint) {
 
   # get BMSY reference points
@@ -10406,12 +10476,6 @@ PlotPerRecruit_Biom_with_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
   if (is.na(ymax)) ymax = 1
   if (is.na(yint)) yint = 0.2
 
-  # Plot per recruit outputs with uncertainty
-  EqB_med = apply(Res$Sim_Equil_RelFemSpBiom,2,quantile, probs=c(0.5))
-  EqB_lw = apply(Res$Sim_Equil_RelFemSpBiom,2,quantile, probs=c(0.025))
-  EqB_hi = apply(Res$Sim_Equil_RelFemSpBiom,2,quantile, probs=c(0.975))
-  plot(Res$PerRec_FValues, EqB_med, "l", frame.plot=F, ylim=c(0,ymax), xlim=c(0,xmax),
-       main=MainLabel, col="black", yaxt="n", xaxt="n", ylab="", xlab="")
   if (RefPointPlotOpt == 1) {
     lines(abline(h = 0.4, col = "green"))
     lines(abline(h = 0.3, col = "orange"))
@@ -10426,20 +10490,65 @@ PlotPerRecruit_Biom_with_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
     legend("topright", col = c("green", "orange", "red"), lty = c("solid", "solid", "solid"),
            legend = c("1.2BMSY", "BMSY",  "0.5BMSY"), bty = "n", cex = 0.8, lwd = 1.75)
   }
-  points(Current_F, Res$EstEquilRelFemSpBiom, cex=1.2, col="black", pch=16)
-  arrows(Current_F, Res$Low95EquilRelFemSpBiom, Current_F, Res$Upp95EquilRelFemSpBiom, length=0.05, angle=90, code=3)
-  x=which(res$FishMort==xmax)
-  polygon(c(res$FishMort[1:x],rev(res$FishMort[1:x])),c(EqB_lw[1:x],rev(EqB_hi[1:x])), col=grey(0.5,0.25),
-          border=grey(0.5,0.25))
+
+  # Plot per recruit outputs with uncertainty
+  if (PlotOpt==1) { # plot females
+    EqB_med = apply(Res$Sim_Equil_RelFemSpBiom,2,quantile, probs=c(0.5))
+    EqB_lw = apply(Res$Sim_Equil_RelFemSpBiom,2,quantile, probs=c(0.025))
+    EqB_hi = apply(Res$Sim_Equil_RelFemSpBiom,2,quantile, probs=c(0.975))
+    plot(Res$PerRec_FValues, EqB_med, "l", frame.plot=F, ylim=c(0,ymax), xlim=c(0,xmax),
+         col="red", yaxt="n", xaxt="n", ylab="", xlab="", main=MainLabel)
+    x=which(Res$PerRec_FValues==xmax)
+    polygon(c(Res$PerRec_FValues[1:x],rev(Res$PerRec_FValues[1:x])),c(EqB_lw[1:x],rev(EqB_hi[1:x])),
+            col="lightpink", border="lightpink")
+    lines(Res$PerRec_FValues, EqB_med,col="red")
+    points(Current_F, Res$EstEquilRelFemSpBiom[1], cex=1.2, col="red", pch=16)
+    lw=as.numeric(Res$EstEquilRelFemSpBiom[2]); up=as.numeric(Res$EstEquilRelFemSpBiom[3])
+    arrows(Current_F, lw, Current_F, up,length=0.05, angle=90, code=3,col="red")
+    legend("topleft", col="red", pch = 16, legend="Estimate - females",
+           bty="n", cex=1,0, lty=0, inset = 0.05)
+  }
+
+  if (PlotOpt==2) { # plot males
+    EqB_med = apply(Res$Sim_Equil_RelMalSpBiom,2,quantile, probs=c(0.5))
+    EqB_lw = apply(Res$Sim_Equil_RelMalSpBiom,2,quantile, probs=c(0.025))
+    EqB_hi = apply(Res$Sim_Equil_RelMalSpBiom,2,quantile, probs=c(0.975))
+    plot(Res$PerRec_FValues, EqB_med, "l", frame.plot=F, ylim=c(0,ymax), xlim=c(0,xmax),
+         col="blue", yaxt="n", xaxt="n", ylab="", xlab="", main=MainLabel)
+    x=which(Res$PerRec_FValues==xmax)
+    polygon(c(Res$PerRec_FValues[1:x],rev(Res$PerRec_FValues[1:x])),c(EqB_lw[1:x],rev(EqB_hi[1:x])),
+            col="lightblue", border="lightblue")
+    lines(Res$PerRec_FValues, EqB_med,col="blue")
+    lw=as.numeric(Res$EstEquilRelMalSpBiom[2]); up=as.numeric(Res$EstEquilRelMalSpBiom[3])
+    arrows(Current_F, lw, Current_F, up,length=0.05, angle=90, code=3,col="blue")
+    points(Current_F, Res$EstEquilRelMalSpBiom[1], cex=1.2, col="blue", pch=16)
+    legend("topleft", col="blue", pch = 16, legend="Estimate - males",
+           bty="n", cex=1,0, lty=0, inset = 0.05)
+  }
+
+  if (PlotOpt==3) { # plot combined sex
+    EqB_med = apply(Res$Sim_Equil_RelCombSexSpBiom,2,quantile, probs=c(0.5))
+    EqB_lw = apply(Res$Sim_Equil_RelCombSexSpBiom,2,quantile, probs=c(0.025))
+    EqB_hi = apply(Res$Sim_Equil_RelCombSexSpBiom,2,quantile, probs=c(0.975))
+    plot(Res$PerRec_FValues, EqB_med, "l", frame.plot=F, ylim=c(0,ymax), xlim=c(0,xmax),
+         col="black", yaxt="n", xaxt="n", ylab="", xlab="", main=MainLabel)
+    x=which(Res$PerRec_FValues==xmax)
+    polygon(c(Res$PerRec_FValues[1:x],rev(Res$PerRec_FValues[1:x])),c(EqB_lw[1:x],rev(EqB_hi[1:x])),
+            col="lightgrey", border="lightgrey")
+    lines(Res$PerRec_FValues, EqB_med,col="black")
+    lw=as.numeric(Res$EstEquilRelCombSexSpBiom[2]); up=as.numeric(Res$EstEquilRelCombSexSpBiom[3])
+    arrows(Current_F, lw, Current_F, up,length=0.05, angle=90, code=3,col="black")
+    points(Current_F, Res$EstEquilRelCombSexSpBiom[1], cex=1.2, col="black", pch=16)
+    legend("topleft", col="black", pch = 16, legend="Estimate - comb. sex",
+           bty="n", cex=1,0, lty=0, inset = 0.05)
+  }
+
   axis(1, at=seq(0, xmax, xint), cex.axis=1, lwd=1, lab=F, line=-0.3)
   axis(2, at=seq(0, ymax, yint), cex.axis=1, lwd=1, lab=F, line=-0.3)
   axis(1, at=seq(0, xmax, xint), labels = seq(0, xmax, xint),
        cex.axis=1, line=-0.5, las=1, lwd=1, tick=F)
   axis(2, at=seq(0, ymax, yint), cex.axis=1, line=-0.5, las=1, lwd=1, tick=F)
-  mtext(yaxis_lab, las=3, side=2, line=3, cex=1.2, lwd=1.75)
-  mtext(xaxis_lab, las=1, side=1, line=3, cex=1.2, lwd=1.75)
-  legend("topleft", col="black", pch = 16, legend="Estimate",
-         bty="n", cex=1.0, lty=0, inset = 0.05)
+
 }
 
 #' Plot of SPR and relative equilibrium biomass vs F from length-based per recruit analysis and extended analysis
