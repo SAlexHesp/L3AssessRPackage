@@ -40,7 +40,8 @@ PlotPerRecruit_ExpCatchSizeDistns_LB(
   SRrel_Type,
   NatMort,
   Current_F,
-  FittedRes
+  FittedRes,
+  PlotOpt
 )
 }
 \arguments{
@@ -112,6 +113,11 @@ PlotPerRecruit_ExpCatchSizeDistns_LB(
 \item{NatMort}{natural mortality}
 
 \item{Current_F}{level of fishing mortality of interest, e.g. current fishing mortality}
+
+\item{FittedRes}{stored results of length-based per recruit analysis, can set to NA}
+
+\item{PlotOpt}{0=all plots, 1=female size, 2=male size, 3=combined sex size, 4=female weight,
+5=male weight, 6=combined sex weight}
 }
 \description{
 This function provides plots of expected size and weights of fish in catches,
@@ -160,9 +166,10 @@ ret_L95 <- c(300, 300) # females, males - Logistic age fish retention at age par
 DiscMort <- 0.25 # discard mortality (e.g. 50\% released fish die = 0.5)
 Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
 SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
-NatMort = 4.22 / MaxModelAge # natural mortality  (year-1)
+NatMort <- 4.22 / MaxModelAge # natural mortality  (year-1)
 RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
-Current_F = 0.2
+Current_F <- 0.2
+PlotOpt <- 0 # 0=all plots, 1=female size, 2=male size, 3=combined sex size, 4=female weight, 5=male weight, 6=combined sex weight
 FittedRes=GetPerRecruitResults_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                   RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                                   EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
@@ -172,5 +179,5 @@ PlotPerRecruit_ExpCatchSizeDistns_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
                                      RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                                      EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
                                      FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-                                     ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, FittedRes)
+                                     ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, FittedRes, PlotOpt)
 }

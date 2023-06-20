@@ -40,7 +40,8 @@ PlotValuePerRecruitResults_LB(
   NatMort,
   MinFishWtOfVal,
   ValScaleFact,
-  FittedRes
+  FittedRes,
+  PlotOpt
 )
 }
 \arguments{
@@ -111,6 +112,10 @@ PlotValuePerRecruitResults_LB(
 
 \item{NatMort}{natural mortality}
 
+\item{FittedRes}{results from value per recruit analysis, can set to NA}
+
+\item{PlotOpt}{= 0 # 0=all plots, 1=rel value vs length, 2=rel value vs weight, 3=eq catch and ypr, 4=rel value per recruit}
+
 \item{FMort}{fishing mortality}
 }
 \description{
@@ -163,9 +168,15 @@ SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
 NatMort = 4.22 / MaxModelAge # natural mortality  (year-1)
 MinFishWtOfVal = 100 # size of fish below which fish has no value
 ValScaleFact = 1.3 # amount by which value scales according to size, above minimum size of value
+PlotOpt = 0 # 0=all plots, 1=rel value vs length, 2=rel value vs weight, 3=eq catch and ypr, 4=rel value per recruit
 FittedRes = Get_Relative_Value_Per_Recruit_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                               RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                                               EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
                                               FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-                                              ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, L50val, L95val)
+                                              ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, MinFishWtOfVal, ValScaleFact)
+PlotValuePerRecruitResults_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
+                              RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
+                              EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
+                              FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
+                              ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, MinFishWtOfVal, ValScaleFact, FittedRes, PlotOpt)
 }

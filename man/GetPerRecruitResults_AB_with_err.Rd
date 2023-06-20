@@ -121,14 +121,12 @@ GetPerRecruitResults_AB_with_err(
 \item{RefPointPlotOpt}{plotting option for reference points, 0=don't plot, 1=plot defaults, 2=plot BMSY ref points}
 }
 \value{
-range of fishing mortality values for calculating per recruit quantities (PerRec_FValues)
-estimated female SPR and equilibrium relative biomass values for trials with random M, h and F,
-(Fem_SPR_Vals, Equil_RelFemSpBiom_Vals), estimated relative biomass at maximum sustainable yield
-by trial (BMSY_Vals), estimated female spawning potential ratio values by F for each trial (Sim_FemSPR)
-estimated female relative biomass values by F for each trial (Sim_Equil_RelFemSpBiom), median,
-lower 95 and upper 95 percentile values for SPR for current F (EstFemSPR, EstLow95FemSPR, EstUp95FemSPR), median,
-lower 95 and upper 95 percentile values for equilibrium relative female spawning biomass, median
-BMSY ratio (EstBMSYratio), summary matrix containing key outputs from analysis (ResSummary_with_err)
+fishing mortality values for analysis (PerRec_FValues), female SPR estimates vs F (Fem_SPR_Vals)
+estimates of equilbrium female spawning biomass vs F (Equil_RelFemSpBiom_Vals), estimated BMSY values (BMSY_Vals)
+resampled female SPR values vs F (Sim_FemSPR=Sim_FemSPR), resampled equilbrium female, male and combined sex
+spawning biomass values vs F (Sim_Equil_RelFemSpBiom, Sim_Equil_RelMalSpBiom, Sim_Equil_RelCombSexSpBiom),
+median female, male and combined sex SPR values vs F (EstFemSPR, EstMalSPR, EstCombSexSPR), median BMSY ratio estimate
+(EstMedBMSYratio), summary of estimates with associated 95 percent confidence limits (ResSummary_with_err).
 }
 \description{
 This function provides outputs associated with age-based per recruit analysis, and an

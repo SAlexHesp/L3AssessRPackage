@@ -127,12 +127,10 @@ GetPerRecruitResults_LB_with_err(
 \value{
 fishing mortality values for analysis (PerRec_FValues), female SPR estimates vs F (Fem_SPR_Vals)
 estimates of equilbrium female spawning biomass vs F (Equil_RelFemSpBiom_Vals), estimated BMSY values (BMSY_Vals)
-resampled female SPR values vs F (Sim_FemSPR=Sim_FemSPR), resampled equilbrium female spawning biomass values vs F (Sim_Equil_RelFemSpBiom),
-median female SPR values vs F (EstFemSPR), low 95 percent female SPR values vs F (EstLow95FemSPR), upper 95 percent
-female SPR values vs F (EstUp95FemSPR), median equilibrium relative female spawning biomass vs F (EstEquilRelFemSpBiom)
-low 95 percent female relative female spawning biomass vs F (Low95EquilRelFemSpBiom), upper 95 percent relative female
-spawning biomass vs F (Upp95EquilRelFemSpBiom), BMSY ratio estimates (EstBMSYratio), summary data frame with estimates
-and associated 95 percent confidence limits.
+resampled female SPR values vs F (Sim_FemSPR=Sim_FemSPR), resampled equilbrium female, male and combined sex
+spawning biomass values vs F (Sim_Equil_RelFemSpBiom, Sim_Equil_RelMalSpBiom, Sim_Equil_RelCombSexSpBiom),
+median female, male and combined sex SPR values vs F (EstFemSPR, EstMalSPR, EstCombSexSPR), median BMSY ratio estimate
+(EstMedBMSYratio), summary of estimates with associated 95 percent confidence limits (ResSummary_with_err).
 }
 \description{
 This function provides outputs associated with length-based per recruit analysis, and an

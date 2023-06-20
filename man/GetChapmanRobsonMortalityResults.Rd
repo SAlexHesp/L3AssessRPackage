@@ -24,10 +24,10 @@ GetChapmanRobsonMortalityResults(
 \item{ObsAgeFreq}{observed age frequency}
 }
 \value{
-total mortality, Z (ZMort), standard error and approximate lower and upper 95 percent confidence
-limits for Z, (ZMort_se, ZMort_low, ZMort_up), median estimate and lower and upper 95 percent confidence
-limits for Z from resampling (ZMort_resamp, ZMort_lowresamp, ZMort_upresamp), variables for plotting,
-including expected frequencies at age with associated confidence limits, calculated from resampling
+total mortality and approximate lower and upper 95 percent confidence
+limits, (EstZMort), approximate standard error for total mortality (EstZMort_se),
+median estimate and lower and upper 95 percent confidence limits for Z from resampling (EstZMort_resamp),
+variables for plotting, including expected frequencies at age with associated confidence limits, calculated from resampling
 (EstFreq, EstFreq_Zup, EstFreq_Zlow), recruitment age (RecAge),  maximum age in sample (MaxAgeInSample),
 relative ages used in analysis (CRAges), sample size for relative ages (n) and additional variable
 calculated in analysis (CR_T)

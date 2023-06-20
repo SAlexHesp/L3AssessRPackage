@@ -4965,10 +4965,10 @@ GetLinearCatchCurveResults <- function(RecAssump, SpecRecAge, MinFreq, Ages, Obs
 #' @param MaxAge maximum age
 #' @param ObsAgeFreq observed age frequency
 #'
-#' @return total mortality, Z (ZMort), standard error and approximate lower and upper 95 percent confidence
-#' limits for Z, (ZMort_se, ZMort_low, ZMort_up), median estimate and lower and upper 95 percent confidence
-#' limits for Z from resampling (ZMort_resamp, ZMort_lowresamp, ZMort_upresamp), variables for plotting,
-#' including expected frequencies at age with associated confidence limits, calculated from resampling
+#' @return total mortality and approximate lower and upper 95 percent confidence
+#' limits, (EstZMort), approximate standard error for total mortality (EstZMort_se),
+#' median estimate and lower and upper 95 percent confidence limits for Z from resampling (EstZMort_resamp),
+#' variables for plotting, including expected frequencies at age with associated confidence limits, calculated from resampling
 #' (EstFreq, EstFreq_Zup, EstFreq_Zlow), recruitment age (RecAge),  maximum age in sample (MaxAgeInSample),
 #' relative ages used in analysis (CRAges), sample size for relative ages (n) and additional variable
 #' calculated in analysis (CR_T)
@@ -5009,8 +5009,10 @@ GetChapmanRobsonMortalityResults <- function(RecAssump, SpecRecAge, MinAge, MaxA
   # analytical solution
   Var_ZMort <- ((1 - exp(-ZMort))^2)/(n * exp(-ZMort))
   ZMort_se <- sqrt(Var_ZMort)
-  ZMort_up <- ZMort + (1.96 * ZMort_se)
-  ZMort_low <- ZMort - (1.96 * ZMort_se)
+  EstZ = c(ZMort, ZMort + c(-1.96, 1.96) * ZMort_se)
+  EstZMort = t(data.frame(EstZ = round(EstZ, 3)))
+  colnames(EstZMort) = c("Estimate", "lw_95%CL", "up_95%CL")
+
   # resampling
   set.seed(123)
   RandZMort = rep(0,500)
@@ -5051,13 +5053,13 @@ GetChapmanRobsonMortalityResults <- function(RecAssump, SpecRecAge, MinAge, MaxA
   ZMort_lowresamp = quantile(RandZMort, 0.025)
   ZMort_upresamp = quantile(RandZMort, 0.975)
 
-  results = list(ZMort = round(ZMort, 3),
-                 ZMort_se = round(ZMort_se, 3),
-                 ZMort_low = round(ZMort_low, 3),
-                 ZMort_up = round(ZMort_up, 3),
-                 ZMort_resamp = round(ZMort_resamp, 3),
-                 ZMort_lowresamp = round(ZMort_lowresamp, 3),
-                 ZMort_upresamp = round(ZMort_upresamp, 3),
+  EstZ_resamp = c(ZMort_resamp, ZMort_lowresamp, ZMort_upresamp)
+  EstZMort_resamp = t(data.frame(EstZ_resamp = round(EstZ_resamp, 3)))
+  colnames(EstZMort_resamp) = c("Estimate", "lw_95%CL", "up_95%CL")
+
+  results = list(EstZMort = EstZMort,
+                 EstZMort_se = round(ZMort_se, 3),
+                 EstZMort_resamp = EstZMort_resamp,
                  EstFreq = EstFreq,
                  Ages = Ages,
                  EstFreq = EstFreq,
@@ -5362,7 +5364,7 @@ PlotAgeBasedCatchCurveResults_NormalSpace <- function(RecAssump, SpecRecAge, Min
 
   # Chapman-Robson
   if (CatchCurveModel == 1) {
-    Z_value = round(Res$ZMort,digits=3)
+    Z_value = round(Res$EstZMort[1],digits=3)
     x=which(Ages==Res$RecAge) # RecAge position
     xx=length(which(Res$EstFreq_Zup>0))+x # position of last age
     xxx=length(which(Res$EstFreq_Zlow>0))+x # position of last age
@@ -5512,7 +5514,7 @@ PlotAgeBasedCatchCurveResults_LogSpace <- function(RecAssump, SpecRecAge, MinFre
 
   # Chapman-Robson
   if (CatchCurveModel == 1) {
-    Z_value = round(Res$ZMort,digits=3)
+    Z_value = round(Res$EstZMort[1],digits=3)
     x=which(Ages==Res$RecAge) # RecAge position
     xx=max(which(log(Res$EstFreq_Zup)>0)) # position of last age
     xxx=max(which(log(Res$EstFreq_Zlow)>0)) # position of last age
@@ -7558,6 +7560,9 @@ GetPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
 #' @param Steepness steepness parameter of Beverton-Holt or Ricker stock-recruitment relationship
 #' @param SRrel_Type 1 = Beverton-Holt, 2=Ricker stock-recruitment relationship
 #' @param NatMort natural mortality
+#' @param PlotOpt 0=all plots, 1=len at-age, 2=wt at age, 3=fem mat/sel/ret at age, 4=mal mat/sel/ret at age,
+#' 5=fem F at age, 6=mal F at age, 7=fem rel surv, 8=mal rel surv, 9=fem biom at age, 10=fem biom at age,
+#' 11=catch at age, 12=ypr/eq catch, 13=fem SPR/Brel, 14=mal SPR/Brel, 15=comb sex SPR/Brel, 16=eq recruit
 #' @param RefPointPlotOpt plotting option for reference points, 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 #' @param Current_F estimate of current fishing mortality
 #'
@@ -7603,12 +7608,15 @@ GetPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
 #' SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
 #' NatMort = 0.2 # natural mortality  (year-1)
 #' Current_F <- 0.07 # estimate of fishing mortality, e.g. from catch curve analysis
+#' PlotOpt 0=all plots, 1=len at-age, 2=wt at age, 3=fem mat/sel/ret at age, 4=mal mat/sel/ret at age,
+#' #  5=fem F at age, 6=mal F at age, 7=fem rel surv, 8=mal rel surv, 9=fem biom at age, 10=fem biom at age,
+#' #  11=catch at age, 12=ypr/eq catch, 13=fem SPR/Brel, 14=mal SPR/Brel, 15=comb sex SPR/Brel, 16=eq recruit
 #' RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 #' PlotPerRecruitResults_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
 #'                       lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale,
 #'                       ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95,
 #'                       mat_A50, mat_A95, EstMatAtAge, sel_A50, sel_A95, EstSelAtAge, ret_Pmax, ret_A50, ret_A95,
-#'                       EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, RefPointPlotOpt, Current_F)
+#'                       EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, PlotOpt, RefPointPlotOpt, Current_F)
 #' # # Example 2: hermaphroditic species
 #' # InitRecruit <- 1 # Initial recruitment
 #' # MaxModelAge <- 100 # maximum age considered by model, years
@@ -7645,18 +7653,21 @@ GetPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
 #' # SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
 #' # NatMort = 0.07 # natural mortality  (year-1)
 #' # Current_F <- 0.07 # estimate of fishing mortality, e.g. from catch curve analysis
+#' # PlotOpt 0=all plots, 1=len at-age, 2=wt at age, 3=fem mat/sel/ret at age, 4=mal mat/sel/ret at age,
+#' # 5=fem F at age, 6=mal F at age, 7=fem rel surv, 8=mal rel surv, 9=fem biom at age, 10=fem biom at age,
+#' # 11=catch at age, 12=ypr/eq catch, 13=fem SPR/Brel, 14=mal SPR/Brel, 15=comb sex SPR/Brel, 16=eq recruit
 #' # RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 #' # PlotPerRecruitResults_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
 #' #                       lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale,
 #' #                       ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95,
 #' #                       mat_A50, mat_A95, EstMatAtAge, sel_A50, sel_A95, EstSelAtAge, ret_Pmax, ret_A50, ret_A95,
-#' #                       EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, RefPointPlotOpt, Current_F)
+#' #                       EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, PlotOpt, RefPointPlotOpt, Current_F)
 #' @export
 PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
                                   lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale,
                                   ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95,
                                   mat_A50, mat_A95, EstMatAtAge, sel_A50, sel_A95, EstSelAtAge, ret_Pmax, ret_A50, ret_A95,
-                                  EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, RefPointPlotOpt, Current_F) {
+                                  EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, PlotOpt, RefPointPlotOpt, Current_F) {
 
   .pardefault <- par(no.readonly = TRUE) # store current par settings
 
@@ -7669,338 +7680,380 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
 
 
   #Plot 1:
-  par(mfrow = c(2,2), mar=c(3.5,4,2,2),
-      oma=c(1,1,1,1),tck=-0.03,mgp = c(3, 0.5, 0))
+  if (PlotOpt==0) {
+    par(mfrow = c(2,2), mar=c(3.5,4,2,2),
+        oma=c(1,1,1,1),tck=-0.03,mgp = c(3, 0.5, 0))
+  } else {
+    # don't change user settings
+  }
+
+  # PlotOpt 0=all plots, 1=len at-age, 2=wt at age, 3=fem mat/sel/ret at age, 4=mal mat/sel/ret at age,
+  # 5=fem F at age, 6=mal F at age, 7=fem rel surv, 8=mal rel surv, 9=fem biom at age, 10=fem biom at age,
+  # 11=catch at age, 12=ypr/eq catch, 13=fem SPR/Brel, 14=mal SPR/Brel, 15=comb sex SPR/Brel, 16=eq recruit
 
   # plot growth curve
-  y1=max(Res$FemLenAtAge)
-  y2=max(Res$MalLenAtAge)
-  if (y1 > y2) {
-    ylims = Get_yaxis_scale(c(0,Res$FemLenAtAge))
-  } else {
-    ylims = Get_yaxis_scale(c(0,Res$MalLenAtAge))
+  if (PlotOpt==0 | PlotOpt==1) {
+    y1=max(Res$FemLenAtAge)
+    y2=max(Res$MalLenAtAge)
+    if (y1 > y2) {
+      ylims = Get_yaxis_scale(c(0,Res$FemLenAtAge))
+    } else {
+      ylims = Get_yaxis_scale(c(0,Res$MalLenAtAge))
+    }
+    ymax = ylims$ymax; yint = ylims$yint
+    xlims = Get_xaxis_scale(Res$Ages)
+    xmax = xlims$xmax; xint = xlims$xint
+    plot(Res$Ages,Res$FemLenAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),
+         col="red",yaxt="n",xaxt="n",ylab="",xlab="")
+    lines(Res$Ages, Res$MalLenAtAge,col="blue")
+    axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
+    mtext(expression(paste(plain("Total length (mm"),plain(")"))),las=3,side=2,line=2.5,cex=0.7,lwd=1.75)
+    mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
+    legend('bottomright', col=c("red","blue"),legend=c("Female","Male"),bty='n', cex=0.8,lwd=1.75)
   }
-  ymax = ylims$ymax; yint = ylims$yint
-  xlims = Get_xaxis_scale(Res$Ages)
-  xmax = xlims$xmax; xint = xlims$xint
-  plot(Res$Ages,Res$FemLenAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),
-       col="red",yaxt="n",xaxt="n",ylab="",xlab="")
-  lines(Res$Ages, Res$MalLenAtAge,col="blue")
-  axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
-  mtext(expression(paste(plain("Total length (mm"),plain(")"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
-  mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
-  legend('bottomright', col=c("red","blue"),legend=c("Female","Male"),bty='n', cex=0.8,lwd=1.75)
 
   # plot weight at age
-  y1=max(Res$FemWtAtAge)
-  y2=max(Res$MalWtAtAge)
-  if (y1 > y2) {
-    ylims = Get_yaxis_scale(Res$FemWtAtAge)
-  } else {
-    ylims = Get_yaxis_scale(Res$MalWtAtAge)
+  if (PlotOpt==0 | PlotOpt==2) {
+    y1=max(Res$FemWtAtAge)
+    y2=max(Res$MalWtAtAge)
+    if (y1 > y2) {
+      ylims = Get_yaxis_scale(Res$FemWtAtAge)
+    } else {
+      ylims = Get_yaxis_scale(Res$MalWtAtAge)
+    }
+    ymax = ylims$ymax; yint = ylims$yint
+    xlims = Get_xaxis_scale(Res$Ages)
+    xmax = xlims$xmax; xint = xlims$xint
+    plot(Res$Ages,Res$FemWtAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),col="red",yaxt="n",xaxt="n",
+         ylab="",xlab="")
+    lines(Res$Ages,Res$MalWtAtAge,col="blue")
+    axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
+    mtext(expression(paste(plain("Total weight (kg"),plain(")"))),las=3,side=2,line=2.5,cex=0.7,lwd=1.75)
+    mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
+    legend('bottomright', col=c("red","blue"),legend=c("Female","Male"),bty='n', cex=0.8,lwd=1.75)
   }
-  ymax = ylims$ymax; yint = ylims$yint
-  xlims = Get_xaxis_scale(Res$Ages)
-  xmax = xlims$xmax; xint = xlims$xint
-  plot(Res$Ages,Res$FemWtAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),col="red",yaxt="n",xaxt="n",
-       ylab="",xlab="")
-  lines(Res$Ages,Res$MalWtAtAge,col="blue")
-  axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
-  mtext(expression(paste(plain("Total weight (kg"),plain(")"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
-  mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
-  legend('bottomright', col=c("red","blue"),legend=c("Female","Male"),bty='n', cex=0.8,lwd=1.75)
 
   # plot female maturity and selectivity at age
-  xlims = Get_xaxis_scale(Res$Ages)
-  xmax = xlims$xmax; xint = xlims$xint
-  plot(Res$Ages,Res$FemPropMatAtAge,"l", pch=16,frame.plot=F,ylim=c(0,1),xlim=c(0,xmax),col="red",yaxt="n",xaxt="n",
-       ylab="",xlab="",cex=0.8)
-  if (DiscMort == 0) {
-    lines(Res$Ages, Res$FemSelLandAtAge, "l", col="red",lty="dotted", cex=0.8)
-    legend('bottomright', col=c("red","red"),legend=c("Fem. mature","Fem. reten."),
-           lty=c("solid","dotted"),bty='n', cex=0.8,lwd=1.75)
-  } else {
-    lines(Res$Ages,Res$FemSelLandAtAge, "l", col="red",lty="dotted",cex=0.8)
-    lines(Res$Ages,Res$FemSelDiscAtAge, "l", col="brown",lty="dotted",cex=0.8)
-    legend('bottomright', col=c("red","red","brown"),legend=c("Fem. mature","Fem. land.","Fem. disc."),
-           lty=c("solid","dotted","dotted"),bty='n', cex=0.8,lwd=1.75)
-  }
-  axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(2,at=seq(0,1,0.5), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
-  axis(2,at=seq(0,1,0.5), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
-  mtext(expression(paste(plain("Proportion"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
-  mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
-  if (ReprodPattern > 1) {
-    lines(Res$Ages,Res$PropFemAtAge, "l", col="black",lty="solid",cex=0.8)
-    legend('topright', col="black",legend="Prop. Fem.",
-           lty="solid",bty='n', cex=0.8,lwd=1.75)
+  if (PlotOpt==0 | PlotOpt==3) {
+    xlims = Get_xaxis_scale(Res$Ages)
+    xmax = xlims$xmax; xint = xlims$xint
+    plot(Res$Ages,Res$FemPropMatAtAge,"l", pch=16,frame.plot=F,ylim=c(0,1),xlim=c(0,xmax),col="red",yaxt="n",xaxt="n",
+         ylab="",xlab="",cex=0.8)
+    if (DiscMort == 0) {
+      lines(Res$Ages, Res$FemSelLandAtAge, "l", col="red",lty="dotted", cex=0.8)
+      legend('bottomright', col=c("red","red"),legend=c("Fem. mature","Fem. reten."),
+             lty=c("solid","dotted"),bty='n', cex=0.8,lwd=1.75)
+    } else {
+      lines(Res$Ages,Res$FemSelLandAtAge, "l", col="red",lty="dotted",cex=0.8)
+      lines(Res$Ages,Res$FemSelDiscAtAge, "l", col="brown",lty="dotted",cex=0.8)
+      legend('bottomright', col=c("red","red","brown"),legend=c("Fem. mature","Fem. land.","Fem. disc."),
+             lty=c("solid","dotted","dotted"),bty='n', cex=0.8,lwd=1.75)
+    }
+    axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(2,at=seq(0,1,0.5), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
+    axis(2,at=seq(0,1,0.5), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
+    mtext(expression(paste(plain("Proportion"))),las=3,side=2,line=2.5,cex=0.7,lwd=1.75)
+    mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
+    if (ReprodPattern > 1) {
+      lines(Res$Ages,Res$PropFemAtAge, "l", col="black",lty="solid",cex=0.8)
+      legend('topright', col="black",legend="Prop. Fem.",
+             lty="solid",bty='n', cex=0.8,lwd=1.75)
+    }
   }
 
   # plot male maturity and selectivity at age
-  xlims = Get_xaxis_scale(Res$Ages)
-  xmax = xlims$xmax; xint = xlims$xint
-  plot(Res$Ages, Res$MalPropMatAtAge,"l", pch=16, frame.plot=F,ylim=c(0,1),xlim=c(0,xmax),col="blue",yaxt="n",xaxt="n",
-       ylab="",xlab="", cex=0.8)
-  if (DiscMort == 0) {
-    lines(Res$Ages, Res$FemSelLandAtAge, "l", col="blue",lty="dotted", cex=0.8)
-    legend('bottomright', col=c("blue","blue"),legend=c("Male mature","Male reten."),
-           lty=c("solid","dotted"),bty='n', cex=0.8,lwd=1.75)
-  } else {
-    lines(Res$Ages, Res$FemSelLandAtAge, "l", col="blue",lty="dotted", cex=0.8)
-    lines(Res$Ages, Res$FemSelDiscAtAge, "l", col="purple",lty="dotted", cex=0.8)
-    legend('bottomright', col=c("blue","blue","purple"),legend=c("Male mature","Male land.", "Male disc."),
-           lty=c("solid","dotted","dotted"),bty='n', cex=0.8,lwd=1.75)
-  }
-  axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(2,at=seq(0,1,0.5), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
-  axis(2,at=seq(0,1,0.5), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
-  mtext(expression(paste(plain("Proportion"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
-  mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
-  if (ReprodPattern > 1) {
-    lines(Res$Ages,1-Res$PropFemAtAge, "l", col="black",lty="solid",cex=0.8)
-    legend('topright', col="black",legend="Prop. Male",
-           lty="solid",bty='n', cex=0.8,lwd=1.75)
+  if (PlotOpt==0 | PlotOpt==4) {
+    xlims = Get_xaxis_scale(Res$Ages)
+    xmax = xlims$xmax; xint = xlims$xint
+    plot(Res$Ages, Res$MalPropMatAtAge,"l", pch=16, frame.plot=F,ylim=c(0,1),xlim=c(0,xmax),col="blue",yaxt="n",xaxt="n",
+         ylab="",xlab="", cex=0.8)
+    if (DiscMort == 0) {
+      lines(Res$Ages, Res$FemSelLandAtAge, "l", col="blue",lty="dotted", cex=0.8)
+      legend('bottomright', col=c("blue","blue"),legend=c("Male mature","Male reten."),
+             lty=c("solid","dotted"),bty='n', cex=0.8,lwd=1.75)
+    } else {
+      lines(Res$Ages, Res$FemSelLandAtAge, "l", col="blue",lty="dotted", cex=0.8)
+      lines(Res$Ages, Res$FemSelDiscAtAge, "l", col="purple",lty="dotted", cex=0.8)
+      legend('bottomright', col=c("blue","blue","purple"),legend=c("Male mature","Male land.", "Male disc."),
+             lty=c("solid","dotted","dotted"),bty='n', cex=0.8,lwd=1.75)
+    }
+    axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(2,at=seq(0,1,0.5), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
+    axis(2,at=seq(0,1,0.5), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
+    mtext(expression(paste(plain("Proportion"))),las=3,side=2,line=2.5,cex=0.7,lwd=1.75)
+    mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
+    if (ReprodPattern > 1) {
+      lines(Res$Ages,1-Res$PropFemAtAge, "l", col="black",lty="solid",cex=0.8)
+      legend('topright', col="black",legend="Prop. Male",
+             lty="solid",bty='n', cex=0.8,lwd=1.75)
+    }
   }
 
   #plot 2:
-  par(mfrow = c(3,2), mar=c(3.5,4,2,2),
-      oma=c(1,1,1,1),tck=-0.03,mgp = c(3, 0.5, 0))
+  if (PlotOpt==0) {
+    par(mfrow = c(3,2), mar=c(3.5,4,2,2),
+        oma=c(1,1,1,1),tck=-0.03,mgp = c(3, 0.5, 0))
+  } else {
+    # don't change user settings
+  }
 
   # plot female mortality at age
-  ylims = Get_yaxis_scale(Res$FemFAtAge)
-  ymax = ylims$ymax; yint = ylims$yint
-  xlims = Get_xaxis_scale(Res$Ages)
-  xmax = xlims$xmax; xint = xlims$xint
-  plot(Res$Ages, Res$FemFAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),col="red",yaxt="n",xaxt="n",
-       ylab="",xlab="")
-  # lines(Res$Ages,Res$FemZAtAge,lty="dotted",col="red")
-  lines(Res$Ages,Res$FemDiscFAtAge,lty="dotted",col="brown")
-  lines(Res$Ages,Res$FemLandFAtAge,lty="dotted",col="purple")
-  lines(Res$Ages,rep(NatMort,length(Res$Ages)),lty="dashed")
-  axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
-  mtext(expression(paste(plain("Mortality") ~ (year^{-1}))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
-  mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
-  legend('topright', col=c("red","brown","purple","black"),lty=c("solid","dotted","dotted","dashed"),
-         legend=c("Fem. F","Fem. DiscF","Fem. LandF","Fem. M"),bty='n', cex=1.0,lwd=1.75)
+  if (PlotOpt==0 | PlotOpt==5) {
+    ylims = Get_yaxis_scale(Res$FemFAtAge)
+    ymax = ylims$ymax; yint = ylims$yint
+    xlims = Get_xaxis_scale(Res$Ages)
+    xmax = xlims$xmax; xint = xlims$xint
+    plot(Res$Ages, Res$FemFAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),col="red",yaxt="n",xaxt="n",
+         ylab="",xlab="")
+    lines(Res$Ages,Res$FemDiscFAtAge,lty="dotted",col="brown")
+    lines(Res$Ages,Res$FemLandFAtAge,lty="dotted",col="purple")
+    lines(Res$Ages,rep(NatMort,length(Res$Ages)),lty="dashed")
+    axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
+    mtext(expression(paste(plain("Mortality") ~ (year^{-1}))),las=3,side=2,line=2.5,cex=0.7,lwd=1.75)
+    mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
+    legend('topright', col=c("red","brown","purple","black"),lty=c("solid","dotted","dotted","dashed"),
+           legend=c("Fem. F","Fem. DiscF","Fem. LandF","Fem. M"),bty='n', cex=1.0,lwd=1.75)
+  }
 
   # plot male mortality at age
-  ylims = Get_yaxis_scale(Res$MalFAtAge)
-  ymax = ylims$ymax; yint = ylims$yint
-  xlims = Get_xaxis_scale(Res$Ages)
-  xmax = xlims$xmax; xint = xlims$xint
-  plot(Res$Ages, Res$MalFAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),col="blue",yaxt="n",xaxt="n",
-       ylab="",xlab="")
-  # lines(Res$Ages, Res$MalZAtAge,lty="dotted",col="blue")
-  lines(Res$Ages,Res$MalDiscFAtAge,lty="dotted",col="brown")
-  lines(Res$Ages,Res$MalLandFAtAge,lty="dotted",col="purple")
-  lines(Res$Ages,rep(NatMort,length(Res$Ages)),lty="dashed")
-  axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
-  mtext(expression(paste(plain("Mortality") ~ (year^{-1}))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
-  mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
-  legend('topright', col=c("blue","brown","purple","black"),lty=c("solid","dotted","dotted","dashed"),
-         legend=c("Mal. F","Mal. DiscF","Mal.LandF","Mal. M"),bty='n', cex=1.0,lwd=1.75)
+  if (PlotOpt==0 | PlotOpt==6) {
+    ylims = Get_yaxis_scale(Res$MalFAtAge)
+    ymax = ylims$ymax; yint = ylims$yint
+    xlims = Get_xaxis_scale(Res$Ages)
+    xmax = xlims$xmax; xint = xlims$xint
+    plot(Res$Ages, Res$MalFAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),col="blue",yaxt="n",xaxt="n",
+         ylab="",xlab="")
+    lines(Res$Ages,Res$MalDiscFAtAge,lty="dotted",col="brown")
+    lines(Res$Ages,Res$MalLandFAtAge,lty="dotted",col="purple")
+    lines(Res$Ages,rep(NatMort,length(Res$Ages)),lty="dashed")
+    axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
+    mtext(expression(paste(plain("Mortality") ~ (year^{-1}))),las=3,side=2,line=2.5,cex=0.7,lwd=1.75)
+    mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
+    legend('topright', col=c("blue","brown","purple","black"),lty=c("solid","dotted","dotted","dashed"),
+           legend=c("Mal. F","Mal. DiscF","Mal.LandF","Mal. M"),bty='n', cex=1.0,lwd=1.75)
+  }
 
   # plot fished and unfished female survival in terms of numbers given specified current fully-selected fishing mortality
-  ylims = Get_yaxis_scale(Res$UnfishFemSurvAtAge)
-  ymax = ylims$ymax; yint = ylims$yint
-  if (ymax > 1) {
-    ymax=1
-    yint=0.2
+  if (PlotOpt==0 | PlotOpt==7) {
+    ylims = Get_yaxis_scale(Res$UnfishFemSurvAtAge)
+    ymax = ylims$ymax; yint = ylims$yint
+    if (ymax > 1) {
+      ymax=1
+      yint=0.2
+    }
+    xlims = Get_xaxis_scale(Res$Ages)
+    xmax = xlims$xmax; xint = xlims$xint
+    plot(Res$Ages, Res$UnfishFemSurvAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),col="red",yaxt="n",xaxt="n",
+         ylab="",xlab="")
+    lines(Res$Ages, Res$FishedFemSurvAtAge,col="red",lty="dotted")
+    axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
+    mtext(expression(paste(plain("Rel. survival"))),las=3,side=2,line=2.5,cex=0.7,lwd=1.75)
+    mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
+    legend('topright', col="red",lty=c("solid","dotted"),
+           legend=c("Fem. unfish","Fem. fish"),bty='n', cex=1.0,lwd=1.75)
   }
-  xlims = Get_xaxis_scale(Res$Ages)
-  xmax = xlims$xmax; xint = xlims$xint
-  plot(Res$Ages, Res$UnfishFemSurvAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),col="red",yaxt="n",xaxt="n",
-       ylab="",xlab="")
-  lines(Res$Ages, Res$FishedFemSurvAtAge,col="red",lty="dotted")
-  axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
-  mtext(expression(paste(plain("Rel. survival"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
-  mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
-  legend('topright', col="red",lty=c("solid","dotted"),
-         legend=c("Fem. unfish","Fem. fish"),bty='n', cex=1.0,lwd=1.75)
 
   # plot fished and unfished male survival in terms of numbers given specified current fully-selected fishing mortality
-  ylims = Get_yaxis_scale(Res$UnfishMalSurvAtAge)
-  ymax = ylims$ymax; yint = ylims$yint
-  if (ymax > 1) {
-    ymax=1
-    yint=0.2
+  if (PlotOpt==0 | PlotOpt==8) {
+    ylims = Get_yaxis_scale(Res$UnfishMalSurvAtAge)
+    ymax = ylims$ymax; yint = ylims$yint
+    if (ymax > 1) {
+      ymax=1
+      yint=0.2
+    }
+    xlims = Get_xaxis_scale(Res$Ages)
+    xmax = xlims$xmax; xint = xlims$xint
+    plot(Res$Ages, Res$UnfishMalSurvAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),col="blue",yaxt="n",xaxt="n",
+         ylab="",xlab="")
+    lines(Res$Ages, Res$FishedMalSurvAtAge,col="blue",lty="dotted")
+    axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
+    mtext(expression(paste(plain("Rel. survival"))),las=3,side=2,line=2.5,cex=0.7,lwd=1.75)
+    mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
+    legend('topright', col="blue",lty=c("solid","dotted"),
+           legend=c("Mal. unfish","Mal. fish"),bty='n', cex=1.0,lwd=1.75)
   }
-  xlims = Get_xaxis_scale(Res$Ages)
-  xmax = xlims$xmax; xint = xlims$xint
-  plot(Res$Ages, Res$UnfishMalSurvAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),col="blue",yaxt="n",xaxt="n",
-       ylab="",xlab="")
-  lines(Res$Ages, Res$FishedMalSurvAtAge,col="blue",lty="dotted")
-  axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
-  mtext(expression(paste(plain("Rel. survival"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
-  mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
-  legend('topright', col="blue",lty=c("solid","dotted"),
-         legend=c("Mal. unfish","Mal. fish"),bty='n', cex=1.0,lwd=1.75)
 
   # plot fished and unfished mature female biomass at age given specified current fully-selected fishing mortality
-  ylims = Get_yaxis_scale(Res$UnfishFemBiomAtAge)
-  ymax = ylims$ymax; yint = ylims$yint
-  if (ymax == 0) {
-    ymax = round(1.4 * max(Res$UnfishFemBiomAtAge),1)
-    yint = ymax/4
+  if (PlotOpt==0 | PlotOpt==9) {
+    ylims = Get_yaxis_scale(Res$UnfishFemBiomAtAge)
+    ymax = ylims$ymax; yint = ylims$yint
+    if (ymax == 0) {
+      ymax = round(1.4 * max(Res$UnfishFemBiomAtAge),1)
+      yint = ymax/4
+    }
+    xlims = Get_xaxis_scale(Res$Ages)
+    xmax = xlims$xmax; xint = xlims$xint
+    plot(Res$Ages, Res$UnfishFemBiomAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),
+         col="red",yaxt="n",xaxt="n",ylab="",xlab="")
+    lines(Res$Ages, Res$FishedFemBiomAtAge,col="red",lty="dotted")
+    axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
+    mtext(expression(paste(plain("Mat. biom. at age (kg"),plain(")"))),las=3,side=2,line=2.5,cex=0.7,lwd=1.75)
+    mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
+    legend('topright', col=c("red","red"),lty=c("solid","dotted"),legend=c("Fem. unfish","Fem unfish"),bty='n', cex=1.0,lwd=1.75)
   }
-  xlims = Get_xaxis_scale(Res$Ages)
-  xmax = xlims$xmax; xint = xlims$xint
-  plot(Res$Ages, Res$UnfishFemBiomAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),
-       col="red",yaxt="n",xaxt="n",ylab="",xlab="")
-  lines(Res$Ages, Res$FishedFemBiomAtAge,col="red",lty="dotted")
-  axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
-  mtext(expression(paste(plain("Mat. biom. at age (kg"),plain(")"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
-  mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
-  legend('topright', col=c("red","red"),lty=c("solid","dotted"),legend=c("Fem. unfish","Fem unfish"),bty='n', cex=1.0,lwd=1.75)
 
   # plot fished and unfished mature male biomass at age given specified current fully-selected fishing mortality
-  ylims = Get_yaxis_scale(Res$UnfishMalBiomAtAge)
-  ymax = ylims$ymax; yint = ylims$yint
-  xlims = Get_xaxis_scale(Res$Ages)
-  xmax = xlims$xmax; xint = xlims$xint
-  if (ymax == 0) {
-    ymax = round(1.4 * max(Res$UnfishFemBiomAtAge),1)
-    yint = ymax/4
+  if (PlotOpt==0 | PlotOpt==10) {
+    ylims = Get_yaxis_scale(Res$UnfishMalBiomAtAge)
+    ymax = ylims$ymax; yint = ylims$yint
+    xlims = Get_xaxis_scale(Res$Ages)
+    xmax = xlims$xmax; xint = xlims$xint
+    if (ymax == 0) {
+      ymax = round(1.4 * max(Res$UnfishFemBiomAtAge),1)
+      yint = ymax/4
+    }
+    plot(Res$Ages, Res$UnfishMalBiomAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),
+         col="blue",yaxt="n",xaxt="n",ylab="",xlab="")
+    lines(Res$Ages, Res$FishedMalBiomAtAge,col="blue",lty="dotted")
+    axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
+    mtext(expression(paste(plain("Mat. biom. at age (kg"),plain(")"))),las=3,side=2,line=2.5,cex=0.7,lwd=1.75)
+    mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
+    legend('topright', col=c("blue","blue"),lty=c("solid","dotted"),legend=c("Mal. unfish","Mal. unfish"),bty='n', cex=1.0,lwd=1.75)
   }
-  plot(Res$Ages, Res$UnfishMalBiomAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),
-       col="blue",yaxt="n",xaxt="n",ylab="",xlab="")
-  lines(Res$Ages, Res$FishedMalBiomAtAge,col="blue",lty="dotted")
-  axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
-  mtext(expression(paste(plain("Mat. biom. at age (kg"),plain(")"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
-  mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
-  legend('topright', col=c("blue","blue"),lty=c("solid","dotted"),legend=c("Mal. unfish","Mal. unfish"),bty='n', cex=1.0,lwd=1.75)
+
   #Plot 3:
-
   # plot female and male catch at age, given specified current fully-selected fishing mortality
-  par(mfrow = c(3,2), mar=c(3.5,4,2,2),
-      oma=c(1,1,1,1),tck=-0.03,mgp = c(3, 0.5, 0))
+  if (PlotOpt==0) {
+    par(mfrow = c(3,2), mar=c(3.5,4,2,2),
+        oma=c(1,1,1,1),tck=-0.03,mgp = c(3, 0.5, 0))
+  } else {
+    # don't change user settings
+  }
 
-  FemCatchNumAtAgeProp <- Res$FemCatchAtAgeNum / sum(Res$FemCatchAtAgeNum)
-  MalCatchNumAtAgeProp <- Res$MalCatchAtAgeNum / sum(Res$MalCatchAtAgeNum)
-  ylims = Get_yaxis_scale(FemCatchNumAtAgeProp)
-  ymax = ylims$ymax; yint = ylims$yint
-  xlims = Get_xaxis_scale(Res$Ages)
-  xmax = xlims$xmax; xint = xlims$xint
-  plot(Res$Ages, FemCatchNumAtAgeProp,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),
-       col="red",yaxt="n",xaxt="n",ylab="",xlab="")
-  lines(Res$Ages, MalCatchNumAtAgeProp,col="blue","l")
-  axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
-  mtext("Catch at age Prop.",las=3,side=2,line=2,cex=0.7,lwd=1.75)
-  mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
-  legend('topright', col=c("red","blue"),lty="solid",legend=c("females","males"),bty='n', cex=0.8,lwd=1.75)
-
+  if (PlotOpt==0 | PlotOpt==11) {
+    FemCatchNumAtAgeProp <- Res$FemCatchAtAgeNum / sum(Res$FemCatchAtAgeNum)
+    MalCatchNumAtAgeProp <- Res$MalCatchAtAgeNum / sum(Res$MalCatchAtAgeNum)
+    ylims = Get_yaxis_scale(FemCatchNumAtAgeProp)
+    ymax = ylims$ymax; yint = ylims$yint
+    xlims = Get_xaxis_scale(Res$Ages)
+    xmax = xlims$xmax; xint = xlims$xint
+    plot(Res$Ages, FemCatchNumAtAgeProp,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),
+         col="red",yaxt="n",xaxt="n",ylab="",xlab="")
+    lines(Res$Ages, MalCatchNumAtAgeProp,col="blue","l")
+    axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
+    mtext("Catch at age Prop.",las=3,side=2,line=2.5,cex=0.7,lwd=1.75)
+    mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
+    legend('topright', col=c("red","blue"),lty="solid",legend=c("females","males"),bty='n', cex=0.8,lwd=1.75)
+  }
 
   # plot yield per recruit (per recruit analysis) and equilibrium catch (equilibrium age-structured model)
   # given specified current fully-selected fishing mortality
-  ylims = Get_yaxis_scale(Res$YPRResults)
-  ymax = ylims$ymax; yint = ylims$yint
+  if (PlotOpt==0 | PlotOpt==12) {
+    ylims = Get_yaxis_scale(Res$YPRResults)
+    ymax = ylims$ymax; yint = ylims$yint
 
-  plot(Res$FishMort, Res$YPRResults,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,max(Res$FishMort)),
-       col="black",yaxt="n",xaxt="n",ylab="",xlab="")
-  points(Current_F, Res$YPR,cex=1.2,col="black",pch=16)
-  lines(Res$FishMort, Res$EquilCatchResults,col="blue")
-  points(Current_F, Res$Equil_Catch, cex=1.2,col="blue",pch=16)
-  axis(1,at=seq(0,max(Res$FishMort),0.5), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(1,at=seq(0,max(Res$FishMort),0.5), labels=seq(0,max(Res$FishMort),0.5),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
-  mtext(expression(paste(plain("YPR / Eq.Catch (kg"),plain(")"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
-  mtext(expression(paste(italic("F") ~ (year^{-1}))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
-  legend('topright', col=c("black","blue"),lty=c("solid","solid"),
-         legend=c("YPR","Eq.catch"),bty='n', cex=0.8,lwd=1.75)
+    plot(Res$FishMort, Res$YPRResults,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,max(Res$FishMort)),
+         col="black",yaxt="n",xaxt="n",ylab="",xlab="")
+    points(Current_F, Res$YPR,cex=1.2,col="black",pch=16)
+    lines(Res$FishMort, Res$EquilCatchResults,col="blue")
+    points(Current_F, Res$Equil_Catch, cex=1.2,col="blue",pch=16)
+    axis(1,at=seq(0,max(Res$FishMort),0.5), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(1,at=seq(0,max(Res$FishMort),0.5), labels=seq(0,max(Res$FishMort),0.5),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
+    mtext(expression(paste(plain("YPR / Eq.Catch (kg"),plain(")"))),las=3,side=2,line=2.5,cex=0.7,lwd=1.75)
+    mtext(expression(paste(italic("F") ~ (year^{-1}))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
+    legend('topright', col=c("black","blue"),lty=c("solid","solid"),
+           legend=c("YPR","Eq.catch"),bty='n', cex=0.8,lwd=1.75)
+  }
 
   # plot spawning potential ratio (per recruit analysis) and relative spawning biomass (equilbrium age-structured model)
   # given specified current fully-selected fishing mortality, for female
-  plot(Res$FishMort, Res$Fem_SPRResults,"l",frame.plot=F,ylim=c(0,1.0),xlim=c(0,max(Res$FishMort)),
-       col="red",yaxt="n",xaxt="n",ylab="",xlab="", lty="dotted")
-  lines(Res$FishMort, Res$Equilmod_FemRelBiomResults,col="red",lty="dotted")
-  points(Current_F, Res$Fem_SPR,cex=1.2,col="red",pch=16)
-  points(Current_F, Res$Equilmod_FemRelBiom,cex=1.2,col="red",pch=1)
-  axis(1,at=seq(0,max(Res$FishMort),0.5), cex.axis=0.8, lwd=1.75,lab=F) # x axis
-  axis(2,at=seq(0,1,0.2), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(1,at=seq(0,max(Res$FishMort),0.5), labels=seq(0,max(Res$FishMort),0.5),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add x labels
-  axis(2,at=seq(0,1,0.2), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
-  mtext(expression(paste(plain("Biom. ratio"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
-  mtext(expression(paste(italic("F") ~ (year^{-1}))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
-  legend('topright', col=c("red","red"),lty=c("dotted","solid"),
-         legend=c("Fem SPR","Fem. Rel biom"),bty='n', cex=0.8,lwd=1.75)
+  if (PlotOpt==0 | PlotOpt==13) {
+    plot(Res$FishMort, Res$Fem_SPRResults,"l",frame.plot=F,ylim=c(0,1.0),xlim=c(0,max(Res$FishMort)),
+         col="red",yaxt="n",xaxt="n",ylab="",xlab="", lty="dotted")
+    lines(Res$FishMort, Res$Equilmod_FemRelBiomResults,col="red",lty="dotted")
+    points(Current_F, Res$Fem_SPR,cex=1.2,col="red",pch=16)
+    points(Current_F, Res$Equilmod_FemRelBiom,cex=1.2,col="red",pch=1)
+    axis(1,at=seq(0,max(Res$FishMort),0.5), cex.axis=0.8, lwd=1.75,lab=F) # x axis
+    axis(2,at=seq(0,1,0.2), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(1,at=seq(0,max(Res$FishMort),0.5), labels=seq(0,max(Res$FishMort),0.5),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add x labels
+    axis(2,at=seq(0,1,0.2), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
+    mtext(expression(paste(plain("Biom. ratio"))),las=3,side=2,line=2.5,cex=0.7,lwd=1.75)
+    mtext(expression(paste(italic("F") ~ (year^{-1}))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
+    legend('topright', col=c("red","red"),lty=c("dotted","solid"),
+           legend=c("Fem SPR","Fem. Rel biom"),bty='n', cex=0.8,lwd=1.75)
+  }
 
   # plot spawning potential ratio (per recruit analysis) and relative spawning biomass (equilbrium age-structured model)
   # given specified current fully-selected fishing mortality, for each sex
-  plot(Res$FishMort, Res$Mal_SPRResults,"l",frame.plot=F,ylim=c(0,1.0),xlim=c(0,max(Res$FishMort)),
-       col="blue",yaxt="n",xaxt="n",ylab="",xlab="", lty="dotted")
-  lines(Res$FishMort, Res$Equilmod_MalRelBiomResults,col="blue",lty="solid")
-  points(Current_F, Res$Mal_SPR,cex=1.2,col="blue",pch=16)
-  points(Current_F, Res$Equilmod_MalRelBiom,cex=1.2,col="blue",pch=1)
-  axis(1,at=seq(0,max(Res$FishMort),0.5), cex.axis=0.8, lwd=1.75,lab=F) # x axis
-  axis(2,at=seq(0,1,0.2), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(1,at=seq(0,max(Res$FishMort),0.5), labels=seq(0,max(Res$FishMort),0.5),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add x labels
-  axis(2,at=seq(0,1,0.2), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
-  mtext(expression(paste(plain("Biom. ratio"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
-  mtext(expression(paste(italic("F") ~ (year^{-1}))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
-  legend('topright', col=c("blue","blue"),lty=c("dotted","solid"),
-         legend=c("Mal SPR","Mal. Rel biom"),bty='n', cex=0.8,lwd=1.75)
+  if (PlotOpt==0 | PlotOpt==14) {
+    plot(Res$FishMort, Res$Mal_SPRResults,"l",frame.plot=F,ylim=c(0,1.0),xlim=c(0,max(Res$FishMort)),
+         col="blue",yaxt="n",xaxt="n",ylab="",xlab="", lty="dotted")
+    lines(Res$FishMort, Res$Equilmod_MalRelBiomResults,col="blue",lty="solid")
+    points(Current_F, Res$Mal_SPR,cex=1.2,col="blue",pch=16)
+    points(Current_F, Res$Equilmod_MalRelBiom,cex=1.2,col="blue",pch=1)
+    axis(1,at=seq(0,max(Res$FishMort),0.5), cex.axis=0.8, lwd=1.75,lab=F) # x axis
+    axis(2,at=seq(0,1,0.2), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(1,at=seq(0,max(Res$FishMort),0.5), labels=seq(0,max(Res$FishMort),0.5),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add x labels
+    axis(2,at=seq(0,1,0.2), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
+    mtext(expression(paste(plain("Biom. ratio"))),las=3,side=2,line=2.5,cex=0.7,lwd=1.75)
+    mtext(expression(paste(italic("F") ~ (year^{-1}))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
+    legend('topright', col=c("blue","blue"),lty=c("dotted","solid"),
+           legend=c("Mal SPR","Mal. Rel biom"),bty='n', cex=0.8,lwd=1.75)
+  }
 
   # plot spawning potential ratio (per recruit analysis) and relative spawning biomass (equilbrium age-structured model)
   # given specified current fully-selected fishing mortality, for combined sexes
-  plot(Res$FishMort, Res$CombSex_SPRResults,"l",frame.plot=F,ylim=c(0,1.0),xlim=c(0,max(Res$FishMort)),
-       col="black",yaxt="n",xaxt="n",ylab="",xlab="", lty="dotted")
-  lines(Res$FishMort, Res$Equilmod_CombSexRelBiomResults,col="black",lty="solid")
-  points(Current_F, Res$CombSex_SPR,cex=1.2,col="black",pch=16)
-  points(Current_F, Res$Equilmod_CombSexRelBiom,cex=1.2,col="black",pch=1)
-  axis(1,at=seq(0,max(Res$FishMort),0.5), cex.axis=0.8, lwd=1.75,lab=F) # x axis
-  axis(2,at=seq(0,1,0.2), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(1,at=seq(0,max(Res$FishMort),0.5), labels=seq(0,max(Res$FishMort),0.5),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add x labels
-  axis(2,at=seq(0,1,0.2), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
-  mtext(expression(paste(plain("Biom. ratio"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
-  mtext(expression(paste(italic("F") ~ (year^{-1}))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
-  legend('topright', col=c("black","black"),lty=c("dotted","solid"),
-         legend=c("CombSex SPR","CombSex Rel biom"),bty='n', cex=0.8,lwd=1.75)
+  if (PlotOpt==0 | PlotOpt==15) {
+    plot(Res$FishMort, Res$CombSex_SPRResults,"l",frame.plot=F,ylim=c(0,1.0),xlim=c(0,max(Res$FishMort)),
+         col="black",yaxt="n",xaxt="n",ylab="",xlab="", lty="dotted")
+    lines(Res$FishMort, Res$Equilmod_CombSexRelBiomResults,col="black",lty="solid")
+    points(Current_F, Res$CombSex_SPR,cex=1.2,col="black",pch=16)
+    points(Current_F, Res$Equilmod_CombSexRelBiom,cex=1.2,col="black",pch=1)
+    axis(1,at=seq(0,max(Res$FishMort),0.5), cex.axis=0.8, lwd=1.75,lab=F) # x axis
+    axis(2,at=seq(0,1,0.2), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(1,at=seq(0,max(Res$FishMort),0.5), labels=seq(0,max(Res$FishMort),0.5),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add x labels
+    axis(2,at=seq(0,1,0.2), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
+    mtext(expression(paste(plain("Biom. ratio"))),las=3,side=2,line=2.5,cex=0.7,lwd=1.75)
+    mtext(expression(paste(italic("F") ~ (year^{-1}))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
+    legend('topright', col=c("black","black"),lty=c("dotted","solid"),
+           legend=c("CombSex SPR","CombSex Rel biom"),bty='n', cex=0.8,lwd=1.75)
+  }
 
   # plot equilibrium recruitment vs F
-  # ylims = Get_yaxis_scale(Res$EquilRecResults)
-  # ymax = ylims$ymax; yint = ylims$yint
-  ymax = 1.0
-  yint = 0.2
-
-  plot(Res$FishMort, Res$EquilRecResults,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,max(Res$FishMort)),
-       col="red",yaxt="n",xaxt="n",ylab="",xlab="")
-  points(Current_F, Res$Equil_Rec, cex=1.2,col="red",pch=16)
-  axis(1,at=seq(0,max(Res$FishMort),0.5), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(1,at=seq(0,max(Res$FishMort),0.5), labels=seq(0,max(Res$FishMort),0.5),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
-  mtext(expression(paste(plain("Equil. Recruitment"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
-  mtext(expression(paste(italic("F") ~ (year^{-1}))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
+  if (PlotOpt==0 | PlotOpt==16) {
+    ymax = 1.0
+    yint = 0.2
+    plot(Res$FishMort, Res$EquilRecResults,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,max(Res$FishMort)),
+         col="red",yaxt="n",xaxt="n",ylab="",xlab="")
+    points(Current_F, Res$Equil_Rec, cex=1.2,col="red",pch=16)
+    axis(1,at=seq(0,max(Res$FishMort),0.5), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(1,at=seq(0,max(Res$FishMort),0.5), labels=seq(0,max(Res$FishMort),0.5),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
+    mtext(expression(paste(plain("Equil. Recruitment"))),las=3,side=2,line=2.5,cex=0.7,lwd=1.75)
+    mtext(expression(paste(italic("F") ~ (year^{-1}))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
+  }
 
   # reset default par options
   par(.pardefault)
@@ -8476,6 +8529,9 @@ PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
 #' @param SRrel_Type 1 = Beverton-Holt, 2=Ricker stock-recruitment relationship
 #' @param NatMort natural mortality
 #' @param Current_F level of fishing mortality of interest, e.g. current fishing mortality
+#' @param FittedRes stored results of length-based per recruit analysis, can set to NA
+#' @param PlotOpt 0=all plots, 1=female size, 2=male size, 3=combined sex size, 4=female weight,
+#' 5=male weight, 6=combined sex weight
 #'
 #' @examples
 #' MaxModelAge <- 20 # maximum age considered by model, years
@@ -8519,9 +8575,10 @@ PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
 #' DiscMort <- 0.25 # discard mortality (e.g. 50% released fish die = 0.5)
 #' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
 #' SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
-#' NatMort = 4.22 / MaxModelAge # natural mortality  (year-1)
+#' NatMort <- 4.22 / MaxModelAge # natural mortality  (year-1)
 #' RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
-#' Current_F = 0.2
+#' Current_F <- 0.2
+#' PlotOpt <- 0 # 0=all plots, 1=female size, 2=male size, 3=combined sex size, 4=female weight, 5=male weight, 6=combined sex weight
 #' FittedRes=GetPerRecruitResults_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
 #'                                   RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
 #'                                   EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
@@ -8531,13 +8588,13 @@ PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
 #'                                      RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
 #'                                      EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
 #'                                      FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-#'                                      ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, FittedRes)
+#'                                      ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, FittedRes, PlotOpt)
 #' @export
 PlotPerRecruit_ExpCatchSizeDistns_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                                  RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                                                  EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
                                                  FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-                                                 ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, FittedRes) {
+                                                 ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, FittedRes, PlotOpt) {
 
   # if model already fitted, can input results rather than refit
   if (is.list(FittedRes)) {
@@ -8552,136 +8609,186 @@ PlotPerRecruit_ExpCatchSizeDistns_LB <- function(MaxModelAge, TimeStep, lbnd, ub
   FishMort=Res$FishMort
 
   # get relationship between fishing mortality and mean length of females in catches
-  par(mfrow=c(2,3),mar=c(5,4,2,2))
-
-  ylims = Get_yaxis_scale(Res$MeanCatchLenResults$FemMeanCatchLen.up95pi)
-  ymax = ylims$ymax
-  plot(FishMort, Res$MeanCatchLenResults[,2], "l", ylim=c(0,ymax), ylab = "Fem. length, mm", xlab = "Fishing mortality",
-       col="red", bty='n')
-  x = c(FishMort,rev(FishMort))
-  y = c(Res$MeanCatchLenResults$FemMeanCatchLen.lw95pi,
-        rev(Res$MeanCatchLenResults$FemMeanCatchLen.up95pi))
-  polygon(x,y, col="pink",border=NA)
-  y = c(Res$MeanCatchLenResults$FemMeanCatchLen.lw60pi,
-        rev(Res$MeanCatchLenResults$FemMeanCatchLen.up60pi))
-  polygon(x,y, col="light blue",border=NA)
-  lines(FishMort, Res$MeanCatchLenResults[,2],col="red")
-  x=min(which(FishMort>=Current_F))
-  points(Current_F, Res$MeanCatchLenResults[x,2], pch=16, cex=2, col="red")
-  legend('topright', bty='n', cex=0.8, lwd=c(5,5,-1), pch = c(NA,NA,16), col=c("light blue","pink","red"),
-         legend=c("60% Pred. Int.","95% Pred. Int.","Target F"))
-
-  # males
-  ylims = Get_yaxis_scale(Res$MeanCatchLenResults$MalMeanCatchLen.up95pi)
-  ymax = ylims$ymax
-  plot(FishMort, Res$MeanCatchLenResults[,3], "l", ylim=c(0,ymax), ylab = "Mal. length, mm", xlab = "Fishing mortality", col="red", bty='n')
-  x = c(FishMort,rev(FishMort))
-  y = c(Res$MeanCatchLenResults$MalMeanCatchLen.lw95pi,
-        rev(Res$MeanCatchLenResults$MalMeanCatchLen.up95pi))
-  polygon(x,y, col="pink",border=NA)
-  y = c(Res$MeanCatchLenResults$MalMeanCatchLen.lw60pi,
-        rev(Res$MeanCatchLenResults$MalMeanCatchLen.up60pi))
-  polygon(x,y, col="light blue",border=NA)
-  lines(FishMort, Res$MeanCatchLenResults[,3],col="blue")
-  x=min(which(FishMort>=Current_F))
-  points(Current_F, Res$MeanCatchLenResults[x,3], pch=16, cex=2, col="blue")
-  legend('topright', bty='n', cex=0.8, lwd=c(5,5,-1), pch = c(NA,NA,16), col=c("light blue","pink","blue"),
-         legend=c("60% Pred. Int.","95% Pred. Int.","Target F"))
-
-
-  # combined sex
-  ylims = Get_yaxis_scale(Res$MeanCatchLenResults$CombSexMeanCatchLen.up95pi)
-  ymax = ylims$ymax
-  plot(FishMort, Res$MeanCatchLenResults[,4], "l", ylim=c(0,ymax), ylab = "Comb. sex length, mm", xlab = "Fishing mortality", col="red", bty='n')
-  x = c(FishMort,rev(FishMort))
-  y = c(Res$MeanCatchLenResults$CombSexMeanCatchLen.lw95pi,
-        rev(Res$MeanCatchLenResults$CombSexMeanCatchLen.up95pi))
-  polygon(x,y, col="pink",border=NA)
-  y = c(Res$MeanCatchLenResults$CombSexMeanCatchLen.lw60pi,
-        rev(Res$MeanCatchLenResults$CombSexMeanCatchLen.up60pi))
-  polygon(x,y, col="light blue",border=NA)
-  lines(FishMort, Res$MeanCatchLenResults[,3],col="orange")
-  x=min(which(FishMort>=Current_F))
-  points(Current_F, Res$MeanCatchLenResults[x,3], pch=16, cex=2, col="orange")
-  legend('topright', bty='n', cex=0.8, lwd=c(5,5,-1), pch = c(NA,NA,16), col=c("light blue","pink","orange"),
-         legend=c("60% Pred. Int.","95% Pred. Int.","Target F"))
-
-
-  # get relationship between fishing mortality and mean weight of females in catches
-  if(max(Res$MeanCatchWtResults$FemMeanCatchWt.up95pi<1)) {
-    ScaleFact = 1000
-    ylabel = "Fem. weight, g"
-  } else {
-    ScaleFact = 1
-    ylabel = "Fem. weight, kg"
+  if (PlotOpt==0) {
+    par(mfrow=c(2,3),mar=c(5,4,2,2))
   }
-  ylims = Get_yaxis_scale(Res$MeanCatchWtResults$FemMeanCatchWt.up95pi)
-  ymax = ylims$ymax*ScaleFact
-  plot(FishMort, Res$MeanCatchWtResults[,2]*ScaleFact, "l", ylim=c(0,ymax), ylab = ylabel, xlab = "Fishing mortality", col="red", bty='n')
-  x = c(FishMort,rev(FishMort))
-  y = c(Res$MeanCatchWtResults$FemMeanCatchWt.lw95pi*ScaleFact,
-        rev(Res$MeanCatchWtResults$FemMeanCatchWt.up95pi*ScaleFact))
-  polygon(x,y, col="pink",border=NA)
-  y = c(Res$MeanCatchWtResults$FemMeanCatchWt.lw60pi*ScaleFact,
-        rev(Res$MeanCatchWtResults$FemMeanCatchWt.up60pi*ScaleFact))
-  polygon(x,y, col="light blue",border=NA)
-  lines(FishMort, Res$MeanCatchWtResults[,2]*ScaleFact,col="red")
-  x=min(which(FishMort>=Current_F))
-  points(Current_F, Res$MeanCatchWtResults[x,2]*ScaleFact, pch=16, cex=2, col="red")
-  # abline(h=100,lwd=2, lty="dotted")
-  legend('topright', bty='n', cex=0.8, lwd=c(5,5,-1), pch = c(NA,NA,16), col=c("light blue","pink","red"),
-         legend=c("60% Pred. Int.","95% Pred. Int.","Target F"))
 
-  # males
-  if(max(Res$MeanCatchWtResults$MalMeanCatchWt.up95pi<1)) {
-    ScaleFact = 1000
-    ylabel = "Mal. weight, g"
-  } else {
-    ScaleFact = 1
-    ylabel = "Mal. weight, kg"
+  # females - lengths
+  if (PlotOpt==0 | PlotOpt==1) {
+    ylims = Get_yaxis_scale(c(Res$MeanCatchLenResults$FemMeanCatchLen.up95pi,
+                              Res$MeanCatchLenResults$MalMeanCatchLen.up95pi))
+    ymax = ylims$ymax; yint=ylims$yint
+    plot(FishMort, Res$MeanCatchLenResults[,2], "l", ylim=c(0,ymax), ylab = "Fem. length, mm", xlab = "Fishing mortality",
+         col="red", bty='n', xaxt='n', yaxt='n')
+    x = c(FishMort,rev(FishMort))
+    y = c(Res$MeanCatchLenResults$FemMeanCatchLen.lw95pi,
+          rev(Res$MeanCatchLenResults$FemMeanCatchLen.up95pi))
+    polygon(x,y, col="pink",border=NA)
+    y = c(Res$MeanCatchLenResults$FemMeanCatchLen.lw60pi,
+          rev(Res$MeanCatchLenResults$FemMeanCatchLen.up60pi))
+    polygon(x,y, col="light blue",border=NA)
+    lines(FishMort, Res$MeanCatchLenResults[,2],col="red")
+    x=min(which(FishMort>=Current_F))
+    points(Current_F, Res$MeanCatchLenResults[x,2], pch=16, cex=2, col="red")
+    legend('topright', bty='n', cex=0.8, lwd=c(5,5,-1), pch = c(NA,NA,16), col=c("light blue","pink","red"),
+           legend=c("60% Pred. Int.","95% Pred. Int.","Target F"))
+    axis(1,at=seq(0,max(FishMort),0.5), cex.axis=0.8, lwd=1.75,lab=F) # x axis
+    axis(2,at=seq(0,ymax, yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(1,at=seq(0,max(FishMort),0.5), labels=seq(0,max(Res$FishMort),0.5),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add x labels
+    axis(2,at=seq(0,ymax, yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
   }
-  ylims = Get_yaxis_scale(Res$MeanCatchWtResults$MalMeanCatchWt.up95pi)
-  ymax = ylims$ymax*ScaleFact
-  plot(FishMort, Res$MeanCatchWtResults[,3]*ScaleFact, "l", ylim=c(0,ymax), ylab = ylabel, xlab = "Fishing mortality", col="red", bty='n')
-  x = c(FishMort,rev(FishMort))
-  y = c(Res$MeanCatchWtResults$MalMeanCatchWt.lw95pi*ScaleFact,
-        rev(Res$MeanCatchWtResults$MalMeanCatchWt.up95pi*ScaleFact))
-  polygon(x,y, col="pink",border=NA)
-  y = c(Res$MeanCatchWtResults$MalMeanCatchWt.lw60pi*ScaleFact,
-        rev(Res$MeanCatchWtResults$MalMeanCatchWt.up60pi*ScaleFact))
-  polygon(x,y, col="light blue",border=NA)
-  lines(FishMort, Res$MeanCatchWtResults[,3]*ScaleFact,col="blue")
-  x=min(which(FishMort>=Current_F))
-  points(Current_F, Res$MeanCatchWtResults[x,3]*ScaleFact, pch=16, cex=2, col="blue")
-  # abline(h=100,lwd=2, lty="dotted")
-  legend('topright', bty='n', cex=0.8, lwd=c(5,5,-1), pch = c(NA,NA,16), col=c("light blue","pink","blue"),
-         legend=c("60% Pred. Int.","95% Pred. Int.","Target F"))
 
-  # combined sex
-  if(max(Res$MeanCatchWtResults$CombSexMeanCatchWt.up95pi<1)) {
-    ScaleFact = 1000
-    ylabel = "Comb. sex weight, g"
-  } else {
-    ScaleFact = 1
-    ylabel = "Comb. sex weight, kg"
+  # males - lengths
+  if (PlotOpt==0 | PlotOpt==2) {
+    ylims = Get_yaxis_scale(c(Res$MeanCatchLenResults$FemMeanCatchLen.up95pi,
+                              Res$MeanCatchLenResults$MalMeanCatchLen.up95pi))
+    ymax = ylims$ymax; yint=ylims$yint
+    plot(FishMort, Res$MeanCatchLenResults[,3], "l", ylim=c(0,ymax), ylab = "Mal. length, mm",
+         xlab = "Fishing mortality", col="red", bty='n', xaxt='n', yaxt='n')
+    x = c(FishMort,rev(FishMort))
+    y = c(Res$MeanCatchLenResults$MalMeanCatchLen.lw95pi,
+          rev(Res$MeanCatchLenResults$MalMeanCatchLen.up95pi))
+    polygon(x,y, col="pink",border=NA)
+    y = c(Res$MeanCatchLenResults$MalMeanCatchLen.lw60pi,
+          rev(Res$MeanCatchLenResults$MalMeanCatchLen.up60pi))
+    polygon(x,y, col="light blue",border=NA)
+    lines(FishMort, Res$MeanCatchLenResults[,3],col="blue")
+    x=min(which(FishMort>=Current_F))
+    points(Current_F, Res$MeanCatchLenResults[x,3], pch=16, cex=2, col="blue")
+    legend('topright', bty='n', cex=0.8, lwd=c(5,5,-1), pch = c(NA,NA,16), col=c("light blue","pink","blue"),
+           legend=c("60% Pred. Int.","95% Pred. Int.","Target F"))
+    axis(1,at=seq(0,max(FishMort),0.5), cex.axis=0.8, lwd=1.75,lab=F) # x axis
+    axis(2,at=seq(0,ymax, yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(1,at=seq(0,max(FishMort),0.5), labels=seq(0,max(Res$FishMort),0.5),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add x labels
+    axis(2,at=seq(0,ymax, yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
   }
-  ylims = Get_yaxis_scale(Res$MeanCatchWtResults$CombSexMeanCatchWt.up95pi)
-  ymax = ylims$ymax*ScaleFact
-  plot(FishMort, Res$MeanCatchWtResults[,4]*ScaleFact, "l", ylim=c(0,ymax), ylab = "Comb. sex weight, g", xlab = "Fishing mortality", col="red", bty='n')
-  x = c(FishMort,rev(FishMort))
-  y = c(Res$MeanCatchWtResults$CombSexMeanCatchWt.lw95pi*ScaleFact,
-        rev(Res$MeanCatchWtResults$CombSexMeanCatchWt.up95pi*ScaleFact))
-  polygon(x,y, col="pink",border=NA)
-  y = c(Res$MeanCatchWtResults$CombSexMeanCatchWt.lw60pi*ScaleFact,
-        rev(Res$MeanCatchWtResults$CombSexMeanCatchWt.up60pi*ScaleFact))
-  polygon(x,y, col="light blue",border=NA)
-  lines(FishMort, Res$MeanCatchWtResults[,4]*ScaleFact,col="orange")
-  x=min(which(FishMort>=Current_F))
-  points(Current_F, Res$MeanCatchWtResults[x,4]*ScaleFact, pch=16, cex=2, col="orange")
-  # abline(h=100,lwd=2, lty="dotted")
-  legend('topright', bty='n', cex=0.8, lwd=c(5,5,-1), pch = c(NA,NA,16), col=c("light blue","pink","orange"),
-         legend=c("60% Pred. Int.","95% Pred. Int.","Target F"))
 
+  # combined sex - lengths
+  if (PlotOpt==0 | PlotOpt==3) {
+    ylims = Get_yaxis_scale(c(Res$MeanCatchLenResults$FemMeanCatchLen.up95pi,
+                              Res$MeanCatchLenResults$MalMeanCatchLen.up95pi))
+    ymax = ylims$ymax; yint=ylims$yint
+    plot(FishMort, Res$MeanCatchLenResults[,4], "l", ylim=c(0,ymax), ylab = "Comb. sex length, mm",
+         xlab = "Fishing mortality", col="red", bty='n', xaxt='n', yaxt='n')
+    x = c(FishMort,rev(FishMort))
+    y = c(Res$MeanCatchLenResults$CombSexMeanCatchLen.lw95pi,
+          rev(Res$MeanCatchLenResults$CombSexMeanCatchLen.up95pi))
+    polygon(x,y, col="pink",border=NA)
+    y = c(Res$MeanCatchLenResults$CombSexMeanCatchLen.lw60pi,
+          rev(Res$MeanCatchLenResults$CombSexMeanCatchLen.up60pi))
+    polygon(x,y, col="light blue",border=NA)
+    lines(FishMort, Res$MeanCatchLenResults[,3],col="orange")
+    x=min(which(FishMort>=Current_F))
+    points(Current_F, Res$MeanCatchLenResults[x,3], pch=16, cex=2, col="orange")
+    legend('topright', bty='n', cex=0.8, lwd=c(5,5,-1), pch = c(NA,NA,16), col=c("light blue","pink","orange"),
+           legend=c("60% Pred. Int.","95% Pred. Int.","Target F"))
+    axis(1,at=seq(0,max(FishMort),0.5), cex.axis=0.8, lwd=1.75,lab=F) # x axis
+    axis(2,at=seq(0,ymax, yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(1,at=seq(0,max(FishMort),0.5), labels=seq(0,max(Res$FishMort),0.5),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add x labels
+    axis(2,at=seq(0,ymax, yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
+  }
+
+  # females - weights
+  if (PlotOpt==0 | PlotOpt==4) {
+    if(max(c(Res$MeanCatchWtResults$FemMeanCatchWt.up95pi,
+             Res$MeanCatchWtResults$MalMeanCatchWt.up95pi)<1)) {
+      ScaleFact = 1000
+      ylabel = "Fem. weight, g"
+    } else {
+      ScaleFact = 1
+      ylabel = "Fem. weight, kg"
+    }
+    ylims = Get_yaxis_scale(c(Res$MeanCatchWtResults$FemMeanCatchWt.up95pi,
+                            Res$MeanCatchWtResults$MalMeanCatchWt.up95pi))
+    ymax = ylims$ymax*ScaleFact; yint=ylims$yint*ScaleFact
+    plot(FishMort, Res$MeanCatchWtResults[,2]*ScaleFact, "l", ylim=c(0,ymax), ylab = ylabel,
+         xlab = "Fishing mortality", col="red", bty='n', xaxt='n', yaxt='n')
+    x = c(FishMort,rev(FishMort))
+    y = c(Res$MeanCatchWtResults$FemMeanCatchWt.lw95pi*ScaleFact,
+          rev(Res$MeanCatchWtResults$FemMeanCatchWt.up95pi*ScaleFact))
+    polygon(x,y, col="pink",border=NA)
+    y = c(Res$MeanCatchWtResults$FemMeanCatchWt.lw60pi*ScaleFact,
+          rev(Res$MeanCatchWtResults$FemMeanCatchWt.up60pi*ScaleFact))
+    polygon(x,y, col="light blue",border=NA)
+    lines(FishMort, Res$MeanCatchWtResults[,2]*ScaleFact,col="red")
+    x=min(which(FishMort>=Current_F))
+    points(Current_F, Res$MeanCatchWtResults[x,2]*ScaleFact, pch=16, cex=2, col="red")
+    # abline(h=100,lwd=2, lty="dotted")
+    legend('topright', bty='n', cex=0.8, lwd=c(5,5,-1), pch = c(NA,NA,16), col=c("light blue","pink","red"),
+           legend=c("60% Pred. Int.","95% Pred. Int.","Target F"))
+    axis(1,at=seq(0,max(FishMort),0.5), cex.axis=0.8, lwd=1.75,lab=F) # x axis
+    axis(2,at=seq(0,ymax, yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(1,at=seq(0,max(FishMort),0.5), labels=seq(0,max(Res$FishMort),0.5),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add x labels
+    axis(2,at=seq(0,ymax, yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
+  }
+
+  # males - weights
+  if (PlotOpt==0 | PlotOpt==5) {
+    if(max(c(Res$MeanCatchWtResults$FemMeanCatchWt.up95pi,
+             Res$MeanCatchWtResults$MalMeanCatchWt.up95pi)<1)) {
+      ScaleFact = 1000
+      ylabel = "Mal. weight, g"
+    } else {
+      ScaleFact = 1
+      ylabel = "Mal. weight, kg"
+    }
+    ylims = Get_yaxis_scale(c(Res$MeanCatchWtResults$FemMeanCatchWt.up95pi,
+                              Res$MeanCatchWtResults$MalMeanCatchWt.up95pi))
+    ymax = ylims$ymax*ScaleFact; yint=ylims$yint*ScaleFact
+    plot(FishMort, Res$MeanCatchWtResults[,3]*ScaleFact, "l", ylim=c(0,ymax), ylab = ylabel,
+         xlab = "Fishing mortality", col="red", bty='n', xaxt='n', yaxt='n')
+    x = c(FishMort,rev(FishMort))
+    y = c(Res$MeanCatchWtResults$MalMeanCatchWt.lw95pi*ScaleFact,
+          rev(Res$MeanCatchWtResults$MalMeanCatchWt.up95pi*ScaleFact))
+    polygon(x,y, col="pink",border=NA)
+    y = c(Res$MeanCatchWtResults$MalMeanCatchWt.lw60pi*ScaleFact,
+          rev(Res$MeanCatchWtResults$MalMeanCatchWt.up60pi*ScaleFact))
+    polygon(x,y, col="light blue",border=NA)
+    lines(FishMort, Res$MeanCatchWtResults[,3]*ScaleFact,col="blue")
+    x=min(which(FishMort>=Current_F))
+    points(Current_F, Res$MeanCatchWtResults[x,3]*ScaleFact, pch=16, cex=2, col="blue")
+    # abline(h=100,lwd=2, lty="dotted")
+    legend('topright', bty='n', cex=0.8, lwd=c(5,5,-1), pch = c(NA,NA,16), col=c("light blue","pink","blue"),
+           legend=c("60% Pred. Int.","95% Pred. Int.","Target F"))
+    axis(1,at=seq(0,max(FishMort),0.5), cex.axis=0.8, lwd=1.75,lab=F) # x axis
+    axis(2,at=seq(0,ymax, yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(1,at=seq(0,max(FishMort),0.5), labels=seq(0,max(Res$FishMort),0.5),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add x labels
+    axis(2,at=seq(0,ymax, yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
+  }
+
+  # combined sex - weights
+  if (PlotOpt==0 | PlotOpt==6) {
+    if(max(c(Res$MeanCatchWtResults$FemMeanCatchWt.up95pi,
+             Res$MeanCatchWtResults$MalMeanCatchWt.up95pi)<1)) {
+      ScaleFact = 1000
+      ylabel = "Comb. sex weight, g"
+    } else {
+      ScaleFact = 1
+      ylabel = "Comb. sex weight, kg"
+    }
+    ylims = Get_yaxis_scale(c(Res$MeanCatchWtResults$FemMeanCatchWt.up95pi,
+                              Res$MeanCatchWtResults$MalMeanCatchWt.up95pi))
+    ymax = ylims$ymax*ScaleFact; yint=ylims$yint*ScaleFact
+    plot(FishMort, Res$MeanCatchWtResults[,4]*ScaleFact, "l", ylim=c(0,ymax), ylab = "Comb. sex weight, g",
+         xlab = "Fishing mortality", col="red", bty='n', xaxt='n', yaxt='n')
+    x = c(FishMort,rev(FishMort))
+    y = c(Res$MeanCatchWtResults$CombSexMeanCatchWt.lw95pi*ScaleFact,
+          rev(Res$MeanCatchWtResults$CombSexMeanCatchWt.up95pi*ScaleFact))
+    polygon(x,y, col="pink",border=NA)
+    y = c(Res$MeanCatchWtResults$CombSexMeanCatchWt.lw60pi*ScaleFact,
+          rev(Res$MeanCatchWtResults$CombSexMeanCatchWt.up60pi*ScaleFact))
+    polygon(x,y, col="light blue",border=NA)
+    lines(FishMort, Res$MeanCatchWtResults[,4]*ScaleFact,col="orange")
+    x=min(which(FishMort>=Current_F))
+    points(Current_F, Res$MeanCatchWtResults[x,4]*ScaleFact, pch=16, cex=2, col="orange")
+    # abline(h=100,lwd=2, lty="dotted")
+    legend('topright', bty='n', cex=0.8, lwd=c(5,5,-1), pch = c(NA,NA,16), col=c("light blue","pink","orange"),
+           legend=c("60% Pred. Int.","95% Pred. Int.","Target F"))
+    axis(1,at=seq(0,max(FishMort),0.5), cex.axis=0.8, lwd=1.75,lab=F) # x axis
+    axis(2,at=seq(0,ymax, yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(1,at=seq(0,max(FishMort),0.5), labels=seq(0,max(Res$FishMort),0.5),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add x labels
+    axis(2,at=seq(0,ymax, yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
+  }
 }
 
 #' Plot outputs from length-based value per recruit analysis
@@ -8725,6 +8832,8 @@ PlotPerRecruit_ExpCatchSizeDistns_LB <- function(MaxModelAge, TimeStep, lbnd, ub
 #' @param SRrel_Type 1 = Beverton-Holt, 2=Ricker stock-recruitment relationship
 #' @param NatMort natural mortality
 #' @param FMort fishing mortality
+#' @param FittedRes results from value per recruit analysis, can set to NA
+#' @param PlotOpt = 0 # 0=all plots, 1=rel value vs length, 2=rel value vs weight, 3=eq catch and ypr, 4=rel value per recruit
 #' @examples
 #' MaxModelAge <- 20 # maximum age considered by model, years
 #' TimeStep <- 1 # Model time step (y) (for shorter-lived species, might be appropriate to use a smaller time step)
@@ -8770,23 +8879,24 @@ PlotPerRecruit_ExpCatchSizeDistns_LB <- function(MaxModelAge, TimeStep, lbnd, ub
 #' NatMort = 4.22 / MaxModelAge # natural mortality  (year-1)
 #' MinFishWtOfVal = 100 # size of fish below which fish has no value
 #' ValScaleFact = 1.3 # amount by which value scales according to size, above minimum size of value
+#' PlotOpt = 0 # 0=all plots, 1=rel value vs length, 2=rel value vs weight, 3=eq catch and ypr, 4=rel value per recruit
 #' FittedRes = Get_Relative_Value_Per_Recruit_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
 #'                                               RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
 #'                                               EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
 #'                                               FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-#'                                               ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, L50val, L95val)
-# PlotValuePerRecruitResults_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
-#                               RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
-#                               EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
-#                               FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-#                               ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, MinFishWtOfVal, ValScaleFact, FittedRes)
+#'                                               ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, MinFishWtOfVal, ValScaleFact)
+#' PlotValuePerRecruitResults_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
+#'                               RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
+#'                               EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
+#'                               FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
+#'                               ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, MinFishWtOfVal, ValScaleFact, FittedRes, PlotOpt)
 #' @export
 PlotValuePerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                           RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                                           EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
                                           FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
                                           ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, MinFishWtOfVal, ValScaleFact,
-                                          FittedRes) {
+                                          FittedRes, PlotOpt) {
 
 
   if (is.list(FittedRes)) {
@@ -8817,89 +8927,100 @@ PlotValuePerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, mid
 
   WtAtLen = (Res$FemWtAtLen + Res$MalWtAtLen)/2
 
-  # plot relationship between fish length and relative value of fish, considered by fishers
-  par(mfrow=c(2,2))
-  xaxis_lab = "Fish length, mm"
-  yaxis_lab = "Relative value"
-  xlims = Get_xaxis_scale(midpt)
-  xmax = max(ubnd)
-  xint = xlims$xint
-  ylims = Get_yaxis_scale(RelValAtLen)
-  ymax = ylims$ymax
-  yint = ylims$yint
-  plot(midpt,RelValAtLen,"p",pch=16,xlab=xaxis_lab, ylab=yaxis_lab,yaxt="n",xaxt="n",bty="n",
-       xlim=c(0,xmax),ylim=c(0,ymax),cex=0.6)
-  axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1,lab=F) # y axis
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1,lab=F) # y axis
-  axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
-  # abline(v=Res$MinFishLenOfVal,lty="dotted")
-  legend('topright', legend=paste("Min. len. of val. =",round(MinFishLenOfVal,0),"mm"),
-         lty=-1,bty='n', cex=0.8, pch=-1)
+
 
   # plot relationship between fish length and relative value of fish, considered by fishers
-  xaxis_lab = "Fish weight, kg"
-  yaxis_lab = "Relative value"
-  xlims = Get_xaxis_scale(WtAtLen)
-  xmax = xlims$xmax
-  xint = xlims$xint
-  ylims = Get_yaxis_scale(RelValAtLen)
-  ymax = ylims$ymax
-  yint = ylims$yint
-  plot(WtAtLen,RelValAtLen,"p",pch=16,xlab=xaxis_lab, ylab=yaxis_lab,yaxt="n",xaxt="n",bty="n",
-       xlim=c(0,xmax),ylim=c(0,ymax),cex=0.6)
-  axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1,lab=F) # y axis
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1,lab=F) # y axis
-  axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
-  # abline(v=MinFishWtOfVal/1000,lty="dotted")
-  legend('topright', legend=paste("Min. wt. of val. =",MinFishWtOfVal/1000,"kg"),
-         lty=-1,bty='n', cex=0.8, pch=-1)
+  if (PlotOpt==0) {
+    par(mfrow=c(2,2))
+  }
+
+  if (PlotOpt==0 | PlotOpt==1) {
+    xaxis_lab = "Fish length, mm"
+    yaxis_lab = "Relative value"
+    xlims = Get_xaxis_scale(midpt)
+    xmax = max(ubnd)
+    xint = xlims$xint
+    ylims = Get_yaxis_scale(RelValAtLen)
+    ymax = ylims$ymax
+    yint = ylims$yint
+    plot(midpt,RelValAtLen,"p",pch=16,xlab=xaxis_lab, ylab=yaxis_lab,yaxt="n",xaxt="n",bty="n",
+         xlim=c(0,xmax),ylim=c(0,ymax),cex=0.6)
+    axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1,lab=F) # y axis
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1,lab=F) # y axis
+    axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
+    # abline(v=Res$MinFishLenOfVal,lty="dotted")
+    legend('topright', legend=paste("Min. len. of val. =",round(MinFishLenOfVal,0),"mm"),
+           lty=-1,bty='n', cex=0.8, pch=-1)
+  }
+
+  # plot relationship between fish length and relative value of fish, considered by fishers
+  if (PlotOpt==0 | PlotOpt==2) {
+    xaxis_lab = "Fish weight, kg"
+    yaxis_lab = "Relative value"
+    xlims = Get_xaxis_scale(WtAtLen)
+    xmax = xlims$xmax
+    xint = xlims$xint
+    ylims = Get_yaxis_scale(RelValAtLen)
+    ymax = ylims$ymax
+    yint = ylims$yint
+    plot(WtAtLen,RelValAtLen,"p",pch=16,xlab=xaxis_lab, ylab=yaxis_lab,yaxt="n",xaxt="n",bty="n",
+         xlim=c(0,xmax),ylim=c(0,ymax),cex=0.6)
+    axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1,lab=F) # y axis
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1,lab=F) # y axis
+    axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
+    # abline(v=MinFishWtOfVal/1000,lty="dotted")
+    legend('topright', legend=paste("Min. wt. of val. =",MinFishWtOfVal/1000,"kg"),
+           lty=-1,bty='n', cex=0.8, pch=-1)
+  }
 
   # plot relationship between fishing mortality and equilbrium catch
-  xaxis_lab = "Fishing mortality"
-  yaxis_lab = "YPR/Eq. catch"
-  FishMort = seq(0,2,0.01)
-  xlims = Get_xaxis_scale(FishMort)
-  xmax = 2.0
-  xint = xlims$xint
-  Equil_Catch = Res$Equil_Catch
-  ylims = Get_yaxis_scale(YPRResults)
-  ymax = ylims$ymax
-  yint = ylims$yint
-  plot(FishMort,EquilCatchResults,"l", xlab=xaxis_lab, ylab=yaxis_lab, yaxt="n",xaxt="n",bty="n",
-       xlim=c(0,xmax),ylim=c(0,ymax))
-  x=which(FishMort==OptFishMort)
-  points(OptFishMort,EquilCatchResults[x],pch=16)
-  lines(FishMort,YPRResults,lty="dotted")
-  points(OptFishMort,YPRResults[x],pch=16)
-  axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1,lab=F) # y axis
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1,lab=F) # y axis
-  axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
-  legend('topright', legend=c(bquote("Opt. F =" ~ .(OptFishMort) ~ y^-1),"Eq. Catch","YPR"),
-         lty=c(NA,"solid","dotted"),bty='n', cex=0.8, pch=c(16,-1,-1))
-
+  if (PlotOpt==0 | PlotOpt==3) {
+    xaxis_lab = "Fishing mortality"
+    yaxis_lab = "YPR/Eq. catch"
+    FishMort = seq(0,2,0.01)
+    xlims = Get_xaxis_scale(FishMort)
+    xmax = 2.0
+    xint = xlims$xint
+    Equil_Catch = Res$Equil_Catch
+    ylims = Get_yaxis_scale(YPRResults)
+    ymax = ylims$ymax
+    yint = ylims$yint
+    plot(FishMort,EquilCatchResults,"l", xlab=xaxis_lab, ylab=yaxis_lab, yaxt="n",xaxt="n",bty="n",
+         xlim=c(0,xmax),ylim=c(0,ymax))
+    x=which(FishMort==OptFishMort)
+    points(OptFishMort,EquilCatchResults[x],pch=16)
+    lines(FishMort,YPRResults,lty="dotted")
+    points(OptFishMort,YPRResults[x],pch=16)
+    axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1,lab=F) # y axis
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1,lab=F) # y axis
+    axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
+    legend('topright', legend=c(bquote("Opt. F =" ~ .(OptFishMort) ~ y^-1),"Eq. Catch","YPR"),
+           lty=c(NA,"solid","dotted"),bty='n', cex=0.8, pch=c(16,-1,-1))
+  }
 
   # plot relationship between fishing mortality and relative value per recruit
-  xaxis_lab = "Fishing mortality"
-  yaxis_lab = "Relative value per recruit"
-  FishMort = seq(0,2,0.01)
-  xlims = Get_xaxis_scale(FishMort)
-  xmax = xlims$xmax
-  xint = xlims$xint
-  ylims = Get_yaxis_scale(RelValPerRecAtFMort)
-  ymax = ylims$ymax
-  yint = ylims$yint
-  plot(FishMort,RelValPerRecAtFMort,"l", xlab=xaxis_lab, ylab=yaxis_lab, yaxt="n",xaxt="n",bty="n",
-       xlim=c(0,xmax),ylim=c(0,ymax))
-  points(OptFishMort,MaxValPerRec,pch=16)
-  axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1,lab=F) # y axis
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1,lab=F) # y axis
-  axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
-  legend('topright', legend=bquote("Opt. F =" ~ .(OptFishMort) ~ y^-1), bty='n', cex=0.8, pch=16)
-
+  if (PlotOpt==0 | PlotOpt==4) {
+    xaxis_lab = "Fishing mortality"
+    yaxis_lab = "Relative value per recruit"
+    FishMort = seq(0,2,0.01)
+    xlims = Get_xaxis_scale(FishMort)
+    xmax = xlims$xmax
+    xint = xlims$xint
+    ylims = Get_yaxis_scale(RelValPerRecAtFMort)
+    ymax = ylims$ymax
+    yint = ylims$yint
+    plot(FishMort,RelValPerRecAtFMort,"l", xlab=xaxis_lab, ylab=yaxis_lab, yaxt="n",xaxt="n",bty="n",
+         xlim=c(0,xmax),ylim=c(0,ymax))
+    points(OptFishMort,MaxValPerRec,pch=16)
+    axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1,lab=F) # y axis
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1,lab=F) # y axis
+    axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
+    legend('topright', legend=bquote("Opt. F =" ~ .(OptFishMort) ~ y^-1), bty='n', cex=0.8, pch=16)
+  }
 }
 
 #' Get outputs from length-based value per recruit analysis
@@ -8993,11 +9114,11 @@ PlotValuePerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, mid
 #' NatMort = 4.22 / MaxModelAge # natural mortality  (year-1)
 #' MinFishWtOfVal = 100 # size of fish below which fish has no value
 #' ValScaleFact = 1.2 # amount by which value scales according to size, above mininum size of value
-#' Res = Get_Relative_Value_Per_Recruit_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
-#'                                           RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
-#'                                           EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
-#'                                           FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-#'                                           ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, MinFishWtOfVal, ValScaleFact)
+#' FittedRes = Get_Relative_Value_Per_Recruit_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
+#'                                               RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
+#'                                               EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
+#'                                               FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
+#'                                               ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, MinFishWtOfVal, ValScaleFact)
 #' @export
 Get_Relative_Value_Per_Recruit_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                               RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
