@@ -9,7 +9,8 @@ CalcLengthAfterGrowthForTimetep(
   TimeStep,
   GrowthParamsForSex,
   RefnceAgesForSex,
-  midpt
+  midpt,
+  MaxAge
 )
 }
 \arguments{
@@ -21,7 +22,7 @@ CalcLengthAfterGrowthForTimetep(
 
 \item{RefnceAgesForSex}{c(t1,t2)}
 
-\item{midpt}{mid points of length classes}
+\item{midpt}{MaxAge}
 }
 \value{
 Expected lengths (ExpLen)

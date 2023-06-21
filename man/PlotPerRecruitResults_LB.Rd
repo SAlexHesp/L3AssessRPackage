@@ -39,7 +39,8 @@ PlotPerRecruitResults_LB(
   Steepness,
   SRrel_Type,
   NatMort,
-  Current_F
+  Current_F,
+  PlotOpt
 )
 }
 \arguments{
@@ -86,11 +87,11 @@ PlotPerRecruitResults_LB(
 
 \item{FinalSex_L95}{logistic sex change parameter for hermaphroditic species (set to NA for gonochoristic species)}
 
-\item{mat_L50}{logistic length at maturity parameter (set to NA if directly inputting proportion mature at age)}
+\item{mat_L50}{logistic length at maturity parameter (set to NA if directly inputting proportion mature at length)}
 
-\item{mat_L95}{logistic length at maturity parameter (set to NA if directly inputting proportion mature at age)}
+\item{mat_L95}{logistic length at maturity parameter (set to NA if directly inputting proportion mature at length)}
 
-\item{EstMatAtLen}{vector of proportion mature at length (set to NA if using age at maturity parameters)}
+\item{EstMatAtLen}{vector of proportion mature at length (set to NA if using length at maturity parameters)}
 
 \item{sel_L50}{logistic parameter for gear selectivity curve}
 
@@ -112,7 +113,9 @@ PlotPerRecruitResults_LB(
 
 \item{Current_F}{estimated current fishing mortality}
 
-\item{RefPointPlotOpt}{plotting option for reference points, 0=don't plot, 1=plot defaults, 2=plot BMSY ref points}
+\item{PlotOpt}{0=all plots, 1=len at-age, 2=wt at age, 3=fem mat/sel/ret at age, 4=mal mat/sel/ret at age,
+5=fem F at age, 6=mal F at age, 7=fem rel surv, 8=mal rel surv, 9=fem biom at age, 10=fem biom at age,
+11=catch at age, 12=ypr/eq catch, 13=fem SPR/Brel, 14=mal SPR/Brel, 15=comb sex SPR/Brel, 16=eq recruit}
 }
 \description{
 This function provides a range of plots associated with length-based per recruit analysis, and an
@@ -143,31 +146,34 @@ ln_lenwt_a <- NA # for log-log relationship
 lenwt_b <- 3 # combined sexes - weight (g) vs length (mm, TL) relationship parameters
 WLrel_Type <- 1 # 1=power, 2=log-log relationship
 EstWtAtLen <- data.frame(EstFemWtAtLen=NA,
-                         EstMalWtAtLen=NA) # weight at age (from age 0), inputted as values in data frame
+                         EstMalWtAtLen=NA) # weight at length, inputted as values in data frame
 ReprodScale <- 1 # 1=default (standard calculations for spawning biomass), 2=hyperallometric reproductive scaling with female mass (i.e. BOFFF effects)
 ReprodPattern <- 1 # 1 = gonochoristic (separate sexes), 2 = protogynous (female to male sex change), 3 = protandrous (male to female sex change)
-InitRatioFem <- 0.5 # Ratio of females to males at age zero
+InitRatioFem <- 0.5 # Ratio of females to males at recruitment age
 FinalSex_Pmax <- NA # Logistic sex change relationship parameters (max probability of final sex)
 FinalSex_L50 <- NA # Logistic sex change relationship parameters (inflection point)
 FinalSex_L95 <- NA # Logistic sex change relationship parameters (95\% of max probability)
 mat_L50 <- c(250, 250) # females, males - Logistic length (mm) at maturity relationship parameters
 mat_L95 <- c(300, 300) # females, males - Logistic length (mm) at maturity relationship parameters
 EstMatAtLen <- data.frame(EstFemMatAtLen=NA,
-                          EstMalMatAtLen=NA) # maturity at age (from age 0), inputted as values in data frame
-sel_L50 <- c(250, 250) # females, males - Logistic age selectivity relationship parameters
-sel_L95 <- c(300, 300) # females, males - Logistic age selectivity relationship parameters
+                          EstMalMatAtLen=NA) # maturity at length, inputted as values in data frame
+sel_L50 <- c(250, 250) # females, males - Logistic length selectivity relationship parameters
+sel_L95 <- c(300, 300) # females, males - Logistic length selectivity relationship parameters
 ret_Pmax <- c(1.0, 1.0) # maximum retention, values lower than 1 imply discarding of fish above MLL
-ret_L50 <- c(250, 250) # females, males - Logistic age fish retention at age parameters
-ret_L95 <- c(300, 300) # females, males - Logistic age fish retention at age parameters
+ret_L50 <- c(250, 250) # females, males - Logistic fish retention at length parameters
+ret_L95 <- c(300, 300) # females, males - Logistic fish retention at length parameters
 DiscMort <- 0.25 # discard mortality (e.g. 50\% released fish die = 0.5)
 Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
 SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
 NatMort = 4.22 / MaxModelAge # natural mortality  (year-1)
 RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
+PlotOpt <- 0=all plots, 1=len at-age, 2=wt at length, 3=fem mat/sel/ret at length, 4=mal mat/sel/ret at length,
+5=fem F at length, 6=mal F at length, 7=fem rel surv, 8=mal rel surv, 9=fem biom at age, 10=fem biom at age,
+11=ypr/eq catch, 12=fem SPR/Brel, 13=mal SPR/Brel, 14=eq recruit
 Current_F = 0.2
 PlotPerRecruitResults_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                      RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                                      EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
                                      FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-                                     ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F)
+                                     ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, PlotOpt)
 }

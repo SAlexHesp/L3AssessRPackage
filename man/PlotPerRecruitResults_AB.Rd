@@ -38,7 +38,6 @@ PlotPerRecruitResults_AB(
   SRrel_Type,
   NatMort,
   PlotOpt,
-  RefPointPlotOpt,
   Current_F
 )
 }
@@ -110,8 +109,6 @@ PlotPerRecruitResults_AB(
 5=fem F at age, 6=mal F at age, 7=fem rel surv, 8=mal rel surv, 9=fem biom at age, 10=fem biom at age,
 11=catch at age, 12=ypr/eq catch, 13=fem SPR/Brel, 14=mal SPR/Brel, 15=comb sex SPR/Brel, 16=eq recruit}
 
-\item{RefPointPlotOpt}{plotting option for reference points, 0=don't plot, 1=plot defaults, 2=plot BMSY ref points}
-
 \item{Current_F}{estimate of current fishing mortality}
 }
 \value{
@@ -165,12 +162,11 @@ Current_F <- 0.07 # estimate of fishing mortality, e.g. from catch curve analysi
 PlotOpt 0=all plots, 1=len at-age, 2=wt at age, 3=fem mat/sel/ret at age, 4=mal mat/sel/ret at age,
 #  5=fem F at age, 6=mal F at age, 7=fem rel surv, 8=mal rel surv, 9=fem biom at age, 10=fem biom at age,
 #  11=catch at age, 12=ypr/eq catch, 13=fem SPR/Brel, 14=mal SPR/Brel, 15=comb sex SPR/Brel, 16=eq recruit
-RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 PlotPerRecruitResults_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
                       lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale,
                       ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95,
                       mat_A50, mat_A95, EstMatAtAge, sel_A50, sel_A95, EstSelAtAge, ret_Pmax, ret_A50, ret_A95,
-                      EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, PlotOpt, RefPointPlotOpt, Current_F)
+                      EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, PlotOpt, Current_F)
 # # Example 2: hermaphroditic species
 # InitRecruit <- 1 # Initial recruitment
 # MaxModelAge <- 100 # maximum age considered by model, years
@@ -210,10 +206,9 @@ PlotPerRecruitResults_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
 # PlotOpt 0=all plots, 1=len at-age, 2=wt at age, 3=fem mat/sel/ret at age, 4=mal mat/sel/ret at age,
 # 5=fem F at age, 6=mal F at age, 7=fem rel surv, 8=mal rel surv, 9=fem biom at age, 10=fem biom at age,
 # 11=catch at age, 12=ypr/eq catch, 13=fem SPR/Brel, 14=mal SPR/Brel, 15=comb sex SPR/Brel, 16=eq recruit
-# RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 # PlotPerRecruitResults_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
 #                       lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale,
 #                       ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95,
 #                       mat_A50, mat_A95, EstMatAtAge, sel_A50, sel_A95, EstSelAtAge, ret_Pmax, ret_A50, ret_A95,
-#                       EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, PlotOpt, RefPointPlotOpt, Current_F)
+#                       EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, PlotOpt, Current_F)
 }

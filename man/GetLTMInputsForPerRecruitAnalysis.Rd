@@ -7,7 +7,7 @@
 GetLTMInputsForPerRecruitAnalysis(
   GrowthCurveType,
   TimeStep,
-  MaxModelAge,
+  MaxAge,
   GrowthParams,
   RefnceAges,
   midpt

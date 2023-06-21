@@ -12,7 +12,8 @@ GetLenConvCatchCurveResults(
   MinFreq,
   lbnd,
   midpt,
-  ubnd
+  ubnd,
+  MaxAge
 )
 }
 \arguments{
@@ -31,6 +32,8 @@ GetLenConvCatchCurveResults(
 \item{midpt}{mid points of length classes}
 
 \item{ubnd}{upper bounds of length classes}
+
+\item{MaxAge}{maximum age to be considered by model}
 }
 \value{
 sample size for observed data (SampleSize), Estimates of parameters and associated 95 percent
@@ -90,5 +93,5 @@ lbnd=Res$lbnd
 ubnd=Res$ubnd
 ModelType = 2 # 1 = von Bertalanffy growth curve (Pauly), 2 = length-converted catch curve - Schnute growth curve)
 res=GetLenConvCatchCurveResults(ModelType, GrowthParams, RefnceAges, ObsRetCatchFreqAtLen,
-                                MinFreq, lbnd, midpt, ubnd)
+                                MinFreq, lbnd, midpt, ubnd, MaxAge)
 }

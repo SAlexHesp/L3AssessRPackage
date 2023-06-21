@@ -4,9 +4,11 @@
 \alias{InverseSchnuteGrowthfunction}
 \title{Inverse Schnute growth function}
 \usage{
-InverseSchnuteGrowthfunction(FishLen, t1, t2, y1, y2, a, b)
+InverseSchnuteGrowthfunction(MaxAge, FishLen, t1, t2, y1, y2, a, b)
 }
 \arguments{
+\item{MaxAge}{maximumm age of species to be considered by model}
+
 \item{FishLen}{specified length}
 
 \item{t1}{first reference age}

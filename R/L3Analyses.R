@@ -205,7 +205,7 @@
  #' Calculate age given length, from Schnute growth function
  #'
  #' @keywords internal
- #'
+ #' @param MaxAge maximumm age of species to be considered by model
  #' @param FishLen specified length
  #' @param t1 first reference age
  #' @param t2 second reference age
@@ -215,7 +215,7 @@
  #' @param a growth curve parameter
  #'
  #' @return Age at specified length
- InverseSchnuteGrowthfunction <- function (FishLen, t1, t2, y1, y2, a, b) {
+ InverseSchnuteGrowthfunction <- function (MaxAge, FishLen, t1, t2, y1, y2, a, b) {
 
    # return age from Length, given Schnute growth parameters
    # (can be used when both a and b are not equal to zero)
@@ -244,9 +244,10 @@
  #' @param GrowthParamsForSex c(Linf,vbK) von Bertalanffy, or c(t1,t2,y1,y2,a,b) Schnute
  #' @param RefnceAgesForSex c(t1,t2)
  #' @param midpt mid points of length classes
+ #' @param midpt MaxAge
  #'
  #' @return Expected lengths (ExpLen)
- CalcLengthAfterGrowthForTimetep <- function(GrowthCurveType, TimeStep, GrowthParamsForSex, RefnceAgesForSex, midpt) {
+ CalcLengthAfterGrowthForTimetep <- function(GrowthCurveType, TimeStep, GrowthParamsForSex, RefnceAgesForSex, midpt, MaxAge) {
 
    # calculate mean length after growth for current timestep, given growth curve type,
    # mean length of the current length class and initial length
@@ -257,23 +258,20 @@
      ExpLen = midpt + (Linf - midpt) * (1 - exp(-vbK*TimeStep))
    }
    if (GrowthCurveType == 2) { # Schnute
-
      t1 = RefnceAgesForSex[1]
      t2 = RefnceAgesForSex[2]
      y1 = GrowthParamsForSex[1]
      y2 = GrowthParamsForSex[2]
      a = GrowthParamsForSex[3]
      b = GrowthParamsForSex[4]
-
      nObs <- length(midpt)
      StartAge = rep(NA,nObs)
      ExpLen = rep(NA,nObs)
      for (i in 1:nObs) {
        FishLen = midpt[i]
-       StartAge[i] = InverseSchnuteGrowthfunction(FishLen, t1, t2, y1, y2, a, b)
+       StartAge[i] = InverseSchnuteGrowthfunction(MaxAge, FishLen, t1, t2, y1, y2, a, b)
        Age <- StartAge[i] + TimeStep
        ExpLen[i] = SchnuteGrowthfunction(Age, t1, t2, y1, y2, a, b)
-       #cat("Age",Age,"MeanLen",MeanLen[i],'\n')
      }
    }
 
@@ -1215,7 +1213,7 @@ GetInputsForLengthTransitionMatrices <- function(MaxAge, TimeStep, nLenCl, midpt
     }
     RefnceAgesForSex = RefnceAges
     GrowthParamsForSex = GrowthParams
-    MeanEndingLength = CalcLengthAfterGrowthForTimetep(GrowthCurveType=2, TimeStep, GrowthParamsForSex, RefnceAgesForSex, midpt)
+    MeanEndingLength = CalcLengthAfterGrowthForTimetep(GrowthCurveType=2, TimeStep, GrowthParamsForSex, RefnceAgesForSex, midpt, MaxAge)
     TimestepGrowthSizeInc = MeanEndingLength-midpt # amount of annual growth with respect to initial length
   }
   if (GrowthModelType == 4) { # Schnute, separate sex
@@ -1225,6 +1223,8 @@ GetInputsForLengthTransitionMatrices <- function(MaxAge, TimeStep, nLenCl, midpt
     colnames(MeanEndingLength) <- midpt
     TimestepGrowthSizeInc = MeanEndingLength
     RecLenDist = MeanEndingLength
+    i=1
+    t=1
     for (i in 1:2) {
       t1=RefnceAges[i,1]
       t2=RefnceAges[i,2]
@@ -1239,7 +1239,7 @@ GetInputsForLengthTransitionMatrices <- function(MaxAge, TimeStep, nLenCl, midpt
       }
       GrowthParamsForSex = c(y1, y2, a, b)
       RefnceAgesForSex = c(t1, t2)
-      MeanEndingLength[i,] = CalcLengthAfterGrowthForTimetep(GrowthCurveType=2, TimeStep, GrowthParamsForSex, RefnceAgesForSex, midpt)
+      MeanEndingLength[i,] = CalcLengthAfterGrowthForTimetep(GrowthCurveType=2, TimeStep, GrowthParamsForSex, RefnceAgesForSex, midpt, MaxAge)
       TimestepGrowthSizeInc[i,] = MeanEndingLength[i,] - midpt
     }
   }
@@ -4379,6 +4379,7 @@ Calcs_PaulyLenConvertCatchCurve <- function(GrowthParams, ObsRetCatchFreqAtLen,
 #' @param lbnd lower bounds of length classes
 #' @param midpt mid points of length classes
 #' @param ubnd upper bounds of length classes
+#' @param MaxAge maximum age of species to be considered by the model
 #'
 #' @return length class with peak frequency (PeakLencl), last length class included in analysis (LastLenCl),
 #' observed data to which catch curve is fitted (ObsCatchFreqAtLen2), relatives age at midpoints of length classes
@@ -4386,7 +4387,7 @@ Calcs_PaulyLenConvertCatchCurve <- function(GrowthParams, ObsRetCatchFreqAtLen,
 #' each length class (ln_n_dt)
 #'
 Calcs_LenCovertCatchCurve_Schnute <- function(GrowthParams, RefnceAges, ObsRetCatchFreqAtLen,
-                                                  MinFreq, lbnd, midpt, ubnd) {
+                                                  MinFreq, lbnd, midpt, ubnd, MaxAge) {
 
 
   t1 = RefnceAges[1]
@@ -4435,9 +4436,9 @@ Calcs_LenCovertCatchCurve_Schnute <- function(GrowthParams, RefnceAges, ObsRetCa
   for (j in PeakLencl:LastLenCl) {
     i=i+1
 
-    Age_lbndlencl[i] = InverseSchnuteGrowthfunction(lbnd[j], t1, t2, y1, y2, a, b)
-    Age_ubndlencl[i] = InverseSchnuteGrowthfunction(ubnd[j], t1, t2, y1, y2, a, b)
-    Age_midptlencl[i] = InverseSchnuteGrowthfunction(midpt[j], t1, t2, y1, y2, a, b)
+    Age_lbndlencl[i] = InverseSchnuteGrowthfunction(MaxAge, lbnd[j], t1, t2, y1, y2, a, b)
+    Age_ubndlencl[i] = InverseSchnuteGrowthfunction(MaxAge, ubnd[j], t1, t2, y1, y2, a, b)
+    Age_midptlencl[i] = InverseSchnuteGrowthfunction(MaxAge, midpt[j], t1, t2, y1, y2, a, b)
     DeltaT_yrs[i] = max(0,Age_ubndlencl[i] - Age_lbndlencl[i])
     Obs_ln_n_dt[i] = log(ObsRetCatchFreqAtLen[j] / DeltaT_yrs[i])
   }
@@ -4465,6 +4466,7 @@ Calcs_LenCovertCatchCurve_Schnute <- function(GrowthParams, RefnceAges, ObsRetCa
 #' @param lbnd lower bounds of length classes
 #' @param midpt mid points of length classes
 #' @param ubnd upper bounds of length classes
+#' @param MaxAge maximum age to be considered by model
 #'
 #' @return sample size for observed data (SampleSize), Estimates of parameters and associated 95 percent
 #' confidence limits (ParamEst), length class with greatest frequency of fish (PeakLencl), last length
@@ -4519,10 +4521,10 @@ Calcs_LenCovertCatchCurve_Schnute <- function(GrowthParams, RefnceAges, ObsRetCa
 #' ubnd=Res$ubnd
 #' ModelType = 2 # 1 = von Bertalanffy growth curve (Pauly), 2 = length-converted catch curve - Schnute growth curve)
 #' res=GetLenConvCatchCurveResults(ModelType, GrowthParams, RefnceAges, ObsRetCatchFreqAtLen,
-#'                                 MinFreq, lbnd, midpt, ubnd)
+#'                                 MinFreq, lbnd, midpt, ubnd, MaxAge)
 #' @export
 GetLenConvCatchCurveResults <- function(ModelType, GrowthParams, RefnceAges, ObsRetCatchFreqAtLen,
-                                        MinFreq, lbnd, midpt, ubnd) {
+                                        MinFreq, lbnd, midpt, ubnd, MaxAge) {
 
   # Pauly's length-converted catch curve
   if (ModelType == 1) {
@@ -4531,7 +4533,7 @@ GetLenConvCatchCurveResults <- function(ModelType, GrowthParams, RefnceAges, Obs
   }
   if (ModelType == 2) { # length conv catch curve using Schnute function
     res=Calcs_LenCovertCatchCurve_Schnute(GrowthParams, RefnceAges, ObsRetCatchFreqAtLen,
-                                          MinFreq, lbnd, midpt, ubnd)
+                                          MinFreq, lbnd, midpt, ubnd, MaxAge)
   }
 
   # run the linear catch curve model.
@@ -4655,7 +4657,7 @@ GetLenConvCatchCurveResults <- function(ModelType, GrowthParams, RefnceAges, Obs
 #' ubnd=Res$ubnd
 #' ModelType = 2 # 1 = von Bertalanffy growth curve (Pauly), 2 = length-converted catch curve - Schnute growth curve)
 #' res=GetLenConvCatchCurveResults(ModelType, GrowthParams, RefnceAges, ObsRetCatchFreqAtLen,
-#'                                 MinFreq, lbnd, midpt, ubnd)
+#'                                MinFreq, lbnd, midpt, ubnd, MaxAge)
 #' PlotLenConvCatchCurveResults(MaxAge, ModelType, GrowthParams, RefnceAges, ObsRetCatchFreqAtLen, MinFreq,
 #'                             lbnd, midpt, ubnd)
 #' @export
@@ -4667,7 +4669,7 @@ PlotLenConvCatchCurveResults <- function(MaxAge, ModelType, GrowthParams, Refnce
   # .pardefault <- par(no.readonly = TRUE) # store default par settings
 
     res=GetLenConvCatchCurveResults(ModelType, GrowthParams, RefnceAges, ObsRetCatchFreqAtLen,
-                                    MinFreq, lbnd, midpt, ubnd)
+                                    MinFreq, lbnd, midpt, ubnd, MaxAge)
     Ages = 1:MaxAge
 
     if (ModelType == 1) { # Pauly length converted catch curve
@@ -5750,11 +5752,12 @@ CalcYPRAndSPRForFMort_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
                                   mat_A50, mat_A95, EstMatAtAge, sel_A50, sel_A95, EstSelAtAge, ret_Pmax, ret_A50, ret_A95,
                                   EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, FMort) {
 
-  # number of model time steps
-  nTimeSteps <- 1 + (MaxModelAge / TimeStep)
 
   # Ages. As species is relatively short-lived, specify small time steps (e.g. 0.1 years)
   Ages <- seq(0,MaxModelAge,TimeStep)
+  # number of model time steps
+  # nTimeSteps <- 1 + (MaxModelAge / TimeStep)
+  nTimeSteps <- length(Ages)
 
   # calculate length at age - von Bertalanffy growth curve
   if (is.na(EstLenAtAge[1,1])) {
@@ -6098,28 +6101,45 @@ CalcMeanSizeAtAgeForPerRecruitAnalysis <- function(GrowthCurveType, MaxModelAge,
 
   # calculate length at age - von Bertalanffy growth curve
   if (GrowthCurveType == 1) {
-    FemLenAtAge <- GrowthParams[1,1] * (1 - exp(-GrowthParams[1,2] * (Ages - GrowthParams[1,3])))
-    MalLenAtAge <- GrowthParams[2,1] * (1 - exp(-GrowthParams[2,2] * (Ages - GrowthParams[2,3])))
-  }
-  # Schnute growth curve
-  if (GrowthCurveType == 2) {
-    t1=RefnceAges[1]
-    t2=RefnceAges[2]
-    for (i in 1:2) {
-      y1=GrowthParams[i,1]
-      y2=GrowthParams[i,2]
-      a=GrowthParams[i,3]
-      b=GrowthParams[i,4]
-      for (t in 1:MaxModelAge) {
-        if (i==1) {
-          FemLenAtAge[t] = SchnuteGrowthfunction(t, t1, t2, y1, y2, a, b)
-        }
-        if (i == 2) {
-          MalLenAtAge[t] = SchnuteGrowthfunction(t, t1, t2, y1, y2, a, b)
-        }
-      }
+    if (is.vector(GrowthParams)) { # growth params inputted as single sex
+      FemLenAtAge <- GrowthParams[1] * (1 - exp(-GrowthParams[2] * (Ages - GrowthParams[3])))
+      MalLenAtAge <- GrowthParams[1] * (1 - exp(-GrowthParams[2] * (Ages - GrowthParams[3])))
+    }
+    if (is.data.frame(GrowthParams)) { # growth params inputted as 2 sexes
+      FemLenAtAge <- GrowthParams[1,1] * (1 - exp(-GrowthParams[1,2] * (Ages - GrowthParams[1,3])))
+      MalLenAtAge <- GrowthParams[2,1] * (1 - exp(-GrowthParams[2,2] * (Ages - GrowthParams[2,3])))
     }
   }
+
+  # Schnute growth curve
+  if (GrowthCurveType == 2) {
+    FemLenAtAge <- rep(0,length(Ages))
+    MalLenAtAge <- rep(0,length(Ages))
+    for (i in 1:2) {
+
+      if (is.vector(RefnceAges)) { # growth params inputted as single sex
+        t1=RefnceAges[1]; t2=RefnceAges[2]
+        y1=GrowthParams[1]; y2=GrowthParams[2]
+        a=GrowthParams[3]; b=GrowthParams[4]
+      }
+      if (is.data.frame(RefnceAges)) { # growth params inputted as 2 sexes
+        t1=RefnceAges[i,1]; t2=RefnceAges[i,2]
+        y1=GrowthParams[i,1]; y2=GrowthParams[i,2]
+        a=GrowthParams[i,3]; b=GrowthParams[i,4]
+      }
+
+      k=0
+      for (t in Ages) {
+        k=k+1
+        if (i==1) {
+          FemLenAtAge[k] = SchnuteGrowthfunction(t, t1, t2, y1, y2, a, b)
+        }
+        if (i==2) {
+          MalLenAtAge[k] = SchnuteGrowthfunction(t, t1, t2, y1, y2, a, b)
+        }
+      } # t
+    } # i
+  } # if
 
   # set negative lengths to zero
   FemLenAtAge[which(FemLenAtAge<0)] = 0
@@ -6189,7 +6209,7 @@ CalcWeightAtLengthForPerRecruitAnalysis <- function(lenwt_a, ln_lenwt_a, lenwt_b
 #'
 #' @return MeanEndingLength
 #' @return TimestepGrowthSizeInc
-GetLTMInputsForPerRecruitAnalysis <- function(GrowthCurveType, TimeStep, MaxModelAge, GrowthParams, RefnceAges, midpt) {
+GetLTMInputsForPerRecruitAnalysis <- function(GrowthCurveType, TimeStep, MaxAge, GrowthParams, RefnceAges, midpt) {
 
   nLenCl = length(midpt)
   MeanEndingLength <- data.frame(matrix(nrow = 2, ncol = nLenCl))
@@ -6200,25 +6220,37 @@ GetLTMInputsForPerRecruitAnalysis <- function(GrowthCurveType, TimeStep, MaxMode
   # get key inputs for length transition matrices
   if (GrowthCurveType == 1) { # von Bertalanffy
     for (i in 1:2) {
-      MeanEndingLength[i,] = midpt + (GrowthParams[i,1] - midpt) * (1 - exp(-GrowthParams[i,2]*TimeStep))
+      if (is.vector(GrowthParams)) { # params inputted as separate sex
+        MeanEndingLength[i,] = midpt + (GrowthParams[1] - midpt) * (1 - exp(-GrowthParams[2]*TimeStep))
+      }
+      if (is.data.frame(GrowthParams)) { # params inputted as 2 sexes
+        MeanEndingLength[i,] = midpt + (GrowthParams[i,1] - midpt) * (1 - exp(-GrowthParams[i,2]*TimeStep))
+      }
       TimestepGrowthSizeInc[i,] = MeanEndingLength[i,] - midpt # amount of annual growth with respect to initial length
     }
   }
   if (GrowthCurveType == 2) { # Schnute
     for (i in 1:2) {
-      y1=GrowthParams[i,1]
-      y2=GrowthParams[i,2]
-      a=GrowthParams[i,3]
-      b=GrowthParams[i,4]
-      t1=RefnceAges[1]
-      t2=RefnceAges[2]
-
-      for (t in 1:MaxModelAge) {
-        MeanSizeAtAge[i,t] =  SchnuteGrowthfunction(t, t1, t2, y1, y2, a, b)
+      if (is.vector(GrowthParams)) { # params inputted as separate sex
+        y1=GrowthParams[1]
+        y2=GrowthParams[2]
+        a=GrowthParams[3]
+        b=GrowthParams[4]
+        t1=RefnceAges[1]
+        t2=RefnceAges[2]
       }
+      if (is.data.frame(GrowthParams)) { # params inputted as 2 sexes
+        y1=GrowthParams[i,1]
+        y2=GrowthParams[i,2]
+        a=GrowthParams[i,3]
+        b=GrowthParams[i,4]
+        t1=RefnceAges[i,1]
+        t2=RefnceAges[i,2]
+      }
+
       GrowthParamsForSex = c(y1, y2, a, b)
       RefnceAgesForSex = c(t1, t2)
-      MeanEndingLength[i,] = CalcLengthAfterGrowthForTimetep(GrowthCurveType=2, TimeStep, GrowthParamsForSex, RefnceAgesForSex, midpt)
+      MeanEndingLength[i,] = CalcLengthAfterGrowthForTimetep(GrowthCurveType=2, TimeStep, GrowthParamsForSex, RefnceAgesForSex, midpt, MaxAge)
       TimestepGrowthSizeInc[i,] = MeanEndingLength[i,] - midpt
     }
   }
@@ -6478,22 +6510,22 @@ CalcPerRecruitFishLenAndFishWtStats<- function(midpt, FemCatchNum, MalCatchNum, 
 #' lenwt_b <- 3 # combined sexes - weight (g) vs length (mm, TL) relationship parameters
 #' WLrel_Type <- 1 # 1=power, 2=log-log relationship
 #' EstWtAtLen <- data.frame(EstFemWtAtLen=NA,
-#'                          EstMalWtAtLen=NA) # weight at age (from age 0), inputted as values in data frame
+#'                          EstMalWtAtLen=NA) # weight at age, inputted as values in data frame
 #' ReprodScale <- 1 # 1=default (standard calculations for spawning biomass), 2=hyperallometric reproductive scaling with female mass (i.e. BOFFF effects)
 #' ReprodPattern <- 1 # 1 = gonochoristic (separate sexes), 2 = protogynous (female to male sex change), 3 = protandrous (male to female sex change)
-#' InitRatioFem <- 0.5 # Ratio of females to males at age zero
+#' InitRatioFem <- 0.5 # Ratio of females to males at recruitment age/length
 #' FinalSex_Pmax <- NA # Logistic sex change relationship parameters (max probability of final sex)
 #' FinalSex_L50 <- NA # Logistic sex change relationship parameters (inflection point)
 #' FinalSex_L95 <- NA # Logistic sex change relationship parameters (95% of max probability)
 #' mat_L50 <- c(250, 250) # females, males - Logistic length (mm) at maturity relationship parameters
 #' mat_L95 <- c(300, 300) # females, males - Logistic length (mm) at maturity relationship parameters
 #' EstMatAtLen <- data.frame(EstFemMatAtLen=NA,
-#'                           EstMalMatAtLen=NA) # maturity at age (from age 0), inputted as values in data frame
-#' sel_L50 <- c(250, 250) # females, males - Logistic age selectivity relationship parameters
-#' sel_L95 <- c(300, 300) # females, males - Logistic age selectivity relationship parameters
+#'                           EstMalMatAtLen=NA) # maturity at length, inputted as values in data frame
+#' sel_L50 <- c(250, 250) # females, males - Logistic length selectivity relationship parameters
+#' sel_L95 <- c(300, 300) # females, males - Logistic length selectivity relationship parameters
 #' ret_Pmax <- c(1.0, 1.0) # maximum retention, values lower than 1 imply discarding of fish above MLL
-#' ret_L50 <- c(250, 250) # females, males - Logistic age fish retention at age parameters
-#' ret_L95 <- c(300, 300) # females, males - Logistic age fish retention at age parameters
+#' ret_L50 <- c(250, 250) # females, males - Logistic fish retention at length parameters
+#' ret_L95 <- c(300, 300) # females, males - Logistic fish retention at length parameters
 #' DiscMort <- 0.25 # discard mortality (e.g. 50% released fish die = 0.5)
 #' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
 #' SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
@@ -6515,8 +6547,9 @@ CalcYPRAndSPRForFMort_LB<- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
   # to allow calculations associated with expected catch size distribtion, i.e. from a survey
 
   # number of model time steps
-  nTimeSteps <- 1 + (MaxModelAge / TimeStep)
+  # nTimeSteps <- 1 + (MaxModelAge / TimeStep)
   Ages <- seq(TimeStep,MaxModelAge, TimeStep)
+  nTimeSteps <- length(Ages)
 
   # set up storage
   RecLenDist <- data.frame(matrix(nrow = 2, ncol = nLenCl))
@@ -6551,7 +6584,6 @@ CalcYPRAndSPRForFMort_LB<- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
     FemPropMatAtLen <- EstMatAtLen[,1]
     MalPropMatAtLen <- EstMatAtLen[,2]
   }
-
 
   # Calculate gear selectivity at age
   FemGearSelAtLen <- 1/(1+exp(-log(19) * (midpt - sel_L50[1]) / (sel_L95[1] - sel_L50[1])))
@@ -6594,7 +6626,8 @@ CalcYPRAndSPRForFMort_LB<- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
   RecLenDist = CalcSizeDistOfRecruits(MeanSizeAtAge, CVSizeAtAge, lbnd, ubnd, midpt, nLenCl)
 
   # get required inputs to calculate length transition matrices
-  results = GetLTMInputsForPerRecruitAnalysis(GrowthCurveType, TimeStep, MaxModelAge, GrowthParams, RefnceAges, midpt)
+  MaxAge=MaxModelAge
+  results = GetLTMInputsForPerRecruitAnalysis(GrowthCurveType, TimeStep, MaxAge, GrowthParams, RefnceAges, midpt)
   MeanEndingLength = results$MeanEndingLength
   TimestepGrowthSizeInc = results$TimestepGrowthSizeInc
 
@@ -7133,9 +7166,9 @@ GetPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Est
 #' @param FinalSex_Pmax logistic sex change parameter for hermaphroditic species (set to NA for gonochoristic species)
 #' @param FinalSex_L50 logistic sex change parameter for hermaphroditic species (set to NA for gonochoristic species)
 #' @param FinalSex_L95 logistic sex change parameter for hermaphroditic species (set to NA for gonochoristic species)
-#' @param mat_L50 logistic length at maturity parameter (set to NA if directly inputting proportion mature at age)
-#' @param mat_L95 logistic length at maturity parameter (set to NA if directly inputting proportion mature at age)
-#' @param EstMatAtLen vector of proportion mature at length (set to NA if using age at maturity parameters)
+#' @param mat_L50 logistic length at maturity parameter (set to NA if directly inputting proportion mature at length)
+#' @param mat_L95 logistic length at maturity parameter (set to NA if directly inputting proportion mature at length)
+#' @param EstMatAtLen vector of proportion mature at length (set to NA if using length at maturity parameters)
 #' @param sel_L50 logistic parameter for gear selectivity curve
 #' @param sel_L95 logistic parameter for gear selectivity curve
 #' @param ret_Pmax logistic parameter for fish retention curve
@@ -7196,22 +7229,22 @@ GetPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Est
 #' lenwt_b <- 3 # combined sexes - weight (g) vs length (mm, TL) relationship parameters
 #' WLrel_Type <- 1 # 1=power, 2=log-log relationship
 #' EstWtAtLen <- data.frame(EstFemWtAtLen=NA,
-#'                          EstMalWtAtLen=NA) # weight at age (from age 0), inputted as values in data frame
+#'                          EstMalWtAtLen=NA) # weight at length, inputted as values in data frame
 #' ReprodScale <- 1 # 1=default (standard calculations for spawning biomass), 2=hyperallometric reproductive scaling with female mass (i.e. BOFFF effects)
 #' ReprodPattern <- 1 # 1 = gonochoristic (separate sexes), 2 = protogynous (female to male sex change), 3 = protandrous (male to female sex change)
-#' InitRatioFem <- 0.5 # Ratio of females to males at age zero
+#' InitRatioFem <- 0.5 # Ratio of females to males at recruitment age/length
 #' FinalSex_Pmax <- NA # Logistic sex change relationship parameters (max probability of final sex)
 #' FinalSex_L50 <- NA # Logistic sex change relationship parameters (inflection point)
 #' FinalSex_L95 <- NA # Logistic sex change relationship parameters (95% of max probability)
 #' mat_L50 <- c(250, 250) # females, males - Logistic length (mm) at maturity relationship parameters
 #' mat_L95 <- c(300, 300) # females, males - Logistic length (mm) at maturity relationship parameters
 #' EstMatAtLen <- data.frame(EstFemMatAtLen=NA,
-#'                           EstMalMatAtLen=NA) # maturity at age (from age 0), inputted as values in data frame
-#' sel_L50 <- c(250, 250) # females, males - Logistic age selectivity relationship parameters
-#' sel_L95 <- c(300, 300) # females, males - Logistic age selectivity relationship parameters
+#'                           EstMalMatAtLen=NA) # maturity at length, inputted as values in data frame
+#' sel_L50 <- c(250, 250) # females, males - Logistic length selectivity relationship parameters
+#' sel_L95 <- c(300, 300) # females, males - Logistic length selectivity relationship parameters
 #' ret_Pmax <- c(1.0, 1.0) # maximum retention, values lower than 1 imply discarding of fish above MLL
-#' ret_L50 <- c(250, 250) # females, males - Logistic age fish retention at age parameters
-#' ret_L95 <- c(300, 300) # females, males - Logistic age fish retention at age parameters
+#' ret_L50 <- c(250, 250) # females, males - Logistic fish retention at length parameters
+#' ret_L95 <- c(300, 300) # females, males - Logistic fish retention at length parameters
 #' DiscMort <- 0.25 # discard mortality (e.g. 50% released fish die = 0.5)
 #' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
 #' SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
@@ -7563,7 +7596,6 @@ GetPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
 #' @param PlotOpt 0=all plots, 1=len at-age, 2=wt at age, 3=fem mat/sel/ret at age, 4=mal mat/sel/ret at age,
 #' 5=fem F at age, 6=mal F at age, 7=fem rel surv, 8=mal rel surv, 9=fem biom at age, 10=fem biom at age,
 #' 11=catch at age, 12=ypr/eq catch, 13=fem SPR/Brel, 14=mal SPR/Brel, 15=comb sex SPR/Brel, 16=eq recruit
-#' @param RefPointPlotOpt plotting option for reference points, 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 #' @param Current_F estimate of current fishing mortality
 #'
 #' @return
@@ -7611,12 +7643,11 @@ GetPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
 #' PlotOpt 0=all plots, 1=len at-age, 2=wt at age, 3=fem mat/sel/ret at age, 4=mal mat/sel/ret at age,
 #' #  5=fem F at age, 6=mal F at age, 7=fem rel surv, 8=mal rel surv, 9=fem biom at age, 10=fem biom at age,
 #' #  11=catch at age, 12=ypr/eq catch, 13=fem SPR/Brel, 14=mal SPR/Brel, 15=comb sex SPR/Brel, 16=eq recruit
-#' RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 #' PlotPerRecruitResults_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
 #'                       lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale,
 #'                       ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95,
 #'                       mat_A50, mat_A95, EstMatAtAge, sel_A50, sel_A95, EstSelAtAge, ret_Pmax, ret_A50, ret_A95,
-#'                       EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, PlotOpt, RefPointPlotOpt, Current_F)
+#'                       EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, PlotOpt, Current_F)
 #' # # Example 2: hermaphroditic species
 #' # InitRecruit <- 1 # Initial recruitment
 #' # MaxModelAge <- 100 # maximum age considered by model, years
@@ -7656,18 +7687,17 @@ GetPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
 #' # PlotOpt 0=all plots, 1=len at-age, 2=wt at age, 3=fem mat/sel/ret at age, 4=mal mat/sel/ret at age,
 #' # 5=fem F at age, 6=mal F at age, 7=fem rel surv, 8=mal rel surv, 9=fem biom at age, 10=fem biom at age,
 #' # 11=catch at age, 12=ypr/eq catch, 13=fem SPR/Brel, 14=mal SPR/Brel, 15=comb sex SPR/Brel, 16=eq recruit
-#' # RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 #' # PlotPerRecruitResults_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
 #' #                       lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale,
 #' #                       ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95,
 #' #                       mat_A50, mat_A95, EstMatAtAge, sel_A50, sel_A95, EstSelAtAge, ret_Pmax, ret_A50, ret_A95,
-#' #                       EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, PlotOpt, RefPointPlotOpt, Current_F)
+#' #                       EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, PlotOpt, Current_F)
 #' @export
 PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
                                   lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale,
                                   ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95,
                                   mat_A50, mat_A95, EstMatAtAge, sel_A50, sel_A95, EstSelAtAge, ret_Pmax, ret_A50, ret_A95,
-                                  EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, PlotOpt, RefPointPlotOpt, Current_F) {
+                                  EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, PlotOpt, Current_F) {
 
   .pardefault <- par(no.readonly = TRUE) # store current par settings
 
@@ -8091,9 +8121,9 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
 #' @param FinalSex_Pmax logistic sex change parameter for hermaphroditic species (set to NA for gonochoristic species)
 #' @param FinalSex_L50 logistic sex change parameter for hermaphroditic species (set to NA for gonochoristic species)
 #' @param FinalSex_L95 logistic sex change parameter for hermaphroditic species (set to NA for gonochoristic species)
-#' @param mat_L50 logistic length at maturity parameter (set to NA if directly inputting proportion mature at age)
-#' @param mat_L95 logistic length at maturity parameter (set to NA if directly inputting proportion mature at age)
-#' @param EstMatAtLen vector of proportion mature at length (set to NA if using age at maturity parameters)
+#' @param mat_L50 logistic length at maturity parameter (set to NA if directly inputting proportion mature at length)
+#' @param mat_L95 logistic length at maturity parameter (set to NA if directly inputting proportion mature at length)
+#' @param EstMatAtLen vector of proportion mature at length (set to NA if using length at maturity parameters)
 #' @param sel_L50 logistic parameter for gear selectivity curve
 #' @param sel_L95 logistic parameter for gear selectivity curve
 #' @param ret_Pmax logistic parameter for fish retention curve
@@ -8103,8 +8133,10 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
 #' @param Steepness steepness parameter of Beverton-Holt or Ricker stock-recruitment relationship
 #' @param SRrel_Type 1 = Beverton-Holt, 2=Ricker stock-recruitment relationship
 #' @param NatMort natural mortality
-#' @param RefPointPlotOpt plotting option for reference points, 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 #' @param Current_F estimated current fishing mortality
+#' @param PlotOpt 0=all plots, 1=len at-age, 2=wt at age, 3=fem mat/sel/ret at age, 4=mal mat/sel/ret at age,
+#'  5=fem F at age, 6=mal F at age, 7=fem rel surv, 8=mal rel surv, 9=fem biom at age, 10=fem biom at age,
+#'  11=catch at age, 12=ypr/eq catch, 13=fem SPR/Brel, 14=mal SPR/Brel, 15=comb sex SPR/Brel, 16=eq recruit
 #'
 #' @examples
 #' MaxModelAge <- 20 # maximum age considered by model, years
@@ -8129,39 +8161,42 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
 #' lenwt_b <- 3 # combined sexes - weight (g) vs length (mm, TL) relationship parameters
 #' WLrel_Type <- 1 # 1=power, 2=log-log relationship
 #' EstWtAtLen <- data.frame(EstFemWtAtLen=NA,
-#'                          EstMalWtAtLen=NA) # weight at age (from age 0), inputted as values in data frame
+#'                          EstMalWtAtLen=NA) # weight at length, inputted as values in data frame
 #' ReprodScale <- 1 # 1=default (standard calculations for spawning biomass), 2=hyperallometric reproductive scaling with female mass (i.e. BOFFF effects)
 #' ReprodPattern <- 1 # 1 = gonochoristic (separate sexes), 2 = protogynous (female to male sex change), 3 = protandrous (male to female sex change)
-#' InitRatioFem <- 0.5 # Ratio of females to males at age zero
+#' InitRatioFem <- 0.5 # Ratio of females to males at recruitment age
 #' FinalSex_Pmax <- NA # Logistic sex change relationship parameters (max probability of final sex)
 #' FinalSex_L50 <- NA # Logistic sex change relationship parameters (inflection point)
 #' FinalSex_L95 <- NA # Logistic sex change relationship parameters (95% of max probability)
 #' mat_L50 <- c(250, 250) # females, males - Logistic length (mm) at maturity relationship parameters
 #' mat_L95 <- c(300, 300) # females, males - Logistic length (mm) at maturity relationship parameters
 #' EstMatAtLen <- data.frame(EstFemMatAtLen=NA,
-#'                           EstMalMatAtLen=NA) # maturity at age (from age 0), inputted as values in data frame
-#' sel_L50 <- c(250, 250) # females, males - Logistic age selectivity relationship parameters
-#' sel_L95 <- c(300, 300) # females, males - Logistic age selectivity relationship parameters
+#'                           EstMalMatAtLen=NA) # maturity at length, inputted as values in data frame
+#' sel_L50 <- c(250, 250) # females, males - Logistic length selectivity relationship parameters
+#' sel_L95 <- c(300, 300) # females, males - Logistic length selectivity relationship parameters
 #' ret_Pmax <- c(1.0, 1.0) # maximum retention, values lower than 1 imply discarding of fish above MLL
-#' ret_L50 <- c(250, 250) # females, males - Logistic age fish retention at age parameters
-#' ret_L95 <- c(300, 300) # females, males - Logistic age fish retention at age parameters
+#' ret_L50 <- c(250, 250) # females, males - Logistic fish retention at length parameters
+#' ret_L95 <- c(300, 300) # females, males - Logistic fish retention at length parameters
 #' DiscMort <- 0.25 # discard mortality (e.g. 50% released fish die = 0.5)
 #' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
 #' SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
 #' NatMort = 4.22 / MaxModelAge # natural mortality  (year-1)
 #' RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
+#' PlotOpt <- 0=all plots, 1=len at-age, 2=wt at length, 3=fem mat/sel/ret at length, 4=mal mat/sel/ret at length,
+#' 5=fem F at length, 6=mal F at length, 7=fem rel surv, 8=mal rel surv, 9=fem biom at age, 10=fem biom at age,
+#' 11=ypr/eq catch, 12=fem SPR/Brel, 13=mal SPR/Brel, 14=eq recruit
 #' Current_F = 0.2
 #' PlotPerRecruitResults_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
 #'                                      RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
 #'                                      EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
 #'                                      FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-#'                                      ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F)
+#'                                      ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, PlotOpt)
 #' @export
 PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                      RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                                      EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
                                      FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-                                     ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F) {
+                                     ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, PlotOpt) {
 
   .pardefault <- par(no.readonly = TRUE) # store current par settings
 
@@ -8171,317 +8206,344 @@ PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
                                 FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
                                 ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F)
 
-  nTimeSteps <- 1 + (MaxModelAge / TimeStep)
   Ages <- seq(TimeStep,MaxModelAge,TimeStep)
+  nTimeSteps <- length(Ages)
 
 
   #Plot 1:
-  par(mfrow = c(2,2), mar=c(3.5,4,2,2),
-      oma=c(1,1,1,1),tck=-0.03,mgp = c(3, 0.5, 0))
+  if (PlotOpt==0) {
+    par(mfrow = c(2,2), mar=c(3.5,4,2,2),
+        oma=c(1,1,1,1),tck=-0.03,mgp = c(3, 0.5, 0))
+  }
 
   # plot growth curve
-  names(Res)
-  y1=max(Res$FemLenAtAge)
-  y2=max(Res$MalLenAtAge)
-  if (y1 > y2) {
-    ylims = Get_yaxis_scale(c(0,Res$FemLenAtAge))
-  } else {
-    ylims = Get_yaxis_scale(c(0,Res$MalLenAtAge))
+  if (PlotOpt==0 | PlotOpt==1) {
+    names(Res)
+    y1=max(Res$FemLenAtAge)
+    y2=max(Res$MalLenAtAge)
+    if (y1 > y2) {
+      ylims = Get_yaxis_scale(c(0,Res$FemLenAtAge))
+    } else {
+      ylims = Get_yaxis_scale(c(0,Res$MalLenAtAge))
+    }
+    ymax = ylims$ymax; yint = ylims$yint
+    xlims = Get_xaxis_scale(Ages)
+    xmax = xlims$xmax; xint = xlims$xint
+    plot(Ages,Res$FemLenAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),
+         col="red",yaxt="n",xaxt="n",ylab="",xlab="")
+    lines(Ages, Res$MalLenAtAge,col="blue")
+    axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
+    mtext(expression(paste(plain("Total length (mm"),plain(")"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
+    mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
+    legend('bottomright', col=c("red","blue"),legend=c("Female","Male"),bty='n', cex=0.8,lwd=1.75)
   }
-  ymax = ylims$ymax; yint = ylims$yint
-  xlims = Get_xaxis_scale(Ages)
-  xmax = xlims$xmax; xint = xlims$xint
-  plot(Ages,Res$FemLenAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),
-       col="red",yaxt="n",xaxt="n",ylab="",xlab="")
-  lines(Ages, Res$MalLenAtAge,col="blue")
-  axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
-  mtext(expression(paste(plain("Total length (mm"),plain(")"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
-  mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
-  legend('bottomright', col=c("red","blue"),legend=c("Female","Male"),bty='n', cex=0.8,lwd=1.75)
 
   # plot weight at length
-  y1=max(Res$FemWtAtLen)
-  y2=max(Res$MalWtAtLen)
-  if (y1 > y2) {
-    ylims = Get_yaxis_scale(c(0,Res$FemWtAtLen))
-  } else {
-    ylims = Get_yaxis_scale(c(0,Res$MalWtAtLen))
-  }
-  ymax = ylims$ymax; yint = ylims$yint
-  xlims=Get_xaxis_scale(0:MaxLen)
-  xmax = xlims$xmax; xint = xlims$xint
+  if (PlotOpt==0 | PlotOpt==2) {
+    y1=max(Res$FemWtAtLen)
+    y2=max(Res$MalWtAtLen)
+    if (y1 > y2) {
+      ylims = Get_yaxis_scale(c(0,Res$FemWtAtLen))
+    } else {
+      ylims = Get_yaxis_scale(c(0,Res$MalWtAtLen))
+    }
+    ymax = ylims$ymax; yint = ylims$yint
+    xlims=Get_xaxis_scale(0:MaxLen)
+    xmax = xlims$xmax; xint = xlims$xint
 
-  plot(midpt,Res$FemWtAtLen,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),col="red",yaxt="n",xaxt="n",
-       ylab="",xlab="")
-  lines(midpt,Res$MalWtAtLen,col="blue")
-  axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
-  mtext(expression(paste(plain("Total weight (kg"),plain(")"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
-  mtext(expression(paste(plain("Length (mm"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
-  legend('topleft', col=c("red","blue"),legend=c("Female","Male"),bty='n', cex=0.8,lwd=1.75)
+    plot(midpt,Res$FemWtAtLen,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),col="red",yaxt="n",xaxt="n",
+         ylab="",xlab="")
+    lines(midpt,Res$MalWtAtLen,col="blue")
+    axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
+    mtext(expression(paste(plain("Total weight (kg"),plain(")"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
+    mtext(expression(paste(plain("Length (mm"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
+    legend('topleft', col=c("red","blue"),legend=c("Female","Male"),bty='n', cex=0.8,lwd=1.75)
+  }
 
   # plot female maturity and selectivity at length
-  xlims=Get_xaxis_scale(0:MaxLen)
-  xmax = xlims$xmax; xint = xlims$xint
-  plot(midpt,Res$FemPropMatAtLen,"l", pch=16,frame.plot=F,ylim=c(0,1),xlim=c(0,xmax),col="red",yaxt="n",xaxt="n",
-       ylab="",xlab="",cex=0.8)
-  if (DiscMort == 0) {
-    lines(midpt, Res$FemSelLandAtLen, "l", col="red",lty="dotted", cex=0.8)
-    legend('topleft', col=c("red","red"),legend=c("Fem. mature","Fem. reten."),
-           lty=c("solid","dotted"),bty='n', cex=0.8,lwd=1.75)
-  } else {
-    lines(midpt,Res$FemSelLandAtLen, "l", col="red",lty="dotted",cex=0.8)
-    lines(midpt,Res$FemSelDiscAtLen, "l", col="brown",lty="dotted",cex=0.8)
-    legend('topleft', col=c("red","red","brown"),legend=c("Fem. mature","Fem. land.","Fem. disc."),
-           lty=c("solid","dotted","dotted"),bty='n', cex=0.8,lwd=1.75)
-  }
-  axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(2,at=seq(0,1,0.5), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
-  axis(2,at=seq(0,1,0.5), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
-  mtext(expression(paste(plain("Proportion"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
-  mtext(expression(paste(plain("Length (mm"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
-  if (ReprodPattern > 1) {
-    lines(midpt,Res$PropFemAtLen, "l", col="black",lty="solid",cex=0.8)
-    legend('topright', col="black",legend="Prop. Fem.",
-           lty="solid",bty='n', cex=0.8,lwd=1.75)
+  if (PlotOpt==0 | PlotOpt==3) {
+    xlims=Get_xaxis_scale(0:MaxLen)
+    xmax = xlims$xmax; xint = xlims$xint
+    plot(midpt,Res$FemPropMatAtLen,"l", pch=16,frame.plot=F,ylim=c(0,1),xlim=c(0,xmax),col="red",yaxt="n",xaxt="n",
+         ylab="",xlab="",cex=0.8)
+    if (DiscMort == 0) {
+      lines(midpt, Res$FemSelLandAtLen, "l", col="red",lty="dotted", cex=0.8)
+      legend('topleft', col=c("red","red"),legend=c("Fem. mature","Fem. reten."),
+             lty=c("solid","dotted"),bty='n', cex=0.8,lwd=1.75)
+    } else {
+      lines(midpt,Res$FemSelLandAtLen, "l", col="red",lty="dotted",cex=0.8)
+      lines(midpt,Res$FemSelDiscAtLen, "l", col="brown",lty="dotted",cex=0.8)
+      legend('topleft', col=c("red","red","brown"),legend=c("Fem. mature","Fem. land.","Fem. disc."),
+             lty=c("solid","dotted","dotted"),bty='n', cex=0.8,lwd=1.75)
+    }
+    axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(2,at=seq(0,1,0.5), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
+    axis(2,at=seq(0,1,0.5), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
+    mtext(expression(paste(plain("Proportion"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
+    mtext(expression(paste(plain("Length (mm"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
+    if (ReprodPattern > 1) {
+      lines(midpt,Res$PropFemAtLen, "l", col="black",lty="solid",cex=0.8)
+      legend('topright', col="black",legend="Prop. Fem.",
+             lty="solid",bty='n', cex=0.8,lwd=1.75)
+    }
   }
 
   # plot male maturity and selectivity at length
-  xlims=Get_xaxis_scale(0:MaxLen)
-  xmax = xlims$xmax; xint = xlims$xint
-  plot(midpt, Res$MalPropMatAtLen,"l", pch=16, frame.plot=F,ylim=c(0,1),xlim=c(0,xmax),col="blue",yaxt="n",xaxt="n",
-       ylab="",xlab="", cex=0.8)
-  if (DiscMort == 0) {
-    lines(midpt, Res$FemSelLandAtLen, "l", col="blue",lty="dotted", cex=0.8)
-    legend('topleft', col=c("blue","blue"),legend=c("Male mature","Male reten."),
-           lty=c("solid","dotted"),bty='n', cex=0.8,lwd=1.75)
-  } else {
-    lines(midpt, Res$FemSelLandAtLen, "l", col="blue",lty="dotted", cex=0.8)
-    lines(midpt, Res$FemSelDiscAtLen, "l", col="purple",lty="dotted", cex=0.8)
-    legend('topleft', col=c("blue","blue","purple"),legend=c("Male mature","Male land.", "Male disc."),
-           lty=c("solid","dotted","dotted"),bty='n', cex=0.8,lwd=1.75)
-  }
-  axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(2,at=seq(0,1,0.5), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
-  axis(2,at=seq(0,1,0.5), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
-  mtext(expression(paste(plain("Proportion"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
-  mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
-  if (ReprodPattern > 1) {
-    lines(midpt,1-Res$PropFemAtLen, "l", col="black",lty="solid",cex=0.8)
-    legend('topright', col="black",legend="Prop. Male",
-           lty="solid",bty='n', cex=0.8,lwd=1.75)
+  if (PlotOpt==0 | PlotOpt==4) {
+    xlims=Get_xaxis_scale(0:MaxLen)
+    xmax = xlims$xmax; xint = xlims$xint
+    plot(midpt, Res$MalPropMatAtLen,"l", pch=16, frame.plot=F,ylim=c(0,1),xlim=c(0,xmax),col="blue",yaxt="n",xaxt="n",
+         ylab="",xlab="", cex=0.8)
+    if (DiscMort == 0) {
+      lines(midpt, Res$FemSelLandAtLen, "l", col="blue",lty="dotted", cex=0.8)
+      legend('topleft', col=c("blue","blue"),legend=c("Male mature","Male reten."),
+             lty=c("solid","dotted"),bty='n', cex=0.8,lwd=1.75)
+    } else {
+      lines(midpt, Res$FemSelLandAtLen, "l", col="blue",lty="dotted", cex=0.8)
+      lines(midpt, Res$FemSelDiscAtLen, "l", col="purple",lty="dotted", cex=0.8)
+      legend('topleft', col=c("blue","blue","purple"),legend=c("Male mature","Male land.", "Male disc."),
+             lty=c("solid","dotted","dotted"),bty='n', cex=0.8,lwd=1.75)
+    }
+    axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(2,at=seq(0,1,0.5), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
+    axis(2,at=seq(0,1,0.5), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
+    mtext(expression(paste(plain("Proportion"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
+    mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
+    if (ReprodPattern > 1) {
+      lines(midpt,1-Res$PropFemAtLen, "l", col="black",lty="solid",cex=0.8)
+      legend('topright', col="black",legend="Prop. Male",
+             lty="solid",bty='n', cex=0.8,lwd=1.75)
+    }
   }
 
   #plot 2:
-  par(mfrow = c(3,2), mar=c(3.5,4,2,2),
-      oma=c(1,1,1,1),tck=-0.03,mgp = c(3, 0.5, 0))
+  if (PlotOpt==0) {
+    par(mfrow = c(3,2), mar=c(3.5,4,2,2),
+        oma=c(1,1,1,1),tck=-0.03,mgp = c(3, 0.5, 0))
+  }
 
   # plot female mortality at length
-  ylims = Get_yaxis_scale(Res$FemFAtLen)
-  ymax = ylims$ymax; yint = ylims$yint
-  xlims=Get_xaxis_scale(0:MaxLen)
-  xmax = xlims$xmax; xint = xlims$xint
-  plot(midpt, Res$FemFAtLen,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),col="red",yaxt="n",xaxt="n",
-       ylab="",xlab="")
-  # lines(Ages,Res$FemZAtAge,lty="dotted",col="red")
-  lines(midpt,Res$FemDiscFAtLen,lty="dotted",col="brown")
-  lines(midpt,Res$FemLandFAtLen,lty="dotted",col="purple")
-  lines(midpt,rep(NatMort,length(midpt)),lty="dashed")
-  axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
-  mtext(expression(paste(plain("Mortality") ~ (year^{-1}))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
-  mtext(expression(paste(plain("Length (mm"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
-  legend('topright', col=c("red","brown","purple","black"),lty=c("solid","dotted","dotted","dashed"),
-         legend=c("Fem. F","Fem. DiscF","Fem. LandF","Fem. M"),bty='n', cex=1.0,lwd=1.75)
+  if (PlotOpt==0 | PlotOpt==5) {
+    ylims = Get_yaxis_scale(Res$FemFAtLen)
+    ymax = ylims$ymax; yint = ylims$yint
+    xlims=Get_xaxis_scale(0:MaxLen)
+    xmax = xlims$xmax; xint = xlims$xint
+    plot(midpt, Res$FemFAtLen,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),col="red",yaxt="n",xaxt="n",
+         ylab="",xlab="")
+    # lines(Ages,Res$FemZAtAge,lty="dotted",col="red")
+    lines(midpt,Res$FemDiscFAtLen,lty="dotted",col="brown")
+    lines(midpt,Res$FemLandFAtLen,lty="dotted",col="purple")
+    lines(midpt,rep(NatMort,length(midpt)),lty="dashed")
+    axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
+    mtext(expression(paste(plain("Mortality") ~ (year^{-1}))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
+    mtext(expression(paste(plain("Length (mm"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
+    legend('topright', col=c("red","brown","purple","black"),lty=c("solid","dotted","dotted","dashed"),
+           legend=c("Fem. F","Fem. DiscF","Fem. LandF","Fem. M"),bty='n', cex=1.0,lwd=1.75)
+  }
 
   # plot male mortality at age
-  ylims = Get_yaxis_scale(Res$MalFAtLen)
-  ymax = ylims$ymax; yint = ylims$yint
-  xlims=Get_xaxis_scale(0:MaxLen)
-  xmax = xlims$xmax; xint = xlims$xint
-  plot(midpt, Res$MalFAtLen,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),col="blue",yaxt="n",xaxt="n",
-       ylab="",xlab="")
-  # lines(Ages, Res$MalZAtAge,lty="dotted",col="blue")
-  lines(midpt,Res$MalDiscFAtLen,lty="dotted",col="brown")
-  lines(midpt,Res$MalLandFAtLen,lty="dotted",col="purple")
-  lines(midpt,rep(NatMort,length(midpt)),lty="dashed")
-  axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
-  mtext(expression(paste(plain("Mortality") ~ (year^{-1}))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
-  mtext(expression(paste(plain("Length (mm"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
-  legend('topright', col=c("blue","brown","purple","black"),lty=c("solid","dotted","dotted","dashed"),
-         legend=c("Mal. F","Mal. DiscF","Mal.LandF","Mal. M"),bty='n', cex=1.0,lwd=1.75)
+  if (PlotOpt==0 | PlotOpt==6) {
+    ylims = Get_yaxis_scale(Res$MalFAtLen)
+    ymax = ylims$ymax; yint = ylims$yint
+    xlims=Get_xaxis_scale(0:MaxLen)
+    xmax = xlims$xmax; xint = xlims$xint
+    plot(midpt, Res$MalFAtLen,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),col="blue",yaxt="n",xaxt="n",
+         ylab="",xlab="")
+    # lines(Ages, Res$MalZAtAge,lty="dotted",col="blue")
+    lines(midpt,Res$MalDiscFAtLen,lty="dotted",col="brown")
+    lines(midpt,Res$MalLandFAtLen,lty="dotted",col="purple")
+    lines(midpt,rep(NatMort,length(midpt)),lty="dashed")
+    axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
+    mtext(expression(paste(plain("Mortality") ~ (year^{-1}))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
+    mtext(expression(paste(plain("Length (mm"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
+    legend('topright', col=c("blue","brown","purple","black"),lty=c("solid","dotted","dotted","dashed"),
+           legend=c("Mal. F","Mal. DiscF","Mal.LandF","Mal. M"),bty='n', cex=1.0,lwd=1.75)
+  }
 
   # plot fished and unfished female survival in terms of numbers given specified current fully-selected fishing mortality
-  ylims = Get_yaxis_scale(Res$Unfish_FemNPerRec)
-  ymax = ylims$ymax; yint = ylims$yint
-  if (ymax <= 0) {
-    ymax = round(max(1.2*Res$Unfish_FemNPerRec),1)
-    yint = ymax
+  if (PlotOpt==0 | PlotOpt==7) {
+    ylims = Get_yaxis_scale(Res$Unfish_FemNPerRec)
+    ymax = ylims$ymax; yint = ylims$yint
+    if (ymax <= 0) {
+      ymax = round(max(1.2*Res$Unfish_FemNPerRec),1)
+      yint = ymax
+    }
+    xlims=Get_xaxis_scale(0:MaxLen)
+    xmax = xlims$xmax; xint = xlims$xint
+    plot(midpt, Res$Unfish_FemNPerRec,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),col="red",yaxt="n",xaxt="n",
+         ylab="",xlab="")
+    lines(midpt, Res$Fish_FemNPerRec,col="red",lty="dotted")
+    axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
+    mtext(expression(paste(plain("Rel. survival"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
+    mtext(expression(paste(plain("Length (mm"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
+    legend('topright', col="red",lty=c("solid","dotted"),
+           legend=c("Fem. unfish","Fem. fish"),bty='n', cex=1.0,lwd=1.75)
   }
-  xlims=Get_xaxis_scale(0:MaxLen)
-  xmax = xlims$xmax; xint = xlims$xint
-  plot(midpt, Res$Unfish_FemNPerRec,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),col="red",yaxt="n",xaxt="n",
-       ylab="",xlab="")
-  lines(midpt, Res$Fish_FemNPerRec,col="red",lty="dotted")
-  axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
-  mtext(expression(paste(plain("Rel. survival"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
-  mtext(expression(paste(plain("Length (mm"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
-  legend('topright', col="red",lty=c("solid","dotted"),
-         legend=c("Fem. unfish","Fem. fish"),bty='n', cex=1.0,lwd=1.75)
 
   # plot fished and unfished male survival in terms of numbers given specified current fully-selected fishing mortality
-  ylims = Get_yaxis_scale(Res$Unfish_MalNPerRec)
-  ymax = ylims$ymax; yint = ylims$yint
-  if (ymax <= 0) {
-    ymax = round(max(1.2*Res$Unfish_FemNPerRec),1)
-    yint = ymax
+  if (PlotOpt==0 | PlotOpt==8) {
+    ylims = Get_yaxis_scale(Res$Unfish_MalNPerRec)
+    ymax = ylims$ymax; yint = ylims$yint
+    if (ymax <= 0) {
+      ymax = round(max(1.2*Res$Unfish_FemNPerRec),1)
+      yint = ymax
+    }
+    xlims=Get_xaxis_scale(0:MaxLen)
+    xmax = xlims$xmax; xint = xlims$xint
+    plot(midpt, Res$Unfish_MalNPerRec,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),col="blue",yaxt="n",xaxt="n",
+         ylab="",xlab="")
+    lines(midpt, Res$Fish_MalNPerRec,col="blue",lty="dotted")
+    axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
+    mtext(expression(paste(plain("Rel. survival"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
+    mtext(expression(paste(plain("Length (mm"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
+    legend('topright', col="blue",lty=c("solid","dotted"),
+           legend=c("Mal. unfish","Mal. fish"),bty='n', cex=1.0,lwd=1.75)
   }
-  xlims=Get_xaxis_scale(0:MaxLen)
-  xmax = xlims$xmax; xint = xlims$xint
-  plot(midpt, Res$Unfish_MalNPerRec,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),col="blue",yaxt="n",xaxt="n",
-       ylab="",xlab="")
-  lines(midpt, Res$Fish_MalNPerRec,col="blue",lty="dotted")
-  axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
-  mtext(expression(paste(plain("Rel. survival"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
-  mtext(expression(paste(plain("Length (mm"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
-  legend('topright', col="blue",lty=c("solid","dotted"),
-         legend=c("Mal. unfish","Mal. fish"),bty='n', cex=1.0,lwd=1.75)
-
 
   # plot fished and unfished mature female biomass at age given specified current fully-selected fishing mortality
-  ylims = Get_yaxis_scale(Res$Unfish_FemBiomAtAge)
-  ymax = ylims$ymax; yint = ylims$yint
-  if (max(Res$Unfish_FemBiomAtAge) < 0.2 * ymax) {
-    ymax = ymax/5
-    yint = yint/5
+  if (PlotOpt==0 | PlotOpt==9) {
+    ylims = Get_yaxis_scale(Res$Unfish_FemBiomAtAge)
+    ymax = ylims$ymax; yint = ylims$yint
+    if (max(Res$Unfish_FemBiomAtAge) < 0.2 * ymax) {
+      ymax = ymax/5
+      yint = yint/5
+    }
+    xlims=Get_xaxis_scale(c(0,Ages))
+    xmax = xlims$xmax; xint = xlims$xint
+    plot(Ages, Res$Unfish_FemBiomAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),
+         col="red",yaxt="n",xaxt="n",ylab="",xlab="")
+    lines(Ages, Res$Fish_FemBiomAtAge,col="red",lty="dotted")
+    axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
+    mtext(expression(paste(plain("Biom. at age (kg"),plain(")"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
+    mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
+    legend('topright', col=c("red","red"),lty=c("solid","dotted"),legend=c("Fem. unfish","Fem fish"),bty='n', cex=1.0,lwd=1.75)
   }
-  xlims=Get_xaxis_scale(c(0,Ages))
-  xmax = xlims$xmax; xint = xlims$xint
-  plot(c(0,Ages), Res$Unfish_FemBiomAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),
-       col="red",yaxt="n",xaxt="n",ylab="",xlab="")
-  lines(c(0,Ages), Res$Fish_FemBiomAtAge,col="red",lty="dotted")
-  axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
-  mtext(expression(paste(plain("Biom. at age (kg"),plain(")"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
-  mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
-  legend('topright', col=c("red","red"),lty=c("solid","dotted"),legend=c("Fem. unfish","Fem fish"),bty='n', cex=1.0,lwd=1.75)
-
 
   # plot fished and unfished mature male biomass at age given specified current fully-selected fishing mortality
-  ylims = Get_yaxis_scale(Res$Unfish_MalBiomAtAge)
-  ymax = ylims$ymax; yint = ylims$yint
-  if (max(Res$Unfish_MalBiomAtAge) < 0.2 * ymax) {
-    ymax = ymax/5
-    yint = yint/5
+  if (PlotOpt==0 | PlotOpt==10) {
+    ylims = Get_yaxis_scale(Res$Unfish_MalBiomAtAge)
+    ymax = ylims$ymax; yint = ylims$yint
+    if (max(Res$Unfish_MalBiomAtAge) < 0.2 * ymax) {
+      ymax = ymax/5
+      yint = yint/5
+    }
+    xlims=Get_xaxis_scale(c(0,Ages))
+    xmax = xlims$xmax; xint = xlims$xint
+    plot(Ages, Res$Unfish_MalBiomAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),
+         col="blue",yaxt="n",xaxt="n",ylab="",xlab="")
+    lines(Ages, Res$Fish_MalBiomAtAge,col="blue",lty="dotted")
+    axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
+    mtext(expression(paste(plain("Biom. at age (kg"),plain(")"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
+    mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
+    legend('topright', col=c("blue","blue"),lty=c("solid","dotted"),legend=c("Mal unfish","Mal. fish"),bty='n', cex=1.0,lwd=1.75)
   }
-  xlims=Get_xaxis_scale(c(0,Ages))
-  xmax = xlims$xmax; xint = xlims$xint
-  plot(c(0,Ages), Res$Unfish_MalBiomAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),
-       col="blue",yaxt="n",xaxt="n",ylab="",xlab="")
-  lines(c(0,Ages), Res$Fish_MalBiomAtAge,col="blue",lty="dotted")
-  axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
-  mtext(expression(paste(plain("Biom. at age (kg"),plain(")"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
-  mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
-  legend('topright', col=c("blue","blue"),lty=c("solid","dotted"),legend=c("Mal unfish","Mal. fish"),bty='n', cex=1.0,lwd=1.75)
-
   #Plot 3:
 
   # plot female and male catch at age, given specified current fully-selected fishing mortality
+  if (PlotOpt==0) {
   par(mfrow = c(2,2), mar=c(3.5,4,2,2),
       oma=c(1,1,1,1),tck=-0.03,mgp = c(3, 0.5, 0))
-
+  }
 
   # plot yield per recruit (per recruit analysis) and equilibrium catch (equilibrium age-structured model)
   # given specified current fully-selected fishing mortality
-  ylims = Get_yaxis_scale(Res$YPRResults)
-  ymax = ylims$ymax; yint = ylims$yint
-  if (max(Res$YPRResults) < 0.2 * ymax) {
-    ymax = ymax/5
-    yint = yint/5
+  if (PlotOpt==0 | PlotOpt==11) {
+    ylims = Get_yaxis_scale(Res$YPRResults)
+    ymax = ylims$ymax; yint = ylims$yint
+    if (max(Res$YPRResults) < 0.2 * ymax) {
+      ymax = ymax/5
+      yint = yint/5
+    }
+    plot(Res$FishMort, Res$YPRResults,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,max(Res$FishMort)),
+         col="black",yaxt="n",xaxt="n",ylab="",xlab="")
+    points(Current_F, Res$YPR,cex=1.2,col="black",pch=16)
+    lines(Res$FishMort, Res$EquilCatchResults,col="blue")
+    points(Current_F, Res$Equil_Catch, cex=1.2,col="blue",pch=16)
+    axis(1,at=seq(0,max(Res$FishMort),0.5), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(1,at=seq(0,max(Res$FishMort),0.5), labels=seq(0,max(Res$FishMort),0.5),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
+    mtext(expression(paste(plain("YPR / Eq.Catch (kg"),plain(")"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
+    mtext(expression(paste(italic("F") ~ (year^{-1}))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
+    legend('topright', col=c("black","blue"),lty=c("solid","solid"),
+           legend=c("YPR","Eq.catch"),bty='n', cex=0.8,lwd=1.75)
   }
-  plot(Res$FishMort, Res$YPRResults,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,max(Res$FishMort)),
-       col="black",yaxt="n",xaxt="n",ylab="",xlab="")
-  points(Current_F, Res$YPR,cex=1.2,col="black",pch=16)
-  lines(Res$FishMort, Res$EquilCatchResults,col="blue")
-  points(Current_F, Res$Equil_Catch, cex=1.2,col="blue",pch=16)
-  axis(1,at=seq(0,max(Res$FishMort),0.5), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(1,at=seq(0,max(Res$FishMort),0.5), labels=seq(0,max(Res$FishMort),0.5),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
-  mtext(expression(paste(plain("YPR / Eq.Catch (kg"),plain(")"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
-  mtext(expression(paste(italic("F") ~ (year^{-1}))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
-  legend('topright', col=c("black","blue"),lty=c("solid","solid"),
-         legend=c("YPR","Eq.catch"),bty='n', cex=0.8,lwd=1.75)
 
   # plot spawning potential ratio (per recruit analysis) and relative spawning biomass (equilbrium age-structured model)
   # given specified current fully-selected fishing mortality, for female
-  plot(Res$FishMort, Res$Fem_SPRResults,"l",frame.plot=F,ylim=c(0,1.0),xlim=c(0,max(Res$FishMort)),
-       col="red",yaxt="n",xaxt="n",ylab="",xlab="", lty="dotted")
-  lines(Res$FishMort, Res$Equilmod_FemRelBiomResults,col="red",lty="dotted")
-  points(Current_F, Res$Fem_SPR,cex=1.2,col="red",pch=16)
-  points(Current_F, Res$Equilmod_FemRelBiom,cex=1.2,col="red",pch=1)
-  axis(1,at=seq(0,max(Res$FishMort),0.5), cex.axis=0.8, lwd=1.75,lab=F) # x axis
-  axis(2,at=seq(0,1,0.2), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(1,at=seq(0,max(Res$FishMort),0.5), labels=seq(0,max(Res$FishMort),0.5),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add x labels
-  axis(2,at=seq(0,1,0.2), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
-  mtext(expression(paste(plain("Biom. ratio"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
-  mtext(expression(paste(italic("F") ~ (year^{-1}))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
-  legend('topright', col=c("red","red"),lty=c("dotted","solid"),
-         legend=c("Fem SPR","Fem. Rel biom"),bty='n', cex=0.8,lwd=1.75)
+  if (PlotOpt==0 | PlotOpt==12) {
+    plot(Res$FishMort, Res$Fem_SPRResults,"l",frame.plot=F,ylim=c(0,1.0),xlim=c(0,max(Res$FishMort)),
+         col="red",yaxt="n",xaxt="n",ylab="",xlab="", lty="dotted")
+    lines(Res$FishMort, Res$Equilmod_FemRelBiomResults,col="red",lty="dotted")
+    points(Current_F, Res$Fem_SPR,cex=1.2,col="red",pch=16)
+    points(Current_F, Res$Equilmod_FemRelBiom,cex=1.2,col="red",pch=1)
+    axis(1,at=seq(0,max(Res$FishMort),0.5), cex.axis=0.8, lwd=1.75,lab=F) # x axis
+    axis(2,at=seq(0,1,0.2), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(1,at=seq(0,max(Res$FishMort),0.5), labels=seq(0,max(Res$FishMort),0.5),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add x labels
+    axis(2,at=seq(0,1,0.2), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
+    mtext(expression(paste(plain("Biom. ratio"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
+    mtext(expression(paste(italic("F") ~ (year^{-1}))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
+    legend('topright', col=c("red","red"),lty=c("dotted","solid"),
+           legend=c("Fem SPR","Fem. Rel biom"),bty='n', cex=0.8,lwd=1.75)
+  }
 
   # plot spawning potential ratio (per recruit analysis) and relative spawning biomass (equilbrium age-structured model)
   # given specified current fully-selected fishing mortality, for each sex
-  plot(Res$FishMort, Res$Mal_SPRResults,"l",frame.plot=F,ylim=c(0,1.0),xlim=c(0,max(Res$FishMort)),
-       col="blue",yaxt="n",xaxt="n",ylab="",xlab="", lty="dotted")
-  lines(Res$FishMort, Res$Equilmod_MalRelBiomResults,col="blue",lty="solid")
-  points(Current_F, Res$Mal_SPR,cex=1.2,col="blue",pch=16)
-  points(Current_F, Res$Equilmod_MalRelBiom,cex=1.2,col="blue",pch=1)
-  axis(1,at=seq(0,max(Res$FishMort),0.5), cex.axis=0.8, lwd=1.75,lab=F) # x axis
-  axis(2,at=seq(0,1,0.2), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(1,at=seq(0,max(Res$FishMort),0.5), labels=seq(0,max(Res$FishMort),0.5),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add x labels
-  axis(2,at=seq(0,1,0.2), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
-  mtext(expression(paste(plain("Biom. ratio"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
-  mtext(expression(paste(italic("F") ~ (year^{-1}))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
-  legend('topright', col=c("blue","blue"),lty=c("dotted","solid"),
-         legend=c("Mal SPR","Mal. Rel biom"),bty='n', cex=0.8,lwd=1.75)
-
+  if (PlotOpt==0 | PlotOpt==13) {
+    plot(Res$FishMort, Res$Mal_SPRResults,"l",frame.plot=F,ylim=c(0,1.0),xlim=c(0,max(Res$FishMort)),
+         col="blue",yaxt="n",xaxt="n",ylab="",xlab="", lty="dotted")
+    lines(Res$FishMort, Res$Equilmod_MalRelBiomResults,col="blue",lty="solid")
+    points(Current_F, Res$Mal_SPR,cex=1.2,col="blue",pch=16)
+    points(Current_F, Res$Equilmod_MalRelBiom,cex=1.2,col="blue",pch=1)
+    axis(1,at=seq(0,max(Res$FishMort),0.5), cex.axis=0.8, lwd=1.75,lab=F) # x axis
+    axis(2,at=seq(0,1,0.2), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(1,at=seq(0,max(Res$FishMort),0.5), labels=seq(0,max(Res$FishMort),0.5),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add x labels
+    axis(2,at=seq(0,1,0.2), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
+    mtext(expression(paste(plain("Biom. ratio"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
+    mtext(expression(paste(italic("F") ~ (year^{-1}))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
+    legend('topright', col=c("blue","blue"),lty=c("dotted","solid"),
+           legend=c("Mal SPR","Mal. Rel biom"),bty='n', cex=0.8,lwd=1.75)
+  }
   # plot equilibrium recruitment vs F
-  ymax = 1.0
-  yint = 0.2
-
-  plot(Res$FishMort, Res$EquilRecResults,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,max(Res$FishMort)),
-       col="red",yaxt="n",xaxt="n",ylab="",xlab="")
-  points(Current_F, Res$Equil_Rec, cex=1.2,col="red",pch=16)
-  axis(1,at=seq(0,max(Res$FishMort),0.5), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
-  axis(1,at=seq(0,max(Res$FishMort),0.5), labels=seq(0,max(Res$FishMort),0.5),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
-  axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
-  mtext(expression(paste(plain("Equil. Recruitment"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
-  mtext(expression(paste(italic("F") ~ (year^{-1}))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
-
+  if (PlotOpt==0 | PlotOpt==14) {
+    ymax = 1.0
+    yint = 0.2
+    plot(Res$FishMort, Res$EquilRecResults,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,max(Res$FishMort)),
+         col="red",yaxt="n",xaxt="n",ylab="",xlab="")
+    points(Current_F, Res$Equil_Rec, cex=1.2,col="red",pch=16)
+    axis(1,at=seq(0,max(Res$FishMort),0.5), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
+    axis(1,at=seq(0,max(Res$FishMort),0.5), labels=seq(0,max(Res$FishMort),0.5),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
+    axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
+    mtext(expression(paste(plain("Equil. Recruitment"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
+    mtext(expression(paste(italic("F") ~ (year^{-1}))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
+  }
   # reset default par options
   par(.pardefault)
 
@@ -8556,22 +8618,22 @@ PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
 #' lenwt_b <- 3 # combined sexes - weight (g) vs length (mm, TL) relationship parameters
 #' WLrel_Type <- 1 # 1=power, 2=log-log relationship
 #' EstWtAtLen <- data.frame(EstFemWtAtLen=NA,
-#'                          EstMalWtAtLen=NA) # weight at age (from age 0), inputted as values in data frame
+#'                          EstMalWtAtLen=NA) # weight at length, inputted as values in data frame
 #' ReprodScale <- 1 # 1=default (standard calculations for spawning biomass), 2=hyperallometric reproductive scaling with female mass (i.e. BOFFF effects)
 #' ReprodPattern <- 1 # 1 = gonochoristic (separate sexes), 2 = protogynous (female to male sex change), 3 = protandrous (male to female sex change)
-#' InitRatioFem <- 0.5 # Ratio of females to males at age zero
+#' InitRatioFem <- 0.5 # Ratio of females to males at recruitment age/length
 #' FinalSex_Pmax <- NA # Logistic sex change relationship parameters (max probability of final sex)
 #' FinalSex_L50 <- NA # Logistic sex change relationship parameters (inflection point)
 #' FinalSex_L95 <- NA # Logistic sex change relationship parameters (95% of max probability)
 #' mat_L50 <- c(250, 250) # females, males - Logistic length (mm) at maturity relationship parameters
 #' mat_L95 <- c(300, 300) # females, males - Logistic length (mm) at maturity relationship parameters
 #' EstMatAtLen <- data.frame(EstFemMatAtLen=NA,
-#'                           EstMalMatAtLen=NA) # maturity at age (from age 0), inputted as values in data frame
-#' sel_L50 <- c(250, 250) # females, males - Logistic age selectivity relationship parameters
-#' sel_L95 <- c(300, 300) # females, males - Logistic age selectivity relationship parameters
+#'                           EstMalMatAtLen=NA) # maturity at length, inputted as values in data frame
+#' sel_L50 <- c(250, 250) # females, males - Logistic length selectivity relationship parameters
+#' sel_L95 <- c(300, 300) # females, males - Logistic length selectivity relationship parameters
 #' ret_Pmax <- c(1.0, 1.0) # maximum retention, values lower than 1 imply discarding of fish above MLL
-#' ret_L50 <- c(250, 250) # females, males - Logistic age fish retention at age parameters
-#' ret_L95 <- c(300, 300) # females, males - Logistic age fish retention at age parameters
+#' ret_L50 <- c(250, 250) # females, males - Logistic fish retention at length parameters
+#' ret_L95 <- c(300, 300) # females, males - Logistic fish retention at length parameters
 #' DiscMort <- 0.25 # discard mortality (e.g. 50% released fish die = 0.5)
 #' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
 #' SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
@@ -9424,9 +9486,9 @@ PlotPerRecruit_EqYield_no_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, t
 #' @param FinalSex_Pmax logistic sex change parameter for hermaphroditic species (set to NA for gonochoristic species)
 #' @param FinalSex_L50 logistic sex change parameter for hermaphroditic species (set to NA for gonochoristic species)
 #' @param FinalSex_L95 logistic sex change parameter for hermaphroditic species (set to NA for gonochoristic species)
-#' @param mat_L50 logistic length at maturity parameter (set to NA if directly inputting proportion mature at age)
-#' @param mat_L95 logistic length at maturity parameter (set to NA if directly inputting proportion mature at age)
-#' @param EstMatAtLen vector of proportion mature at length (set to NA if using age at maturity parameters)
+#' @param mat_L50 logistic length at maturity parameter (set to NA if directly inputting proportion mature at length)
+#' @param mat_L95 logistic length at maturity parameter (set to NA if directly inputting proportion mature at length)
+#' @param EstMatAtLen vector of proportion mature at length (set to NA if using length at maturity parameters)
 #' @param sel_L50 logistic parameter for gear selectivity curve
 #' @param sel_L95 logistic parameter for gear selectivity curve
 #' @param ret_Pmax logistic parameter for fish retention curve
@@ -9468,22 +9530,22 @@ PlotPerRecruit_EqYield_no_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, t
 #' lenwt_b <- 3 # combined sexes - weight (g) vs length (mm, TL) relationship parameters
 #' WLrel_Type <- 1 # 1=power, 2=log-log relationship
 #' EstWtAtLen <- data.frame(EstFemWtAtLen=NA,
-#'                          EstMalWtAtLen=NA) # weight at age (from age 0), inputted as values in data frame
+#'                          EstMalWtAtLen=NA) # weight at length, inputted as values in data frame
 #' ReprodScale <- 1 # 1=default (standard calculations for spawning biomass), 2=hyperallometric reproductive scaling with female mass (i.e. BOFFF effects)
 #' ReprodPattern <- 1 # 1 = gonochoristic (separate sexes), 2 = protogynous (female to male sex change), 3 = protandrous (male to female sex change)
-#' InitRatioFem <- 0.5 # Ratio of females to males at age zero
+#' InitRatioFem <- 0.5 # Ratio of females to males at recruitment age/length
 #' FinalSex_Pmax <- NA # Logistic sex change relationship parameters (max probability of final sex)
 #' FinalSex_L50 <- NA # Logistic sex change relationship parameters (inflection point)
 #' FinalSex_L95 <- NA # Logistic sex change relationship parameters (95% of max probability)
 #' mat_L50 <- c(250, 250) # females, males - Logistic length (mm) at maturity relationship parameters
 #' mat_L95 <- c(300, 300) # females, males - Logistic length (mm) at maturity relationship parameters
 #' EstMatAtLen <- data.frame(EstFemMatAtLen=NA,
-#'                           EstMalMatAtLen=NA) # maturity at age (from age 0), inputted as values in data frame
-#' sel_L50 <- c(250, 250) # females, males - Logistic age selectivity relationship parameters
-#' sel_L95 <- c(300, 300) # females, males - Logistic age selectivity relationship parameters
+#'                           EstMalMatAtLen=NA) # maturity at length, inputted as values in data frame
+#' sel_L50 <- c(250, 250) # females, males - Logistic length selectivity relationship parameters
+#' sel_L95 <- c(300, 300) # females, males - Logistic length selectivity relationship parameters
 #' ret_Pmax <- c(1.0, 1.0) # maximum retention, values lower than 1 imply discarding of fish above MLL
-#' ret_L50 <- c(250, 250) # females, males - Logistic age fish retention at age parameters
-#' ret_L95 <- c(300, 300) # females, males - Logistic age fish retention at age parameters
+#' ret_L50 <- c(250, 250) # females, males - Logistic fish retention at length parameters
+#' ret_L95 <- c(300, 300) # females, males - Logistic fish retention at length parameters
 #' DiscMort <- 0.25 # discard mortality (e.g. 50% released fish die = 0.5)
 #' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
 #' SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
@@ -9765,9 +9827,9 @@ PlotPerRecruit_Biom_no_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzer
 #' @param FinalSex_Pmax logistic sex change parameter for hermaphroditic species (set to NA for gonochoristic species)
 #' @param FinalSex_L50 logistic sex change parameter for hermaphroditic species (set to NA for gonochoristic species)
 #' @param FinalSex_L95 logistic sex change parameter for hermaphroditic species (set to NA for gonochoristic species)
-#' @param mat_L50 logistic length at maturity parameter (set to NA if directly inputting proportion mature at age)
-#' @param mat_L95 logistic length at maturity parameter (set to NA if directly inputting proportion mature at age)
-#' @param EstMatAtLen vector of proportion mature at length (set to NA if using age at maturity parameters)
+#' @param mat_L50 logistic length at maturity parameter (set to NA if directly inputting proportion mature at length)
+#' @param mat_L95 logistic length at maturity parameter (set to NA if directly inputting proportion mature at length)
+#' @param EstMatAtLen vector of proportion mature at length (set to NA if using length at maturity parameters)
 #' @param sel_L50 logistic parameter for gear selectivity curve
 #' @param sel_L95 logistic parameter for gear selectivity curve
 #' @param ret_Pmax logistic parameter for fish retention curve
@@ -9804,22 +9866,22 @@ PlotPerRecruit_Biom_no_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzer
 #' lenwt_b <- 3 # combined sexes - weight (g) vs length (mm, TL) relationship parameters
 #' WLrel_Type <- 1 # 1=power, 2=log-log relationship
 #' EstWtAtLen <- data.frame(EstFemWtAtLen=NA,
-#'                          EstMalWtAtLen=NA) # weight at age (from age 0), inputted as values in data frame
+#'                          EstMalWtAtLen=NA) # weight at length, inputted as values in data frame
 #' ReprodScale <- 1 # 1=default (standard calculations for spawning biomass), 2=hyperallometric reproductive scaling with female mass (i.e. BOFFF effects)
 #' ReprodPattern <- 1 # 1 = gonochoristic (separate sexes), 2 = protogynous (female to male sex change), 3 = protandrous (male to female sex change)
-#' InitRatioFem <- 0.5 # Ratio of females to males at age zero
+#' InitRatioFem <- 0.5 # Ratio of females to males at recuitment age/length
 #' FinalSex_Pmax <- NA # Logistic sex change relationship parameters (max probability of final sex)
 #' FinalSex_L50 <- NA # Logistic sex change relationship parameters (inflection point)
 #' FinalSex_L95 <- NA # Logistic sex change relationship parameters (95% of max probability)
 #' mat_L50 <- c(250, 250) # females, males - Logistic length (mm) at maturity relationship parameters
 #' mat_L95 <- c(300, 300) # females, males - Logistic length (mm) at maturity relationship parameters
 #' EstMatAtLen <- data.frame(EstFemMatAtLen=NA,
-#'                           EstMalMatAtLen=NA) # maturity at age (from age 0), inputted as values in data frame
-#' sel_L50 <- c(250, 250) # females, males - Logistic age selectivity relationship parameters
-#' sel_L95 <- c(300, 300) # females, males - Logistic age selectivity relationship parameters
+#'                           EstMalMatAtLen=NA) # maturity at length, inputted as values in data frame
+#' sel_L50 <- c(250, 250) # females, males - Logistic length selectivity relationship parameters
+#' sel_L95 <- c(300, 300) # females, males - Logistic length selectivity relationship parameters
 #' ret_Pmax <- c(1.0, 1.0) # maximum retention, values lower than 1 imply discarding of fish above MLL
-#' ret_L50 <- c(250, 250) # females, males - Logistic age fish retention at age parameters
-#' ret_L95 <- c(300, 300) # females, males - Logistic age fish retention at age parameters
+#' ret_L50 <- c(250, 250) # females, males - Logistic fish retention at length parameters
+#' ret_L95 <- c(300, 300) # females, males - Logistic fish retention at length parameters
 #' DiscMort <- 0.25 # discard mortality (e.g. 50% released fish die = 0.5)
 #' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
 #' SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
@@ -10222,22 +10284,22 @@ GetPerRecruitResults_AB_with_err <- function(MaxModelAge, TimeStep, Linf, vbK, t
 #' lenwt_b <- 3 # combined sexes - weight (g) vs length (mm, TL) relationship parameters
 #' WLrel_Type <- 1 # 1=power, 2=log-log relationship
 #' EstWtAtLen <- data.frame(EstFemWtAtLen=NA,
-#'                          EstMalWtAtLen=NA) # weight at age (from age 0), inputted as values in data frame
+#'                          EstMalWtAtLen=NA) # weight at length, inputted as values in data frame
 #' ReprodPattern <- 1 # 1 = gonochoristic (separate sexes), 2 = protogynous (female to male sex change), 3 = protandrous (male to female sex change)
 #' ReprodScale <- 1 # 1=default (standard calculations for spawning biomass), 2=hyperallometric reproductive scaling with female mass (i.e. BOFFF effects)
-#' InitRatioFem <- 0.5 # Ratio of females to males at age zero
+#' InitRatioFem <- 0.5 # Ratio of females to males at recruitment age/size
 #' FinalSex_Pmax <- NA # Logistic sex change relationship parameters (max probability of final sex)
 #' FinalSex_L50 <- NA # Logistic sex change relationship parameters (inflection point)
 #' FinalSex_L95 <- NA # Logistic sex change relationship parameters (95% of max probability)
 #' mat_L50 <- c(250, 250) # females, males - Logistic length (mm) at maturity relationship parameters
 #' mat_L95 <- c(300, 300) # females, males - Logistic length (mm) at maturity relationship parameters
 #' EstMatAtLen <- data.frame(EstFemMatAtLen=NA,
-#'                           EstMalMatAtLen=NA) # maturity at age (from age 0), inputted as values in data frame
-#' sel_L50 <- c(250, 250) # females, males - Logistic age selectivity relationship parameters
-#' sel_L95 <- c(300, 300) # females, males - Logistic age selectivity relationship parameters
+#'                           EstMalMatAtLen=NA) # maturity at length, inputted as values in data frame
+#' sel_L50 <- c(250, 250) # females, males - Logistic length selectivity relationship parameters
+#' sel_L95 <- c(300, 300) # females, males - Logistic length selectivity relationship parameters
 #' ret_Pmax <- c(1.0, 1.0) # maximum retention, values lower than 1 imply discarding of fish above MLL
-#' ret_L50 <- c(250, 250) # females, males - Logistic age fish retention at age parameters
-#' ret_L95 <- c(300, 300) # females, males - Logistic age fish retention at age parameters
+#' ret_L50 <- c(250, 250) # females, males - Logistic fish retention at length parameters
+#' ret_L95 <- c(300, 300) # females, males - Logistic fish retention at length parameters
 #' DiscMort <- 0.25 # discard mortality (e.g. 50% released fish die = 0.5)
 #' SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
 #' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
@@ -10597,20 +10659,6 @@ PlotPerRecruit_Biom_with_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
   if (is.na(ymax)) ymax = 1
   if (is.na(yint)) yint = 0.2
 
-  if (RefPointPlotOpt == 1) {
-    lines(abline(h = 0.4, col = "green"))
-    lines(abline(h = 0.3, col = "orange"))
-    lines(abline(h = 0.2, col = "red"))
-    legend("topright", col = c("green", "orange", "red"), lty = c("solid", "solid", "solid"),
-           legend = c("0.4", "0.3", "0.2"), bty = "n", cex = 0.8, lwd = 1.75)
-  }
-  if (RefPointPlotOpt == 2) {
-    lines(abline(h = res$BMSY_Targ, col = "green"))
-    lines(abline(h = res$BMSY_Thresh, col = "orange"))
-    lines(abline(h = res$BMSY_Lim, col = "red"))
-    legend("topright", col = c("green", "orange", "red"), lty = c("solid", "solid", "solid"),
-           legend = c("1.2BMSY", "BMSY",  "0.5BMSY"), bty = "n", cex = 0.8, lwd = 1.75)
-  }
 
   # Plot per recruit outputs with uncertainty
   if (PlotOpt==1) { # plot females
@@ -10670,6 +10718,22 @@ PlotPerRecruit_Biom_with_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
        cex.axis=1, line=-0.5, las=1, lwd=1, tick=F)
   axis(2, at=seq(0, ymax, yint), cex.axis=1, line=-0.5, las=1, lwd=1, tick=F)
 
+  if (RefPointPlotOpt == 1) {
+    lines(abline(h = 0.4, col = "green"))
+    lines(abline(h = 0.3, col = "orange"))
+    lines(abline(h = 0.2, col = "red"))
+    legend("topright", col = c("green", "orange", "red"), lty = c("solid", "solid", "solid"),
+           legend = c("0.4", "0.3", "0.2"), bty = "n", cex = 0.8, lwd = 1.75)
+  }
+  if (RefPointPlotOpt == 2) {
+    lines(abline(h = res$BMSY_Targ, col = "green"))
+    lines(abline(h = res$BMSY_Thresh, col = "orange"))
+    lines(abline(h = res$BMSY_Lim, col = "red"))
+    legend("topright", col = c("green", "orange", "red"), lty = c("solid", "solid", "solid"),
+           legend = c("1.2BMSY", "BMSY",  "0.5BMSY"), bty = "n", cex = 0.8, lwd = 1.75)
+  }
+
+
 }
 
 #' Plot of SPR and relative equilibrium biomass vs F from length-based per recruit analysis and extended analysis
@@ -10700,9 +10764,9 @@ PlotPerRecruit_Biom_with_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
 #' @param FinalSex_Pmax logistic sex change parameter for hermaphroditic species (set to NA for gonochoristic species)
 #' @param FinalSex_L50 logistic sex change parameter for hermaphroditic species (set to NA for gonochoristic species)
 #' @param FinalSex_L95 logistic sex change parameter for hermaphroditic species (set to NA for gonochoristic species)
-#' @param mat_L50 logistic length at maturity parameter (set to NA if directly inputting proportion mature at age)
-#' @param mat_L95 logistic length at maturity parameter (set to NA if directly inputting proportion mature at age)
-#' @param EstMatAtLen vector of proportion mature at length (set to NA if using age at maturity parameters)
+#' @param mat_L50 logistic length at maturity parameter (set to NA if directly inputting proportion mature at length)
+#' @param mat_L95 logistic length at maturity parameter (set to NA if directly inputting proportion mature at length)
+#' @param EstMatAtLen vector of proportion mature at length (set to NA if using length at maturity parameters)
 #' @param sel_L50 logistic parameter for gear selectivity curve
 #' @param sel_L95 logistic parameter for gear selectivity curve
 #' @param ret_Pmax logistic parameter for fish retention curve
@@ -10751,22 +10815,22 @@ PlotPerRecruit_Biom_with_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
 #' lenwt_b <- 3 # combined sexes - weight (g) vs length (mm, TL) relationship parameters
 #' WLrel_Type <- 1 # 1=power, 2=log-log relationship
 #' EstWtAtLen <- data.frame(EstFemWtAtLen=NA,
-#'                          EstMalWtAtLen=NA) # weight at age (from age 0), inputted as values in data frame
+#'                          EstMalWtAtLen=NA) # weight at length, inputted as values in data frame
 #' ReprodScale <- 1 # 1=default (standard calculations for spawning biomass), 2=hyperallometric reproductive scaling with female mass (i.e. BOFFF effects)
 #' ReprodPattern <- 1 # 1 = gonochoristic (separate sexes), 2 = protogynous (female to male sex change), 3 = protandrous (male to female sex change)
-#' InitRatioFem <- 0.5 # Ratio of females to males at age zero
+#' InitRatioFem <- 0.5 # Ratio of females to males at recruitment age/length
 #' FinalSex_Pmax <- NA # Logistic sex change relationship parameters (max probability of final sex)
 #' FinalSex_L50 <- NA # Logistic sex change relationship parameters (inflection point)
 #' FinalSex_L95 <- NA # Logistic sex change relationship parameters (95% of max probability)
 #' mat_L50 <- c(250, 250) # females, males - Logistic length (mm) at maturity relationship parameters
 #' mat_L95 <- c(300, 300) # females, males - Logistic length (mm) at maturity relationship parameters
 #' EstMatAtLen <- data.frame(EstFemMatAtLen=NA,
-#'                           EstMalMatAtLen=NA) # maturity at age (from age 0), inputted as values in data frame
-#' sel_L50 <- c(250, 250) # females, males - Logistic age selectivity relationship parameters
-#' sel_L95 <- c(300, 300) # females, males - Logistic age selectivity relationship parameters
+#'                           EstMalMatAtLen=NA) # maturity at length, inputted as values in data frame
+#' sel_L50 <- c(250, 250) # females, males - Logistic length selectivity relationship parameters
+#' sel_L95 <- c(300, 300) # females, males - Logistic length selectivity relationship parameters
 #' ret_Pmax <- c(1.0, 1.0) # maximum retention, values lower than 1 imply discarding of fish above MLL
-#' ret_L50 <- c(250, 250) # females, males - Logistic age fish retention at age parameters
-#' ret_L95 <- c(300, 300) # females, males - Logistic age fish retention at age parameters
+#' ret_L50 <- c(250, 250) # females, males - Logistic fish retention at length parameters
+#' ret_L95 <- c(300, 300) # females, males - Logistic fish retention at length parameters
 #' DiscMort <- 0.25 # discard mortality (e.g. 50% released fish die = 0.5)
 #' SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
 #' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship

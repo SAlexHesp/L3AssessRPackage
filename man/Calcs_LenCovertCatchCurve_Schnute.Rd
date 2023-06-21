@@ -11,7 +11,8 @@ Calcs_LenCovertCatchCurve_Schnute(
   MinFreq,
   lbnd,
   midpt,
-  ubnd
+  ubnd,
+  MaxAge
 )
 }
 \arguments{
@@ -28,6 +29,8 @@ Calcs_LenCovertCatchCurve_Schnute(
 \item{midpt}{mid points of length classes}
 
 \item{ubnd}{upper bounds of length classes}
+
+\item{MaxAge}{maximum age of species to be considered by the model}
 }
 \value{
 length class with peak frequency (PeakLencl), last length class included in analysis (LastLenCl),

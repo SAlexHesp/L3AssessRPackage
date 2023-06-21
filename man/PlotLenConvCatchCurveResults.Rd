@@ -87,7 +87,7 @@ lbnd=Res$lbnd
 ubnd=Res$ubnd
 ModelType = 2 # 1 = von Bertalanffy growth curve (Pauly), 2 = length-converted catch curve - Schnute growth curve)
 res=GetLenConvCatchCurveResults(ModelType, GrowthParams, RefnceAges, ObsRetCatchFreqAtLen,
-                                MinFreq, lbnd, midpt, ubnd)
+                               MinFreq, lbnd, midpt, ubnd, MaxAge)
 PlotLenConvCatchCurveResults(MaxAge, ModelType, GrowthParams, RefnceAges, ObsRetCatchFreqAtLen, MinFreq,
                             lbnd, midpt, ubnd)
 }

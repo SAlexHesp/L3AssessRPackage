@@ -159,22 +159,22 @@ ln_lenwt_a <- NA # for log-log relationship
 lenwt_b <- 3 # combined sexes - weight (g) vs length (mm, TL) relationship parameters
 WLrel_Type <- 1 # 1=power, 2=log-log relationship
 EstWtAtLen <- data.frame(EstFemWtAtLen=NA,
-                         EstMalWtAtLen=NA) # weight at age (from age 0), inputted as values in data frame
+                         EstMalWtAtLen=NA) # weight at age, inputted as values in data frame
 ReprodScale <- 1 # 1=default (standard calculations for spawning biomass), 2=hyperallometric reproductive scaling with female mass (i.e. BOFFF effects)
 ReprodPattern <- 1 # 1 = gonochoristic (separate sexes), 2 = protogynous (female to male sex change), 3 = protandrous (male to female sex change)
-InitRatioFem <- 0.5 # Ratio of females to males at age zero
+InitRatioFem <- 0.5 # Ratio of females to males at recruitment age/length
 FinalSex_Pmax <- NA # Logistic sex change relationship parameters (max probability of final sex)
 FinalSex_L50 <- NA # Logistic sex change relationship parameters (inflection point)
 FinalSex_L95 <- NA # Logistic sex change relationship parameters (95\% of max probability)
 mat_L50 <- c(250, 250) # females, males - Logistic length (mm) at maturity relationship parameters
 mat_L95 <- c(300, 300) # females, males - Logistic length (mm) at maturity relationship parameters
 EstMatAtLen <- data.frame(EstFemMatAtLen=NA,
-                          EstMalMatAtLen=NA) # maturity at age (from age 0), inputted as values in data frame
-sel_L50 <- c(250, 250) # females, males - Logistic age selectivity relationship parameters
-sel_L95 <- c(300, 300) # females, males - Logistic age selectivity relationship parameters
+                          EstMalMatAtLen=NA) # maturity at length, inputted as values in data frame
+sel_L50 <- c(250, 250) # females, males - Logistic length selectivity relationship parameters
+sel_L95 <- c(300, 300) # females, males - Logistic length selectivity relationship parameters
 ret_Pmax <- c(1.0, 1.0) # maximum retention, values lower than 1 imply discarding of fish above MLL
-ret_L50 <- c(250, 250) # females, males - Logistic age fish retention at age parameters
-ret_L95 <- c(300, 300) # females, males - Logistic age fish retention at age parameters
+ret_L50 <- c(250, 250) # females, males - Logistic fish retention at length parameters
+ret_L95 <- c(300, 300) # females, males - Logistic fish retention at length parameters
 DiscMort <- 0.25 # discard mortality (e.g. 50\% released fish die = 0.5)
 Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
 SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
