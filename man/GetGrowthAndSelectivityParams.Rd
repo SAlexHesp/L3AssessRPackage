@@ -8,6 +8,7 @@ GetGrowthAndSelectivityParams(
   params,
   GrowthParams,
   RefnceAges,
+  GrowthCurveType,
   CatchCurveType,
   SelectivityType
 )
@@ -19,6 +20,8 @@ GetGrowthAndSelectivityParams(
 both sexes von Bertalanffy, or c(y1, y2, a, b) single sex Schnute, or data.frame(y1=y1, y2=y2, a=a, b=b), both sexes Schnute}
 
 \item{RefnceAges}{reference ages for Schnute function (set to NA if growth based on another function)}
+
+\item{GrowthCurveType}{1=von Bertalanffy, 2=Schnute}
 
 \item{CatchCurveType}{1=length based, 2=age and length based}
 

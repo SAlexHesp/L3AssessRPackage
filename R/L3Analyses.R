@@ -1019,11 +1019,12 @@ CalcNLLMargLengthComposition <- function(ObsRetCatchFreqAtLen, ExpRetCatchPropIn
 #' @param GrowthParams c(Linf, vbK, CVSizeAtAge) single sex von Bertalanffy, or data.frame(Linf=Linf, vbK=vbK, CVSizeAtAge=CVSizeAtAge),
 #' both sexes von Bertalanffy, or c(y1, y2, a, b) single sex Schnute, or data.frame(y1=y1, y2=y2, a=a, b=b), both sexes Schnute
 #' @param RefnceAges reference ages for Schnute function (set to NA if growth based on another function)
+#' @param GrowthCurveType 1=von Bertalanffy, 2=Schnute
 #' @param CatchCurveType 1=length based, 2=age and length based
 #' @param SelectivityType 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
 #'
 #' @return values of growth parameters given specified catch curve, growth and selectivity model option
-GetGrowthAndSelectivityParams <- function(params, GrowthParams, RefnceAges, CatchCurveType, SelectivityType) {
+GetGrowthAndSelectivityParams <- function(params, GrowthParams, RefnceAges, GrowthCurveType, CatchCurveType, SelectivityType) {
 
   L50 = NA
   L95 = NA
@@ -1306,7 +1307,7 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, GrowthCurveType, GrowthPa
 {
 
   # get parameters for specified growth curve and catch curve type
-  res = GetGrowthAndSelectivityParams(params, GrowthParams, RefnceAges, CatchCurveType, SelectivityType)
+  res = GetGrowthAndSelectivityParams(params, GrowthParams, RefnceAges, GrowthCurveType, CatchCurveType, SelectivityType)
 
   L50 = res$L50; L95 = res$L95
   L50_ret = res$L50_ret; L95_ret = res$L95_ret
@@ -2264,10 +2265,6 @@ SimLenAndAgeFreqData <- function(SampleSize, MaxAge, TimeStep, NatMort, FishMort
   ObsRetCatchFreqAtLen = ObsRetCatchFreqAtLen_Fem + ObsRetCatchFreqAtLen_Mal # combined sexes
   ObsRelCatchAtLen = ObsRetCatchFreqAtLen/sum(ObsRetCatchFreqAtLen)
 
-  # is.na(MLL)
-  # is.na(SelParams)
-  # is.na(RetenParams)
-
   # generate observed discarded catch frequencies at length
   if (is.na(MLL) & is.na(RetenParams[1])) {
     ObsDiscCatchFreqAtLen = NA
@@ -2453,7 +2450,6 @@ SimLenAndAgeFreqData <- function(SampleSize, MaxAge, TimeStep, NatMort, FishMort
     RetCatchAtDecAge = NA
     DiscCatchAtDecAge = NA
     ObsCatchFreqAtLengthAndDecAge = NA
-    ObsAge = NA
     ObsLenClMidPt = NA
   }
 
