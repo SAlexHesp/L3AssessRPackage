@@ -2,7 +2,7 @@
 % Please edit documentation in R/L3Analyses.R
 \name{SimAgeFreqData}
 \alias{SimAgeFreqData}
-\title{Simulate some age frequency data}
+\title{Simulate age frequency data}
 \usage{
 SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
 }
