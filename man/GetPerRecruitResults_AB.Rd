@@ -111,30 +111,29 @@ female and male weight at age (FemWtAtAge, FemWtAtAge), proportion female at age
 proportion mature at age (FemPropMatAtAge, MalPropMatAtAge), female and male selectivity at age (FemSelAtAge, MalSelAtAge),
 yield-per-recruit (YPR), unfished female, male and combined sex spawning potential ratio (Fem_SPR, Mal_SPR,
 CombSex_SPR), unfished female and male per recruit survival at age (UnfishFemSurvAtAge, UnfishMalSurvAtAge),
-unfished female and male mature biomass at age (UnfishFemBiomAtAge, UnfishMalBiomAtAge), fished female and
+unfished female and male mature biomass at age (UnfishFemSpBiomAtAge, UnfishMalSpBiomAtAge), fished female and
 male spawning potential ratio (Fem_SPR, Mal_SPR), fished female and male per recruit survival at age
-(FishedFemSurvAtAge, FishedMalSurvAtAge), fished female and male mature biomass at age (FishedFemBiomAtAge,
-FishedMalBiomAtAge), female and male per recruit retained catches at age in numbers (FemCatchAtAgeNum, MalCatchAtAgeNum),
+(FishFemSurvAtAge, FishMalSurvAtAge), fished female and male mature biomass at age (FishFemSpBiomAtAge,
+FishMalSpBiomAtAge), female and male per recruit retained catches at age in numbers (FemCatchAtAgeNum, MalCatchAtAgeNum),
 female and male per recruit released catches at age in numbers, (FemRelCatchAtAgeNum, MalRelCatchAtAgeNum),
-female and male per recruit retained catches at age in biomass (FemCatchAtAge, MalCatchAtAge), and for the extended model, equilibrium recruitment (Equil_Rec),
-equilibrium catch (Equil_Catch), equilibrium female and male spawning biomass (Equil_FemSpBiom, Equil_MalSpBiom) and
-relative female, male and combined sex spawning biomass (Equilmod_FemRelBiom, Equilmod_MalRelBiom, Equilmod_CombSexRelBiom),
-Beverton-Holt stock-recruitment parameters (BH_SRRa, BH_SRRb), equilibrium recruitment from Beverton-Holt relationship (BH_Equil_Rec),
+female and male per recruit retained catches at age in biomass (FemCatchAtAge, MalCatchAtAge), and for the extended model, equilibrium recruitment (Eq_Rec),
+equilibrium catch (Eq_Catch), equilibrium female and male spawning biomass (Eq_FemSpBiom, Eq_MalSpBiom) and
+relative female, male and combined sex spawning biomass (Eq_FemRelSpBiom, Eq_MalRelSpBiom, Eq_CombSexRelSpBiom),
 female and male gear selectivity at age (FemGearSelAtAge, MalGearSelAtAge), female and male retention at age probabilities,
 (FemRetProbAtAge, MalRetProbAtAge), selectivity of female and male fish landings (FemSelLandAtAge, MalSelLandAtAge),
 female and male selectivity of discards (FemSelDiscAtAge, MalSelDiscAtAge), female and male fishing mortality
 associated with discarding (FemDiscFAtAge, MalDiscFAtAge), female and male fishing mortality associated with
 fish landings (FemLandFAtAge, MalLandFAtAge), female and male total fishing mortality at age (FemFAtAge, MalFAtAge),
 female and male total mortality at age (FemZAtAge, MalZAtAge)range of fishing mortality values applied for which per quantities are calculated
-(FishMort = seq(0,2,0.01)), equilibrium recruitment vs FMort (Equil_Rec), equilibrium catch vs FMort (Equil_Catch),
-equilibrium female spawning biomass vs FMort (Equil_FemSpBiom), equilibrium spawning potential ratio vs FMort
-(Equilmod_SPR), maximum yield per recruit (maxypr), maximum equilibrium catch (maxeqCatch), fishing mortality
-associated with maxypr (Fmax), fishing mortality associated with maxeqCatch (F_MSY or FmaxeqCatch), biomass target at 1.2maxeqCatch,
+(FishMort = seq(0,2,0.01)), equilibrium recruitment vs FMort (Eq_Rec), equilibrium catch vs FMort (Eq_Catch),
+equilibrium female spawning biomass vs FMort (Eq_FemSpBiom), equilibrium spawning potential ratio vs FMort
+(Eq_SPR), maximum yield per recruit (YPRmax), maximum equilibrium catch (maxeqCatch), fishing mortality
+associated with YPRmax (Fmax), fishing mortality associated with maxeqCatch (F_MSY or FmaxeqCatch), biomass target at 1.2maxeqCatch,
 (BMSY_Targ), biomass threshold at maxeqCatch (BMSY_Thresh), biomass threshold at 0.5maxeqCatch (BMSY_Lim),
-YPR vs FishMort (YPRResults), Equil_Catch vs FishMort (EquilCatchResults), Equilmod_FemRelBiom vs FishMort (Fem_SPRResults),
-Equilmod_MalRelBiom vs FishMort (Mal_SPRResults), Equilmod_FemRelBiom vs FishMort (Equilmod_FemRelBiomResults),
-Equilmod_MalRelBiom vs FishMort (Equilmod_MalRelBiomResults), Equilmod_CombSexRelBiom vs FishMort (CombSex_SPRResults),
-Equil_Rec vs FishMort (EquilRecResults)
+YPR vs FishMort (YPRResults), Eq_Catch vs FishMort (Eq_CatchResults), Eq_FemRelSpBiom vs FishMort (Fem_SPRResults),
+Eq_MalRelSpBiom vs FishMort (Mal_SPRResults), Eq_FemRelSpBiom vs FishMort (Eq_FemRelSpBiomResults),
+Eq_MalRelSpBiom vs FishMort (Eq_MalRelSpBiomResults), Eq_CombSexRelSpBiom vs FishMort (CombSex_SPRResults),
+Eq_Rec vs FishMort (Eq_RecResults)
 }
 \description{
 This function provides outputs associated with per recruit analysis, and an

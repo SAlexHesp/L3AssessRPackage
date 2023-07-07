@@ -5,22 +5,27 @@
 \title{Calculates expected lengths and associated statistics from length-based per recruit analysis}
 \usage{
 CalcPerRecruitFishLenAndFishWtStats(
+  lbnd,
   midpt,
-  FemCatchNum,
-  MalCatchNum,
-  CombSexCatchNum,
-  FemWtAtLen,
-  MalWtAtLen
+  ubnd,
+  FemCatchNumLen,
+  MalCatchNumLen,
+  CombSexCatchNumLen,
+  lenwt_a,
+  ln_lenwt_a,
+  lenwt_b,
+  WLrel_Type,
+  EstWtAtLen
 )
 }
 \arguments{
 \item{midpt}{length class mid-points}
 
-\item{FemCatchNum}{female per recruit catch numbers at length}
+\item{FemCatchNumLen}{female per recruit catch numbers at length}
 
-\item{MalCatchNum}{male per recruit catch numbers at length}
+\item{MalCatchNumLen}{male per recruit catch numbers at length}
 
-\item{CombSexCatchNum}{}
+\item{CombSexCatchNumLen}{}
 }
 \value{
 PerRecRandFishLen
@@ -31,9 +36,9 @@ PerRecLenFreq
 
 MeanCatchLen.95ci
 
-MeanCatchLen.60pi
+CatchLen.60qntl
 
-MeanCatchLen.95pi
+CatchLen.95qntl
 
 PerRecRandFishWt
 
@@ -41,15 +46,15 @@ PerRecMeanCatchWt
 
 MeanCatchWt.95ci
 
-MeanCatchWt.60pi
+CatchWt.60qntl
 
-MeanCatchWt.95pi
+CatchWt.95qntl
 }
 \description{
 This function outputs random fish lengths, calculated from length-based per recruit analysis
 with specified fishing mortality (PerRecFishLen), expected mean length (PerRecLenFreq),
 95 percent confidence limits for mean length (MeanCatchLen.95ci), and 60 and 95 percent
-prediction intervals for mean length (MeanCatchLen.60pi, MeanCatchLen.95pi). Values are calculated
+prediction intervals for mean length (CatchLen.60qntl, CatchLen.95qntl). Values are calculated
 for females, males and combined sexes.
 }
 \keyword{internal}

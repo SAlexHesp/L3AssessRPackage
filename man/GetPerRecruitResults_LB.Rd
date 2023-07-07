@@ -38,7 +38,8 @@ GetPerRecruitResults_LB(
   Steepness,
   SRrel_Type,
   NatMort,
-  Current_F
+  Current_F,
+  Output_Opt
 )
 }
 \arguments{
@@ -110,6 +111,8 @@ GetPerRecruitResults_LB(
 \item{NatMort}{natural mortality}
 
 \item{Current_F}{estimated current fishing mortality}
+
+\item{Output_Opt}{1 = standard, 2=include expected length and weight distributions at F (slower)}
 }
 \value{
 yield per recruit for combined sexes (YPR), female, male and combined sex spawning potential ratio
@@ -121,22 +124,21 @@ Fish_MalNPerRec), unfished female and male biomass per recruit at age and length
 Unfish_MalBiomPerRecAtAge), fished female and male biomass per recruit at age and length (Fish_FemBiomPerRecAtAge,
 Fish_MalBiomPerRecAtAge), unfished female and male biomass at age (Unfish_FemBiomAtAge, Unfish_MalBiomAtAge),
 fished female and male biomass at age (Fish_FemBiomAtAge, Fish_MalBiomAtAge), female and male catch biomass
-(FemCatchBiom, MalCatchBiom), equilibrium recruitment for either Beverton-Holt or Ricker relationship (Equil_Rec),
-equilibrium catch (Equil_Catch), female and male and spawning biomass (Equil_FemSpBiom, Equil_MalSpBiom), equilibrium relative
-female, male and combined sex spawning biomass (Equilmod_FemRelBiom, Equilmod_MalRelBiom, Equilmod_CombSexRelBiom),
-parameters and equilbrium recruitment from Beverton-Holt stock-recruitment relationship (BH_SRRa, BH_SRRb, BH_Equil_Rec),
+(FemCatchBiom, MalCatchBiom), equilibrium recruitment for either Beverton-Holt or Ricker relationship (Eq_Rec),
+equilibrium catch (Eq_Catch), female and male and spawning biomass (Eq_FemSpBiom, Eq_MalSpBiom), equilibrium relative
+female, male and combined sex spawning biomass (Eq_FemRelSpBiom, Eq_MalRelSpBiom, Eq_CombSexRelSpBiom),
 female and male gear selectivity at length (FemGearSelAtLen, MalGearSelAtLen), female and male retention at length
 (FemRetProbAtLen, MalRetProbAtLen), female and male selectivity of landings at length (FemSelLandAtLen, MalSelLandAtLen),
 female and male selectivity of discards at length (FemSelDiscAtLen, MalSelDiscAtLen),
 female and male discard mortality at length (FemDiscFAtLen, MalDiscFAtLen), female and male mortality associated with landings
 at length (FemLandFAtLen, MalLandFAtLen), female and male fishing mortality at length (FemFAtLen, MalFAtLen),
 female and male total mortality at length (FemZAtLen, MalZAtLen), fishing mortality values evaluated (FishMort = seq(0,2,0.01)),
-maximum yield per recruit (maxypr), fishing mortality associated with maxeqCatch (F_MSY or FmaxeqCatch),
+maximum yield per recruit (YPRmax), fishing mortality associated with maxeqCatch (F_MSY or FmaxeqCatch),
 biomass target at 1.2maxeqCatch, (BMSY_Targ), biomass threshold at maxeqCatch (BMSY_Thresh), biomass threshold at 0.5maxeqCatch (BMSY_Lim),
-YPR vs FishMort (YPRResults), Equil_Catch vs FishMort (EquilCatchResults), Equilmod_FemRelBiom vs FishMort (Fem_SPRResults),
-Equilmod_MalRelBiom vs FishMort (Mal_SPRResults), Equilmod_FemRelBiom vs FishMort (Equilmod_FemRelBiomResults),
-Equilmod_MalRelBiom vs FishMort (Equilmod_MalRelBiomResults), Equilmod_CombSexRelBiom vs FishMort (Equilmod_CombSexRelBiomResults),
-Equil_Rec vs FishMort (EquilRecResults)
+YPR vs FishMort (YPRResults), Eq_Catch vs FishMort (Eq_CatchResults), Eq_FemRelSpBiom vs FishMort (Fem_SPRResults),
+Eq_MalRelSpBiom vs FishMort (Mal_SPRResults), Eq_FemRelSpBiom vs FishMort (Eq_FemRelSpBiomResults),
+Eq_MalRelSpBiom vs FishMort (Eq_MalRelSpBiomResults), Eq_CombSexRelSpBiom vs FishMort (Eq_CombSexRelSpBiomResults),
+Eq_Rec vs FishMort (Eq_RecResults)
 }
 \description{
 This function provides outputs associated with per recruit analysis, and an
@@ -188,9 +190,10 @@ Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitme
 SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
 NatMort = 4.22 / MaxModelAge # natural mortality  (year-1)
 Current_F = 0.2
+Output_Opt = 1 # 1=standard output, 2=with added length and weight outputs (slower)
 Res=GetPerRecruitResults_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                             RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                             EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
                             FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-                            ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F)
+                            ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, Output_Opt)
 }

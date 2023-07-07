@@ -165,11 +165,11 @@ ret_L95 <- c(300, 300) # females, males - Logistic fish retention at length para
 DiscMort <- 0.25 # discard mortality (e.g. 50\% released fish die = 0.5)
 Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
 SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
-NatMort = 4.22 / MaxModelAge # natural mortality  (year-1)
+NatMort <- 4.22 / MaxModelAge # natural mortality  (year-1)
 RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
-PlotOpt <- 0=all plots, 1=len at-age, 2=wt at length, 3=fem mat/sel/ret at length, 4=mal mat/sel/ret at length,
-5=fem F at length, 6=mal F at length, 7=fem rel surv, 8=mal rel surv, 9=fem biom at age, 10=fem biom at age,
-11=ypr/eq catch, 12=fem SPR/Brel, 13=mal SPR/Brel, 14=eq recruit
+PlotOpt <- 0 # 0=all plots, 1=len at-age, 2=wt at length, 3=fem mat/sel/ret at length, 4=mal mat/sel/ret at length,
+# 5=fem F at length, 6=mal F at length, 7=fem rel surv, 8=mal rel surv, 9=fem biom at age, 10=fem biom at age,
+# 11=ypr/eq catch, 12=fem SPR/Brel, 13=mal SPR/Brel, 14=eq recruit
 Current_F = 0.2
 PlotPerRecruitResults_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                      RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,

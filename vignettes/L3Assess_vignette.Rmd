@@ -644,7 +644,8 @@ where $N_{a,s}$, $W_{a,s}$ and $P_{a,s}$, respectively, are the number, weight a
 
 ## Length-based per recruit analysis
 
-This package implements an length-based per recruit analysis, applying length-transition matrices to allow for variation in growth. As with age-based per recruit analysis, various options have been included, variable model timestep options (i.e. allowing for a shorter model time step for shorter-lived species, for more accurate modelling), allowing for post-release mortality (using a 'retention-function' approach), allowing for effects of fishing on recruitment (i.e. by including a stock-recruitment relationship), and  calculations to determine expected relative biomass and fishing mortality levels associated with BMSY reference points.
+This package implements an length-based per recruit analysis, applying length-transition matrices to allow for variation in growth. As with age-based per recruit analysis, various options have been included, variable model timestep options (i.e. allowing for a shorter model time step for shorter-lived species, for more accurate modelling), allowing for post-release mortality (using a 'retention-function' approach), allowing for effects of fishing on recruitment (i.e. by including a stock-recruitment relationship), allowing for isometric or hyperallometric scaling of reproductive output (i.e. BOFFFF effects), and calculations to determine expected relative biomass and fishing mortality levels associated with BMSY reference points. Routines are also included to assess effects of fishing mortality on expected sizes of fish catch (fish length and body weight) distributions, and also predict how 'value-per-recruit' changes with exploitation. 
+
 
 ### Growth and maturity - length-based per recruit analysis
 
@@ -872,6 +873,7 @@ This implementation of per recruit analysis allows for incorporation uncertainty
 Note, it is also possible to incorporate other sources of uncertainty, such as for growth and maturity ogives, if estimates are available for the both parameters of each ogive and associated variance-covariance matrix (such as are outputted by the WAFishBiolgy R package. 'Wrapper' code has been developed but not yet been built into the package. The process involves use of the CalcYPRAndSPRForFMort() function for each set of input parameters, and storing and analysing the outputs to produce confidence limits.     
 
 
+
 ### Apply age-based per recruit analysis
 
 Key functions relevant to applying this method are:  
@@ -884,17 +886,7 @@ PlotPerRecruit_Biom_with_err_AB()
 PlotPerRecruit_Yield_no_err_AB()
 Refer to help files and example code, showing function inputs and outputs.
 
-### Apply length-based per recruit analysis
 
-Key functions relevant to applying this method are:  
-CalcYPRAndSPRForFMort_LB()  
-GetPerRecruitResults_LB()  
-GetPerRecruitResults_with_err_LB()
-PlotPerRecruitResults_LB()  
-PlotPerRecruit_Biom_no_err_LB()
-PlotPerRecruit_Biom_with_err_LB()
-PlotPerRecruit_Yield_no_err_LB()
-Refer to help files and example code, showing function inputs and outputs.
 
 ## References:
 

@@ -157,9 +157,9 @@ EstRetenAtAge <- data.frame(EstFemRetenAtAge=rep(1,MaxModelAge+1), EstMalRetenAt
 DiscMort <- 0.0 # discard mortality (e.g. 50\% released fish die = 0.5)
 Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
 SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
-NatMort = 0.2 # natural mortality  (year-1)
+NatMort <- 0.2 # natural mortality  (year-1)
 Current_F <- 0.07 # estimate of fishing mortality, e.g. from catch curve analysis
-PlotOpt 0=all plots, 1=len at-age, 2=wt at age, 3=fem mat/sel/ret at age, 4=mal mat/sel/ret at age,
+PlotOpt <- 0 # 0=all plots, 1=len at-age, 2=wt at age, 3=fem mat/sel/ret at age, 4=mal mat/sel/ret at age,
 #  5=fem F at age, 6=mal F at age, 7=fem rel surv, 8=mal rel surv, 9=fem biom at age, 10=fem biom at age,
 #  11=catch at age, 12=ypr/eq catch, 13=fem SPR/Brel, 14=mal SPR/Brel, 15=comb sex SPR/Brel, 16=eq recruit
 PlotPerRecruitResults_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
@@ -201,11 +201,11 @@ PlotPerRecruitResults_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
 # DiscMort <- 0.0 # discard mortality (e.g. 50\% released fish die = 0.5)
 # Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
 # SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
-# NatMort = 0.07 # natural mortality  (year-1)
+# NatMort <- 0.07 # natural mortality  (year-1)
 # Current_F <- 0.07 # estimate of fishing mortality, e.g. from catch curve analysis
-# PlotOpt 0=all plots, 1=len at-age, 2=wt at age, 3=fem mat/sel/ret at age, 4=mal mat/sel/ret at age,
-# 5=fem F at age, 6=mal F at age, 7=fem rel surv, 8=mal rel surv, 9=fem biom at age, 10=fem biom at age,
-# 11=catch at age, 12=ypr/eq catch, 13=fem SPR/Brel, 14=mal SPR/Brel, 15=comb sex SPR/Brel, 16=eq recruit
+# PlotOpt <- 0 # 0=all plots, 1=len at-age, 2=wt at age, 3=fem mat/sel/ret at age, 4=mal mat/sel/ret at age,
+# # 5=fem F at age, 6=mal F at age, 7=fem rel surv, 8=mal rel surv, 9=fem biom at age, 10=fem biom at age,
+# # 11=catch at age, 12=ypr/eq catch, 13=fem SPR/Brel, 14=mal SPR/Brel, 15=comb sex SPR/Brel, 16=eq recruit
 # PlotPerRecruitResults_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
 #                       lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale,
 #                       ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95,

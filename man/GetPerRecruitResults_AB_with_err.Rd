@@ -122,9 +122,9 @@ GetPerRecruitResults_AB_with_err(
 }
 \value{
 fishing mortality values for analysis (PerRec_FValues), female SPR estimates vs F (Fem_SPR_Vals)
-estimates of equilbrium female spawning biomass vs F (Equil_RelFemSpBiom_Vals), estimated BMSY values (BMSY_Vals)
+estimates of equilbrium female spawning biomass vs F (Eq_RelFemSpBiom_Vals), estimated BMSY values (BMSY_Vals)
 resampled female SPR values vs F (Sim_FemSPR=Sim_FemSPR), resampled equilbrium female, male and combined sex
-spawning biomass values vs F (Sim_Equil_RelFemSpBiom, Sim_Equil_RelMalSpBiom, Sim_Equil_RelCombSexSpBiom),
+spawning biomass values vs F (Sim_Eq_RelFemSpBiom, Sim_Eq_RelMalSpBiom, Sim_Eq_RelCombSexSpBiom),
 median female, male and combined sex SPR values vs F (EstFemSPR, EstMalSPR, EstCombSexSPR), median BMSY ratio estimate
 (EstMedBMSYratio), summary of estimates with associated 95 percent confidence limits (ResSummary_with_err).
 }

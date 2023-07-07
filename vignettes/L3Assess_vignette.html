@@ -325,8 +325,6 @@ length-based per recruit models)</a>
 error in per recruit calculations</a></li>
 <li><a href="#apply-age-based-per-recruit-analysis" id="toc-apply-age-based-per-recruit-analysis">Apply age-based per
 recruit analysis</a></li>
-<li><a href="#apply-length-based-per-recruit-analysis" id="toc-apply-length-based-per-recruit-analysis">Apply length-based per
-recruit analysis</a></li>
 </ul></li>
 <li><a href="#references" id="toc-references">References:</a></li>
 </ul></li>
@@ -1189,9 +1187,13 @@ variable model timestep options (i.e. allowing for a shorter model time
 step for shorter-lived species, for more accurate modelling), allowing
 for post-release mortality (using a ‘retention-function’ approach),
 allowing for effects of fishing on recruitment (i.e. by including a
-stock-recruitment relationship), and calculations to determine expected
-relative biomass and fishing mortality levels associated with BMSY
-reference points.</p>
+stock-recruitment relationship), allowing for isometric or
+hyperallometric scaling of reproductive output (i.e. BOFFFF effects),
+and calculations to determine expected relative biomass and fishing
+mortality levels associated with BMSY reference points. Routines are
+also included to assess effects of fishing mortality on expected sizes
+of fish catch (fish length and body weight) distributions, and also
+predict how ‘value-per-recruit’ changes with exploitation.</p>
 <div id="growth-and-maturity---length-based-per-recruit-analysis" class="section level3">
 <h3>Growth and maturity - length-based per recruit analysis</h3>
 <p>Growth can be modelled according to either a von Bertalanffy growth,
@@ -1496,16 +1498,6 @@ GetPerRecruitResults_AB()<br />
 GetPerRecruitResults_with_err_AB() PlotPerRecruitResults_AB()<br />
 PlotPerRecruit_Biom_no_err_AB() PlotPerRecruit_Biom_with_err_AB()
 PlotPerRecruit_Yield_no_err_AB() Refer to help files and example code,
-showing function inputs and outputs.</p>
-</div>
-<div id="apply-length-based-per-recruit-analysis" class="section level3">
-<h3>Apply length-based per recruit analysis</h3>
-<p>Key functions relevant to applying this method are:<br />
-CalcYPRAndSPRForFMort_LB()<br />
-GetPerRecruitResults_LB()<br />
-GetPerRecruitResults_with_err_LB() PlotPerRecruitResults_LB()<br />
-PlotPerRecruit_Biom_no_err_LB() PlotPerRecruit_Biom_with_err_LB()
-PlotPerRecruit_Yield_no_err_LB() Refer to help files and example code,
 showing function inputs and outputs.</p>
 </div>
 </div>

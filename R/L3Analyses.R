@@ -12,7 +12,7 @@
 #   Test Package:              'Ctrl + Shift + T'
 #
 
-# Alex Hesp, June 2023
+# Alex Hesp, July 2023
 # Department of Primary Industries and Regional Development
 # Catch curve and per recruit analysis package
 
@@ -2572,6 +2572,11 @@ SimLenAndAgeFreqData <- function(SampleSize, MaxAge, TimeStep, NatMort, FishMort
   ObsDecAge = c(ObsDecAge_Fem, ObsDecAge_Mal) # decimal ages combined sexes
   ObsLenClMidPt = c(ObsLenClMidPt_Fem, ObsLenClMidPt_Mal)
 
+  # random fish lengths, within each length class, for each of the fish
+  ObsRandLen_Fem = round(ObsLenClMidPt_Fem + runif(SampleSize_Fem,-LenInc, LenInc),0)
+  ObsRandLen_Mal = round(ObsLenClMidPt_Mal + runif(SampleSize_Mal,-LenInc, LenInc),0)
+  ObsRandLen = c(ObsRandLen_Fem, ObsRandLen_Mal)
+
   # get frequencies at integer ages
   MinAge = floor(TimeStep)
   nAgeCl = length(MinAge:MaxAge)
@@ -2675,6 +2680,9 @@ SimLenAndAgeFreqData <- function(SampleSize, MaxAge, TimeStep, NatMort, FishMort
                  ObsLenClMidPt = ObsLenClMidPt,
                  ObsLenClMidPt_Fem = ObsLenClMidPt_Fem,
                  ObsLenClMidPt_Mal = ObsLenClMidPt_Mal,
+                 ObsRandLen = ObsRandLen,
+                 ObsRandLen_Fem = ObsRandLen_Fem,
+                 ObsRandLen_Mal = ObsRandLen_Mal,
                  PropReleased = PropReleased,
                  PropReleased_sd = PropReleased_sd,
                  MeanLenReleased = MeanLenReleased,
@@ -6089,6 +6097,332 @@ PlotAgeBasedCatchCurveResults_LogSpace <- function(RecAssump, SpecRecAge, MinFre
 # Per recruit analyses
 #*********************
 
+
+#' Calculates weight at age for each sex for age-based per recruit analysis
+#'
+#' This function calculates mean weight at age for each sex, based on power curve,
+#' log-log relationship, or allows for these to be used as vectors inputted by user,
+#' for age-based per recruit analysis
+#'
+#' @keywords internal
+#'
+#' @param lenwt_a weight-length parameter
+#' @param ln_lenwt_a weight-length parameter
+#' @param lenwt_b weight-length parameter
+#' @param WLrel_Type 1=power, 2=log-log
+#' @param EstWtAtAge user-specified weights at ages
+#' @param FemLenAtAge female lengths at each age (from growth curve)
+#' @param MalWtAtAge male lengths at each age (from growth curve)
+#'
+#' @return FemWtAtAge
+#' @return MalWtAtAge
+CalcWeightAtAge <- function(lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, FemLenAtAge, MalLenAtAge) {
+
+  # calculate weight (g) at age
+  if (is.na(EstWtAtAge[1,1])) {
+    if (WLrel_Type == 1) { # power relationship
+      FemWtAtAge <- (lenwt_a * FemLenAtAge ^ lenwt_b) / 1000 # weight at length, kg
+      MalWtAtAge <- (lenwt_a * MalLenAtAge ^ lenwt_b) / 1000 # weight at length, kg
+    }
+    if (WLrel_Type == 2) { # log-log relationship
+      FemWtAtAge <- exp(ln_lenwt_a + lenwt_b * log(FemLenAtAge)) / 1000 # weight at length, kg
+      MalWtAtAge <- exp(ln_lenwt_a + lenwt_b * log(MalLenAtAge)) / 1000 # weight at length, kg
+    }
+  }
+  if (!is.na(EstWtAtAge[1,1])) {
+    FemWtAtAge <- EstWtAtAge[,1]
+    MalWtAtAge <- EstWtAtAge[,2]
+  }
+
+  results = list(FemWtAtAge=FemWtAtAge,
+                 MalWtAtAge=MalWtAtAge)
+
+  return(results)
+
+}
+
+
+#' Calculates length at age for each sex for age-based per recruit analysis
+#'
+#' This function calculates mean length at age for each sex, based on von Bertalanffy growth curve or
+#' allows for these to be used as vectors inputted by user, for age-based per recruit analysis
+#'
+#' @keywords internal
+#'
+#' @param Linf von Bertalanffy growth parameter
+#' @param vbK von Bertalanffy growth parameter
+#' @param tzero von Bertalanffy growth parameter
+#' @param EstLenAtAge lengths at age, inputted as vector
+#' @param Ages
+#'
+#' @return FemLenAtAge
+#' @return MalLenAtAge
+CalcLengthAtAge <- function(Linf, vbK, tzero, EstLenAtAge, Ages) {
+
+
+  # calculate length at age - von Bertalanffy growth curve
+  if (is.na(EstLenAtAge[1,1])) {
+    FemLenAtAge <- Linf[1] * (1 - exp(-vbK[1] * (Ages - tzero[1])))
+    MalLenAtAge <- Linf[2] * (1 - exp(-vbK[2] * (Ages - tzero[2])))
+  }
+  if (!is.na(EstLenAtAge[1,1])) {
+    FemLenAtAge <- EstLenAtAge[,1]
+    MalLenAtAge <- EstLenAtAge[,2]
+  }
+
+  # set negative lengths to zero
+  FemLenAtAge[which(FemLenAtAge<0)] = 0
+  MalLenAtAge[which(MalLenAtAge<0)] = 0
+
+  results = list(FemLenAtAge=FemLenAtAge,
+                 MalLenAtAge=MalLenAtAge)
+
+  return(results)
+
+}
+
+
+#' Calculate proportion of fish at age that are females
+#'
+#' This function calculates proportion of fish at age that are females,
+#' based on reproductive pattern (gonochoristic or hermaphroditic), and
+#' sex change parameters
+#'
+#' @keywords internal
+#'
+#' @param FinalSex_A50 logistic sex change parameter
+#' @param FinalSex_A95 logistic sex change parameter
+#' @param FinalSex_Pmax logistic sex change parameter
+#' @param ReprodPattern 1=gonochoristic, 2=protogynous, 3=protandrous
+#' @param Ages specified ages
+#'
+#' @return PropFemAtAge
+CalcPropFemAtAge <- function(FinalSex_A50, FinalSex_A95, FinalSex_Pmax, ReprodPattern, Ages) {
+
+  # for sex-changing species, calculate proportion female at age
+  if (ReprodPattern == 1) { # protogynous hermaphroditism (female to male sex change)
+    PropFemAtAge = NA
+  }
+  if (ReprodPattern == 2) { # protogynous hermaphroditism (female to male sex change)
+    PropFemAtAge = 1 - (FinalSex_Pmax / (1 + exp(-log(19) * (Ages-FinalSex_A50) / (FinalSex_A95 - FinalSex_A50))))
+  }
+  if (ReprodPattern == 3) { # protandrous hermaphroditism (male to female sex change)
+    PropFemAtAge = FinalSex_Pmax / (1 + exp(-log(19) * (Ages-FinalSex_A50) / (FinalSex_A95 - FinalSex_A50)))
+  }
+
+  results = PropFemAtAge
+
+  return(results)
+
+}
+
+
+#' Calculate proportion of fish at age that are mature
+#'
+#' This function calculates proportion of fish at age that are mature,
+#' based on input maturity parameters, or from set input maturity schedules
+#'
+#' @keywords internal
+#'
+#' @param mat_A50 logistic maturity parameter
+#' @param mat_A95 logistic maturity parameter
+#' @param EstMatAtAge input maturity schedules (could be set to NA)
+#' @param Ages ages
+#'
+#' @return FemPropMatAtAge; MalPropMatAtAge
+CalcPropMatureAtAge <- function(mat_A50, mat_A95, EstMatAtAge, Ages) {
+
+  if (is.na(EstMatAtAge[1,1])) {
+    FemPropMatAtAge <- 1 / (1 + exp(-log(19) * (Ages-mat_A50[1]) / (mat_A95[1] - mat_A50[1])))
+    MalPropMatAtAge <- 1 / (1 + exp(-log(19) * (Ages-mat_A50[2]) / (mat_A95[2] - mat_A50[2])))
+  }
+  if (!is.na(EstMatAtAge[1,1])) {
+    FemPropMatAtAge <- EstMatAtAge[,1]
+    MalPropMatAtAge <- EstMatAtAge[,2]
+  }
+
+  results = list(FemPropMatAtAge=FemPropMatAtAge,
+                 MalPropMatAtAge=MalPropMatAtAge)
+
+  return(results)
+
+}
+
+
+#' Calculate unfished and fished survival of fish at age
+#'
+#' Calculate unfished and fished survival of fish at age. Rountine also allows for sex change
+#' for  hermaphroditic species.
+#'
+#' @keywords internal
+#'
+#' @param nTimeSteps number of model timesteps
+#' @param InitRatioFem sex ratio at birth
+#' @param NatMort natural mortality
+#' @param FemZAtAge female total mortality at age
+#' @param MalZAtAge male total mortality at age
+#' @param ReprodPattern 1=gonochoristic, 2=protogynous, 3=protandrous
+#' @param Ages PropFemAtAge proportion of fish at age that are female
+#'
+#' @return UnfishFemSurvAtAge, UnfishMalSurvAtAge, FishFemSurvAtAge, FishMalSurvAtAge
+CalcSurvivalAtAge <- function(nTimeSteps, InitRatioFem, NatMort, FMort, FemZAtAge, MalZAtAge,
+                              ReprodPattern, PropFemAtAge) {
+
+  # calculate relative unfished female and male survival at age
+  UnfishFemSurvAtAge <- rep(0,nTimeSteps); UnfishMalSurvAtAge <- rep(0,nTimeSteps)
+  tempUnfishFemSurvAtAge <- rep(0,nTimeSteps); tempUnfishMalSurvAtAge <- rep(0,nTimeSteps)
+  FishFemSurvAtAge <- rep(0,nTimeSteps); FishMalSurvAtAge <- rep(0,nTimeSteps)
+  tempFishFemSurvAtAge <- rep(0,nTimeSteps); tempFishMalSurvAtAge <- rep(0,nTimeSteps)
+
+  for (j in 1:nTimeSteps) {
+    if (j==1) { # age=0
+      UnfishFemSurvAtAge[j] <- InitRatioFem
+      UnfishMalSurvAtAge[j] <- (1 - InitRatioFem)
+      FishFemSurvAtAge[j] <- InitRatioFem
+      FishMalSurvAtAge[j] <- (1 - InitRatioFem)
+    }
+    else if (j < nTimeSteps) {
+      UnfishFemSurvAtAge[j] <- UnfishFemSurvAtAge[j-1] * exp(-NatMort * TimeStep)
+      UnfishMalSurvAtAge[j] <- UnfishMalSurvAtAge[j-1] * exp(-NatMort * TimeStep)
+      FishFemSurvAtAge[j] <- FishFemSurvAtAge[j-1] * exp(-FemZAtAge[j-1] * TimeStep)
+      FishMalSurvAtAge[j] <- FishMalSurvAtAge[j-1] * exp(-MalZAtAge[j-1] * TimeStep)
+    }
+    else if (j==nTimeSteps) { # maximum model age, plus group
+      UnfishFemSurvAtAge[j] <- (UnfishFemSurvAtAge[j-1] * exp(-NatMort * TimeStep)) / (1 - exp(-NatMort))
+      UnfishMalSurvAtAge[j] <- (UnfishMalSurvAtAge[j-1] * exp(-NatMort * TimeStep)) / (1 - exp(-NatMort))
+      FishFemSurvAtAge[j] <- FishFemSurvAtAge[j-1] * exp(-FemZAtAge[j-1] * TimeStep) / (1 - exp(-(FMort+NatMort)))
+      FishMalSurvAtAge[j] <- FishMalSurvAtAge[j-1] * exp(-MalZAtAge[j-1] * TimeStep) / (1 - exp(-(FMort+NatMort)))
+    }
+
+    if (ReprodPattern > 1) { # hermaphroditic species
+      # assuming that, regardless of fishing pattern, the sex ratio at age is determined by
+      # by the logistic curve describing probability of sex change at age
+      tempUnfishFemSurvAtAge[j] = PropFemAtAge[j] * (UnfishFemSurvAtAge[j] + UnfishMalSurvAtAge[j])
+      tempUnfishMalSurvAtAge[j] = (1 - PropFemAtAge[j]) * (UnfishFemSurvAtAge[j] + UnfishMalSurvAtAge[j])
+      UnfishFemSurvAtAge[j] = tempUnfishFemSurvAtAge[j]
+      UnfishMalSurvAtAge[j] = tempUnfishMalSurvAtAge[j]
+
+      tempFishFemSurvAtAge[j] = PropFemAtAge[j] * (FishFemSurvAtAge[j] + FishMalSurvAtAge[j])
+      tempFishMalSurvAtAge[j] = (1 - PropFemAtAge[j]) * (FishFemSurvAtAge[j] + FishMalSurvAtAge[j])
+      FishFemSurvAtAge[j] = tempFishFemSurvAtAge[j]
+      FishMalSurvAtAge[j] = tempFishMalSurvAtAge[j]
+    }
+  }
+
+  results = list(UnfishFemSurvAtAge = UnfishFemSurvAtAge,
+                 UnfishMalSurvAtAge = UnfishMalSurvAtAge,
+                 FishFemSurvAtAge = FishFemSurvAtAge,
+                 FishMalSurvAtAge = FishMalSurvAtAge)
+  return(results)
+
+}
+
+#' Calculate fishing mortality at age (discards and landings)
+#'
+#' Calculate fishing mortality at age associated with discarding, landings, and
+#' combined.
+#'
+#' @keywords internal
+#'
+#' @param FMort fully-selected fishing mortality
+#' @param DiscMort proportion of discarded fish that die
+#' @param FemSelDiscAtAge selectivity of discarding at age for females
+#' @param MalSelDiscAtAge selectivity of discarding at age for males
+#' @param FemSelLandAtAge selectivity of landings at age for females
+#' @param MalSelLandAtAge selectivity of landings at age for males
+#'
+#' @return FemDiscFAtAge, MalDiscFAtAge, FemLandFAtAge, MalLandFAtAge, FemFAtAge, MalFAtAge
+CalcFishingMortalityAtAge <- function(FMort, DiscMort, FemSelDiscAtAge, MalSelDiscAtAge,
+                                      FemSelLandAtAge, MalSelLandAtAge) {
+
+  # calculate female and male fishing mortality at age associated with discarding of undersize fish
+  FemDiscFAtAge <- FMort * DiscMort * FemSelDiscAtAge
+  MalDiscFAtAge <- FMort * DiscMort * MalSelDiscAtAge
+
+  # calculate female and male fishing mortality at age associated with landings
+  FemLandFAtAge <- FMort * FemSelLandAtAge
+  MalLandFAtAge <- FMort * MalSelLandAtAge
+
+  # calculate (total) female and male fishing mortality at age
+  if (DiscMort >= 0.001) {
+    FemFAtAge <- FMort * (FemSelLandAtAge + (DiscMort * FemSelDiscAtAge))
+    MalFAtAge <- FMort * (MalSelLandAtAge + (DiscMort * MalSelDiscAtAge))
+  } else {
+    FemFAtAge <- FMort * FemSelLandAtAge
+    MalFAtAge <- FMort * MalSelLandAtAge
+  }
+
+  results = list(FemDiscFAtAge = FemDiscFAtAge,
+                 MalDiscFAtAge = MalDiscFAtAge,
+                 FemLandFAtAge = FemLandFAtAge,
+                 MalLandFAtAge = MalLandFAtAge,
+                 FemFAtAge = FemFAtAge,
+                 MalFAtAge = MalFAtAge)
+
+  return(results)
+
+}
+
+#' Calculate gear selectivity and retention at age
+#'
+#' Calculate gear selectivity and retention at age, given input parameters or vectors
+#'
+#' @keywords internal
+#'
+#' @param EstSelAtAge input vector for gear selectivity at age (may be set to NA)
+#' @param EstRetenAtAge input vector for fish retention at age (may be set to NA)
+#' @param Ages ages for analysis calculated from max age and model timestep
+#' @param sel_A50 logistic gear selectivity curve parameter
+#' @param sel_A95 logistic gear selectivity curve parameter
+#' @param ret_A50 logistic gear retention curve parameter
+#' @param ret_A95 logistic gear retention curve parameter
+#' @param ret_Pmax logistic gear retention curve parameter
+#'
+#' @return FemGearSelAtAge, MalGearSelAtAge, FemRetProbAtAge, MalRetProbAtAge
+CalcSelectivityAndRetentionAtAge <- function(EstSelAtAge, EstRetenAtAge, Ages, sel_A50, sel_A95,
+                                                 ret_A50, ret_A95, ret_Pmax) {
+
+
+  if (is.na(EstSelAtAge[1,1])) {
+    FemGearSelAtAge <- 1/(1+exp(-log(19) * (Ages - sel_A50[1]) / (sel_A95[1] - sel_A50[1])))
+    MalGearSelAtAge <- 1/(1+exp(-log(19) * (Ages - sel_A50[2]) / (sel_A95[2] - sel_A50[2])))
+  }
+  if (!is.na(EstSelAtAge[1,1])) {
+    FemGearSelAtAge <- EstSelAtAge[,1]
+    MalGearSelAtAge <- EstSelAtAge[,2]
+  }
+
+  # Calculate fish retention at age
+  if (is.na(EstRetenAtAge[1,1])) {
+    FemRetProbAtAge <- ret_Pmax[1] / (1+exp(-log(19) * (Ages - ret_A50[1]) / (ret_A95[1] - ret_A50[1])))
+    MalRetProbAtAge <- ret_Pmax[2] / (1+exp(-log(19) * (Ages - ret_A50[2]) / (ret_A95[2] - ret_A50[2])))
+  }
+  if (!is.na(EstRetenAtAge[1,1])) {
+    FemRetProbAtAge <- EstRetenAtAge[,1]
+    MalRetProbAtAge <- EstRetenAtAge[,2]
+  }
+
+  # Calculate selectivity of landings at age
+  FemSelLandAtAge <- FemGearSelAtAge * FemRetProbAtAge
+  MalSelLandAtAge <- MalGearSelAtAge * MalRetProbAtAge
+
+  # Calculate selectivity of discards at age
+  FemSelDiscAtAge <- FemGearSelAtAge * (1 - FemRetProbAtAge)
+  MalSelDiscAtAge <- MalGearSelAtAge * (1 - MalRetProbAtAge)
+
+  results = list(FemGearSelAtAge = FemGearSelAtAge,
+                 MalGearSelAtAge = MalGearSelAtAge,
+                 FemRetProbAtAge = FemRetProbAtAge,
+                 MalRetProbAtAge = MalRetProbAtAge,
+                 FemSelLandAtAge = FemSelLandAtAge,
+                 MalSelLandAtAge = MalSelLandAtAge,
+                 FemSelDiscAtAge = FemSelDiscAtAge,
+                 MalSelDiscAtAge = MalSelDiscAtAge)
+
+  return(results)
+
+}
+
 #' Get outputs from age-based per recruit analysis for a specified value of fishing mortality
 #'
 #' This function provides outputs associated with per recruit analysis, and an
@@ -6132,15 +6466,13 @@ PlotAgeBasedCatchCurveResults_LogSpace <- function(RecAssump, SpecRecAge, MinFre
 #' @return Ages considered in analysis (Ages), yield per recruit for combined sexes (YPR),
 #' female, male and combined sex spawning potential ratio (Fem_SPR, Mal_SPR, CombSex_SPR), unfished female
 #' survival at age (UnfishFemSurvAtAge, UnfishMalSurvAtAge), unfished female and male biomass mature biomass at age
-#' (UnfishFemBiomAtAge, UnfishMalBiomAtAge), fished female survival at age (FishedFemSurvAtAge, FishedMalSurvAtAge),
-#' fished female and male biomass mature biomass at age (FishedFemBiomAtAge, FishedMalBiomAtAge), female and male
+#' (UnfishFemSpBiomAtAge, UnfishMalSpBiomAtAge), fished female survival at age (FishFemSurvAtAge, FishMalSurvAtAge),
+#' fished female and male biomass mature biomass at age (FishFemSpBiomAtAge, FishMalSpBiomAtAge), female and male
 #' retained catch at age in numbers (FemCatchAtAgeNum, MalCatchAtAgeNum), female and male
 #' release catch at age in numbers (FemRelCatchAtAgeNum, MalRelCatchAtAgeNum), female and male retained catch at age in biomass
-#' (FemCatchAtAge, MalCatchAtAge), derived Beverton-Holt stock recruitment parameters and associated equilibrium
-#' recruitment derived from those parameters (BH_SRRa, BH_SRRb, BH_Equil_Rec), equilibrium recruitment for
-#' either Beverton-Holt or Ricker relationship (Equil_Rec), equilibrium catch (Equil_Catch), equilibrium
-#' female and male and spawning biomass (Equil_FemSpBiom, Equil_MalSpBiom), equilibrium relative female,
-#' male and combined sex spawning biomass (Equilmod_SPR, Equilmod_MalRelBiom, Equilmod_CombSexRelBiom),
+#' (FemCatchAtAge, MalCatchAtAge), equilibrium recruitment for either Beverton-Holt or Ricker relationship (Eq_Rec), equilibrium catch (Eq_Catch), equilibrium
+#' female and male and spawning biomass (Eq_FemSpBiom, Eq_MalSpBiom), equilibrium relative female,
+#' male and combined sex spawning biomass (Eq_SPR, Eq_MalRelSpBiom, Eq_CombSexRelSpBiom),
 #' female and male length at age (FemLenAtAge, MalLenAtAge), female and male weight at age
 #' (FemWtAtAge, MalWtAtAge), female, male and combined sex proportion mature at age (FemPropMatAtAge, MalPropMatAtAge, PropFemAtAge),
 #' female and male gear selectivity at age (FemGearSelAtAge, MalGearSelAtAge), female and male retention at age probabilities,
@@ -6237,202 +6569,73 @@ CalcYPRAndSPRForFMort_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
                                   EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, FMort) {
 
 
-  # Ages. As species is relatively short-lived, specify small time steps (e.g. 0.1 years)
+  # Determine ages to be modelled, specified on maximum age and timestep
   Ages <- seq(0,MaxModelAge,TimeStep)
+
   # number of model time steps
-  # nTimeSteps <- 1 + (MaxModelAge / TimeStep)
   nTimeSteps <- length(Ages)
 
   # calculate length at age - von Bertalanffy growth curve
-  if (is.na(EstLenAtAge[1,1])) {
-    FemLenAtAge <- Linf[1] * (1 - exp(-vbK[1] * (Ages - tzero[1])))
-    MalLenAtAge <- Linf[2] * (1 - exp(-vbK[2] * (Ages - tzero[2])))
-  }
-  if (!is.na(EstLenAtAge[1,1])) {
-    FemLenAtAge <- EstLenAtAge[,1]
-    MalLenAtAge <- EstLenAtAge[,2]
-  }
-
-  # set negative lengths to zero
-  FemLenAtAge[which(FemLenAtAge<0)] = 0
-  MalLenAtAge[which(MalLenAtAge<0)] = 0
+  res=CalcLengthAtAge(Linf, vbK, tzero, EstLenAtAge, Ages)
+  FemLenAtAge = res$FemLenAtAge; MalLenAtAge = res$MalLenAtAge
 
   # calculate weight (g) at age
-  if (is.na(EstWtAtAge[1,1])) {
-    if (WLrel_Type == 1) { # power relationship
-      FemWtAtAge <- (lenwt_a * FemLenAtAge ^ lenwt_b) / 1000 # weight at length, kg
-      MalWtAtAge <- (lenwt_a * MalLenAtAge ^ lenwt_b) / 1000 # weight at length, kg
-    }
-    if (WLrel_Type == 2) { # log-log relationship
-      FemWtAtAge <- exp(ln_lenwt_a + lenwt_b * log(FemLenAtAge)) / 1000 # weight at length, kg
-      MalWtAtAge <- exp(ln_lenwt_a + lenwt_b * log(MalLenAtAge)) / 1000 # weight at length, kg
-    }
-  }
-  if (!is.na(EstWtAtAge[1,1])) {
-    FemWtAtAge <- EstWtAtAge[,1]
-    MalWtAtAge <- EstWtAtAge[,2]
-  }
+  res=CalcWeightAtAge(lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, FemLenAtAge, MalLenAtAge)
+  FemWtAtAge <- res$FemWtAtAge; MalWtAtAge <- res$MalWtAtAge
 
   # for sex-changing species, calculate proportion female at age
-  if (ReprodPattern == 1) { # protogynous hermaphroditism (female to male sex change)
-    PropFemAtAge = NA
-  }
-  if (ReprodPattern == 2) { # protogynous hermaphroditism (female to male sex change)
-    PropFemAtAge = 1 - (FinalSex_Pmax / (1 + exp(-log(19) * (Ages-FinalSex_A50) / (FinalSex_A95 - FinalSex_A50))))
-  }
-  if (ReprodPattern == 3) { # protandrous hermaphroditism (male to female sex change)
-    PropFemAtAge = FinalSex_Pmax / (1 + exp(-log(19) * (Ages-FinalSex_A50) / (FinalSex_A95 - FinalSex_A50)))
-  }
+  PropFemAtAge=CalcPropFemAtAge(FinalSex_A50, FinalSex_A95, FinalSex_Pmax, ReprodPattern, Ages)
 
   # calculate proportion mature at age
-  if (is.na(EstMatAtAge[1,1])) {
-    FemPropMatAtAge <- 1 / (1 + exp(-log(19) * (Ages-mat_A50[1]) / (mat_A95[1] - mat_A50[1])))
-    MalPropMatAtAge <- 1 / (1 + exp(-log(19) * (Ages-mat_A50[2]) / (mat_A95[2] - mat_A50[2])))
-  }
-  if (!is.na(EstMatAtAge[1,1])) {
-    FemPropMatAtAge <- EstMatAtAge[,1]
-    MalPropMatAtAge <- EstMatAtAge[,2]
-  }
+  res=CalcPropMatureAtAge(mat_A50, mat_A95, EstMatAtAge, Ages)
+  FemPropMatAtAge = res$FemPropMatAtAge; MalPropMatAtAge = res$MalPropMatAtAge
 
-  # Calculate gear selectivity at age
-  if (is.na(EstSelAtAge[1,1])) {
-    FemGearSelAtAge <- 1/(1+exp(-log(19) * (Ages - sel_A50[1]) / (sel_A95[1] - sel_A50[1])))
-    MalGearSelAtAge <- 1/(1+exp(-log(19) * (Ages - sel_A50[2]) / (sel_A95[2] - sel_A50[2])))
-  }
-  if (!is.na(EstSelAtAge[1,1])) {
-    FemGearSelAtAge <- EstSelAtAge[,1]
-    MalGearSelAtAge <- EstSelAtAge[,2]
-  }
+  # Calculate gear selectivity and retention at age, and selectivity of landings and discards
+  res=CalcSelectivityAndRetentionAtAge(EstSelAtAge, EstRetenAtAge, Ages, sel_A50, sel_A95,
+                                           ret_A50, ret_A95, ret_Pmax)
+  FemGearSelAtAge = res$FemGearSelAtAge; MalGearSelAtAge = res$MalGearSelAtAge
+  FemRetProbAtAge = res$FemRetProbAtAge; MalRetProbAtAge = res$MalRetProbAtAge
+  FemSelLandAtAge = res$FemSelLandAtAge; MalSelLandAtAge = res$MalSelLandAtAge
+  FemSelDiscAtAge = res$FemSelDiscAtAge; MalSelDiscAtAge = res$MalSelDiscAtAge
 
-  # Calculate fish retention at age
-  if (is.na(EstRetenAtAge[1,1])) {
-    FemRetProbAtAge <- ret_Pmax[1] / (1+exp(-log(19) * (Ages - ret_A50[1]) / (ret_A95[1] - ret_A50[1])))
-    MalRetProbAtAge <- ret_Pmax[2] / (1+exp(-log(19) * (Ages - ret_A50[2]) / (ret_A95[2] - ret_A50[2])))
-  }
-  if (!is.na(EstRetenAtAge[1,1])) {
-    FemRetProbAtAge <- EstRetenAtAge[,1]
-    MalRetProbAtAge <- EstRetenAtAge[,2]
-  }
-
-  # Calculate selectivity of landings at age
-  FemSelLandAtAge <- FemGearSelAtAge * FemRetProbAtAge
-  MalSelLandAtAge <- MalGearSelAtAge * MalRetProbAtAge
-
-  # Calculate selectivity of discards at age
-  FemSelDiscAtAge <- FemGearSelAtAge * (1 - FemRetProbAtAge)
-  MalSelDiscAtAge <- MalGearSelAtAge * (1 - MalRetProbAtAge)
-
-  # calculate female and male mortality at age associated with discarding of undersize fish
-  FemDiscFAtAge <- FMort * DiscMort * FemSelDiscAtAge
-  MalDiscFAtAge <- FMort * DiscMort * MalSelDiscAtAge
-
-  # calculate female and male mortality at age associated with landings
-  FemLandFAtAge <- FMort * FemSelLandAtAge
-  MalLandFAtAge <- FMort * MalSelLandAtAge
-
-  # calculate (total) female and male fishing mortality at age
-  if (DiscMort >= 0.001) {
-    FemFAtAge <- FMort * (FemSelLandAtAge + (DiscMort * FemSelDiscAtAge))
-    MalFAtAge <- FMort * (MalSelLandAtAge + (DiscMort * MalSelDiscAtAge))
-  } else {
-    FemFAtAge <- FMort * FemSelLandAtAge
-    MalFAtAge <- FMort * MalSelLandAtAge
-  }
+  # Calculate fishing mortality at age associated with discarding, landings, and combined.
+  res=CalcFishingMortalityAtAge(FMort, DiscMort, FemSelDiscAtAge, MalSelDiscAtAge, FemSelLandAtAge, MalSelLandAtAge)
+  FemDiscFAtAge = res$FemDiscFAtAge; MalDiscFAtAge = res$MalDiscFAtAge
+  FemLandFAtAge = res$FemLandFAtAge; MalLandFAtAge = res$MalLandFAtAge
+  FemFAtAge = res$FemFAtAge; MalFAtAge = res$MalFAtAge
 
   # calculate female and male total mortality at age
   FemZAtAge <- FemFAtAge + NatMort
   MalZAtAge <- MalFAtAge + NatMort
 
   # calculate relative unfished female and male survival at age
-  UnfishFemSurvAtAge <- rep(0,nTimeSteps)
-  UnfishMalSurvAtAge <- rep(0,nTimeSteps)
-  tempUnfishFemSurvAtAge <- rep(0,nTimeSteps)
-  tempUnfishMalSurvAtAge <- rep(0,nTimeSteps)
-  for (j in 1:nTimeSteps) {
-    if (j==1) { # age=0
-      UnfishFemSurvAtAge[j] <- InitRatioFem
-      UnfishMalSurvAtAge[j] <- (1 - InitRatioFem)
-    }
-    else if (j < nTimeSteps) {
-      UnfishFemSurvAtAge[j] <- UnfishFemSurvAtAge[j-1] * exp(-NatMort * TimeStep)
-      UnfishMalSurvAtAge[j] <- UnfishMalSurvAtAge[j-1] * exp(-NatMort * TimeStep)
-    }
-    else if (j==nTimeSteps) { # maximum model age, plus group
-      UnfishFemSurvAtAge[j] <- (UnfishFemSurvAtAge[j-1] * exp(-NatMort * TimeStep)) /
-        (1 - exp(-NatMort))
-      UnfishMalSurvAtAge[j] <- (UnfishMalSurvAtAge[j-1] * exp(-NatMort * TimeStep)) /
-        (1 - exp(-NatMort))
-    }
-
-    if (ReprodPattern > 1) { # hermaphroditic species
-      # assuming that, regardless of fishing pattern, the sex ratio at age is determined by
-      # by the logistic curve describing probability of sex change at age
-      tempUnfishFemSurvAtAge[j] = PropFemAtAge[j] * (UnfishFemSurvAtAge[j] + UnfishMalSurvAtAge[j])
-      tempUnfishMalSurvAtAge[j] = (1 - PropFemAtAge[j]) * (UnfishFemSurvAtAge[j] + UnfishMalSurvAtAge[j])
-      UnfishFemSurvAtAge[j] = tempUnfishFemSurvAtAge[j]
-      UnfishMalSurvAtAge[j] = tempUnfishMalSurvAtAge[j]
-    }
-  }
+  res=CalcSurvivalAtAge(nTimeSteps, InitRatioFem, NatMort, FMort, FemZAtAge, MalZAtAge, ReprodPattern, PropFemAtAge)
+  UnfishFemSurvAtAge = res$UnfishFemSurvAtAge; UnfishMalSurvAtAge = res$UnfishMalSurvAtAge
+  FishFemSurvAtAge = res$FishFemSurvAtAge; FishMalSurvAtAge = res$FishMalSurvAtAge
 
   # calculate female and male unfished spawning biomass at age
-  UnfishFemBiomAtAge <- UnfishFemSurvAtAge * FemPropMatAtAge * (((FemWtAtAge * 1000) ^ ReprodScale) / 1000)
-  UnfishMalBiomAtAge <- UnfishMalSurvAtAge * MalPropMatAtAge * (((MalWtAtAge * 1000) ^ ReprodScale) / 1000)
+  UnfishFemSpBiomAtAge <- UnfishFemSurvAtAge * FemPropMatAtAge * (((FemWtAtAge * 1000) ^ ReprodScale) / 1000)
+  UnfishMalSpBiomAtAge <- UnfishMalSurvAtAge * MalPropMatAtAge * (((MalWtAtAge * 1000) ^ ReprodScale) / 1000)
 
-  # Unfished spawning biomass in kg
-  UnfishFemSpawnBiom <- sum(UnfishFemBiomAtAge)
-  UnfishMalSpawnBiom <- sum(UnfishMalBiomAtAge)
-  UnfishCombSexSpawnBiom <- UnfishFemSpawnBiom + UnfishMalSpawnBiom
-
-  # calculate female and male survival at age for fished population
-  FishedFemSurvAtAge <- rep(0,nTimeSteps)
-  FishedMalSurvAtAge <- rep(0,nTimeSteps)
-  tempFishedFemSurvAtAge <- rep(0,nTimeSteps)
-  tempFishedMalSurvAtAge <- rep(0,nTimeSteps)
-  for (j in 1:nTimeSteps) {
-    if (j==1) { # age=0
-      FishedFemSurvAtAge[j] <- InitRatioFem
-      FishedMalSurvAtAge[j] <- (1 - InitRatioFem)
-    }
-    else if (j < nTimeSteps) {
-      FishedFemSurvAtAge[j] <- FishedFemSurvAtAge[j-1] * exp(-FemZAtAge[j-1] * TimeStep)
-      FishedMalSurvAtAge[j] <- FishedMalSurvAtAge[j-1] * exp(-MalZAtAge[j-1] * TimeStep)
-    }
-    else if (j==nTimeSteps) { # maximum model age, plus group
-      FishedFemSurvAtAge[j] <- FishedFemSurvAtAge[j-1] * exp(-FemZAtAge[j-1] * TimeStep) /
-        (1 - exp(-(FMort+NatMort)))
-      FishedMalSurvAtAge[j] <- FishedMalSurvAtAge[j-1] * exp(-MalZAtAge[j-1] * TimeStep) /
-        (1 - exp(-(FMort+NatMort)))
-    }
-
-    if (ReprodPattern > 1) { # hermaphroditic species
-      # assuming that, regardless of fishing pattern, the sex ratio at age is determined by
-      # by the logistic curve describing probability of sex change at age
-      tempFishedFemSurvAtAge[j] = PropFemAtAge[j] * (FishedFemSurvAtAge[j] + FishedMalSurvAtAge[j])
-      tempFishedMalSurvAtAge[j] = (1 - PropFemAtAge[j]) * (FishedFemSurvAtAge[j] + FishedMalSurvAtAge[j])
-      FishedFemSurvAtAge[j] = tempFishedFemSurvAtAge[j]
-      FishedMalSurvAtAge[j] = tempFishedMalSurvAtAge[j]
-    }
-  }
+  # Total unfished spawning biomass in kg
+  UnfishFemSpBiom <- sum(UnfishFemSpBiomAtAge)
+  UnfishMalSpBiom <- sum(UnfishMalSpBiomAtAge)
+  UnfishCombSexSpBiom <- UnfishFemSpBiom + UnfishMalSpBiom
 
   # calculate female and male mature biomass at age for fished population
-  FemPropMatAtAge * FemWtAtAge
-  FishedFemBiomAtAge <- FishedFemSurvAtAge * FemPropMatAtAge * (((FemWtAtAge * 1000) ^ ReprodScale) / 1000)
-  FishedMalBiomAtAge <- FishedMalSurvAtAge * MalPropMatAtAge * (((MalWtAtAge * 1000) ^ ReprodScale) / 1000)
+  FishFemSpBiomAtAge <- FishFemSurvAtAge * FemPropMatAtAge * (((FemWtAtAge * 1000) ^ ReprodScale) / 1000)
+  FishMalSpBiomAtAge <- FishMalSurvAtAge * MalPropMatAtAge * (((MalWtAtAge * 1000) ^ ReprodScale) / 1000)
 
-  # calculate female and male catch at age (in numbers) - Baranov catch equation
-  FemCatchAtAgeNum <- FishedFemSurvAtAge * (FemLandFAtAge/FemZAtAge) *
-    (1 - exp(-(FemZAtAge * TimeStep)))
-  MalCatchAtAgeNum <- FishedMalSurvAtAge * (MalLandFAtAge/MalZAtAge) *
-    (1 - exp(-(MalZAtAge * TimeStep)))
+  # calculate retained female and male catches at age (in numbers) - Baranov catch equation
+  FemCatchAtAgeNum <- FishFemSurvAtAge * (FemLandFAtAge/FemZAtAge) * (1 - exp(-(FemZAtAge * TimeStep)))
+  MalCatchAtAgeNum <- FishMalSurvAtAge * (MalLandFAtAge/MalZAtAge) * (1 - exp(-(MalZAtAge * TimeStep)))
 
   # calculate female and male discarded catch at age (in numbers) - Baranov catch equation
   # (including fish that either survive or die after release)
-  FemRelCatchAtAgeNum <- FishedFemSurvAtAge * ((FMort * FemSelDiscAtAge)/FemZAtAge) *
-    (1 - exp(-(FemZAtAge * TimeStep)))
-  MalRelCatchAtAgeNum <- FishedMalSurvAtAge * ((FMort * MalSelDiscAtAge)/MalZAtAge) *
-    (1 - exp(-(MalZAtAge * TimeStep)))
+  FemRelCatchAtAgeNum <- FishFemSurvAtAge * ((FMort * FemSelDiscAtAge)/FemZAtAge) * (1 - exp(-(FemZAtAge * TimeStep)))
+  MalRelCatchAtAgeNum <- FishMalSurvAtAge * ((FMort * MalSelDiscAtAge)/MalZAtAge) * (1 - exp(-(MalZAtAge * TimeStep)))
 
-  # calculate female and male catch at age (in biomass)
+  # calculate retained female and male catch at age (in biomass)
   FemCatchAtAge <- FemCatchAtAgeNum * FemWtAtAge
   MalCatchAtAge <- MalCatchAtAgeNum * MalWtAtAge
 
@@ -6440,124 +6643,88 @@ CalcYPRAndSPRForFMort_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
   YPR <- max(0,sum(FemCatchAtAge) + sum(MalCatchAtAge))
 
   # calculate female and male spawning biomass per recruit in kg
-  FishFemSpawnBiom <- sum(FishedFemBiomAtAge)
-  FishMalSpawnBiom <- sum(FishedMalBiomAtAge)
-  FishCombSexSpawnBiom <- FishFemSpawnBiom + FishMalSpawnBiom
+  FishFemSpBiom <- sum(FishFemSpBiomAtAge)
+  FishMalSpBiom <- sum(FishMalSpBiomAtAge)
+  FishCombSexSpBiom <- FishFemSpBiom + FishMalSpBiom
 
   # calculate spawning potential ratio (SPR)
-  Fem_SPR <- max(0,FishFemSpawnBiom / UnfishFemSpawnBiom)
-  Mal_SPR <- max(0,FishMalSpawnBiom / UnfishMalSpawnBiom)
-  CombSex_SPR <- (FishFemSpawnBiom + FishMalSpawnBiom)  / (UnfishFemSpawnBiom + UnfishMalSpawnBiom)
+  Fem_SPR <- max(0,FishFemSpBiom / UnfishFemSpBiom)
+  Mal_SPR <- max(0,FishMalSpBiom / UnfishMalSpBiom)
+  CombSex_SPR <- (FishFemSpBiom + FishMalSpBiom)  / (UnfishFemSpBiom + UnfishMalSpBiom)
 
   if (ReprodPattern == 1) { # gonochoristic species
-    UnfishSpawnBiom = UnfishFemSpawnBiom
-    FishSpawnBiom = FishFemSpawnBiom
+    UnfishSpBiom = UnfishFemSpBiom
+    FishSpBiom = FishFemSpBiom
   }
   if (ReprodPattern > 1) { # hermaphroditic species
-    UnfishSpawnBiom = UnfishCombSexSpawnBiom
-    FishSpawnBiom = FishCombSexSpawnBiom
+    UnfishSpBiom = UnfishCombSexSpBiom
+    FishSpBiom = FishCombSexSpBiom
   }
 
-  if (SRrel_Type == 1) { # Beverton-Holt
-
-    # Define Beverton and Holt stock-recruitment relationship
-    # to account for impacts of fishing on recruitment, i.e. through its impact on spawning biomass
-    # (which is typically ignored in standard per recruit models)
-    BH_SRRa <- (UnfishSpawnBiom / 1.0) * ((1-Steepness) / (4*Steepness))
-    BH_SRRb <- (Steepness - 0.2) / (0.8 * Steepness * 1.0)
-
-    # Check that the specified initial recruitment can be recovered,
-    # given the S_R parameters and unfished female biomass
-    # (Check <- UnfishSpawnBiom/(BH_SRRa + BH_SRRb * UnfishSpawnBiom))
-
-    # calculate equilibrium recruitment
-    BH_Equil_Rec <- (FishSpawnBiom-BH_SRRa) / (BH_SRRb*FishSpawnBiom)
-
-    # Equations from Norm Hall - Beverton and Holt and Ricker relationship,
-    # when both parameterised using steepness
-  }
-  if (SRrel_Type == 2) { # Ricker
-    BH_SRRa = NA
-    BH_SRRb = NA
-    BH_Equil_Rec = NA
-  }
-
-  # Alternative method for deriving equilbrium recruitment
-  if (SRrel_Type == 1) { # Beverton-Holt
-    Equil_Rec = ((4 * Steepness * FishSpawnBiom) - (1 - Steepness) * UnfishSpawnBiom) /
-      (5 * (Steepness - 0.2) * FishSpawnBiom)
-  }
-
-  if (SRrel_Type == 2) { # Ricker
-    # Ricker
-    Equil_Rec <- (UnfishSpawnBiom * (1- ((4 * log(UnfishSpawnBiom/FishSpawnBiom)) /
-                                           (5 * log(5 * Steepness))))) / FishSpawnBiom
-  }
+  # calculate equilibrium recruitment from stock recruitment relationship
+  Eq_Rec = CalcEquilibriumRecruitment(SRrel_Type, Steepness, FishSpBiom, UnfishSpBiom)
 
   # calculate equilibrium catch
-  Equil_Catch <- max(0,Equil_Rec * YPR)
+  Eq_Catch <- max(0,Eq_Rec * YPR)
 
   # calculate equilibrium female spawning biomass
-  Equil_FemSpBiom <- Equil_Rec * FishFemSpawnBiom
-  Equil_MalSpBiom <- Equil_Rec * FishMalSpawnBiom
+  Eq_FemSpBiom <- Eq_Rec * FishFemSpBiom
+  Eq_MalSpBiom <- Eq_Rec * FishMalSpBiom
 
   # calculate equilibrium model SPR
-  Equilmod_FemRelBiom <- max(0,Equil_FemSpBiom / UnfishFemSpawnBiom)
-  Equilmod_MalRelBiom <- max(0,Equil_MalSpBiom / UnfishMalSpawnBiom)
-  Equilmod_CombSexRelBiom <- (Equil_FemSpBiom + Equil_MalSpBiom) / (UnfishFemSpawnBiom + UnfishMalSpawnBiom)
+  Eq_FemRelSpBiom <- max(0,Eq_FemSpBiom / UnfishFemSpBiom)
+  Eq_MalRelSpBiom <- max(0,Eq_MalSpBiom / UnfishMalSpBiom)
+  Eq_CombSexRelSpBiom <- (Eq_FemSpBiom + Eq_MalSpBiom) / (UnfishFemSpBiom + UnfishMalSpBiom)
 
-  Results = list(Ages = Ages,
-                 YPR = YPR,
+  ModelDiag = data.frame(Ages = Ages,
+                         UnfishFemSurvAtAge = UnfishFemSurvAtAge,
+                         UnfishMalSurvAtAge = UnfishMalSurvAtAge,
+                         UnfishFemSpBiomAtAge = UnfishFemSpBiomAtAge,
+                         UnfishMalSpBiomAtAge = UnfishMalSpBiomAtAge,
+                         FishFemSurvAtAge = FishFemSurvAtAge,
+                         FishMalSurvAtAge = FishMalSurvAtAge,
+                         FishFemSpBiomAtAge = FishFemSpBiomAtAge,
+                         FishMalSpBiomAtAge = FishMalSpBiomAtAge,
+                         FemCatchAtAgeNum = FemCatchAtAgeNum,
+                         MalCatchAtAgeNum = MalCatchAtAgeNum,
+                         FemCatchAtAge = FemCatchAtAge,
+                         MalCatchAtAge = MalCatchAtAge,
+                         FemRelCatchAtAgeNum = FemRelCatchAtAgeNum,
+                         MalRelCatchAtAgeNum = MalRelCatchAtAgeNum,
+                         FemLenAtAge = FemLenAtAge,
+                         MalLenAtAge = MalLenAtAge,
+                         FemWtAtAge = FemWtAtAge,
+                         MalWtAtAge = MalWtAtAge,
+                         PropFemAtAge = PropFemAtAge,
+                         FemPropMatAtAge = FemPropMatAtAge,
+                         MalPropMatAtAge = MalPropMatAtAge,
+                         FemGearSelAtAge = FemGearSelAtAge,
+                         MalGearSelAtAge = MalGearSelAtAge,
+                         FemRetProbAtAge = FemRetProbAtAge,
+                         MalRetProbAtAge = MalRetProbAtAge,
+                         FemSelLandAtAge = FemSelLandAtAge,
+                         MalSelLandAtAge = MalSelLandAtAge,
+                         FemSelDiscAtAge = FemSelDiscAtAge,
+                         MalSelDiscAtAge = MalSelDiscAtAge,
+                         FemDiscFAtAge = FemDiscFAtAge,
+                         MalDiscFAtAge = MalDiscFAtAge,
+                         FemLandFAtAge = FemLandFAtAge,
+                         MalLandFAtAge = MalLandFAtAge,
+                         FemFAtAge = FemFAtAge,
+                         MalFAtAge = MalFAtAge,
+                         FemZAtAge = FemZAtAge,
+                         MalZAtAge = MalZAtAge)
+
+  Results = list(YPR = YPR,
                  Fem_SPR = Fem_SPR,
                  Mal_SPR = Mal_SPR,
                  CombSex_SPR = CombSex_SPR,
-                 UnfishFemSurvAtAge = UnfishFemSurvAtAge,
-                 UnfishMalSurvAtAge = UnfishMalSurvAtAge,
-                 UnfishFemBiomAtAge = UnfishFemBiomAtAge,
-                 UnfishMalBiomAtAge = UnfishMalBiomAtAge,
-                 FishedFemSurvAtAge = FishedFemSurvAtAge,
-                 FishedMalSurvAtAge = FishedMalSurvAtAge,
-                 FishedFemBiomAtAge = FishedFemBiomAtAge,
-                 FishedMalBiomAtAge = FishedMalBiomAtAge,
-                 FemCatchAtAgeNum = FemCatchAtAgeNum,
-                 MalCatchAtAgeNum = MalCatchAtAgeNum,
-                 FemCatchAtAge = FemCatchAtAge,
-                 MalCatchAtAge = MalCatchAtAge,
-                 FemRelCatchAtAgeNum = FemRelCatchAtAgeNum,
-                 MalRelCatchAtAgeNum = MalRelCatchAtAgeNum,
-                 BH_SRRa = BH_SRRa,
-                 BH_SRRb = BH_SRRb,
-                 BH_Equil_Rec = BH_Equil_Rec,
-                 Equil_Rec = Equil_Rec,
-                 Equil_Catch = Equil_Catch,
-                 Equil_FemSpBiom = Equil_FemSpBiom,
-                 Equil_MalSpBiom = Equil_MalSpBiom,
-                 Equilmod_FemRelBiom = Equilmod_FemRelBiom,
-                 Equilmod_MalRelBiom = Equilmod_MalRelBiom,
-                 Equilmod_CombSexRelBiom = Equilmod_CombSexRelBiom,
-                 FemLenAtAge = FemLenAtAge,
-                 MalLenAtAge = MalLenAtAge,
-                 FemWtAtAge = FemWtAtAge,
-                 MalWtAtAge = MalWtAtAge,
-                 PropFemAtAge = PropFemAtAge,
-                 FemPropMatAtAge = FemPropMatAtAge,
-                 MalPropMatAtAge = MalPropMatAtAge,
-                 FemGearSelAtAge = FemGearSelAtAge,
-                 MalGearSelAtAge = MalGearSelAtAge,
-                 FemRetProbAtAge = FemRetProbAtAge,
-                 MalRetProbAtAge = MalRetProbAtAge,
-                 FemSelLandAtAge = FemSelLandAtAge,
-                 MalSelLandAtAge = MalSelLandAtAge,
-                 FemSelDiscAtAge = FemSelDiscAtAge,
-                 MalSelDiscAtAge = MalSelDiscAtAge,
-                 FemDiscFAtAge = FemDiscFAtAge,
-                 MalDiscFAtAge = MalDiscFAtAge,
-                 FemLandFAtAge = FemLandFAtAge,
-                 MalLandFAtAge = MalLandFAtAge,
-                 FemFAtAge = FemFAtAge,
-                 MalFAtAge = MalFAtAge,
-                 FemZAtAge = FemZAtAge,
-                 MalZAtAge = MalZAtAge)
+                 Eq_Rec = Eq_Rec,
+                 Eq_Catch = Eq_Catch,
+                 Eq_FemRelSpBiom = Eq_FemRelSpBiom,
+                 Eq_MalRelSpBiom = Eq_MalRelSpBiom,
+                 Eq_CombSexRelSpBiom = Eq_CombSexRelSpBiom,
+                 ModelDiag = ModelDiag)
 
   return(Results)
 }
@@ -6577,7 +6744,7 @@ CalcYPRAndSPRForFMort_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
 #' @param RefnceAges reference ages for Schnute model, set to NA if using von Bertalanffy model
 #'
 #' @return MeanSizeAtAge
-CalcMeanSizeAtAgeForPerRecruitAnalysis <- function(GrowthCurveType, MaxModelAge, Ages, GrowthParams, RefnceAges) {
+CalcMeanSizeAtAge <- function(GrowthCurveType, MaxModelAge, Ages, GrowthParams, RefnceAges) {
 
   MeanSizeAtAge <- data.frame(matrix(nrow = 2, ncol = length(Ages)))
   colnames(MeanSizeAtAge) <- round(Ages,2)
@@ -6638,7 +6805,7 @@ CalcMeanSizeAtAgeForPerRecruitAnalysis <- function(GrowthCurveType, MaxModelAge,
 
 #' Calculates weight at length for each sex for length-based per recruit analysis
 #'
-#' This function calculates mean size at age for each sex, based on power curve,
+#' This function calculates weight at length for each sex, based on a power curve,
 #' log-log relationship, or allows for these to be used as vectors inputted by user,
 #' for length-based per recruit analysis
 #'
@@ -6653,7 +6820,7 @@ CalcMeanSizeAtAgeForPerRecruitAnalysis <- function(GrowthCurveType, MaxModelAge,
 #'
 #' @return FemWtAtLen
 #' @return MalWtAtLen
-CalcWeightAtLengthForPerRecruitAnalysis <- function(lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtLen, midpt) {
+CalcWeightAtLength <- function(lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtLen, midpt) {
 
 
   # calculate weight at length (i.e. for corresponding relative age)
@@ -6676,6 +6843,130 @@ CalcWeightAtLengthForPerRecruitAnalysis <- function(lenwt_a, ln_lenwt_a, lenwt_b
                  MalWtAtLen=MalWtAtLen)
 
 }
+
+#' Calculate proportion of fish at length that are females
+#'
+#' This function calculates proportion of fish at length that are females,
+#' based on reproductive pattern (gonochoristic or hermaphroditic), and
+#' sex change parameters
+#'
+#' @keywords internal
+#'
+#' @param FinalSex_L50 logistic sex change parameter
+#' @param FinalSex_L95 logistic sex change parameter
+#' @param FinalSex_Pmax logistic sex change parameter
+#' @param ReprodPattern 1=gonochoristic, 2=protogynous, 3=protandrous
+#' @param midpt length class mid-points
+#'
+#' @return PropFemAtLen
+CalcPropFemAtLength <- function(FinalSex_L50, FinalSex_L95, FinalSex_Pmax, ReprodPattern, midpt) {
+
+  # calculate proportion female at length
+  if (ReprodPattern == 1) { # gonochorism
+    PropFemAtLen = NA
+  }
+  if (ReprodPattern == 2) { # protogynous hermaphroditism (female to male sex change)
+    PropFemAtLen = 1 - (FinalSex_Pmax / (1 + exp(-log(19) * (midpt - FinalSex_L50) / (FinalSex_L95 - FinalSex_L50))))
+  }
+  if (ReprodPattern == 3) { # protandrous hermaphroditism (male to female sex change)
+    PropFemAtLen = FinalSex_Pmax / (1 + exp(-log(19) * (midpt - FinalSex_L50) / (FinalSex_L95 - FinalSex_L50)))
+  }
+
+  results = PropFemAtLen
+
+  return(results)
+
+}
+
+
+#' Calculate proportion of fish at length that are mature
+#'
+#' This function calculates proportion of fish at length that are mature,
+#' based on input maturity parameters, or from set input maturity schedules
+#'
+#' @keywords internal
+#'
+#' @param mat_L50 logistic maturity parameter
+#' @param mat_L95 logistic maturity parameter
+#' @param EstMatAtLen input maturity schedules (could be set to NA)
+#' @param midpt length class mid-points
+#'
+#' @return FemPropMatAtLen
+#' @return MalPropMatAtLen
+CalcPropMatureAtLength <- function(mat_L50, mat_L95, EstMatAtLen, midpt) {
+
+  if (is.na(EstMatAtLen[1,1])) {
+    FemPropMatAtLen <- 1 / (1 + exp(-log(19) * (midpt - mat_L50[1]) / (mat_L95[1] - mat_L50[1])))
+    MalPropMatAtLen <- 1 / (1 + exp(-log(19) * (midpt - mat_L50[2]) / (mat_L95[2] - mat_L50[2])))
+  }
+  if (!is.na(EstMatAtLen[1,1])) {
+    FemPropMatAtLen <- EstMatAtLen[,1]
+    MalPropMatAtLen <- EstMatAtLen[,2]
+  }
+
+  results = list(FemPropMatAtLen=FemPropMatAtLen,
+                 MalPropMatAtLen=MalPropMatAtLen)
+
+  return(results)
+
+}
+
+
+#' Calculate relative equilibrium recruitment
+#'
+#' This function calculates expected relative equilibrium recruitment from stock-recruitment
+#' relationship, given steepness, and fished and unfished spawning biomass per recruitment
+#'
+#' @keywords internal
+#'
+#' @param SRrel_Type stock recruitment relationship 1=Beverton-Holt, 2=Ricker
+#' @param Steepness steepness of the stock-recruitmnet relationship
+#' @param FishSpBiom fished spawning biomass per recruit (females for gonochoristic species, combined sex for hermaphroditic species)
+#' @param UnfishSpBiom fished spawning biomass per recruit (females for gonochoristic species, combined sex for hermaphroditic species)
+#'
+#' @return Eq_Rec
+CalcEquilibriumRecruitment <- function(SRrel_Type, Steepness, FishSpBiom, UnfishSpBiom) {
+
+
+  # Calculate equilbrium recruitment
+  if (SRrel_Type == 1) { # Beverton-Holt
+    Eq_Rec = ((4 * Steepness * FishSpBiom) - (1 - Steepness) * UnfishSpBiom) /
+      (5 * (Steepness - 0.2) * FishSpBiom)
+  }
+  if (SRrel_Type == 2) { # Ricker
+    # Ricker
+    Eq_Rec <- (UnfishSpBiom * (1- ((4 * log(UnfishSpBiom/FishSpBiom)) /
+                                           (5 * log(5 * Steepness))))) / FishSpBiom
+  }
+  #check = (Unfish_FemBiomPerRecSpawnSeas-SR_alpha)/(SR_beta*Unfish_FemBiomPerRecSpawnSeas)
+
+  # Alternative parameterisation for Beverton-Holt relationship
+  # if (SRrel_Type == 1) { # Beverton-Holt
+  #   BH_SRRa <- (UnfishSpBiom / 1.0) * ((1-Steepness) / (4*Steepness))
+  #   BH_SRRb <- (Steepness - 0.2) / (0.8 * Steepness * 1.0)
+  # Check that the specified initial recruitment can be recovered,
+  # given the S_R parameters and unfished female biomass
+  # (Check <- UnfishSpBiom/(BH_SRRa + BH_SRRb * UnfishSpBiom))
+
+  # calculate equilibrium recruitment
+  # BH_Eq_Rec <- (FishSpBiom-BH_SRRa) / (BH_SRRb*FishSpBiom)
+
+  # Equations from Norm Hall - Beverton and Holt and Ricker relationship,
+  # when both parameterised using steepness
+  # }
+  # if (SRrel_Type == 2) { # Ricker
+  #   BH_SRRa = NA
+  #   BH_SRRb = NA
+  #   # BH_Eq_Rec = NA
+  # }
+
+  results = Eq_Rec
+
+  return(results)
+
+}
+
+
 
 #' Calculates inputs required to calculate length transition matrices, for length-based per recruit analysis
 #'
@@ -6751,43 +7042,47 @@ GetLTMInputsForPerRecruitAnalysis <- function(GrowthCurveType, TimeStep, MaxAge,
 #' This function outputs random fish lengths, calculated from length-based per recruit analysis
 #' with specified fishing mortality (PerRecFishLen), expected mean length (PerRecLenFreq),
 #' 95 percent confidence limits for mean length (MeanCatchLen.95ci), and 60 and 95 percent
-#' prediction intervals for mean length (MeanCatchLen.60pi, MeanCatchLen.95pi). Values are calculated
+#' prediction intervals for mean length (CatchLen.60qntl, CatchLen.95qntl). Values are calculated
 #' for females, males and combined sexes.
 #'
 #' @keywords internal
 #'
 #' @param midpt length class mid-points
-#' @param FemCatchNum female per recruit catch numbers at length
-#' @param MalCatchNum male per recruit catch numbers at length
-#' @param CombSexCatchNum
+#' @param FemCatchNumLen female per recruit catch numbers at length
+#' @param MalCatchNumLen male per recruit catch numbers at length
+#' @param CombSexCatchNumLen
 #'
 #' @return PerRecRandFishLen
 #' @return PerRecMeanCatchLen
 #' @return PerRecLenFreq
 #' @return MeanCatchLen.95ci
-#' @return MeanCatchLen.60pi
-#' @return MeanCatchLen.95pi
+#' @return CatchLen.60qntl
+#' @return CatchLen.95qntl
 #' @return PerRecRandFishWt
 #' @return PerRecMeanCatchWt
 #' @return MeanCatchWt.95ci
-#' @return MeanCatchWt.60pi
-#' @return MeanCatchWt.95pi
+#' @return CatchWt.60qntl
+#' @return CatchWt.95qntl
 #'
-CalcPerRecruitFishLenAndFishWtStats<- function(midpt, FemCatchNum, MalCatchNum, CombSexCatchNum,
-                                               FemWtAtLen, MalWtAtLen) {
+CalcPerRecruitFishLenAndFishWtStats<- function(lbnd, midpt, ubnd, FemCatchNumLen, MalCatchNumLen, CombSexCatchNumLen,
+                                               lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtLen) {
+
 
   # get approx. 95 and 60% confidence intervals for mean catch length
-  FemProbs = FemCatchNum/sum(FemCatchNum)
+  LenInterv = (ubnd[1] - lbnd[1]) / 2 # randomising fish lengths, within each length class
+  FemProbs = FemCatchNumLen/sum(FemCatchNumLen)
   FemLenFreq = as.vector(rmultinom(1,10000,FemProbs))
-  FemFishLen = rep(midpt, FemLenFreq)
-  FemFishWt = rep(FemWtAtLen, FemLenFreq)
-  MalProbs = MalCatchNum/sum(MalCatchNum)
+  FemFishLen = rep(midpt, FemLenFreq) + runif(10000,-LenInterv, LenInterv)
+  MalProbs = MalCatchNumLen/sum(MalCatchNumLen)
   MalLenFreq = as.vector(rmultinom(1,10000,MalProbs))
-  MalFishLen = rep(midpt, MalLenFreq)
-  MalFishWt = rep(MalWtAtLen, MalLenFreq)
-  CombSexProbs = CombSexCatchNum/sum(CombSexCatchNum)
+  MalFishLen = rep(midpt, MalLenFreq) + runif(10000,-LenInterv, LenInterv)
+  CombSexProbs = CombSexCatchNumLen/sum(CombSexCatchNumLen)
   CombSexLenFreq = as.vector(rmultinom(1,10000,CombSexProbs))
-  CombSexFishLen = rep(midpt, CombSexLenFreq)
+  CombSexFishLen = rep(midpt, CombSexLenFreq) + runif(10000,-LenInterv, LenInterv)
+  res=CalcWeightAtLength(lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtLen, FemFishLen)
+  FemFishWt = res$FemWtAtLen
+  res=CalcWeightAtLength(lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtLen, MalFishLen)
+  MalFishWt = res$MalWtAtLen
   FishWtsBothSexes = c(FemFishWt, MalFishWt)
   CombSexFishWt = sample(FishWtsBothSexes, 10000, replace = FALSE, prob=NULL)
 
@@ -6807,9 +7102,6 @@ CalcPerRecruitFishLenAndFishWtStats<- function(midpt, FemCatchNum, MalCatchNum, 
                              CombSexLenFreq=CombSexLenFreq)
 
   # calculate mean catch length
-  # FemMeanCatchLen = sum(FemCatchNum * midpt) / sum(FemCatchNum)
-  # MalMeanCatchLen = sum(MalCatchNum * midpt) / sum(MalCatchNum)
-  # CombSexMeanCatchLen = sum((CombSexCatchNum * midpt)) / sum(CombSexCatchNum)
   FemMeanCatchLen = mean(FemFishLen)
   MalMeanCatchLen = mean(MalFishLen)
   CombSexMeanCatchLen = mean(CombSexFishLen)
@@ -6818,8 +7110,6 @@ CalcPerRecruitFishLenAndFishWtStats<- function(midpt, FemCatchNum, MalCatchNum, 
                                   CombSexMeanCatchLen=CombSexMeanCatchLen)
 
   # calculate mean catch weight
-  # FemMeanCatchWt = sum(FemCatchNum * FemWtAtLen) / sum(FemCatchNum)
-  # MalMeanCatchWt = sum(MalCatchNum * MalWtAtLen) / sum(MalCatchNum)
   FemMeanCatchWt = mean(FemFishWt)
   MalMeanCatchWt = mean(MalFishWt)
   CombSexMeanCatchWt = mean(CombSexFishWt)
@@ -6843,45 +7133,36 @@ CalcPerRecruitFishLenAndFishWtStats<- function(midpt, FemCatchNum, MalCatchNum, 
                                 MalMeanCatchWt.95ci=MalMeanCatchWt.95ci,
                                 CombSexMeanCatchWt.95ci=CombSexMeanCatchWt.95ci)
 
-  # calculate standard error of the prediction
-  FemMSE = sqrt(sum((FemFishLen-FemMeanCatchLen)^2) / (10000 - 2))
-  MalMSE = sqrt(sum((MalFishLen-MalMeanCatchLen)^2) / (10000 - 2))
-  CombSexMSE = sqrt(sum((CombSexFishLen-CombSexMeanCatchLen)^2) / (10000 - 2))
+  # 60 and 95 percent quantile ranges for catch length
+  FemCatchLen.95qntl = c(quantile(FemFishLen, 0.025),quantile(FemFishLen, 0.975))
+  MalCatchLen.95qntl = c(quantile(MalFishLen, 0.025),quantile(MalFishLen, 0.975))
+  CombSexCatchLen.95qntl = c(quantile(CombSexFishLen, 0.025),quantile(CombSexFishLen, 0.975))
+  CatchLen.95qntl = data.frame(FemCatchLen.95qntl=FemCatchLen.95qntl,
+                                 MalCatchLen.95qntl=MalCatchLen.95qntl,
+                                 CombSexCatchLen.95qntl=CombSexCatchLen.95qntl)
 
-  # 60 and 95 percent prediction intervals for mean catch length
-  FemMeanCatchLen.95pi = FemMeanCatchLen + c(-1.96,1.96) * FemMSE * (sqrt(1 + (1/10000)))
-  MalMeanCatchLen.95pi = MalMeanCatchLen + c(-1.96,1.96) * MalMSE * (sqrt(1 + (1/10000)))
-  CombSexMeanCatchLen.95pi = CombSexMeanCatchLen + c(-1.96,1.96) * CombSexMSE * (sqrt(1 + (1/10000)))
-  MeanCatchLen.95pi = data.frame(FemMeanCatchLen.95pi=FemMeanCatchLen.95pi,
-                                 MalMeanCatchLen.95pi=MalMeanCatchLen.95pi,
-                                 CombSexMeanCatchLen.95pi=CombSexMeanCatchLen.95pi)
+  FemCatchLen.60qntl = c(quantile(FemFishLen, 0.2),quantile(FemFishLen, 0.8))
+  MalCatchLen.60qntl = c(quantile(MalFishLen, 0.2),quantile(MalFishLen, 0.8))
+  CombSexCatchLen.60qntl = c(quantile(CombSexFishLen, 0.2),quantile(CombSexFishLen, 0.8))
+  CatchLen.60qntl = data.frame(FemCatchLen.60qntl=FemCatchLen.60qntl,
+                                 MalCatchLen.60qntl=MalCatchLen.60qntl,
+                                 CombSexCatchLen.60qntl=CombSexCatchLen.60qntl)
 
-  FemMeanCatchLen.60pi = FemMeanCatchLen + c(-0.84,0.84) * FemMSE * (sqrt(1 + (1/10000)))
-  MalMeanCatchLen.60pi = MalMeanCatchLen + c(-0.84,0.84) * MalMSE * (sqrt(1 + (1/10000)))
-  CombSexMeanCatchLen.60pi = CombSexMeanCatchLen + c(-0.84,0.84) * CombSexMSE * (sqrt(1 + (1/10000)))
-  MeanCatchLen.60pi = data.frame(FemMeanCatchLen.60pi=FemMeanCatchLen.60pi,
-                                 MalMeanCatchLen.60pi=MalMeanCatchLen.60pi,
-                                 CombSexMeanCatchLen.60pi=CombSexMeanCatchLen.60pi)
 
-  # calculate standard error of the prediction, for weight
-  FemMSEwt = sqrt(sum((FemFishWt - FemMeanCatchWt)^2) / (10000 - 2))
-  MalMSEwt = sqrt(sum((MalFishWt - MalMeanCatchWt)^2) / (10000 - 2))
-  CombSexMSEwt = sqrt(sum((CombSexFishWt - CombSexMeanCatchWt)^2) / (10000 - 2))
+  # 60 and 95 percent quantile ranges for catch weight
+  FemCatchWt.95qntl = c(quantile(FemFishWt, 0.025),quantile(FemFishWt, 0.975))
+  MalCatchWt.95qntl = c(quantile(MalFishWt, 0.025),quantile(MalFishWt, 0.975))
+  CombSexCatchWt.95qntl = c(quantile(CombSexFishWt, 0.025),quantile(CombSexFishWt, 0.975))
+  CatchWt.95qntl = data.frame(FemCatchWt.95qntl=FemCatchWt.95qntl,
+                                 MalCatchWt.95qntl=MalCatchWt.95qntl,
+                                 CombSexCatchWt.95qntl=CombSexCatchWt.95qntl)
 
-  # 60 and 95 percent prediction intervals for mean catch weight
-  FemMeanCatchWt.95pi = FemMeanCatchWt + c(-1.96,1.96) * FemMSEwt * (sqrt(1 + (1/10000)))
-  MalMeanCatchWt.95pi = MalMeanCatchWt + c(-1.96,1.96) * MalMSEwt * (sqrt(1 + (1/10000)))
-  CombSexMeanCatchWt.95pi = CombSexMeanCatchWt + c(-1.96,1.96) * CombSexMSEwt * (sqrt(1 + (1/10000)))
-  MeanCatchWt.95pi = data.frame(FemMeanCatchWt.95pi=FemMeanCatchWt.95pi,
-                                MalMeanCatchWt.95pi=MalMeanCatchWt.95pi,
-                                CombSexMeanCatchWt.95pi=CombSexMeanCatchWt.95pi)
-
-  FemMeanCatchWt.60pi = FemMeanCatchWt + c(-0.84,0.84) * FemMSEwt * (sqrt(1 + (1/10000)))
-  MalMeanCatchWt.60pi = MalMeanCatchWt + c(-0.84,0.84) * MalMSEwt * (sqrt(1 + (1/10000)))
-  CombSexMeanCatchWt.60pi = CombSexMeanCatchWt + c(-0.84,0.84) * CombSexMSEwt * (sqrt(1 + (1/10000)))
-  MeanCatchWt.60pi = data.frame(FemMeanCatchWt.60pi=FemMeanCatchWt.60pi,
-                                MalMeanCatchWt.60pi=MalMeanCatchWt.60pi,
-                                CombSexMeanCatchWt.60pi=CombSexMeanCatchWt.60pi)
+  FemCatchWt.60qntl = c(quantile(FemFishWt, 0.2),quantile(FemFishWt, 0.8))
+  MalCatchWt.60qntl = c(quantile(MalFishWt, 0.2),quantile(MalFishWt, 0.8))
+  CombSexCatchWt.60qntl = c(quantile(CombSexFishWt, 0.2),quantile(CombSexFishWt, 0.8))
+  CatchWt.60qntl = data.frame(FemCatchWt.60qntl=FemCatchWt.60qntl,
+                                 MalCatchWt.60qntl=MalCatchWt.60qntl,
+                                 CombSexCatchWt.60qntl=CombSexCatchWt.60qntl)
 
   # save random fish lengths and ages
   RandFishLen = data.frame(FemFishLen=FemFishLen,
@@ -6896,19 +7177,114 @@ CalcPerRecruitFishLenAndFishWtStats<- function(midpt, FemCatchNum, MalCatchNum, 
                  PerRecLenFreq=PerRecLenFreq,
                  PerRecMeanCatchLen=PerRecMeanCatchLen,
                  MeanCatchLen.95ci=MeanCatchLen.95ci,
-                 MeanCatchLen.60pi=MeanCatchLen.60pi,
-                 MeanCatchLen.95pi=MeanCatchLen.95pi,
+                 CatchLen.60qntl=CatchLen.60qntl,
+                 CatchLen.95qntl=CatchLen.95qntl,
                  PerRecRandFishWt=PerRecRandFishWt,
                  PerRecMeanCatchWt=PerRecMeanCatchWt,
                  MeanCatchWt.95ci=MeanCatchWt.95ci,
-                 MeanCatchWt.60pi=MeanCatchWt.60pi,
-                 MeanCatchWt.95pi=MeanCatchWt.95pi,
+                 CatchWt.60qntl=CatchWt.60qntl,
+                 CatchWt.95qntl=CatchWt.95qntl,
                  RandFishLen = RandFishLen,
                  RandFishWt = RandFishWt)
 
   return(Results)
 
 }
+
+
+#' Calculate gear selectivity and retention at length
+#'
+#' Calculate gear selectivity and retention at the mid point for eac length class,
+#' given input parameters
+#'
+#' @keywords internal
+#'
+#' @param Ages ages for analysis calculated from max age and model timestep
+#' @param sel_L50 logistic gear selectivity curve parameter
+#' @param sel_L95 logistic gear selectivity curve parameter
+#' @param ret_L50 logistic gear retention curve parameter
+#' @param ret_L95 logistic gear retention curve parameter
+#' @param ret_Pmax logistic gear retention curve parameter
+#'
+#' @return FemGearSelAtAge, MalGearSelAtAge, FemRetProbAtAge, MalRetProbAtAge
+CalcSelectivityAndRetentionAtLen <- function(midpt, sel_L50, sel_L95, ret_L50, ret_L95, ret_Pmax) {
+
+
+  # Calculate gear selectivity at age
+  FemGearSelAtLen <- 1/(1+exp(-log(19) * (midpt - sel_L50[1]) / (sel_L95[1] - sel_L50[1])))
+  MalGearSelAtLen <- 1/(1+exp(-log(19) * (midpt - sel_L50[2]) / (sel_L95[2] - sel_L50[2])))
+
+  # Calculate fish retention at age
+  FemRetProbAtLen <- ret_Pmax[1] / (1+exp(-log(19) * (midpt - ret_L50[1]) / (ret_L95[1] - ret_L50[1])))
+  MalRetProbAtLen <- ret_Pmax[2] / (1+exp(-log(19) * (midpt - ret_L50[2]) / (ret_L95[2] - ret_L50[2])))
+
+  # Calculate selectivity of landings at age
+  FemSelLandAtLen <- FemGearSelAtLen * FemRetProbAtLen
+  MalSelLandAtLen <- MalGearSelAtLen * MalRetProbAtLen
+
+  # Calculate selectivity of discards at age
+  FemSelDiscAtLen <- FemGearSelAtLen * (1 - FemRetProbAtLen)
+  MalSelDiscAtLen <- MalGearSelAtLen * (1 - MalRetProbAtLen)
+
+  results = list(FemGearSelAtLen = FemGearSelAtLen,
+                 MalGearSelAtLen = MalGearSelAtLen,
+                 FemRetProbAtLen = FemRetProbAtLen,
+                 MalRetProbAtLen = MalRetProbAtLen,
+                 FemSelLandAtLen = FemSelLandAtLen,
+                 MalSelLandAtLen = MalSelLandAtLen,
+                 FemSelDiscAtLen = FemSelDiscAtLen,
+                 MalSelDiscAtLen = MalSelDiscAtLen)
+
+  return(results)
+
+}
+
+#' Calculate fishing mortality at length (discards and landings)
+#'
+#' Calculate fishing mortality at the mid point of each length class, associated with discarding, landings, and
+#' combined.
+#'
+#' @keywords internal
+#'
+#' @param FMort fully-selected fishing mortality
+#' @param DiscMort proportion of discarded fish that die
+#' @param FemSelDiscAtLen selectivity of discarding at length for females
+#' @param MalSelDiscAtLen selectivity of discarding at length for males
+#' @param FemSelLandAtLen selectivity of landings at length for females
+#' @param MalSelLandAtLen selectivity of landings at length for males
+#'
+#' @return FemDiscFAtLen, MalDiscFAtLen, FemLandFAtLen, MalLandFAtLen, FemFAtLen, MalFAtLen
+CalcFishingMortalityAtLen <- function(FMort, DiscMort, FemSelDiscAtLen, MalSelDiscAtLen,
+                                      FemSelLandAtLen, MalSelLandAtLen) {
+
+  # calculate female and male fishing mortality at length associated with discarding of undersize fish
+  FemDiscFAtLen <- FMort * DiscMort * FemSelDiscAtLen
+  MalDiscFAtLen <- FMort * DiscMort * MalSelDiscAtLen
+
+  # calculate female and male fishing mortality at length associated with landings
+  FemLandFAtLen <- FMort * FemSelLandAtLen
+  MalLandFAtLen <- FMort * MalSelLandAtLen
+
+  # calculate (total) female and male fishing mortality at length
+  if (DiscMort >= 0.001) {
+    FemFAtLen <- FMort * (FemSelLandAtLen + (DiscMort * FemSelDiscAtLen))
+    MalFAtLen <- FMort * (MalSelLandAtLen + (DiscMort * MalSelDiscAtLen))
+  } else {
+    FemFAtLen <- FMort * FemSelLandAtLen
+    MalFAtLen <- FMort * MalSelLandAtLen
+  }
+
+  results = list(FemDiscFAtLen = FemDiscFAtLen,
+                 MalDiscFAtLen = MalDiscFAtLen,
+                 FemLandFAtLen = FemLandFAtLen,
+                 MalLandFAtLen = MalLandFAtLen,
+                 FemFAtLen = FemFAtLen,
+                 MalFAtLen = MalFAtLen)
+
+  return(results)
+
+}
+
 
 #' Get outputs from length-based per recruit analysis for a specified value of fishing mortality
 #'
@@ -6959,10 +7335,9 @@ CalcPerRecruitFishLenAndFishWtStats<- function(midpt, FemCatchNum, MalCatchNum, 
 #' Fish_MalBiomPerRecAtAge), unfished female and male biomass at age (Unfish_FemBiomAtAge, Unfish_MalBiomAtAge),
 #' fished female and male biomass at age (Fish_FemBiomAtAge, Fish_MalBiomAtAge), female and male catch biomass (FemCatchBiom, MalCatchBiom),
 #' yield per recruit for combined sexes (YPR), female, male and combined sex spawning potential ratio (Fem_SPR, Mal_SPR, CombSex_SPR),
-#' derived Beverton-Holt stock recruitment parameters and associated equilibrium recruitment derived from those
-#' parameters (BH_SRRa, BH_SRRb, BH_Equil_Rec), equilibrium recruitment for either Beverton-Holt or Ricker relationship (Equil_Rec),
-#' equilibrium catch (Equil_Catch), female and male and spawning biomass (Equil_FemSpBiom, Equil_MalSpBiom), equilibrium relative
-#' female, male and combined sex spawning biomass (Equilmod_FemRelBiom, Equilmod_MalRelBiom, Equilmod_CombSexRelBiom), mean size at
+#' equilibrium recruitment for either Beverton-Holt or Ricker relationship (Eq_Rec),
+#' equilibrium catch (Eq_Catch), female and male and spawning biomass (Eq_FemSpBiom, Eq_MalSpBiom), equilibrium relative
+#' female, male and combined sex spawning biomass (Eq_FemRelSpBiom, Eq_MalRelSpBiom, Eq_CombSexRelSpBiom), mean size at
 #' age of females and males (MeanSizeAtAge), female and male weight at length (FemWtAtLen, MalWtAtLen), female and male proportion
 #' mature at length (FemPropMatAtLen, MalPropMatAtLen), female and male gear selectivity at length (FemGearSelAtLen, MalGearSelAtLen),
 #' female and male retention at length (FemRetProbAtLen, MalRetProbAtLen), female and male selectivity of landings at length
@@ -7036,66 +7411,32 @@ CalcYPRAndSPRForFMort_LB<- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
   nTimeSteps <- length(Ages)
 
   # calculate mean size at age
-  MeanSizeAtAge = CalcMeanSizeAtAgeForPerRecruitAnalysis(GrowthCurveType, MaxModelAge, Ages, GrowthParams, RefnceAges)
+  MeanSizeAtAge = CalcMeanSizeAtAge(GrowthCurveType, MaxModelAge, Ages, GrowthParams, RefnceAges)
 
   # calculate weight at length
-  res=CalcWeightAtLengthForPerRecruitAnalysis(lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtLen, midpt)
-  FemWtAtLen = res$FemWtAtLen
-  MalWtAtLen = res$MalWtAtLen
+  res=CalcWeightAtLength(lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtLen, midpt)
+  FemWtAtLen = res$FemWtAtLen; MalWtAtLen = res$MalWtAtLen
 
-  # for sex-changing species, calculate proportion female at age
-  if (ReprodPattern == 1) { # gonochorism
-    PropFemAtLen = NA
-  }
-  if (ReprodPattern == 2) { # protogynous hermaphroditism (female to male sex change)
-    PropFemAtLen = 1 - (FinalSex_Pmax / (1 + exp(-log(19) * (midpt - FinalSex_L50) / (FinalSex_L95 - FinalSex_L50))))
-  }
-  if (ReprodPattern == 3) { # protandrous hermaphroditism (male to female sex change)
-    PropFemAtLen = FinalSex_Pmax / (1 + exp(-log(19) * (midpt - FinalSex_L50) / (FinalSex_L95 - FinalSex_L50)))
-  }
+  # calculate proportion female at length
+  PropFemAtLen=CalcPropFemAtLength(FinalSex_L50, FinalSex_L95, FinalSex_Pmax, ReprodPattern, midpt)
 
   # calculate proportion mature at length
-  if (is.na(EstMatAtLen[1,1])) {
-    FemPropMatAtLen <- 1 / (1 + exp(-log(19) * (midpt - mat_L50[1]) / (mat_L95[1] - mat_L50[1])))
-    MalPropMatAtLen <- 1 / (1 + exp(-log(19) * (midpt - mat_L50[2]) / (mat_L95[2] - mat_L50[2])))
-  }
-  if (!is.na(EstMatAtLen[1,1])) {
-    FemPropMatAtLen <- EstMatAtLen[,1]
-    MalPropMatAtLen <- EstMatAtLen[,2]
-  }
+  res=CalcPropMatureAtLength(mat_L50, mat_L95, EstMatAtLen, midpt)
+  FemPropMatAtLen=res$FemPropMatAtLen; MalPropMatAtLen=res$MalPropMatAtLen
 
-  # Calculate gear selectivity at age
-  FemGearSelAtLen <- 1/(1+exp(-log(19) * (midpt - sel_L50[1]) / (sel_L95[1] - sel_L50[1])))
-  MalGearSelAtLen <- 1/(1+exp(-log(19) * (midpt - sel_L50[2]) / (sel_L95[2] - sel_L50[2])))
+  # calculate selectivity and retention at length, including for landings and discards
+  # using retention-function approach
+  res=CalcSelectivityAndRetentionAtLen(midpt, sel_L50, sel_L95, ret_L50, ret_L95, ret_Pmax)
+  FemGearSelAtLen = res$FemGearSelAtLen; MalGearSelAtLen = res$MalGearSelAtLen
+  FemRetProbAtLen = res$FemRetProbAtLen; MalRetProbAtLen = res$MalRetProbAtLen
+  FemSelLandAtLen = res$FemSelLandAtLen; MalSelLandAtLen = res$MalSelLandAtLen
+  FemSelDiscAtLen = res$FemSelDiscAtLen; MalSelDiscAtLen = res$MalSelDiscAtLen
 
-  # Calculate fish retention at age
-  FemRetProbAtLen <- ret_Pmax[1] / (1+exp(-log(19) * (midpt - ret_L50[1]) / (ret_L95[1] - ret_L50[1])))
-  MalRetProbAtLen <- ret_Pmax[2] / (1+exp(-log(19) * (midpt - ret_L50[2]) / (ret_L95[2] - ret_L50[2])))
-
-  # Calculate selectivity of landings at age
-  FemSelLandAtLen <- FemGearSelAtLen * FemRetProbAtLen
-  MalSelLandAtLen <- MalGearSelAtLen * MalRetProbAtLen
-
-  # Calculate selectivity of discards at age
-  FemSelDiscAtLen <- FemGearSelAtLen * (1 - FemRetProbAtLen)
-  MalSelDiscAtLen <- MalGearSelAtLen * (1 - MalRetProbAtLen)
-
-  # calculate female and male mortality at age associated with discarding of undersize fish
-  FemDiscFAtLen <- FMort * DiscMort * FemSelDiscAtLen
-  MalDiscFAtLen <- FMort * DiscMort * MalSelDiscAtLen
-
-  # calculate female and male mortality at age associated with landings
-  FemLandFAtLen <- FMort * FemSelLandAtLen
-  MalLandFAtLen <- FMort * MalSelLandAtLen
-
-  # calculate (total) female and male fishing mortality at age
-  if (DiscMort >= 0.001) {
-    FemFAtLen <- FMort * (FemSelLandAtLen + (DiscMort * FemSelDiscAtLen))
-    MalFAtLen <- FMort * (MalSelLandAtLen + (DiscMort * MalSelDiscAtLen))
-  } else {
-    FemFAtLen <- FMort * FemSelLandAtLen
-    MalFAtLen <- FMort * MalSelLandAtLen
-  }
+  # Calculate fishing mortality at length associated with discarding, landings, and combined.
+  res=CalcFishingMortalityAtLen(FMort, DiscMort, FemSelDiscAtLen, MalSelDiscAtLen, FemSelLandAtLen, MalSelLandAtLen)
+  FemDiscFAtLen = res$FemDiscFAtLen; MalDiscFAtLen = res$MalDiscFAtLen
+  FemLandFAtLen = res$FemLandFAtLen; MalLandFAtLen = res$MalLandFAtLen
+  FemFAtLen = res$FemFAtLen; MalFAtLen = res$MalFAtLen
 
   # calculate female and male total mortality at age
   FemZAtLen <- FemFAtLen + NatMort
@@ -7124,198 +7465,126 @@ CalcYPRAndSPRForFMort_LB<- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
                                         MalZAtLen, PropFemAtLen, LTM_Fem, LTM_Mal, FemWtAtLen, MalWtAtLen, ReprodScale,
                                         FemPropMatAtLen, MalPropMatAtLen)
 
-  Unfish_FemNPerRecAtAge=PopnRes$Unfish_FemNPerRecAtAge
-  Fish_FemNPerRecAtAge=PopnRes$Fish_FemNPerRecAtAge
-  Unfish_MalNPerRecAtAge=PopnRes$Unfish_MalNPerRecAtAge
-  Fish_MalNPerRecAtAge=PopnRes$Fish_MalNPerRecAtAge
-  Unfish_FemNPerRec=PopnRes$Unfish_FemNPerRec
-  Fish_FemNPerRec=PopnRes$Fish_FemNPerRec
-  Unfish_MalNPerRec=PopnRes$Unfish_MalNPerRec
-  Fish_MalNPerRec=PopnRes$Fish_MalNPerRec
-  Unfish_FemBiomPerRecAtAge = PopnRes$Unfish_FemBiomPerRecAtAge
-  Fish_FemBiomPerRecAtAge = PopnRes$Fish_FemBiomPerRecAtAge
-  Unfish_MalBiomPerRecAtAge = PopnRes$Unfish_MalBiomPerRecAtAge
-  Fish_MalBiomPerRecAtAge = PopnRes$Fish_MalBiomPerRecAtAge
-  Unfish_FemBiomAtAge = PopnRes$Unfish_FemBiomAtAge
-  Fish_FemBiomAtAge = PopnRes$Fish_FemBiomAtAge
-  Unfish_MalBiomAtAge = PopnRes$Unfish_MalBiomAtAge
-  Fish_MalBiomAtAge = PopnRes$Fish_MalBiomAtAge
+  Unfish_FemNPerRecAtAge=PopnRes$Unfish_FemNPerRecAtAge; Fish_FemNPerRecAtAge=PopnRes$Fish_FemNPerRecAtAge
+  Unfish_MalNPerRecAtAge=PopnRes$Unfish_MalNPerRecAtAge; Fish_MalNPerRecAtAge=PopnRes$Fish_MalNPerRecAtAge
+  Unfish_FemBiomPerRecAtAge = PopnRes$Unfish_FemBiomPerRecAtAge; Fish_FemBiomPerRecAtAge = PopnRes$Fish_FemBiomPerRecAtAge
+  Unfish_MalBiomPerRecAtAge = PopnRes$Unfish_MalBiomPerRecAtAge; Fish_MalBiomPerRecAtAge = PopnRes$Fish_MalBiomPerRecAtAge
+  Unfish_FemBiomAtAge = PopnRes$Unfish_FemBiomAtAge; Fish_FemBiomAtAge = PopnRes$Fish_FemBiomAtAge
+  Unfish_MalBiomAtAge = PopnRes$Unfish_MalBiomAtAge; Fish_MalBiomAtAge = PopnRes$Fish_MalBiomAtAge
+  Unfish_FemNPerRecLen=PopnRes$Unfish_FemNPerRec; Fish_FemNPerRecLen=PopnRes$Fish_FemNPerRec
+  Unfish_MalNPerRecLen=PopnRes$Unfish_MalNPerRec; Fish_MalNPerRecLen=PopnRes$Fish_MalNPerRec
 
   # Unfished spawning biomass in kg
-  UnfishFemSpawnBiom <- sum(Unfish_FemBiomAtAge)
-  UnfishMalSpawnBiom <- sum(Unfish_MalBiomAtAge)
-  UnfishCombSexSpawnBiom <- UnfishFemSpawnBiom + UnfishMalSpawnBiom
+  UnfishFemSpBiom <- sum(Unfish_FemBiomAtAge)
+  UnfishMalSpBiom <- sum(Unfish_MalBiomAtAge)
+  UnfishCombSexSpBiom <- UnfishFemSpBiom + UnfishMalSpBiom
 
   # Fished spawning biomass in kg
-  FishFemSpawnBiom <- sum(Fish_FemBiomAtAge)
-  FishMalSpawnBiom <- sum(Fish_MalBiomAtAge)
-  FishCombSexSpawnBiom <- FishFemSpawnBiom + FishMalSpawnBiom
+  FishFemSpBiom <- sum(Fish_FemBiomAtAge)
+  FishMalSpBiom <- sum(Fish_MalBiomAtAge)
+  FishCombSexSpBiom <- FishFemSpBiom + FishMalSpBiom
 
   # calculate catch yield (biomass)
-  FemCatchBiom = (FemLandFAtLen/FemZAtLen) * (1-exp(-FemZAtLen)) * Fish_FemNPerRec * FemWtAtLen
-  MalCatchBiom = (MalLandFAtLen/MalZAtLen) * (1-exp(-MalZAtLen)) * Fish_MalNPerRec * MalWtAtLen
-  CombSexCatchBiom = FemCatchBiom + MalCatchBiom
+  FemCatchBiomLen = (FemLandFAtLen/FemZAtLen) * (1-exp(-FemZAtLen)) * Fish_FemNPerRecLen * FemWtAtLen
+  MalCatchBiomLen = (MalLandFAtLen/MalZAtLen) * (1-exp(-MalZAtLen)) * Fish_MalNPerRecLen * MalWtAtLen
+  CombSexCatchBiomLen = FemCatchBiomLen + MalCatchBiomLen
 
   # calculate catch yield (numbers)
-  FemCatchNum = (FemLandFAtLen/FemZAtLen) * (1-exp(-FemZAtLen)) * Fish_FemNPerRec
-  MalCatchNum = (MalLandFAtLen/MalZAtLen) * (1-exp(-MalZAtLen)) * Fish_MalNPerRec
-  CombSexCatchNum = FemCatchNum + MalCatchNum
-
-  # Random data and stats for expected lengths and weights in catches
-  CatchLenWtRes = CalcPerRecruitFishLenAndFishWtStats(midpt, FemCatchNum, MalCatchNum, CombSexCatchNum,
-                                                 FemWtAtLen, MalWtAtLen)
-
-  PerRecRandFishLen = CatchLenWtRes$PerRecRandFishLen
-  PerRecLenFreq = CatchLenWtRes$PerRecLenFreq
-  PerRecMeanCatchLen = CatchLenWtRes$PerRecMeanCatchLen
-  MeanCatchLen.95ci = CatchLenWtRes$MeanCatchLen.95ci
-  MeanCatchLen.60pi = CatchLenWtRes$MeanCatchLen.60pi
-  MeanCatchLen.95pi = CatchLenWtRes$MeanCatchLen.95pi
-  PerRecRandFishWt = CatchLenWtRes$PerRecRandFishWt
-  PerRecMeanCatchWt = CatchLenWtRes$PerRecMeanCatchWt
-  MeanCatchWt.95ci = CatchLenWtRes$MeanCatchWt.95ci
-  MeanCatchWt.60pi = CatchLenWtRes$MeanCatchWt.60pi
-  MeanCatchWt.95pi = CatchLenWtRes$MeanCatchWt.95pi
-  RandFishLen = CatchLenWtRes$RandFishLen
-  RandFishWt = CatchLenWtRes$RandFishWt
+  FemCatchNumLen = (FemLandFAtLen/FemZAtLen) * (1-exp(-FemZAtLen)) * Fish_FemNPerRecLen
+  MalCatchNumLen = (MalLandFAtLen/MalZAtLen) * (1-exp(-MalZAtLen)) * Fish_MalNPerRecLen
+  CombSexCatchNumLen = FemCatchNumLen + MalCatchNumLen
 
   # calculate yield per recruit in kg
-  YPR <- max(0,sum(FemCatchBiom) + sum(MalCatchBiom))
+  YPR <- max(0,sum(FemCatchBiomLen) + sum(MalCatchBiomLen))
 
   # calculate spawning potential ratio (SPR)
-  Fem_SPR <- max(0,FishFemSpawnBiom / UnfishFemSpawnBiom)
-  Mal_SPR <- max(0,FishMalSpawnBiom / UnfishMalSpawnBiom)
-  CombSex_SPR <- (FishFemSpawnBiom + FishMalSpawnBiom)  / (UnfishFemSpawnBiom + UnfishMalSpawnBiom)
+  Fem_SPR <- max(0,FishFemSpBiom / UnfishFemSpBiom)
+  Mal_SPR <- max(0,FishMalSpBiom / UnfishMalSpBiom)
+  CombSex_SPR <- (FishFemSpBiom + FishMalSpBiom)  / (UnfishFemSpBiom + UnfishMalSpBiom)
 
   if (ReprodPattern == 1) { # gonochoristic species
-    UnfishSpawnBiom = UnfishFemSpawnBiom
-    FishSpawnBiom = FishFemSpawnBiom
+    UnfishSpBiom = UnfishFemSpBiom
+    FishSpBiom = FishFemSpBiom
   }
   if (ReprodPattern > 1) { # hermaphroditic species
-    UnfishSpawnBiom = UnfishCombSexSpawnBiom
-    FishSpawnBiom = FishCombSexSpawnBiom
+    UnfishSpBiom = UnfishCombSexSpBiom
+    FishSpBiom = FishCombSexSpBiom
   }
 
-  if (SRrel_Type == 1) { # Beverton-Holt
-    BH_SRRa <- (UnfishSpawnBiom / 1.0) * ((1-Steepness) / (4*Steepness))
-    BH_SRRb <- (Steepness - 0.2) / (0.8 * Steepness * 1.0)
-    # Check that the specified initial recruitment can be recovered,
-    # given the S_R parameters and unfished female biomass
-    # (Check <- UnfishSpawnBiom/(BH_SRRa + BH_SRRb * UnfishSpawnBiom))
-
-    # calculate equilibrium recruitment
-    BH_Equil_Rec <- (FishSpawnBiom-BH_SRRa) / (BH_SRRb*FishSpawnBiom)
-
-    # Equations from Norm Hall - Beverton and Holt and Ricker relationship,
-    # when both parameterised using steepness
-  }
-  if (SRrel_Type == 2) { # Ricker
-    BH_SRRa = NA
-    BH_SRRb = NA
-    BH_Equil_Rec = NA
-  }
-
-  # Alternative method for deriving equilbrium recruitment
-  if (SRrel_Type == 1) { # Beverton-Holt
-    Equil_Rec = ((4 * Steepness * FishSpawnBiom) - (1 - Steepness) * UnfishSpawnBiom) /
-      (5 * (Steepness - 0.2) * FishSpawnBiom)
-  }
-  if (SRrel_Type == 2) { # Ricker
-    # Ricker
-    Equil_Rec <- (UnfishSpawnBiom * (1- ((4 * log(UnfishSpawnBiom/FishSpawnBiom)) /
-                                           (5 * log(5 * Steepness))))) / FishSpawnBiom
-  }
-  #check = (Unfish_FemBiomPerRecSpawnSeas-SR_alpha)/(SR_beta*Unfish_FemBiomPerRecSpawnSeas)
+  # Calculate equilibrium recruitment from stock recruitment relationship
+  Eq_Rec = CalcEquilibriumRecruitment(SRrel_Type, Steepness, FishSpBiom, UnfishSpBiom)
 
   # calculate equilibrium catch
-  Equil_Catch <- max(0,Equil_Rec * YPR)
+  Eq_Catch <- max(0,Eq_Rec * YPR)
 
   # calculate equilibrium female spawning biomass
-  Equil_FemSpBiom <- Equil_Rec * FishFemSpawnBiom
-  Equil_MalSpBiom <- Equil_Rec * FishMalSpawnBiom
+  Eq_FemSpBiom <- Eq_Rec * FishFemSpBiom
+  Eq_MalSpBiom <- Eq_Rec * FishMalSpBiom
 
   # calculate equilibrium model SPR
-  Equilmod_FemRelBiom <- max(0,Equil_FemSpBiom / UnfishFemSpawnBiom)
-  Equilmod_MalRelBiom <- max(0,Equil_MalSpBiom / UnfishMalSpawnBiom)
-  Equilmod_CombSexRelBiom <- max(0,(Equil_FemSpBiom + Equil_MalSpBiom) / (UnfishFemSpawnBiom + UnfishMalSpawnBiom))
+  Eq_FemRelSpBiom <- max(0,Eq_FemSpBiom / UnfishFemSpBiom)
+  Eq_MalRelSpBiom <- max(0,Eq_MalSpBiom / UnfishMalSpBiom)
+  Eq_CombSexRelSpBiom <- max(0,(Eq_FemSpBiom + Eq_MalSpBiom) / (UnfishFemSpBiom + UnfishMalSpBiom))
 
-  Results = list(RecLenDist=RecLenDist,
-                 PropFemAtLen=PropFemAtLen,
-                 Unfish_FemNPerRec=Unfish_FemNPerRec,
-                 Unfish_MalNPerRec=Unfish_MalNPerRec,
-                 Fish_FemNPerRec=Fish_FemNPerRec,
-                 Fish_MalNPerRec=Fish_MalNPerRec,
-                 Unfish_FemNPerRecAtAge=Unfish_FemNPerRecAtAge,
-                 Unfish_MalNPerRecAtAge=Unfish_MalNPerRecAtAge,
-                 Fish_FemNPerRecAtAge=Fish_FemNPerRecAtAge,
-                 Fish_MalNPerRecAtAge=Fish_MalNPerRecAtAge,
-                 Unfish_FemBiomPerRecAtAge=Unfish_FemBiomPerRecAtAge,
-                 Unfish_MalBiomPerRecAtAge=Unfish_MalBiomPerRecAtAge,
-                 Fish_FemBiomPerRecAtAge=Fish_FemBiomPerRecAtAge,
-                 Fish_MalBiomPerRecAtAge=Fish_MalBiomPerRecAtAge,
-                 Unfish_FemBiomAtAge=Unfish_FemBiomAtAge,
-                 Unfish_MalBiomAtAge=Unfish_MalBiomAtAge,
-                 Fish_FemBiomAtAge=Fish_FemBiomAtAge,
-                 Fish_MalBiomAtAge=Fish_MalBiomAtAge,
-                 FemCatchBiom=FemCatchBiom,
-                 MalCatchBiom=MalCatchBiom,
-                 CombSexCatchBiom=CombSexCatchBiom,
-                 FemCatchNum=FemCatchNum,
-                 MalCatchNum=MalCatchNum,
-                 CombSexCatchNum=CombSexCatchNum,
-                 PerRecRandFishLen=PerRecRandFishLen,
-                 PerRecLenFreq=PerRecLenFreq,
-                 PerRecMeanCatchLen=PerRecMeanCatchLen,
-                 MeanCatchLen.95ci=MeanCatchLen.95ci,
-                 MeanCatchLen.60pi=MeanCatchLen.60pi,
-                 MeanCatchLen.95pi=MeanCatchLen.95pi,
-                 RandFishLen = RandFishLen,
-                 PerRecRandFishWt=PerRecRandFishWt,
-                 PerRecMeanCatchWt=PerRecMeanCatchWt,
-                 MeanCatchWt.95ci=MeanCatchWt.95ci,
-                 MeanCatchWt.60pi=MeanCatchWt.60pi,
-                 MeanCatchWt.95pi=MeanCatchWt.95pi,
-                 RandFishWt = RandFishWt,
-                 YPR = YPR,
+  ModelDiag <- list(FemWtAtLen = FemWtAtLen,
+                          MalWtAtLen = MalWtAtLen,
+                          FemPropMatAtLen = FemPropMatAtLen,
+                          MalPropMatAtLen = MalPropMatAtLen,
+                          FemGearSelAtLen = FemGearSelAtLen,
+                          MalGearSelAtLen = MalGearSelAtLen,
+                          FemRetProbAtLen = FemRetProbAtLen,
+                          MalRetProbAtLen = MalRetProbAtLen,
+                          FemSelLandAtLen = FemSelLandAtLen,
+                          MalSelLandAtLen = MalSelLandAtLen,
+                          FemSelDiscAtLen = FemSelDiscAtLen,
+                          MalSelDiscAtLen = MalSelDiscAtLen,
+                          FemDiscFAtLen = FemDiscFAtLen,
+                          MalDiscFAtLen = MalDiscFAtLen,
+                          FemLandFAtLen = FemLandFAtLen,
+                          MalLandFAtLen = MalLandFAtLen,
+                          FemFAtLen=FemFAtLen,
+                          MalFAtLen=MalFAtLen,
+                          FemZAtLen=FemZAtLen,
+                          MalZAtLen=MalZAtLen,
+                          RecLenDist=RecLenDist,
+                          PropFemAtLen=PropFemAtLen,
+                          Unfish_FemNPerRecLen=Unfish_FemNPerRecLen,
+                          Unfish_MalNPerRecLen=Unfish_MalNPerRecLen,
+                          Fish_FemNPerRecLen=Fish_FemNPerRecLen,
+                          Fish_MalNPerRecLen=Fish_MalNPerRecLen,
+                          FemCatchBiomLen=FemCatchBiomLen,
+                          MalCatchBiomLen=MalCatchBiomLen,
+                          CombSexCatchBiomLen=CombSexCatchBiomLen,
+                          FemCatchNumLen=FemCatchNumLen,
+                          MalCatchNumLen=MalCatchNumLen,
+                          CombSexCatchNumLen=CombSexCatchNumLen,
+                          Unfish_FemNPerRecAtAge=Unfish_FemNPerRecAtAge,
+                          Unfish_MalNPerRecAtAge=Unfish_MalNPerRecAtAge,
+                          Fish_FemNPerRecAtAge=Fish_FemNPerRecAtAge,
+                          Fish_MalNPerRecAtAge=Fish_MalNPerRecAtAge,
+                          Unfish_FemBiomPerRecAtAge=Unfish_FemBiomPerRecAtAge,
+                          Unfish_MalBiomPerRecAtAge=Unfish_MalBiomPerRecAtAge,
+                          Fish_FemBiomPerRecAtAge=Fish_FemBiomPerRecAtAge,
+                          Fish_MalBiomPerRecAtAge=Fish_MalBiomPerRecAtAge,
+                          Unfish_FemBiomAtAge=Unfish_FemBiomAtAge,
+                          Unfish_MalBiomAtAge=Unfish_MalBiomAtAge,
+                          Fish_FemBiomAtAge=Fish_FemBiomAtAge,
+                          Fish_MalBiomAtAge=Fish_MalBiomAtAge,
+                          MeanSizeAtAge = MeanSizeAtAge)
+
+  Results = list(YPR = YPR,
                  Fem_SPR = Fem_SPR,
                  Mal_SPR = Mal_SPR,
                  CombSex_SPR = CombSex_SPR,
-                 BH_SRRa = BH_SRRa,
-                 BH_SRRb = BH_SRRb,
-                 BH_Equil_Rec = BH_Equil_Rec,
-                 Equil_Rec = Equil_Rec,
-                 Equil_Catch = Equil_Catch,
-                 Equil_FemSpBiom = Equil_FemSpBiom,
-                 Equil_MalSpBiom = Equil_MalSpBiom,
-                 Equilmod_FemRelBiom = Equilmod_FemRelBiom,
-                 Equilmod_MalRelBiom = Equilmod_MalRelBiom,
-                 Equilmod_CombSexRelBiom = Equilmod_CombSexRelBiom,
-                 MeanSizeAtAge = MeanSizeAtAge,
-                 FemWtAtLen = FemWtAtLen,
-                 MalWtAtLen = MalWtAtLen,
-                 FemPropMatAtLen = FemPropMatAtLen,
-                 MalPropMatAtLen = MalPropMatAtLen,
-                 FemGearSelAtLen = FemGearSelAtLen,
-                 MalGearSelAtLen = MalGearSelAtLen,
-                 FemRetProbAtLen = FemRetProbAtLen,
-                 MalRetProbAtLen = MalRetProbAtLen,
-                 FemSelLandAtLen = FemSelLandAtLen,
-                 MalSelLandAtLen = MalSelLandAtLen,
-                 FemSelDiscAtLen = FemSelDiscAtLen,
-                 MalSelDiscAtLen = MalSelDiscAtLen,
-                 FemDiscFAtLen = FemDiscFAtLen,
-                 MalDiscFAtLen = MalDiscFAtLen,
-                 FemLandFAtLen = FemLandFAtLen,
-                 MalLandFAtLen = MalLandFAtLen,
-                 FemFAtLen=FemFAtLen,
-                 MalFAtLen=MalFAtLen,
-                 FemZAtLen=FemZAtLen,
-                 MalZAtLen=MalZAtLen)
+                 Eq_Rec = Eq_Rec,
+                 Eq_Catch = Eq_Catch,
+                 Eq_FemRelSpBiom = Eq_FemRelSpBiom,
+                 Eq_MalRelSpBiom = Eq_MalRelSpBiom,
+                 Eq_CombSexRelSpBiom = Eq_CombSexRelSpBiom,
+                 ModelDiag = ModelDiag)
 
   return(Results)
 }
-
-
 
 #' Get outputs from age-based per recruit analysis across a range of fishing mortality values
 #'
@@ -7363,30 +7632,29 @@ CalcYPRAndSPRForFMort_LB<- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
 #' proportion mature at age (FemPropMatAtAge, MalPropMatAtAge), female and male selectivity at age (FemSelAtAge, MalSelAtAge),
 #' yield-per-recruit (YPR), unfished female, male and combined sex spawning potential ratio (Fem_SPR, Mal_SPR,
 #' CombSex_SPR), unfished female and male per recruit survival at age (UnfishFemSurvAtAge, UnfishMalSurvAtAge),
-#' unfished female and male mature biomass at age (UnfishFemBiomAtAge, UnfishMalBiomAtAge), fished female and
+#' unfished female and male mature biomass at age (UnfishFemSpBiomAtAge, UnfishMalSpBiomAtAge), fished female and
 #' male spawning potential ratio (Fem_SPR, Mal_SPR), fished female and male per recruit survival at age
-#' (FishedFemSurvAtAge, FishedMalSurvAtAge), fished female and male mature biomass at age (FishedFemBiomAtAge,
-#' FishedMalBiomAtAge), female and male per recruit retained catches at age in numbers (FemCatchAtAgeNum, MalCatchAtAgeNum),
+#' (FishFemSurvAtAge, FishMalSurvAtAge), fished female and male mature biomass at age (FishFemSpBiomAtAge,
+#' FishMalSpBiomAtAge), female and male per recruit retained catches at age in numbers (FemCatchAtAgeNum, MalCatchAtAgeNum),
 #' female and male per recruit released catches at age in numbers, (FemRelCatchAtAgeNum, MalRelCatchAtAgeNum),
-#' female and male per recruit retained catches at age in biomass (FemCatchAtAge, MalCatchAtAge), and for the extended model, equilibrium recruitment (Equil_Rec),
-#' equilibrium catch (Equil_Catch), equilibrium female and male spawning biomass (Equil_FemSpBiom, Equil_MalSpBiom) and
-#' relative female, male and combined sex spawning biomass (Equilmod_FemRelBiom, Equilmod_MalRelBiom, Equilmod_CombSexRelBiom),
-#' Beverton-Holt stock-recruitment parameters (BH_SRRa, BH_SRRb), equilibrium recruitment from Beverton-Holt relationship (BH_Equil_Rec),
+#' female and male per recruit retained catches at age in biomass (FemCatchAtAge, MalCatchAtAge), and for the extended model, equilibrium recruitment (Eq_Rec),
+#' equilibrium catch (Eq_Catch), equilibrium female and male spawning biomass (Eq_FemSpBiom, Eq_MalSpBiom) and
+#' relative female, male and combined sex spawning biomass (Eq_FemRelSpBiom, Eq_MalRelSpBiom, Eq_CombSexRelSpBiom),
 #' female and male gear selectivity at age (FemGearSelAtAge, MalGearSelAtAge), female and male retention at age probabilities,
 #' (FemRetProbAtAge, MalRetProbAtAge), selectivity of female and male fish landings (FemSelLandAtAge, MalSelLandAtAge),
 #' female and male selectivity of discards (FemSelDiscAtAge, MalSelDiscAtAge), female and male fishing mortality
 #' associated with discarding (FemDiscFAtAge, MalDiscFAtAge), female and male fishing mortality associated with
 #' fish landings (FemLandFAtAge, MalLandFAtAge), female and male total fishing mortality at age (FemFAtAge, MalFAtAge),
 #' female and male total mortality at age (FemZAtAge, MalZAtAge)range of fishing mortality values applied for which per quantities are calculated
-#' (FishMort = seq(0,2,0.01)), equilibrium recruitment vs FMort (Equil_Rec), equilibrium catch vs FMort (Equil_Catch),
-#' equilibrium female spawning biomass vs FMort (Equil_FemSpBiom), equilibrium spawning potential ratio vs FMort
-#' (Equilmod_SPR), maximum yield per recruit (maxypr), maximum equilibrium catch (maxeqCatch), fishing mortality
-#' associated with maxypr (Fmax), fishing mortality associated with maxeqCatch (F_MSY or FmaxeqCatch), biomass target at 1.2maxeqCatch,
+#' (FishMort = seq(0,2,0.01)), equilibrium recruitment vs FMort (Eq_Rec), equilibrium catch vs FMort (Eq_Catch),
+#' equilibrium female spawning biomass vs FMort (Eq_FemSpBiom), equilibrium spawning potential ratio vs FMort
+#' (Eq_SPR), maximum yield per recruit (YPRmax), maximum equilibrium catch (maxeqCatch), fishing mortality
+#' associated with YPRmax (Fmax), fishing mortality associated with maxeqCatch (F_MSY or FmaxeqCatch), biomass target at 1.2maxeqCatch,
 #' (BMSY_Targ), biomass threshold at maxeqCatch (BMSY_Thresh), biomass threshold at 0.5maxeqCatch (BMSY_Lim),
-#' YPR vs FishMort (YPRResults), Equil_Catch vs FishMort (EquilCatchResults), Equilmod_FemRelBiom vs FishMort (Fem_SPRResults),
-#' Equilmod_MalRelBiom vs FishMort (Mal_SPRResults), Equilmod_FemRelBiom vs FishMort (Equilmod_FemRelBiomResults),
-#' Equilmod_MalRelBiom vs FishMort (Equilmod_MalRelBiomResults), Equilmod_CombSexRelBiom vs FishMort (CombSex_SPRResults),
-#' Equil_Rec vs FishMort (EquilRecResults)
+#' YPR vs FishMort (YPRResults), Eq_Catch vs FishMort (Eq_CatchResults), Eq_FemRelSpBiom vs FishMort (Fem_SPRResults),
+#' Eq_MalRelSpBiom vs FishMort (Mal_SPRResults), Eq_FemRelSpBiom vs FishMort (Eq_FemRelSpBiomResults),
+#' Eq_MalRelSpBiom vs FishMort (Eq_MalRelSpBiomResults), Eq_CombSexRelSpBiom vs FishMort (CombSex_SPRResults),
+#' Eq_Rec vs FishMort (Eq_RecResults)
 #'
 #' @examples
 #' # Example 1. Non-hermaphroditic species
@@ -7482,14 +7750,11 @@ GetPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Est
   Mal_SPRResults <- rep(0,nFVals)
   CombSex_SPRResults <- rep(0,nFVals)
 
-  EquilRecResults <- rep(0,nFVals)
-  EquilCatchResults <- rep(0,nFVals)
-  Equil_FemSpBiomResults <- rep(0,nFVals)
-  Equil_MalSpBiomResults <- rep(0,nFVals)
-
-  Equilmod_FemRelBiomResults <- rep(0,nFVals)
-  Equilmod_MalRelBiomResults <- rep(0,nFVals)
-  Equilmod_CombSexRelBiomResults <- rep(0,nFVals)
+  Eq_RecResults <- rep(0,nFVals)
+  Eq_CatchResults <- rep(0,nFVals)
+  Eq_FemRelSpBiomResults <- rep(0,nFVals)
+  Eq_MalRelSpBiomResults <- rep(0,nFVals)
+  Eq_CombSexRelSpBiomResults <- rep(0,nFVals)
 
 
   for (k in 1:nFVals) {
@@ -7506,29 +7771,27 @@ GetPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Est
     Mal_SPRResults[k] = Res$Mal_SPR
     CombSex_SPRResults[k] = Res$CombSex_SPR
     # extended model results
-    EquilRecResults[k] = Res$Equil_Rec
-    EquilCatchResults[k] = Res$Equil_Catch
-    Equil_FemSpBiomResults[k] = Res$Equil_FemSpBiom
-    Equil_MalSpBiomResults[k] = Res$Equil_MalSpBiom
-    Equilmod_FemRelBiomResults[k] = Res$Equilmod_FemRelBiom
-    Equilmod_MalRelBiomResults[k] = Res$Equilmod_MalRelBiom
-    Equilmod_CombSexRelBiomResults[k] = Res$Equilmod_CombSexRelBiom
+    Eq_RecResults[k] = Res$Eq_Rec
+    Eq_CatchResults[k] = Res$Eq_Catch
+    Eq_FemRelSpBiomResults[k] = Res$Eq_FemRelSpBiom
+    Eq_MalRelSpBiomResults[k] = Res$Eq_MalRelSpBiom
+    Eq_CombSexRelSpBiomResults[k] = Res$Eq_CombSexRelSpBiom
   }
-  maxypr <- max(YPRResults) # maximum yield per recruit
-  maxeqCatch <- max(EquilCatchResults) # maximum equilbrium catch
-  Fmax <- FishMort[which(YPRResults==maxypr)] # fishing mortality at ypr maximum
-  FmaxeqCatch <- FishMort[which(EquilCatchResults==maxeqCatch)] # fishing mortality at maxeqCatch
+  YPRmax <- max(YPRResults) # maximum yield per recruit
+  maxeqCatch <- max(Eq_CatchResults) # maximum equilbrium catch
+  Fmax <- FishMort[which(YPRResults==YPRmax)] # fishing mortality at ypr maximum
+  FmaxeqCatch <- FishMort[which(Eq_CatchResults==maxeqCatch)] # fishing mortality at maxeqCatch
 
   # calc FMSY
   F_MSY=FmaxeqCatch
   x=which(FishMort==F_MSY)
-  # calc fem biomass ratio, at BMSY, 0.5BMSY and 1.2BMSY
 
+  # calc fem biomass ratio, at BMSY, 0.5BMSY and 1.2BMSY
   if (ReprodPattern == 1) { # gonochoristic species
-    BMSY_Thresh=Equilmod_FemRelBiomResults[x]
+    BMSY_Thresh=Eq_FemRelSpBiomResults[x]
   }
   if (ReprodPattern > 1) { # hermaphroditic species
-    BMSY_Thresh=Equilmod_CombSexRelBiomResults[x]
+    BMSY_Thresh=Eq_CombSexRelSpBiomResults[x]
   }
   BMSY_Lim=0.5*BMSY_Thresh
   BMSY_Targ=1.2*BMSY_Thresh
@@ -7542,76 +7805,75 @@ GetPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Est
                                EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, FMort)
 
 
+  Diagnotistcs = data.frame(Ages = Res2$ModelDiag$Ages,
+                         FemLenAtAge = Res2$ModelDiag$FemLenAtAge,
+                         MalLenAtAge = Res2$ModelDiag$MalLenAtAge,
+                         FemWtAtAge = Res2$ModelDiag$FemWtAtAge,
+                         MalWtAtAge = Res2$ModelDiag$MalWtAtAge,
+                         PropFemAtAge = Res2$ModelDiag$PropFemAtAge,
+                         FemPropMatAtAge = Res2$ModelDiag$FemPropMatAtAge,
+                         MalPropMatAtAge = Res2$ModelDiag$MalPropMatAtAge,
+                         UnfishFemSurvAtAge = Res2$ModelDiag$UnfishFemSurvAtAge,
+                         UnfishMalSurvAtAge = Res2$ModelDiag$UnfishMalSurvAtAge,
+                         UnfishFemSpBiomAtAge = Res2$ModelDiag$UnfishFemSpBiomAtAge,
+                         UnfishMalSpBiomAtAge = Res2$ModelDiag$UnfishMalSpBiomAtAge,
+                         FishFemSurvAtAge = Res2$ModelDiag$FishFemSurvAtAge,
+                         FishMalSurvAtAge = Res2$ModelDiag$FishMalSurvAtAge,
+                         FishFemSpBiomAtAge = Res2$ModelDiag$FishFemSpBiomAtAge,
+                         FishMalSpBiomAtAge = Res2$ModelDiag$FishMalSpBiomAtAge,
+                         FemCatchAtAgeNum = Res2$ModelDiag$FemCatchAtAgeNum,
+                         MalCatchAtAgeNum = Res2$ModelDiag$MalCatchAtAgeNum,
+                         FemRelCatchAtAgeNum = Res2$ModelDiag$FemRelCatchAtAgeNum,
+                         MalRelCatchAtAgeNum = Res2$ModelDiag$MalRelCatchAtAgeNum,
+                         FemCatchAtAge = Res2$ModelDiag$FemCatchAtAge,
+                         MalCatchAtAge = Res2$ModelDiag$MalCatchAtAge,
+                         FemGearSelAtAge = Res2$ModelDiag$FemGearSelAtAge,
+                         MalGearSelAtAge = Res2$ModelDiag$MalGearSelAtAge,
+                         FemRetProbAtAge = Res2$ModelDiag$FemRetProbAtAge,
+                         MalRetProbAtAge = Res2$ModelDiag$MalRetProbAtAge,
+                         FemSelLandAtAge = Res2$ModelDiag$FemSelLandAtAge,
+                         MalSelLandAtAge = Res2$ModelDiag$MalSelLandAtAge,
+                         FemSelDiscAtAge = Res2$ModelDiag$FemSelDiscAtAge,
+                         MalSelDiscAtAge = Res2$ModelDiag$MalSelDiscAtAge,
+                         FemDiscFAtAge = Res2$ModelDiag$FemDiscFAtAge,
+                         MalDiscFAtAge = Res2$ModelDiag$MalDiscFAtAge,
+                         FemLandFAtAge = Res2$ModelDiag$FemLandFAtAge,
+                         MalLandFAtAge = Res2$ModelDiag$MalLandFAtAge,
+                         FemFAtAge = Res2$ModelDiag$FemFAtAge,
+                         MalFAtAge = Res2$ModelDiag$MalFAtAge,
+                         FemZAtAge = Res2$ModelDiag$FemZAtAge,
+                         MalZAtAge = Res2$ModelDiag$MalZAtAge)
 
-  Results = list(Ages = Res2$Ages,
-                 YPR = Res2$YPR,
+  ModelDiag = Diagnotistcs
+
+  Results = list(YPR = Res2$YPR,
                  Fem_SPR = Res2$Fem_SPR,
                  Mal_SPR = Res2$Mal_SPR,
                  CombSex_SPR = Res2$CombSex_SPR,
-                 FemLenAtAge = Res2$FemLenAtAge,
-                 MalLenAtAge = Res2$MalLenAtAge,
-                 FemWtAtAge = Res2$FemWtAtAge,
-                 MalWtAtAge = Res2$MalWtAtAge,
-                 PropFemAtAge = Res2$PropFemAtAge,
-                 FemPropMatAtAge = Res2$FemPropMatAtAge,
-                 MalPropMatAtAge = Res2$MalPropMatAtAge,
-                 UnfishFemSurvAtAge = Res2$UnfishFemSurvAtAge,
-                 UnfishMalSurvAtAge = Res2$UnfishMalSurvAtAge,
-                 UnfishFemBiomAtAge = Res2$UnfishFemBiomAtAge,
-                 UnfishMalBiomAtAge = Res2$UnfishMalBiomAtAge,
-                 FishedFemSurvAtAge = Res2$FishedFemSurvAtAge,
-                 FishedMalSurvAtAge = Res2$FishedMalSurvAtAge,
-                 FishedFemBiomAtAge = Res2$FishedFemBiomAtAge,
-                 FishedMalBiomAtAge = Res2$FishedMalBiomAtAge,
-                 FemCatchAtAgeNum = Res2$FemCatchAtAgeNum,
-                 MalCatchAtAgeNum = Res2$MalCatchAtAgeNum,
-                 FemRelCatchAtAgeNum = Res2$FemRelCatchAtAgeNum,
-                 MalRelCatchAtAgeNum = Res2$MalRelCatchAtAgeNum,
-                 FemCatchAtAge = Res2$FemCatchAtAge,
-                 MalCatchAtAge = Res2$MalCatchAtAge,
-                 Equil_Rec = Res2$Equil_Rec,
-                 Equil_Catch = Res2$Equil_Catch,
-                 Equil_FemSpBiom = Res2$Equil_FemSpBiom,
-                 Equil_MalSpBiom = Res2$Equil_MalSpBiom,
-                 Equilmod_FemRelBiom = Res2$Equilmod_FemRelBiom,
-                 Equilmod_MalRelBiom = Res2$Equilmod_MalRelBiom,
-                 Equilmod_CombSexRelBiom = Res2$Equilmod_CombSexRelBiom,
-                 BH_SRRa = Res2$BH_SRRa,
-                 BH_SRRb = Res2$BH_SRRb,
-                 BH_Equil_Rec = Res2$BH_Equil_Rec,
-                 FemGearSelAtAge = Res2$FemGearSelAtAge,
-                 MalGearSelAtAge = Res2$MalGearSelAtAge,
-                 FemRetProbAtAge = Res2$FemRetProbAtAge,
-                 MalRetProbAtAge = Res2$MalRetProbAtAge,
-                 FemSelLandAtAge = Res2$FemSelLandAtAge,
-                 MalSelLandAtAge = Res2$MalSelLandAtAge,
-                 FemSelDiscAtAge = Res2$FemSelDiscAtAge,
-                 MalSelDiscAtAge = Res2$MalSelDiscAtAge,
-                 FemDiscFAtAge = Res2$FemDiscFAtAge,
-                 MalDiscFAtAge = Res2$MalDiscFAtAge,
-                 FemLandFAtAge = Res2$FemLandFAtAge,
-                 MalLandFAtAge = Res2$MalLandFAtAge,
-                 FemFAtAge = Res2$FemFAtAge,
-                 MalFAtAge = Res2$MalFAtAge,
-                 FemZAtAge = Res2$FemZAtAge,
-                 MalZAtAge = Res2$MalZAtAge,
-                 FishMort = FishMort,
-                 maxypr = maxypr,
-                 F_MSY = F_MSY,
+                 Eq_Rec = Res2$Eq_Rec,
+                 Eq_Catch = Res2$Eq_Catch,
+                 Eq_FemRelSpBiom = Res2$Eq_FemRelSpBiom,
+                 Eq_MalRelSpBiom = Res2$Eq_MalRelSpBiom,
+                 Eq_CombSexRelSpBiom = Res2$Eq_CombSexRelSpBiom,
+                 YPRmax = YPRmax,
+                 FmaxeqCatch = FmaxeqCatch,
                  Fmax = Fmax,
+                 F_MSY = F_MSY,
                  BMSY_Targ=BMSY_Targ,
                  BMSY_Thresh=BMSY_Thresh,
                  BMSY_Lim=BMSY_Lim,
-                 FmaxeqCatch = FmaxeqCatch,
+                 FishMort = FishMort,
                  YPRResults = YPRResults,
-                 EquilCatchResults = EquilCatchResults,
+                 Eq_CatchResults = Eq_CatchResults,
                  Fem_SPRResults = Fem_SPRResults,
                  Mal_SPRResults = Mal_SPRResults,
                  CombSex_SPRResults = CombSex_SPRResults,
-                 Equilmod_FemRelBiomResults = Equilmod_FemRelBiomResults,
-                 Equilmod_MalRelBiomResults = Equilmod_MalRelBiomResults,
-                 Equilmod_CombSexRelBiomResults = Equilmod_CombSexRelBiomResults,
-                 EquilRecResults = EquilRecResults)
+                 Eq_FemRelSpBiomResults = Eq_FemRelSpBiomResults,
+                 Eq_MalRelSpBiomResults = Eq_MalRelSpBiomResults,
+                 Eq_CombSexRelSpBiomResults = Eq_CombSexRelSpBiomResults,
+                 Eq_RecResults = Eq_RecResults,
+                 ModelDiag = ModelDiag)
+
   return(Results)
 
 }
@@ -7658,6 +7920,7 @@ GetPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Est
 #' @param SRrel_Type 1 = Beverton-Holt, 2=Ricker stock-recruitment relationship
 #' @param NatMort natural mortality
 #' @param Current_F estimated current fishing mortality
+#' @param Output_Opt 1 = standard, 2=include expected length and weight distributions at F (slower)
 #'
 #' @return yield per recruit for combined sexes (YPR), female, male and combined sex spawning potential ratio
 #' (Fem_SPR, Mal_SPR, CombSex_SPR), female and male length at age (FemLenAtAge, MalLenAtAge),
@@ -7668,22 +7931,21 @@ GetPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Est
 #' Unfish_MalBiomPerRecAtAge), fished female and male biomass per recruit at age and length (Fish_FemBiomPerRecAtAge,
 #' Fish_MalBiomPerRecAtAge), unfished female and male biomass at age (Unfish_FemBiomAtAge, Unfish_MalBiomAtAge),
 #' fished female and male biomass at age (Fish_FemBiomAtAge, Fish_MalBiomAtAge), female and male catch biomass
-#' (FemCatchBiom, MalCatchBiom), equilibrium recruitment for either Beverton-Holt or Ricker relationship (Equil_Rec),
-#' equilibrium catch (Equil_Catch), female and male and spawning biomass (Equil_FemSpBiom, Equil_MalSpBiom), equilibrium relative
-#' female, male and combined sex spawning biomass (Equilmod_FemRelBiom, Equilmod_MalRelBiom, Equilmod_CombSexRelBiom),
-#' parameters and equilbrium recruitment from Beverton-Holt stock-recruitment relationship (BH_SRRa, BH_SRRb, BH_Equil_Rec),
+#' (FemCatchBiom, MalCatchBiom), equilibrium recruitment for either Beverton-Holt or Ricker relationship (Eq_Rec),
+#' equilibrium catch (Eq_Catch), female and male and spawning biomass (Eq_FemSpBiom, Eq_MalSpBiom), equilibrium relative
+#' female, male and combined sex spawning biomass (Eq_FemRelSpBiom, Eq_MalRelSpBiom, Eq_CombSexRelSpBiom),
 #' female and male gear selectivity at length (FemGearSelAtLen, MalGearSelAtLen), female and male retention at length
 #' (FemRetProbAtLen, MalRetProbAtLen), female and male selectivity of landings at length (FemSelLandAtLen, MalSelLandAtLen),
 #' female and male selectivity of discards at length (FemSelDiscAtLen, MalSelDiscAtLen),
 #' female and male discard mortality at length (FemDiscFAtLen, MalDiscFAtLen), female and male mortality associated with landings
 #' at length (FemLandFAtLen, MalLandFAtLen), female and male fishing mortality at length (FemFAtLen, MalFAtLen),
 #' female and male total mortality at length (FemZAtLen, MalZAtLen), fishing mortality values evaluated (FishMort = seq(0,2,0.01)),
-#' maximum yield per recruit (maxypr), fishing mortality associated with maxeqCatch (F_MSY or FmaxeqCatch),
+#' maximum yield per recruit (YPRmax), fishing mortality associated with maxeqCatch (F_MSY or FmaxeqCatch),
 #' biomass target at 1.2maxeqCatch, (BMSY_Targ), biomass threshold at maxeqCatch (BMSY_Thresh), biomass threshold at 0.5maxeqCatch (BMSY_Lim),
-#' YPR vs FishMort (YPRResults), Equil_Catch vs FishMort (EquilCatchResults), Equilmod_FemRelBiom vs FishMort (Fem_SPRResults),
-#' Equilmod_MalRelBiom vs FishMort (Mal_SPRResults), Equilmod_FemRelBiom vs FishMort (Equilmod_FemRelBiomResults),
-#' Equilmod_MalRelBiom vs FishMort (Equilmod_MalRelBiomResults), Equilmod_CombSexRelBiom vs FishMort (Equilmod_CombSexRelBiomResults),
-#' Equil_Rec vs FishMort (EquilRecResults)
+#' YPR vs FishMort (YPRResults), Eq_Catch vs FishMort (Eq_CatchResults), Eq_FemRelSpBiom vs FishMort (Fem_SPRResults),
+#' Eq_MalRelSpBiom vs FishMort (Mal_SPRResults), Eq_FemRelSpBiom vs FishMort (Eq_FemRelSpBiomResults),
+#' Eq_MalRelSpBiom vs FishMort (Eq_MalRelSpBiomResults), Eq_CombSexRelSpBiom vs FishMort (Eq_CombSexRelSpBiomResults),
+#' Eq_Rec vs FishMort (Eq_RecResults)
 #'
 #' @examples
 #' MaxModelAge <- 20 # maximum age considered by model, years
@@ -7729,17 +7991,18 @@ GetPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Est
 #' SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
 #' NatMort = 4.22 / MaxModelAge # natural mortality  (year-1)
 #' Current_F = 0.2
+#' Output_Opt = 1 # 1=standard output, 2=with added length and weight outputs (slower)
 #' Res=GetPerRecruitResults_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
 #'                             RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
 #'                             EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
 #'                             FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-#'                             ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F)
+#'                             ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, Output_Opt)
 #' @export
 GetPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                     RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                                     EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
                                     FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-                                    ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F) {
+                                    ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, Output_Opt) {
 
   FishMort <- seq(0,2,0.01)
   nFVals <- length(FishMort) # fishing mortality
@@ -7748,60 +8011,43 @@ GetPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
   Mal_SPRResults <- rep(0,nFVals)
   CombSex_SPRResults <- rep(0,nFVals)
 
-  EquilRecResults <- rep(0,nFVals)
-  EquilCatchResults <- rep(0,nFVals)
-  Equil_FemSpBiomResults <- rep(0,nFVals)
-  Equil_MalSpBiomResults <- rep(0,nFVals)
+  Eq_RecResults <- rep(0,nFVals)
+  Eq_CatchResults <- rep(0,nFVals)
+  Eq_FemRelSpBiomResults <- rep(0,nFVals)
+  Eq_MalRelSpBiomResults <- rep(0,nFVals)
+  Eq_CombSexRelSpBiomResults <- rep(0,nFVals)
 
-  Equilmod_FemRelBiomResults <- rep(0,nFVals)
-  Equilmod_MalRelBiomResults <- rep(0,nFVals)
-  Equilmod_CombSexRelBiomResults <- rep(0,nFVals)
-
-  FemMeanCatchLen <- rep(0,nFVals) # mean length of catch
-  MalMeanCatchLen <- rep(0,nFVals)
-  CombSexMeanCatchLen <- rep(0,nFVals)
-  FemMeanCatchLen.lw95ci <- rep(0,nFVals) # 95 percent confidence limits
-  FemMeanCatchLen.up95ci <- rep(0,nFVals)
-  MalMeanCatchLen.lw95ci <- rep(0,nFVals)
-  MalMeanCatchLen.up95ci <- rep(0,nFVals)
-  CombSexMeanCatchLen.lw95ci <- rep(0,nFVals)
-  CombSexMeanCatchLen.up95ci <- rep(0,nFVals)
-  FemMeanCatchLen.lw60pi <- rep(0,nFVals) # 60 percent confidence prediction limits
-  FemMeanCatchLen.up60pi <- rep(0,nFVals)
-  MalMeanCatchLen.lw60pi <- rep(0,nFVals)
-  MalMeanCatchLen.up60pi <- rep(0,nFVals)
-  CombSexMeanCatchLen.lw60pi <- rep(0,nFVals)
-  CombSexMeanCatchLen.up60pi <- rep(0,nFVals)
-  FemMeanCatchLen.lw95pi <- rep(0,nFVals) # 95 percent confidence prediction limits
-  FemMeanCatchLen.up95pi <- rep(0,nFVals)
-  MalMeanCatchLen.lw95pi <- rep(0,nFVals)
-  MalMeanCatchLen.up95pi <- rep(0,nFVals)
-  CombSexMeanCatchLen.lw95pi <- rep(0,nFVals)
-  CombSexMeanCatchLen.up95pi <- rep(0,nFVals)
-
-  FemMeanCatchWt <- rep(0,nFVals) # mean weight of catch
-  MalMeanCatchWt <- rep(0,nFVals)
-  CombSexMeanCatchWt <- rep(0,nFVals)
-  FemMeanCatchWt.lw95ci <- rep(0,nFVals) # 95 percent confidence limits
-  FemMeanCatchWt.up95ci <- rep(0,nFVals)
-  MalMeanCatchWt.lw95ci <- rep(0,nFVals)
-  MalMeanCatchWt.up95ci <- rep(0,nFVals)
-  CombSexMeanCatchWt.lw95ci <- rep(0,nFVals)
-  CombSexMeanCatchWt.up95ci <- rep(0,nFVals)
-  FemMeanCatchWt.lw60pi <- rep(0,nFVals) # 60 percent confidence prediction limits
-  FemMeanCatchWt.up60pi <- rep(0,nFVals)
-  MalMeanCatchWt.lw60pi <- rep(0,nFVals)
-  MalMeanCatchWt.up60pi <- rep(0,nFVals)
-  CombSexMeanCatchWt.lw60pi <- rep(0,nFVals)
-  CombSexMeanCatchWt.up60pi <- rep(0,nFVals)
-  FemMeanCatchWt.lw95pi <- rep(0,nFVals) # 95 percent confidence prediction limits
-  FemMeanCatchWt.up95pi <- rep(0,nFVals)
-  MalMeanCatchWt.lw95pi <- rep(0,nFVals)
-  MalMeanCatchWt.up95pi <- rep(0,nFVals)
-  CombSexMeanCatchWt.lw95pi <- rep(0,nFVals)
-  CombSexMeanCatchWt.up95pi <- rep(0,nFVals)
-
-
+  if (Output_Opt==2) { # include predicted length and weight distn. vs F, for output
+    # mean length of catch
+    FemMeanCatchLen <- rep(0,nFVals); MalMeanCatchLen <- rep(0,nFVals); CombSexMeanCatchLen <- rep(0,nFVals)
+    # 95 percent confidence limits
+    FemMeanCatchLen.lw95ci <- rep(0,nFVals); FemMeanCatchLen.up95ci <- rep(0,nFVals)
+    MalMeanCatchLen.lw95ci <- rep(0,nFVals); MalMeanCatchLen.up95ci <- rep(0,nFVals)
+    CombSexMeanCatchLen.lw95ci <- rep(0,nFVals); CombSexMeanCatchLen.up95ci <- rep(0,nFVals)
+    # 60 quantile range
+    FemCatchLen.20qntl <- rep(0,nFVals); FemCatchLen.80qntl <- rep(0,nFVals)
+    MalCatchLen.20qntl <- rep(0,nFVals); MalCatchLen.80qntl <- rep(0,nFVals)
+    CombSexCatchLen.20qntl <- rep(0,nFVals); CombSexCatchLen.80qntl <- rep(0,nFVals)
+    # 95 quantile range
+    FemCatchLen.2.5qntl <- rep(0,nFVals); FemCatchLen.97.5qntl <- rep(0,nFVals)
+    MalCatchLen.2.5qntl <- rep(0,nFVals); MalCatchLen.97.5qntl <- rep(0,nFVals)
+    CombSexCatchLen.2.5qntl <- rep(0,nFVals); CombSexCatchLen.97.5qntl <- rep(0,nFVals)
+    # mean weight of catch
+    FemMeanCatchWt <- rep(0,nFVals); MalMeanCatchWt <- rep(0,nFVals); CombSexMeanCatchWt <- rep(0,nFVals)
+    # 95 percent confidence limits
+    FemMeanCatchWt.lw95ci <- rep(0,nFVals); FemMeanCatchWt.up95ci <- rep(0,nFVals)
+    MalMeanCatchWt.lw95ci <- rep(0,nFVals); MalMeanCatchWt.up95ci <- rep(0,nFVals)
+    CombSexMeanCatchWt.lw95ci <- rep(0,nFVals); CombSexMeanCatchWt.up95ci <- rep(0,nFVals)
+    # 60 quantile range
+    FemCatchWt.20qntl <- rep(0,nFVals); FemCatchWt.80qntl <- rep(0,nFVals)
+    MalCatchWt.20qntl <- rep(0,nFVals); MalCatchWt.80qntl <- rep(0,nFVals)
+    CombSexCatchWt.20qntl <- rep(0,nFVals); CombSexCatchWt.80qntl <- rep(0,nFVals)
+    # 95 quantile range
+    FemCatchWt.2.5qntl <- rep(0,nFVals); FemCatchWt.97.5qntl <- rep(0,nFVals)
+    MalCatchWt.2.5qntl <- rep(0,nFVals); MalCatchWt.97.5qntl <- rep(0,nFVals)
+    CombSexCatchWt.2.5qntl <- rep(0,nFVals); CombSexCatchWt.97.5qntl <- rep(0,nFVals)
+  }
+k=1
   for (k in 1:nFVals) {
     FMort = FishMort[k]
     # cat("k",k,"FMort",FMort,'\n')
@@ -7810,118 +8056,143 @@ GetPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
                                    EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
                                    FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
                                    ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, FMort)
+
+
+
     # per recruit results
     YPRResults[k] <- Res$YPR
     Fem_SPRResults[k] = Res$Fem_SPR
     Mal_SPRResults[k] = Res$Mal_SPR
     CombSex_SPRResults[k] = Res$CombSex_SPR
+
     # extended model results
-    EquilRecResults[k] = Res$Equil_Rec
-    EquilCatchResults[k] = Res$Equil_Catch
-    Equil_FemSpBiomResults[k] = Res$Equil_FemSpBiom
-    Equil_MalSpBiomResults[k] = Res$Equil_MalSpBiom
-    Equilmod_FemRelBiomResults[k] = Res$Equilmod_FemRelBiom
-    Equilmod_MalRelBiomResults[k] = Res$Equilmod_MalRelBiom
-    Equilmod_CombSexRelBiomResults[k] = Res$Equilmod_CombSexRelBiom
+    Eq_RecResults[k] = Res$Eq_Rec
+    Eq_CatchResults[k] = Res$Eq_Catch
+    Eq_FemRelSpBiomResults[k] = Res$Eq_FemRelSpBiom
+    Eq_MalRelSpBiomResults[k] = Res$Eq_MalRelSpBiom
+    Eq_CombSexRelSpBiomResults[k] = Res$Eq_CombSexRelSpBiom
 
-    FemMeanCatchLen[k] <- Res$PerRecMeanCatchLen$FemMeanCatchLen
-    MalMeanCatchLen[k] <- Res$PerRecMeanCatchLen$MalMeanCatchLen
-    CombSexMeanCatchLen[k] <- Res$PerRecMeanCatchLen$CombSexMeanCatchLen
-    FemMeanCatchLen.lw95ci[k] <- Res$MeanCatchLen.95ci$FemMeanCatchLen.95ci[1]   # 95 percent confidence limits
-    FemMeanCatchLen.up95ci[k] <- Res$MeanCatchLen.95ci$FemMeanCatchLen.95ci[2]
-    MalMeanCatchLen.lw95ci[k] <- Res$MeanCatchLen.95ci$MalMeanCatchLen.95ci[1]
-    MalMeanCatchLen.up95ci[k] <- Res$MeanCatchLen.95ci$MalMeanCatchLen.95ci[2]
-    CombSexMeanCatchLen.lw95ci[k] <- Res$MeanCatchLen.95ci$CombSexMeanCatchLen.95ci[1]
-    CombSexMeanCatchLen.up95ci[k] <- Res$MeanCatchLen.95ci$CombSexMeanCatchLen.95ci[2]
-    FemMeanCatchLen.lw60pi[k] <- Res$MeanCatchLen.60pi$FemMeanCatchLen.60pi[1] # 60 percent confidence prediction limits
-    FemMeanCatchLen.up60pi[k] <- Res$MeanCatchLen.60pi$FemMeanCatchLen.60pi[2]
-    MalMeanCatchLen.lw60pi[k] <- Res$MeanCatchLen.60pi$MalMeanCatchLen.60pi[1]
-    MalMeanCatchLen.up60pi[k] <- Res$MeanCatchLen.60pi$MalMeanCatchLen.60pi[2]
-    CombSexMeanCatchLen.lw60pi[k] <- Res$MeanCatchLen.60pi$CombSexMeanCatchLen.60pi[1]
-    CombSexMeanCatchLen.up60pi[k] <- Res$MeanCatchLen.60pi$CombSexMeanCatchLen.60pi[2]
-    FemMeanCatchLen.lw95pi[k] <- Res$MeanCatchLen.95pi$FemMeanCatchLen.95pi[1] # 95 percent confidence prediction limits
-    FemMeanCatchLen.up95pi[k] <- Res$MeanCatchLen.95pi$FemMeanCatchLen.95pi[2]
-    MalMeanCatchLen.lw95pi[k] <- Res$MeanCatchLen.95pi$MalMeanCatchLen.95pi[1]
-    MalMeanCatchLen.up95pi[k] <- Res$MeanCatchLen.95pi$MalMeanCatchLen.95pi[2]
-    CombSexMeanCatchLen.lw95pi[k] <- Res$MeanCatchLen.95pi$CombSexMeanCatchLen.95pi[1]
-    CombSexMeanCatchLen.up95pi[k] <- Res$MeanCatchLen.95pi$CombSexMeanCatchLen.95pi[2]
+    if (Output_Opt==2) {
+      # Random data and stats for expected lengths and weights in catches
+      FemCatchNumLen = Res$ModelDiag$FemCatchNumLen
+      MalCatchNumLen = Res$ModelDiag$MalCatchNumLen
+      CombSexCatchNumLen = Res$ModelDiag$CombSexCatchNumLen
+      FemWtAtLen = Res$ModelDiag$FemWtAtLen
+      MalWtAtLen = Res$ModelDiag$MalWtAtLen
+      CatchLenWtRes = CalcPerRecruitFishLenAndFishWtStats(lbnd, midpt, ubnd, FemCatchNumLen, MalCatchNumLen, CombSexCatchNumLen,
+                                                          lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtLen)
 
-    FemMeanCatchWt[k] <- Res$PerRecMeanCatchWt$FemMeanCatchWt # mean weight of catch
-    MalMeanCatchWt[k] <- Res$PerRecMeanCatchWt$MalMeanCatchWt
-    CombSexMeanCatchWt[k] <- Res$PerRecMeanCatchWt$CombSexMeanCatchWt
-    FemMeanCatchWt.lw95ci[k] <- Res$MeanCatchWt.95ci$FemMeanCatchWt.95ci[1] # 95 percent confidence limits
-    FemMeanCatchWt.up95ci[k] <- Res$MeanCatchWt.95ci$FemMeanCatchWt.95ci[2]
-    MalMeanCatchWt.lw95ci[k] <- Res$MeanCatchWt.95ci$MalMeanCatchWt.95ci[1]
-    MalMeanCatchWt.up95ci[k] <- Res$MeanCatchWt.95ci$MalMeanCatchWt.95ci[2]
-    CombSexMeanCatchWt.lw95ci[k] <- Res$MeanCatchWt.95ci$CombSexMeanCatchWt.95ci[1]
-    CombSexMeanCatchWt.up95ci[k] <- Res$MeanCatchWt.95ci$CombSexMeanCatchWt.95ci[2]
-    FemMeanCatchWt.lw60pi[k] <- Res$MeanCatchWt.60pi$FemMeanCatchWt.60pi[1] # 60 percent confidence prediction limits
-    FemMeanCatchWt.up60pi[k] <- Res$MeanCatchWt.60pi$FemMeanCatchWt.60pi[2]
-    MalMeanCatchWt.lw60pi[k] <- Res$MeanCatchWt.60pi$MalMeanCatchWt.60pi[1]
-    MalMeanCatchWt.up60pi[k] <- Res$MeanCatchWt.60pi$MalMeanCatchWt.60pi[2]
-    CombSexMeanCatchWt.lw60pi[k] <- Res$MeanCatchWt.60pi$CombSexMeanCatchWt.60pi[1]
-    CombSexMeanCatchWt.up60pi[k] <- Res$MeanCatchWt.60pi$CombSexMeanCatchWt.60pi[2]
-    FemMeanCatchWt.lw95pi[k] <- Res$MeanCatchWt.95pi$FemMeanCatchWt.95pi[1] # 95 percent confidence prediction limits
-    FemMeanCatchWt.up95pi[k] <- Res$MeanCatchWt.95pi$FemMeanCatchWt.95pi[2]
-    MalMeanCatchWt.lw95pi[k] <- Res$MeanCatchWt.95pi$MalMeanCatchWt.95pi[1]
-    MalMeanCatchWt.up95pi[k] <- Res$MeanCatchWt.95pi$FemMeanCatchWt.95pi[2]
-    CombSexMeanCatchWt.lw95pi[k] <- Res$MeanCatchWt.95pi$CombSexMeanCatchWt.95pi[1]
-    CombSexMeanCatchWt.up95pi[k] <- Res$MeanCatchWt.95pi$CombSexMeanCatchWt.95pi[2]
+
+      FemMeanCatchLen[k] <- CatchLenWtRes$PerRecMeanCatchLen$FemMeanCatchLen
+      MalMeanCatchLen[k] <- CatchLenWtRes$PerRecMeanCatchLen$MalMeanCatchLen
+      CombSexMeanCatchLen[k] <- CatchLenWtRes$PerRecMeanCatchLen$CombSexMeanCatchLen
+      FemMeanCatchLen.lw95ci[k] <- CatchLenWtRes$MeanCatchLen.95ci$FemMeanCatchLen.95ci[1]   # 95 percent confidence limits
+      FemMeanCatchLen.up95ci[k] <- CatchLenWtRes$MeanCatchLen.95ci$FemMeanCatchLen.95ci[2]
+      MalMeanCatchLen.lw95ci[k] <- CatchLenWtRes$MeanCatchLen.95ci$MalMeanCatchLen.95ci[1]
+      MalMeanCatchLen.up95ci[k] <- CatchLenWtRes$MeanCatchLen.95ci$MalMeanCatchLen.95ci[2]
+      CombSexMeanCatchLen.lw95ci[k] <- CatchLenWtRes$MeanCatchLen.95ci$CombSexMeanCatchLen.95ci[1]
+      CombSexMeanCatchLen.up95ci[k] <- CatchLenWtRes$MeanCatchLen.95ci$CombSexMeanCatchLen.95ci[2]
+      FemCatchLen.20qntl[k] <- CatchLenWtRes$CatchLen.60qntl$FemCatchLen.60qntl[1] # 60 percent confidence prediction limits
+      FemCatchLen.80qntl[k] <- CatchLenWtRes$CatchLen.60qntl$FemCatchLen.60qntl[2]
+      MalCatchLen.20qntl[k] <- CatchLenWtRes$CatchLen.60qntl$MalCatchLen.60qntl[1]
+      MalCatchLen.80qntl[k] <- CatchLenWtRes$CatchLen.60qntl$MalCatchLen.60qntl[2]
+      CombSexCatchLen.20qntl[k] <- CatchLenWtRes$CatchLen.60qntl$CombSexCatchLen.60qntl[1]
+      CombSexCatchLen.80qntl[k] <- CatchLenWtRes$CatchLen.60qntl$CombSexCatchLen.60qntl[2]
+      FemCatchLen.2.5qntl[k] <- CatchLenWtRes$CatchLen.95qntl$FemCatchLen.95qntl[1] # 95 percent confidence prediction limits
+      FemCatchLen.97.5qntl[k] <- CatchLenWtRes$CatchLen.95qntl$FemCatchLen.95qntl[2]
+      MalCatchLen.2.5qntl[k] <- CatchLenWtRes$CatchLen.95qntl$MalCatchLen.95qntl[1]
+      MalCatchLen.97.5qntl[k] <- CatchLenWtRes$CatchLen.95qntl$MalCatchLen.95qntl[2]
+      CombSexCatchLen.2.5qntl[k] <- CatchLenWtRes$CatchLen.95qntl$CombSexCatchLen.95qntl[1]
+      CombSexCatchLen.97.5qntl[k] <- CatchLenWtRes$CatchLen.95qntl$CombSexCatchLen.95qntl[2]
+
+      FemMeanCatchWt[k] <- CatchLenWtRes$PerRecMeanCatchWt$FemMeanCatchWt # mean weight of catch
+      MalMeanCatchWt[k] <- CatchLenWtRes$PerRecMeanCatchWt$MalMeanCatchWt
+      CombSexMeanCatchWt[k] <- CatchLenWtRes$PerRecMeanCatchWt$CombSexMeanCatchWt
+      FemMeanCatchWt.lw95ci[k] <- CatchLenWtRes$MeanCatchWt.95ci$FemMeanCatchWt.95ci[1] # 95 percent confidence limits
+      FemMeanCatchWt.up95ci[k] <- CatchLenWtRes$MeanCatchWt.95ci$FemMeanCatchWt.95ci[2]
+      MalMeanCatchWt.lw95ci[k] <- CatchLenWtRes$MeanCatchWt.95ci$MalMeanCatchWt.95ci[1]
+      MalMeanCatchWt.up95ci[k] <- CatchLenWtRes$MeanCatchWt.95ci$MalMeanCatchWt.95ci[2]
+      CombSexMeanCatchWt.lw95ci[k] <- CatchLenWtRes$MeanCatchWt.95ci$CombSexMeanCatchWt.95ci[1]
+      CombSexMeanCatchWt.up95ci[k] <- CatchLenWtRes$MeanCatchWt.95ci$CombSexMeanCatchWt.95ci[2]
+      FemCatchWt.20qntl[k] <- CatchLenWtRes$CatchWt.60qntl$FemCatchWt.60qntl[1] # 60 percent confidence prediction limits
+      FemCatchWt.80qntl[k] <- CatchLenWtRes$CatchWt.60qntl$FemCatchWt.60qntl[2]
+      MalCatchWt.20qntl[k] <- CatchLenWtRes$CatchWt.60qntl$MalCatchWt.60qntl[1]
+      MalCatchWt.80qntl[k] <- CatchLenWtRes$CatchWt.60qntl$MalCatchWt.60qntl[2]
+      CombSexCatchWt.20qntl[k] <- CatchLenWtRes$CatchWt.60qntl$CombSexCatchWt.60qntl[1]
+      CombSexCatchWt.80qntl[k] <- CatchLenWtRes$CatchWt.60qntl$CombSexCatchWt.60qntl[2]
+      FemCatchWt.2.5qntl[k] <- CatchLenWtRes$CatchWt.95qntl$FemCatchWt.95qntl[1] # 95 percent confidence prediction limits
+      FemCatchWt.97.5qntl[k] <- CatchLenWtRes$CatchWt.95qntl$FemCatchWt.95qntl[2]
+      MalCatchWt.2.5qntl[k] <- CatchLenWtRes$CatchWt.95qntl$MalCatchWt.95qntl[1]
+      MalCatchWt.97.5qntl[k] <- CatchLenWtRes$CatchWt.95qntl$MalCatchWt.95qntl[2]
+      CombSexCatchWt.2.5qntl[k] <- CatchLenWtRes$CatchWt.95qntl$CombSexCatchWt.95qntl[1]
+      CombSexCatchWt.97.5qntl[k] <- CatchLenWtRes$CatchWt.95qntl$CombSexCatchWt.95qntl[2]
+    }
+
   }
 
   # Length results
-  MeanCatchLenResults = data.frame(FishMort=FishMort,
-                                   FemMeanCatchLen=FemMeanCatchLen,
-                                   MalMeanCatchLen=MalMeanCatchLen,
-                                   CombSexMeanCatchLen=CombSexMeanCatchLen,
-                                   FemMeanCatchLen.lw95ci=FemMeanCatchLen.lw95ci,
-                                   MalMeanCatchLen.lw95ci=MalMeanCatchLen.lw95ci,
-                                   CombSexMeanCatchLen.lw95ci=CombSexMeanCatchLen.lw95ci,
-                                   FemMeanCatchLen.up95ci=FemMeanCatchLen.up95ci,
-                                   MalMeanCatchLen.up95ci=MalMeanCatchLen.up95ci,
-                                   CombSexMeanCatchLen.up95ci=CombSexMeanCatchLen.up95ci,
-                                   FemMeanCatchLen.lw60pi=FemMeanCatchLen.lw60pi,
-                                   MalMeanCatchLen.lw60pi=MalMeanCatchLen.lw60pi,
-                                   CombSexMeanCatchLen.lw60pi=CombSexMeanCatchLen.lw60pi,
-                                   FemMeanCatchLen.up60pi=FemMeanCatchLen.up60pi,
-                                   MalMeanCatchLen.up60pi=MalMeanCatchLen.up60pi,
-                                   CombSexMeanCatchLen.up60pi=CombSexMeanCatchLen.up60pi,
-                                   FemMeanCatchLen.lw95pi=FemMeanCatchLen.lw95pi,
-                                   MalMeanCatchLen.lw95pi=MalMeanCatchLen.lw95pi,
-                                   CombSexMeanCatchLen.lw95pi=CombSexMeanCatchLen.lw95pi,
-                                   FemMeanCatchLen.up95pi=FemMeanCatchLen.up95pi,
-                                   MalMeanCatchLen.up95pi=MalMeanCatchLen.up95pi,
-                                   CombSexMeanCatchLen.up95pi=CombSexMeanCatchLen.up95pi)
+  if (Output_Opt==1) {
+
+    MeanCatchLenResults=NA
+    MeanCatchWtResults=NA
+    MeanCatchLenResults_CurrF=NA
+    MeanCatchWtResults_CurrF=NA
+
+  } else {
+
+    MeanCatchLenResults = data.frame(FishMort=FishMort,
+                                     FemMeanCatchLen=FemMeanCatchLen,
+                                     MalMeanCatchLen=MalMeanCatchLen,
+                                     CombSexMeanCatchLen=CombSexMeanCatchLen,
+                                     FemMeanCatchLen.lw95ci=FemMeanCatchLen.lw95ci,
+                                     MalMeanCatchLen.lw95ci=MalMeanCatchLen.lw95ci,
+                                     CombSexMeanCatchLen.lw95ci=CombSexMeanCatchLen.lw95ci,
+                                     FemMeanCatchLen.up95ci=FemMeanCatchLen.up95ci,
+                                     MalMeanCatchLen.up95ci=MalMeanCatchLen.up95ci,
+                                     CombSexMeanCatchLen.up95ci=CombSexMeanCatchLen.up95ci,
+                                     FemCatchLen.20qntl=FemCatchLen.20qntl,
+                                     MalCatchLen.20qntl=MalCatchLen.20qntl,
+                                     CombSexCatchLen.20qntl=CombSexCatchLen.20qntl,
+                                     FemCatchLen.80qntl=FemCatchLen.80qntl,
+                                     MalCatchLen.80qntl=MalCatchLen.80qntl,
+                                     CombSexCatchLen.80qntl=CombSexCatchLen.80qntl,
+                                     FemCatchLen.2.5qntl=FemCatchLen.2.5qntl,
+                                     MalCatchLen.2.5qntl=MalCatchLen.2.5qntl,
+                                     CombSexCatchLen.2.5qntl=CombSexCatchLen.2.5qntl,
+                                     FemCatchLen.97.5qntl=FemCatchLen.97.5qntl,
+                                     MalCatchLen.97.5qntl=MalCatchLen.97.5qntl,
+                                     CombSexCatchLen.97.5qntl=CombSexCatchLen.97.5qntl)
 
 
-  # weight results
-  MeanCatchWtResults = data.frame(FishMort=FishMort,
-                                  FemMeanCatchWt=FemMeanCatchWt,
-                                  MalMeanCatchWt=MalMeanCatchWt,
-                                  CombSexMeanCatchWt=CombSexMeanCatchWt,
-                                  FemMeanCatchWt.lw95ci=FemMeanCatchWt.lw95ci,
-                                  MalMeanCatchWt.lw95ci=MalMeanCatchWt.lw95ci,
-                                  CombSexMeanCatchWt.lw95ci=CombSexMeanCatchWt.lw95ci,
-                                  FemMeanCatchWt.up95ci=FemMeanCatchWt.up95ci,
-                                  MalMeanCatchWt.up95ci=MalMeanCatchWt.up95ci,
-                                  CombSexMeanCatchWt.up95ci=CombSexMeanCatchWt.up95ci,
-                                  FemMeanCatchWt.lw60pi=FemMeanCatchWt.lw60pi,
-                                  MalMeanCatchWt.lw60pi=MalMeanCatchWt.lw60pi,
-                                  CombSexMeanCatchWt.lw60pi=CombSexMeanCatchWt.lw60pi,
-                                  FemMeanCatchWt.up60pi=FemMeanCatchWt.up60pi,
-                                  MalMeanCatchWt.up60pi=MalMeanCatchWt.up60pi,
-                                  CombSexMeanCatchWt.up60pi=CombSexMeanCatchWt.up60pi,
-                                  FemMeanCatchWt.lw95pi=FemMeanCatchWt.lw95pi,
-                                  MalMeanCatchWt.lw95pi=MalMeanCatchWt.lw95pi,
-                                  CombSexMeanCatchWt.lw95pi=CombSexMeanCatchWt.lw95pi,
-                                  FemMeanCatchWt.up95pi=FemMeanCatchWt.up95pi,
-                                  MalMeanCatchWt.up95pi=MalMeanCatchWt.up95pi,
-                                  CombSexMeanCatchWt.up95pi=CombSexMeanCatchWt.up95pi)
+    # weight results
+    MeanCatchWtResults = data.frame(FishMort=FishMort,
+                                    FemMeanCatchWt=FemMeanCatchWt,
+                                    MalMeanCatchWt=MalMeanCatchWt,
+                                    CombSexMeanCatchWt=CombSexMeanCatchWt,
+                                    FemMeanCatchWt.lw95ci=FemMeanCatchWt.lw95ci,
+                                    MalMeanCatchWt.lw95ci=MalMeanCatchWt.lw95ci,
+                                    CombSexMeanCatchWt.lw95ci=CombSexMeanCatchWt.lw95ci,
+                                    FemMeanCatchWt.up95ci=FemMeanCatchWt.up95ci,
+                                    MalMeanCatchWt.up95ci=MalMeanCatchWt.up95ci,
+                                    CombSexMeanCatchWt.up95ci=CombSexMeanCatchWt.up95ci,
+                                    FemCatchWt.20qntl=FemCatchWt.20qntl,
+                                    MalCatchWt.20qntl=MalCatchWt.20qntl,
+                                    CombSexCatchWt.20qntl=CombSexCatchWt.20qntl,
+                                    FemCatchWt.80qntl=FemCatchWt.80qntl,
+                                    MalCatchWt.80qntl=MalCatchWt.80qntl,
+                                    CombSexCatchWt.80qntl=CombSexCatchWt.80qntl,
+                                    FemCatchWt.2.5qntl=FemCatchWt.2.5qntl,
+                                    MalCatchWt.2.5qntl=MalCatchWt.2.5qntl,
+                                    CombSexCatchWt.2.5qntl=CombSexCatchWt.2.5qntl,
+                                    FemCatchWt.97.5qntl=FemCatchWt.97.5qntl,
+                                    MalCatchWt.97.5qntl=MalCatchWt.97.5qntl,
+                                    CombSexCatchWt.97.5qntl=CombSexCatchWt.97.5qntl)
+  }
 
-  maxypr <- max(YPRResults) # maximum yield per recruit
-  maxeqCatch <- max(EquilCatchResults) # maximum equilibrium catch
-  Fmax <- FishMort[which(YPRResults==maxypr)] # fishing mortality at ypr maximum
-  FmaxeqCatch <- FishMort[which(EquilCatchResults==maxeqCatch)] # fishing mortality at maxeqCatch
+  YPRmax <- max(YPRResults) # maximum yield per recruit
+  maxeqCatch <- max(Eq_CatchResults) # maximum equilibrium catch
+  Fmax <- FishMort[which(YPRResults==YPRmax)] # fishing mortality at ypr maximum
+  FmaxeqCatch <- FishMort[which(Eq_CatchResults==maxeqCatch)] # fishing mortality at maxeqCatch
 
   # calc FMSY
   F_MSY=FmaxeqCatch
@@ -7929,104 +8200,80 @@ GetPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
   # calc fem biomass ratio, at BMSY, 0.5BMSY and 1.2BMSY
 
   if (ReprodPattern == 1) { # gonochoristic species
-    BMSY_Thresh=Equilmod_FemRelBiomResults[x]
+    BMSY_Thresh=Eq_FemRelSpBiomResults[x]
   }
   if (ReprodPattern > 1) { # hermaphroditic species
-    BMSY_Thresh=Equilmod_CombSexRelBiomResults[x]
+    BMSY_Thresh=Eq_CombSexRelSpBiomResults[x]
   }
   BMSY_Lim=0.5*BMSY_Thresh
   BMSY_Targ=1.2*BMSY_Thresh
 
   # get results for current F
   FMort = Current_F
-  # cat("2: FMort",FMort,'\n')
   Res2 = CalcYPRAndSPRForFMort_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                   RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                                   EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
                                   FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
                                   ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, FMort)
 
-  Results = list(PropFemAtLen = Res2$PropFemAtLen,
-                 YPR = Res2$YPR,
+  # get results associated with predicted length and weight distributions
+  if (Output_Opt==2) {
+    FemCatchNumLen = Res2$ModelDiag$FemCatchNumLen
+    MalCatchNumLen = Res2$ModelDiag$MalCatchNumLen
+    CombSexCatchNumLen = Res2$ModelDiag$CombSexCatchNumLen
+    FemWtAtLen = Res2$ModelDiag$FemWtAtLen
+    MalWtAtLen = Res2$ModelDiag$MalWtAtLen
+    CatchLenWtRes = CalcPerRecruitFishLenAndFishWtStats(lbnd, midpt, ubnd, FemCatchNumLen, MalCatchNumLen, CombSexCatchNumLen,
+                                                        lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtLen)
+
+    MeanCatchLenResults_CurrF <- list(PerRecMeanCatchLen = CatchLenWtRes$PerRecMeanCatchLen,
+                                      MeanCatchLen.95ci = CatchLenWtRes$MeanCatchLen.95ci,
+                                      CatchLen.60qntl = CatchLenWtRes$CatchLen.60qntl,
+                                      CatchLen.95qntl = CatchLenWtRes$CatchLen.95qntl,
+                                      MeanCatchLenResults = MeanCatchLenResults,
+                                      PerRecLenFreq = CatchLenWtRes$PerRecLenFreq,
+                                      PerRecRandFishLen = CatchLenWtRes$PerRecRandFishLen)
+
+    MeanCatchWtResults_CurrF <- list(PerRecMeanCatchWt = CatchLenWtRes$PerRecMeanCatchWt,
+                                     MeanCatchWt.95ci = CatchLenWtRes$MeanCatchWt.95ci,
+                                     CatchWt.60qntl = CatchLenWtRes$CatchWt.60qntl,
+                                     CatchWt.95qntl = CatchLenWtRes$CatchWt.95qntl,
+                                     MeanCatchWtResults = MeanCatchWtResults,
+                                     PerRecRandFishWt = CatchLenWtRes$PerRecRandFishWt)
+  }
+
+  Results = list(YPR = Res2$YPR,
+                 YPRmax = YPRmax,
+                 Fmax = Fmax,
                  Fem_SPR = Res2$Fem_SPR,
                  Mal_SPR = Res2$Mal_SPR,
                  CombSex_SPR = Res2$CombSex_SPR,
-                 FemLenAtAge = as.vector(Res2$MeanSizeAtAge[1,]),
-                 MalLenAtAge = as.vector(Res2$MeanSizeAtAge[2,]),
-                 FemWtAtLen = Res2$FemWtAtLen,
-                 MalWtAtLen = Res2$MalWtAtLen,
-                 FemPropMatAtLen = Res2$FemPropMatAtLen,
-                 MalPropMatAtLen = Res2$MalPropMatAtLen,
-                 Unfish_FemNPerRec = Res2$Unfish_FemNPerRec,
-                 Unfish_MalNPerRec = Res2$Unfish_MalNPerRec,
-                 Fish_FemNPerRec = Res2$Fish_FemNPerRec,
-                 Fish_MalNPerRec = Res2$Fish_MalNPerRec,
-                 Unfish_FemBiomPerRecAtAge = Res2$Unfish_FemBiomPerRecAtAge,
-                 Unfish_MalBiomPerRecAtAge = Res2$Unfish_MalBiomPerRecAtAge,
-                 Fish_FemBiomPerRecAtAge = Res2$Fish_FemBiomPerRecAtAge,
-                 Fish_MalBiomPerRecAtAge = Res2$Fish_MalBiomPerRecAtAge,
-                 Unfish_FemBiomAtAge=Res2$Unfish_FemBiomAtAge,
-                 Unfish_MalBiomAtAge=Res2$Unfish_MalBiomAtAge,
-                 Fish_FemBiomAtAge=Res2$Fish_FemBiomAtAge,
-                 Fish_MalBiomAtAge=Res2$Fish_MalBiomAtAge,
-                 FemCatchBiom = Res2$FemCatchBiom,
-                 MalCatchBiom = Res2$MalCatchBiom,
-                 PerRecRandFishLen = Res2$PerRecRandFishLen,
-                 PerRecLenFreq = Res2$PerRecLenFreq,
-                 PerRecMeanCatchLen = Res2$PerRecMeanCatchLen,
-                 MeanCatchLen.95ci = Res2$MeanCatchLen.95ci,
-                 MeanCatchLen.60pi = Res2$MeanCatchLen.60pi,
-                 MeanCatchLen.95pi = Res2$MeanCatchLen.95pi,
-                 PerRecRandFishWt = Res2$PerRecRandFishWt,
-                 PerRecMeanCatchWt = Res2$PerRecMeanCatchWt,
-                 MeanCatchWt.95ci = Res2$MeanCatchWt.95ci,
-                 MeanCatchWt.60pi = Res2$MeanCatchWt.60pi,
-                 MeanCatchWt.95pi = Res2$MeanCatchWt.95pi,
-                 MeanCatchLenResults = MeanCatchLenResults,
-                 MeanCatchWtResults=MeanCatchWtResults,
-                 Equil_Rec = Res2$Equil_Rec,
-                 Equil_Catch = Res2$Equil_Catch,
-                 Equil_FemSpBiom = Res2$Equil_FemSpBiom,
-                 Equil_MalSpBiom = Res2$Equil_MalSpBiom,
-                 Equilmod_FemRelBiom = Res2$Equilmod_FemRelBiom,
-                 Equilmod_MalRelBiom = Res2$Equilmod_MalRelBiom,
-                 Equilmod_CombSexRelBiom = Res2$Equilmod_CombSexRelBiom,
-                 BH_SRRa = Res2$BH_SRRa,
-                 BH_SRRb = Res2$BH_SRRb,
-                 BH_Equil_Rec = Res2$BH_Equil_Rec,
-                 FemGearSelAtLen = Res2$FemGearSelAtLen,
-                 MalGearSelAtLen = Res2$MalGearSelAtLen,
-                 FemRetProbAtLen = Res2$FemRetProbAtLen,
-                 MalRetProbAtLen = Res2$MalRetProbAtLen,
-                 FemSelLandAtLen = Res2$FemSelLandAtLen,
-                 MalSelLandAtLen = Res2$MalSelLandAtLen,
-                 FemSelDiscAtLen = Res2$FemSelDiscAtLen,
-                 MalSelDiscAtLen = Res2$MalSelDiscAtLen,
-                 FemDiscFAtLen = Res2$FemDiscFAtLen,
-                 MalDiscFAtLen = Res2$MalDiscFAtLen,
-                 FemLandFAtLen = Res2$FemLandFAtLen,
-                 MalLandFAtLen = Res2$MalLandFAtLen,
-                 FemFAtLen = Res2$FemFAtLen,
-                 MalFAtLen = Res2$MalFAtLen,
-                 FemZAtLen = Res2$FemZAtLen,
-                 MalZAtLen = Res2$MalZAtLen,
-                 FishMort = FishMort,
-                 maxypr = maxypr,
+                 Eq_Rec = Res2$Eq_Rec,
+                 Eq_Catch = Res2$Eq_Catch,
+                 Eq_FemRelSpBiom = Res2$Eq_FemRelSpBiom,
+                 Eq_MalRelSpBiom = Res2$Eq_MalRelSpBiom,
+                 Eq_CombSexRelSpBiom = Res2$Eq_CombSexRelSpBiom,
                  F_MSY = F_MSY,
-                 Fmax = Fmax,
                  BMSY_Targ=BMSY_Targ,
                  BMSY_Thresh=BMSY_Thresh,
                  BMSY_Lim=BMSY_Lim,
                  FmaxeqCatch = FmaxeqCatch,
+                 FishMort = FishMort,
                  YPRResults = YPRResults,
-                 EquilCatchResults = EquilCatchResults,
+                 Eq_CatchResults = Eq_CatchResults,
                  Fem_SPRResults = Fem_SPRResults,
                  Mal_SPRResults = Mal_SPRResults,
                  CombSex_SPRResults = CombSex_SPRResults,
-                 Equilmod_FemRelBiomResults = Equilmod_FemRelBiomResults,
-                 Equilmod_MalRelBiomResults = Equilmod_MalRelBiomResults,
-                 Equilmod_CombSexRelBiomResults = Equilmod_CombSexRelBiomResults,
-                 EquilRecResults = EquilRecResults)
+                 Eq_RecResults = Eq_RecResults,
+                 Eq_FemRelSpBiomResults = Eq_FemRelSpBiomResults,
+                 Eq_MalRelSpBiomResults = Eq_MalRelSpBiomResults,
+                 Eq_CombSexRelSpBiomResults = Eq_CombSexRelSpBiomResults,
+                 MeanCatchLenResults = MeanCatchLenResults,
+                 MeanCatchLenResults_CurrF = MeanCatchLenResults_CurrF,
+                 MeanCatchWtResults = MeanCatchWtResults,
+                 MeanCatchWtResults_CurrF = MeanCatchWtResults_CurrF,
+                 ModelDiag = Res2$ModelDiag)
+
   return(Results)
 
 }
@@ -8117,9 +8364,9 @@ GetPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
 #' DiscMort <- 0.0 # discard mortality (e.g. 50% released fish die = 0.5)
 #' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
 #' SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
-#' NatMort = 0.2 # natural mortality  (year-1)
+#' NatMort <- 0.2 # natural mortality  (year-1)
 #' Current_F <- 0.07 # estimate of fishing mortality, e.g. from catch curve analysis
-#' PlotOpt 0=all plots, 1=len at-age, 2=wt at age, 3=fem mat/sel/ret at age, 4=mal mat/sel/ret at age,
+#' PlotOpt <- 0 # 0=all plots, 1=len at-age, 2=wt at age, 3=fem mat/sel/ret at age, 4=mal mat/sel/ret at age,
 #' #  5=fem F at age, 6=mal F at age, 7=fem rel surv, 8=mal rel surv, 9=fem biom at age, 10=fem biom at age,
 #' #  11=catch at age, 12=ypr/eq catch, 13=fem SPR/Brel, 14=mal SPR/Brel, 15=comb sex SPR/Brel, 16=eq recruit
 #' PlotPerRecruitResults_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
@@ -8161,11 +8408,11 @@ GetPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
 #' # DiscMort <- 0.0 # discard mortality (e.g. 50% released fish die = 0.5)
 #' # Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
 #' # SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
-#' # NatMort = 0.07 # natural mortality  (year-1)
+#' # NatMort <- 0.07 # natural mortality  (year-1)
 #' # Current_F <- 0.07 # estimate of fishing mortality, e.g. from catch curve analysis
-#' # PlotOpt 0=all plots, 1=len at-age, 2=wt at age, 3=fem mat/sel/ret at age, 4=mal mat/sel/ret at age,
-#' # 5=fem F at age, 6=mal F at age, 7=fem rel surv, 8=mal rel surv, 9=fem biom at age, 10=fem biom at age,
-#' # 11=catch at age, 12=ypr/eq catch, 13=fem SPR/Brel, 14=mal SPR/Brel, 15=comb sex SPR/Brel, 16=eq recruit
+#' # PlotOpt <- 0 # 0=all plots, 1=len at-age, 2=wt at age, 3=fem mat/sel/ret at age, 4=mal mat/sel/ret at age,
+#' # # 5=fem F at age, 6=mal F at age, 7=fem rel surv, 8=mal rel surv, 9=fem biom at age, 10=fem biom at age,
+#' # # 11=catch at age, 12=ypr/eq catch, 13=fem SPR/Brel, 14=mal SPR/Brel, 15=comb sex SPR/Brel, 16=eq recruit
 #' # PlotPerRecruitResults_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
 #' #                       lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale,
 #' #                       ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95,
@@ -8196,25 +8443,25 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
     # don't change user settings
   }
 
-  # PlotOpt 0=all plots, 1=len at-age, 2=wt at age, 3=fem mat/sel/ret at age, 4=mal mat/sel/ret at age,
+  # PlotOpt <- 0 # 0=all plots, 1=len at-age, 2=wt at age, 3=fem mat/sel/ret at age, 4=mal mat/sel/ret at age,
   # 5=fem F at age, 6=mal F at age, 7=fem rel surv, 8=mal rel surv, 9=fem biom at age, 10=fem biom at age,
   # 11=catch at age, 12=ypr/eq catch, 13=fem SPR/Brel, 14=mal SPR/Brel, 15=comb sex SPR/Brel, 16=eq recruit
 
   # plot growth curve
   if (PlotOpt==0 | PlotOpt==1) {
-    y1=max(Res$FemLenAtAge)
-    y2=max(Res$MalLenAtAge)
+    y1=max(Res$ModelDiag$FemLenAtAge)
+    y2=max(Res$ModelDiag$MalLenAtAge)
     if (y1 > y2) {
-      ylims = Get_yaxis_scale(c(0,Res$FemLenAtAge))
+      ylims = Get_yaxis_scale(c(0,Res$ModelDiag$FemLenAtAge))
     } else {
-      ylims = Get_yaxis_scale(c(0,Res$MalLenAtAge))
+      ylims = Get_yaxis_scale(c(0,Res$ModelDiag$MalLenAtAge))
     }
     ymax = ylims$ymax; yint = ylims$yint
-    xlims = Get_xaxis_scale(Res$Ages)
+    xlims = Get_xaxis_scale(Res$ModelDiag$Ages)
     xmax = xlims$xmax; xint = xlims$xint
-    plot(Res$Ages,Res$FemLenAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),
+    plot(Res$ModelDiag$Ages,Res$ModelDiag$FemLenAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),
          col="red",yaxt="n",xaxt="n",ylab="",xlab="")
-    lines(Res$Ages, Res$MalLenAtAge,col="blue")
+    lines(Res$ModelDiag$Ages, Res$ModelDiag$MalLenAtAge,col="blue")
     axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
@@ -8226,19 +8473,19 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
 
   # plot weight at age
   if (PlotOpt==0 | PlotOpt==2) {
-    y1=max(Res$FemWtAtAge)
-    y2=max(Res$MalWtAtAge)
+    y1=max(Res$ModelDiag$FemWtAtAge)
+    y2=max(Res$ModelDiag$MalWtAtAge)
     if (y1 > y2) {
-      ylims = Get_yaxis_scale(Res$FemWtAtAge)
+      ylims = Get_yaxis_scale(Res$ModelDiag$FemWtAtAge)
     } else {
-      ylims = Get_yaxis_scale(Res$MalWtAtAge)
+      ylims = Get_yaxis_scale(Res$ModelDiag$MalWtAtAge)
     }
     ymax = ylims$ymax; yint = ylims$yint
-    xlims = Get_xaxis_scale(Res$Ages)
+    xlims = Get_xaxis_scale(Res$ModelDiag$Ages)
     xmax = xlims$xmax; xint = xlims$xint
-    plot(Res$Ages,Res$FemWtAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),col="red",yaxt="n",xaxt="n",
+    plot(Res$ModelDiag$Ages,Res$ModelDiag$FemWtAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),col="red",yaxt="n",xaxt="n",
          ylab="",xlab="")
-    lines(Res$Ages,Res$MalWtAtAge,col="blue")
+    lines(Res$ModelDiag$Ages,Res$ModelDiag$MalWtAtAge,col="blue")
     axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
@@ -8250,17 +8497,17 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
 
   # plot female maturity and selectivity at age
   if (PlotOpt==0 | PlotOpt==3) {
-    xlims = Get_xaxis_scale(Res$Ages)
+    xlims = Get_xaxis_scale(Res$ModelDiag$Ages)
     xmax = xlims$xmax; xint = xlims$xint
-    plot(Res$Ages,Res$FemPropMatAtAge,"l", pch=16,frame.plot=F,ylim=c(0,1),xlim=c(0,xmax),col="red",yaxt="n",xaxt="n",
+    plot(Res$ModelDiag$Ages,Res$ModelDiag$FemPropMatAtAge,"l", pch=16,frame.plot=F,ylim=c(0,1),xlim=c(0,xmax),col="red",yaxt="n",xaxt="n",
          ylab="",xlab="",cex=0.8)
     if (DiscMort == 0) {
-      lines(Res$Ages, Res$FemSelLandAtAge, "l", col="red",lty="dotted", cex=0.8)
+      lines(Res$ModelDiag$Ages, Res$ModelDiag$FemSelLandAtAge, "l", col="red",lty="dotted", cex=0.8)
       legend('bottomright', col=c("red","red"),legend=c("Fem. mature","Fem. reten."),
              lty=c("solid","dotted"),bty='n', cex=0.8,lwd=1.75)
     } else {
-      lines(Res$Ages,Res$FemSelLandAtAge, "l", col="red",lty="dotted",cex=0.8)
-      lines(Res$Ages,Res$FemSelDiscAtAge, "l", col="brown",lty="dotted",cex=0.8)
+      lines(Res$ModelDiag$Ages,Res$ModelDiag$FemSelLandAtAge, "l", col="red",lty="dotted",cex=0.8)
+      lines(Res$ModelDiag$Ages,Res$ModelDiag$FemSelDiscAtAge, "l", col="brown",lty="dotted",cex=0.8)
       legend('bottomright', col=c("red","red","brown"),legend=c("Fem. mature","Fem. land.","Fem. disc."),
              lty=c("solid","dotted","dotted"),bty='n', cex=0.8,lwd=1.75)
     }
@@ -8271,7 +8518,7 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
     mtext(expression(paste(plain("Proportion"))),las=3,side=2,line=2.5,cex=0.7,lwd=1.75)
     mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
     if (ReprodPattern > 1) {
-      lines(Res$Ages,Res$PropFemAtAge, "l", col="black",lty="solid",cex=0.8)
+      lines(Res$ModelDiag$Ages,Res$ModelDiag$PropFemAtAge, "l", col="black",lty="solid",cex=0.8)
       legend('topright', col="black",legend="Prop. Fem.",
              lty="solid",bty='n', cex=0.8,lwd=1.75)
     }
@@ -8279,17 +8526,17 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
 
   # plot male maturity and selectivity at age
   if (PlotOpt==0 | PlotOpt==4) {
-    xlims = Get_xaxis_scale(Res$Ages)
+    xlims = Get_xaxis_scale(Res$ModelDiag$Ages)
     xmax = xlims$xmax; xint = xlims$xint
-    plot(Res$Ages, Res$MalPropMatAtAge,"l", pch=16, frame.plot=F,ylim=c(0,1),xlim=c(0,xmax),col="blue",yaxt="n",xaxt="n",
+    plot(Res$ModelDiag$Ages, Res$ModelDiag$MalPropMatAtAge,"l", pch=16, frame.plot=F,ylim=c(0,1),xlim=c(0,xmax),col="blue",yaxt="n",xaxt="n",
          ylab="",xlab="", cex=0.8)
     if (DiscMort == 0) {
-      lines(Res$Ages, Res$FemSelLandAtAge, "l", col="blue",lty="dotted", cex=0.8)
+      lines(Res$ModelDiag$Ages, Res$ModelDiag$FemSelLandAtAge, "l", col="blue",lty="dotted", cex=0.8)
       legend('bottomright', col=c("blue","blue"),legend=c("Male mature","Male reten."),
              lty=c("solid","dotted"),bty='n', cex=0.8,lwd=1.75)
     } else {
-      lines(Res$Ages, Res$FemSelLandAtAge, "l", col="blue",lty="dotted", cex=0.8)
-      lines(Res$Ages, Res$FemSelDiscAtAge, "l", col="purple",lty="dotted", cex=0.8)
+      lines(Res$ModelDiag$Ages, Res$ModelDiag$FemSelLandAtAge, "l", col="blue",lty="dotted", cex=0.8)
+      lines(Res$ModelDiag$Ages, Res$ModelDiag$FemSelDiscAtAge, "l", col="purple",lty="dotted", cex=0.8)
       legend('bottomright', col=c("blue","blue","purple"),legend=c("Male mature","Male land.", "Male disc."),
              lty=c("solid","dotted","dotted"),bty='n', cex=0.8,lwd=1.75)
     }
@@ -8300,7 +8547,7 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
     mtext(expression(paste(plain("Proportion"))),las=3,side=2,line=2.5,cex=0.7,lwd=1.75)
     mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
     if (ReprodPattern > 1) {
-      lines(Res$Ages,1-Res$PropFemAtAge, "l", col="black",lty="solid",cex=0.8)
+      lines(Res$ModelDiag$Ages,1-Res$ModelDiag$PropFemAtAge, "l", col="black",lty="solid",cex=0.8)
       legend('topright', col="black",legend="Prop. Male",
              lty="solid",bty='n', cex=0.8,lwd=1.75)
     }
@@ -8316,15 +8563,15 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
 
   # plot female mortality at age
   if (PlotOpt==0 | PlotOpt==5) {
-    ylims = Get_yaxis_scale(Res$FemFAtAge)
+    ylims = Get_yaxis_scale(Res$ModelDiag$FemFAtAge)
     ymax = ylims$ymax; yint = ylims$yint
-    xlims = Get_xaxis_scale(Res$Ages)
+    xlims = Get_xaxis_scale(Res$ModelDiag$Ages)
     xmax = xlims$xmax; xint = xlims$xint
-    plot(Res$Ages, Res$FemFAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),col="red",yaxt="n",xaxt="n",
+    plot(Res$ModelDiag$Ages, Res$ModelDiag$FemFAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),col="red",yaxt="n",xaxt="n",
          ylab="",xlab="")
-    lines(Res$Ages,Res$FemDiscFAtAge,lty="dotted",col="brown")
-    lines(Res$Ages,Res$FemLandFAtAge,lty="dotted",col="purple")
-    lines(Res$Ages,rep(NatMort,length(Res$Ages)),lty="dashed")
+    lines(Res$ModelDiag$Ages,Res$ModelDiag$FemDiscFAtAge,lty="dotted",col="brown")
+    lines(Res$ModelDiag$Ages,Res$ModelDiag$FemLandFAtAge,lty="dotted",col="purple")
+    lines(Res$ModelDiag$Ages,rep(NatMort,length(Res$ModelDiag$Ages)),lty="dashed")
     axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
@@ -8337,15 +8584,15 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
 
   # plot male mortality at age
   if (PlotOpt==0 | PlotOpt==6) {
-    ylims = Get_yaxis_scale(Res$MalFAtAge)
+    ylims = Get_yaxis_scale(Res$ModelDiag$MalFAtAge)
     ymax = ylims$ymax; yint = ylims$yint
-    xlims = Get_xaxis_scale(Res$Ages)
+    xlims = Get_xaxis_scale(Res$ModelDiag$Ages)
     xmax = xlims$xmax; xint = xlims$xint
-    plot(Res$Ages, Res$MalFAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),col="blue",yaxt="n",xaxt="n",
+    plot(Res$ModelDiag$Ages, Res$ModelDiag$MalFAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),col="blue",yaxt="n",xaxt="n",
          ylab="",xlab="")
-    lines(Res$Ages,Res$MalDiscFAtAge,lty="dotted",col="brown")
-    lines(Res$Ages,Res$MalLandFAtAge,lty="dotted",col="purple")
-    lines(Res$Ages,rep(NatMort,length(Res$Ages)),lty="dashed")
+    lines(Res$ModelDiag$Ages,Res$ModelDiag$MalDiscFAtAge,lty="dotted",col="brown")
+    lines(Res$ModelDiag$Ages,Res$ModelDiag$MalLandFAtAge,lty="dotted",col="purple")
+    lines(Res$ModelDiag$Ages,rep(NatMort,length(Res$ModelDiag$Ages)),lty="dashed")
     axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
@@ -8358,17 +8605,17 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
 
   # plot fished and unfished female survival in terms of numbers given specified current fully-selected fishing mortality
   if (PlotOpt==0 | PlotOpt==7) {
-    ylims = Get_yaxis_scale(Res$UnfishFemSurvAtAge)
+    ylims = Get_yaxis_scale(Res$ModelDiag$UnfishFemSurvAtAge)
     ymax = ylims$ymax; yint = ylims$yint
     if (ymax > 1) {
       ymax=1
       yint=0.2
     }
-    xlims = Get_xaxis_scale(Res$Ages)
+    xlims = Get_xaxis_scale(Res$ModelDiag$Ages)
     xmax = xlims$xmax; xint = xlims$xint
-    plot(Res$Ages, Res$UnfishFemSurvAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),col="red",yaxt="n",xaxt="n",
+    plot(Res$ModelDiag$Ages, Res$ModelDiag$UnfishFemSurvAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),col="red",yaxt="n",xaxt="n",
          ylab="",xlab="")
-    lines(Res$Ages, Res$FishedFemSurvAtAge,col="red",lty="dotted")
+    lines(Res$ModelDiag$Ages, Res$ModelDiag$FishFemSurvAtAge,col="red",lty="dotted")
     axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
@@ -8381,17 +8628,17 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
 
   # plot fished and unfished male survival in terms of numbers given specified current fully-selected fishing mortality
   if (PlotOpt==0 | PlotOpt==8) {
-    ylims = Get_yaxis_scale(Res$UnfishMalSurvAtAge)
+    ylims = Get_yaxis_scale(Res$ModelDiag$UnfishMalSurvAtAge)
     ymax = ylims$ymax; yint = ylims$yint
     if (ymax > 1) {
       ymax=1
       yint=0.2
     }
-    xlims = Get_xaxis_scale(Res$Ages)
+    xlims = Get_xaxis_scale(Res$ModelDiag$Ages)
     xmax = xlims$xmax; xint = xlims$xint
-    plot(Res$Ages, Res$UnfishMalSurvAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),col="blue",yaxt="n",xaxt="n",
+    plot(Res$ModelDiag$Ages, Res$ModelDiag$UnfishMalSurvAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),col="blue",yaxt="n",xaxt="n",
          ylab="",xlab="")
-    lines(Res$Ages, Res$FishedMalSurvAtAge,col="blue",lty="dotted")
+    lines(Res$ModelDiag$Ages, Res$ModelDiag$FishMalSurvAtAge,col="blue",lty="dotted")
     axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
@@ -8404,17 +8651,17 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
 
   # plot fished and unfished mature female biomass at age given specified current fully-selected fishing mortality
   if (PlotOpt==0 | PlotOpt==9) {
-    ylims = Get_yaxis_scale(Res$UnfishFemBiomAtAge)
+    ylims = Get_yaxis_scale(Res$ModelDiag$UnfishFemSpBiomAtAge)
     ymax = ylims$ymax; yint = ylims$yint
     if (ymax == 0) {
-      ymax = round(1.4 * max(Res$UnfishFemBiomAtAge),1)
+      ymax = round(1.4 * max(Res$ModelDiag$UnfishFemSpBiomAtAge),1)
       yint = ymax/4
     }
-    xlims = Get_xaxis_scale(Res$Ages)
+    xlims = Get_xaxis_scale(Res$ModelDiag$Ages)
     xmax = xlims$xmax; xint = xlims$xint
-    plot(Res$Ages, Res$UnfishFemBiomAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),
+    plot(Res$ModelDiag$Ages, Res$ModelDiag$UnfishFemSpBiomAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),
          col="red",yaxt="n",xaxt="n",ylab="",xlab="")
-    lines(Res$Ages, Res$FishedFemBiomAtAge,col="red",lty="dotted")
+    lines(Res$ModelDiag$Ages, Res$ModelDiag$FishFemSpBiomAtAge,col="red",lty="dotted")
     axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
@@ -8426,17 +8673,17 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
 
   # plot fished and unfished mature male biomass at age given specified current fully-selected fishing mortality
   if (PlotOpt==0 | PlotOpt==10) {
-    ylims = Get_yaxis_scale(Res$UnfishMalBiomAtAge)
+    ylims = Get_yaxis_scale(Res$ModelDiag$UnfishMalSpBiomAtAge)
     ymax = ylims$ymax; yint = ylims$yint
-    xlims = Get_xaxis_scale(Res$Ages)
+    xlims = Get_xaxis_scale(Res$ModelDiag$Ages)
     xmax = xlims$xmax; xint = xlims$xint
     if (ymax == 0) {
-      ymax = round(1.4 * max(Res$UnfishFemBiomAtAge),1)
+      ymax = round(1.4 * max(Res$ModelDiag$UnfishFemSpBiomAtAge),1)
       yint = ymax/4
     }
-    plot(Res$Ages, Res$UnfishMalBiomAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),
+    plot(Res$ModelDiag$Ages, Res$ModelDiag$UnfishMalSpBiomAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),
          col="blue",yaxt="n",xaxt="n",ylab="",xlab="")
-    lines(Res$Ages, Res$FishedMalBiomAtAge,col="blue",lty="dotted")
+    lines(Res$ModelDiag$Ages, Res$ModelDiag$FishMalSpBiomAtAge,col="blue",lty="dotted")
     axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
@@ -8456,15 +8703,15 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
   }
 
   if (PlotOpt==0 | PlotOpt==11) {
-    FemCatchNumAtAgeProp <- Res$FemCatchAtAgeNum / sum(Res$FemCatchAtAgeNum)
-    MalCatchNumAtAgeProp <- Res$MalCatchAtAgeNum / sum(Res$MalCatchAtAgeNum)
+    FemCatchNumAtAgeProp <- Res$ModelDiag$FemCatchAtAgeNum / sum(Res$ModelDiag$FemCatchAtAgeNum)
+    MalCatchNumAtAgeProp <- Res$ModelDiag$MalCatchAtAgeNum / sum(Res$ModelDiag$MalCatchAtAgeNum)
     ylims = Get_yaxis_scale(FemCatchNumAtAgeProp)
     ymax = ylims$ymax; yint = ylims$yint
-    xlims = Get_xaxis_scale(Res$Ages)
+    xlims = Get_xaxis_scale(Res$ModelDiag$Ages)
     xmax = xlims$xmax; xint = xlims$xint
-    plot(Res$Ages, FemCatchNumAtAgeProp,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),
+    plot(Res$ModelDiag$Ages, FemCatchNumAtAgeProp,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),
          col="red",yaxt="n",xaxt="n",ylab="",xlab="")
-    lines(Res$Ages, MalCatchNumAtAgeProp,col="blue","l")
+    lines(Res$ModelDiag$Ages, MalCatchNumAtAgeProp,col="blue","l")
     axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
@@ -8483,8 +8730,8 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
     plot(Res$FishMort, Res$YPRResults,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,max(Res$FishMort)),
          col="black",yaxt="n",xaxt="n",ylab="",xlab="")
     points(Current_F, Res$YPR,cex=1.2,col="black",pch=16)
-    lines(Res$FishMort, Res$EquilCatchResults,col="blue")
-    points(Current_F, Res$Equil_Catch, cex=1.2,col="blue",pch=16)
+    lines(Res$FishMort, Res$Eq_CatchResults,col="blue")
+    points(Current_F, Res$Eq_Catch, cex=1.2,col="blue",pch=16)
     axis(1,at=seq(0,max(Res$FishMort),0.5), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(1,at=seq(0,max(Res$FishMort),0.5), labels=seq(0,max(Res$FishMort),0.5),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
@@ -8500,9 +8747,9 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
   if (PlotOpt==0 | PlotOpt==13) {
     plot(Res$FishMort, Res$Fem_SPRResults,"l",frame.plot=F,ylim=c(0,1.0),xlim=c(0,max(Res$FishMort)),
          col="red",yaxt="n",xaxt="n",ylab="",xlab="", lty="dotted")
-    lines(Res$FishMort, Res$Equilmod_FemRelBiomResults,col="red",lty="dotted")
+    lines(Res$FishMort, Res$Eq_FemRelSpBiomResults,col="red",lty="dotted")
     points(Current_F, Res$Fem_SPR,cex=1.2,col="red",pch=16)
-    points(Current_F, Res$Equilmod_FemRelBiom,cex=1.2,col="red",pch=1)
+    points(Current_F, Res$Eq_FemRelSpBiom,cex=1.2,col="red",pch=1)
     axis(1,at=seq(0,max(Res$FishMort),0.5), cex.axis=0.8, lwd=1.75,lab=F) # x axis
     axis(2,at=seq(0,1,0.2), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(1,at=seq(0,max(Res$FishMort),0.5), labels=seq(0,max(Res$FishMort),0.5),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add x labels
@@ -8518,9 +8765,9 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
   if (PlotOpt==0 | PlotOpt==14) {
     plot(Res$FishMort, Res$Mal_SPRResults,"l",frame.plot=F,ylim=c(0,1.0),xlim=c(0,max(Res$FishMort)),
          col="blue",yaxt="n",xaxt="n",ylab="",xlab="", lty="dotted")
-    lines(Res$FishMort, Res$Equilmod_MalRelBiomResults,col="blue",lty="solid")
+    lines(Res$FishMort, Res$Eq_MalRelSpBiomResults,col="blue",lty="solid")
     points(Current_F, Res$Mal_SPR,cex=1.2,col="blue",pch=16)
-    points(Current_F, Res$Equilmod_MalRelBiom,cex=1.2,col="blue",pch=1)
+    points(Current_F, Res$Eq_MalRelSpBiom,cex=1.2,col="blue",pch=1)
     axis(1,at=seq(0,max(Res$FishMort),0.5), cex.axis=0.8, lwd=1.75,lab=F) # x axis
     axis(2,at=seq(0,1,0.2), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(1,at=seq(0,max(Res$FishMort),0.5), labels=seq(0,max(Res$FishMort),0.5),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add x labels
@@ -8536,9 +8783,9 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
   if (PlotOpt==0 | PlotOpt==15) {
     plot(Res$FishMort, Res$CombSex_SPRResults,"l",frame.plot=F,ylim=c(0,1.0),xlim=c(0,max(Res$FishMort)),
          col="black",yaxt="n",xaxt="n",ylab="",xlab="", lty="dotted")
-    lines(Res$FishMort, Res$Equilmod_CombSexRelBiomResults,col="black",lty="solid")
+    lines(Res$FishMort, Res$Eq_CombSexRelSpBiomResults,col="black",lty="solid")
     points(Current_F, Res$CombSex_SPR,cex=1.2,col="black",pch=16)
-    points(Current_F, Res$Equilmod_CombSexRelBiom,cex=1.2,col="black",pch=1)
+    points(Current_F, Res$Eq_CombSexRelSpBiom,cex=1.2,col="black",pch=1)
     axis(1,at=seq(0,max(Res$FishMort),0.5), cex.axis=0.8, lwd=1.75,lab=F) # x axis
     axis(2,at=seq(0,1,0.2), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(1,at=seq(0,max(Res$FishMort),0.5), labels=seq(0,max(Res$FishMort),0.5),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add x labels
@@ -8553,9 +8800,9 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
   if (PlotOpt==0 | PlotOpt==16) {
     ymax = 1.0
     yint = 0.2
-    plot(Res$FishMort, Res$EquilRecResults,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,max(Res$FishMort)),
+    plot(Res$FishMort, Res$Eq_RecResults,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,max(Res$FishMort)),
          col="red",yaxt="n",xaxt="n",ylab="",xlab="")
-    points(Current_F, Res$Equil_Rec, cex=1.2,col="red",pch=16)
+    points(Current_F, Res$Eq_Rec, cex=1.2,col="red",pch=16)
     axis(1,at=seq(0,max(Res$FishMort),0.5), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(1,at=seq(0,max(Res$FishMort),0.5), labels=seq(0,max(Res$FishMort),0.5),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
@@ -8659,11 +8906,11 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
 #' DiscMort <- 0.25 # discard mortality (e.g. 50% released fish die = 0.5)
 #' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
 #' SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
-#' NatMort = 4.22 / MaxModelAge # natural mortality  (year-1)
+#' NatMort <- 4.22 / MaxModelAge # natural mortality  (year-1)
 #' RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
-#' PlotOpt <- 0=all plots, 1=len at-age, 2=wt at length, 3=fem mat/sel/ret at length, 4=mal mat/sel/ret at length,
-#' 5=fem F at length, 6=mal F at length, 7=fem rel surv, 8=mal rel surv, 9=fem biom at age, 10=fem biom at age,
-#' 11=ypr/eq catch, 12=fem SPR/Brel, 13=mal SPR/Brel, 14=eq recruit
+#' PlotOpt <- 0 # 0=all plots, 1=len at-age, 2=wt at length, 3=fem mat/sel/ret at length, 4=mal mat/sel/ret at length,
+#' # 5=fem F at length, 6=mal F at length, 7=fem rel surv, 8=mal rel surv, 9=fem biom at age, 10=fem biom at age,
+#' # 11=ypr/eq catch, 12=fem SPR/Brel, 13=mal SPR/Brel, 14=eq recruit
 #' Current_F = 0.2
 #' PlotPerRecruitResults_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
 #'                                      RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
@@ -8679,11 +8926,12 @@ PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
 
   .pardefault <- par(no.readonly = TRUE) # store current par settings
 
+  Output_Opt = 1 # 1=standard output, 2=with added length and weight outputs (slower)
   Res = GetPerRecruitResults_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                 RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                                 EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
                                 FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-                                ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F)
+                                ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, Output_Opt)
 
   Ages <- seq(TimeStep,MaxModelAge,TimeStep)
   nTimeSteps <- length(Ages)
@@ -8698,19 +8946,19 @@ PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
   # plot growth curve
   if (PlotOpt==0 | PlotOpt==1) {
     names(Res)
-    y1=max(Res$FemLenAtAge)
-    y2=max(Res$MalLenAtAge)
+    y1=max(Res$ModelDiag$MeanSizeAtAge[1,])
+    y2=max(Res$ModelDiag$MeanSizeAtAge[2,])
     if (y1 > y2) {
-      ylims = Get_yaxis_scale(c(0,Res$FemLenAtAge))
+      ylims = Get_yaxis_scale(c(0,Res$ModelDiag$MeanSizeAtAge[1,]))
     } else {
-      ylims = Get_yaxis_scale(c(0,Res$MalLenAtAge))
+      ylims = Get_yaxis_scale(c(0,Res$ModelDiag$MeanSizeAtAge[2,]))
     }
     ymax = ylims$ymax; yint = ylims$yint
     xlims = Get_xaxis_scale(Ages)
     xmax = xlims$xmax; xint = xlims$xint
-    plot(Ages,Res$FemLenAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),
+    plot(Ages,Res$ModelDiag$MeanSizeAtAge[1,],"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),
          col="red",yaxt="n",xaxt="n",ylab="",xlab="")
-    lines(Ages, Res$MalLenAtAge,col="blue")
+    lines(Ages, Res$ModelDiag$MeanSizeAtAge[2,],col="blue")
     axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
@@ -8722,20 +8970,20 @@ PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
 
   # plot weight at length
   if (PlotOpt==0 | PlotOpt==2) {
-    y1=max(Res$FemWtAtLen)
-    y2=max(Res$MalWtAtLen)
+    y1=max(Res$ModelDiag$FemWtAtLen)
+    y2=max(Res$ModelDiag$MalWtAtLen)
     if (y1 > y2) {
-      ylims = Get_yaxis_scale(c(0,Res$FemWtAtLen))
+      ylims = Get_yaxis_scale(c(0,Res$ModelDiag$FemWtAtLen))
     } else {
-      ylims = Get_yaxis_scale(c(0,Res$MalWtAtLen))
+      ylims = Get_yaxis_scale(c(0,Res$ModelDiag$MalWtAtLen))
     }
     ymax = ylims$ymax; yint = ylims$yint
     xlims=Get_xaxis_scale(0:MaxLen)
     xmax = xlims$xmax; xint = xlims$xint
 
-    plot(midpt,Res$FemWtAtLen,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),col="red",yaxt="n",xaxt="n",
+    plot(midpt,Res$ModelDiag$FemWtAtLen,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),col="red",yaxt="n",xaxt="n",
          ylab="",xlab="")
-    lines(midpt,Res$MalWtAtLen,col="blue")
+    lines(midpt,Res$ModelDiag$MalWtAtLen,col="blue")
     axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
@@ -8749,15 +8997,15 @@ PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
   if (PlotOpt==0 | PlotOpt==3) {
     xlims=Get_xaxis_scale(0:MaxLen)
     xmax = xlims$xmax; xint = xlims$xint
-    plot(midpt,Res$FemPropMatAtLen,"l", pch=16,frame.plot=F,ylim=c(0,1),xlim=c(0,xmax),col="red",yaxt="n",xaxt="n",
+    plot(midpt,Res$ModelDiag$FemPropMatAtLen,"l", pch=16,frame.plot=F,ylim=c(0,1),xlim=c(0,xmax),col="red",yaxt="n",xaxt="n",
          ylab="",xlab="",cex=0.8)
     if (DiscMort == 0) {
-      lines(midpt, Res$FemSelLandAtLen, "l", col="red",lty="dotted", cex=0.8)
+      lines(midpt, Res$ModelDiag$FemSelLandAtLen, "l", col="red",lty="dotted", cex=0.8)
       legend('topleft', col=c("red","red"),legend=c("Fem. mature","Fem. reten."),
              lty=c("solid","dotted"),bty='n', cex=0.8,lwd=1.75)
     } else {
-      lines(midpt,Res$FemSelLandAtLen, "l", col="red",lty="dotted",cex=0.8)
-      lines(midpt,Res$FemSelDiscAtLen, "l", col="brown",lty="dotted",cex=0.8)
+      lines(midpt,Res$ModelDiag$FemSelLandAtLen, "l", col="red",lty="dotted",cex=0.8)
+      lines(midpt,Res$ModelDiag$FemSelDiscAtLen, "l", col="brown",lty="dotted",cex=0.8)
       legend('topleft', col=c("red","red","brown"),legend=c("Fem. mature","Fem. land.","Fem. disc."),
              lty=c("solid","dotted","dotted"),bty='n', cex=0.8,lwd=1.75)
     }
@@ -8768,7 +9016,7 @@ PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
     mtext(expression(paste(plain("Proportion"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
     mtext(expression(paste(plain("Length (mm"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
     if (ReprodPattern > 1) {
-      lines(midpt,Res$PropFemAtLen, "l", col="black",lty="solid",cex=0.8)
+      lines(midpt,Res$ModelDiag$PropFemAtLen, "l", col="black",lty="solid",cex=0.8)
       legend('topright', col="black",legend="Prop. Fem.",
              lty="solid",bty='n', cex=0.8,lwd=1.75)
     }
@@ -8778,15 +9026,15 @@ PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
   if (PlotOpt==0 | PlotOpt==4) {
     xlims=Get_xaxis_scale(0:MaxLen)
     xmax = xlims$xmax; xint = xlims$xint
-    plot(midpt, Res$MalPropMatAtLen,"l", pch=16, frame.plot=F,ylim=c(0,1),xlim=c(0,xmax),col="blue",yaxt="n",xaxt="n",
+    plot(midpt, Res$ModelDiag$MalPropMatAtLen,"l", pch=16, frame.plot=F,ylim=c(0,1),xlim=c(0,xmax),col="blue",yaxt="n",xaxt="n",
          ylab="",xlab="", cex=0.8)
     if (DiscMort == 0) {
-      lines(midpt, Res$FemSelLandAtLen, "l", col="blue",lty="dotted", cex=0.8)
+      lines(midpt, Res$ModelDiag$FemSelLandAtLen, "l", col="blue",lty="dotted", cex=0.8)
       legend('topleft', col=c("blue","blue"),legend=c("Male mature","Male reten."),
              lty=c("solid","dotted"),bty='n', cex=0.8,lwd=1.75)
     } else {
-      lines(midpt, Res$FemSelLandAtLen, "l", col="blue",lty="dotted", cex=0.8)
-      lines(midpt, Res$FemSelDiscAtLen, "l", col="purple",lty="dotted", cex=0.8)
+      lines(midpt, Res$ModelDiag$FemSelLandAtLen, "l", col="blue",lty="dotted", cex=0.8)
+      lines(midpt, Res$ModelDiag$FemSelDiscAtLen, "l", col="purple",lty="dotted", cex=0.8)
       legend('topleft', col=c("blue","blue","purple"),legend=c("Male mature","Male land.", "Male disc."),
              lty=c("solid","dotted","dotted"),bty='n', cex=0.8,lwd=1.75)
     }
@@ -8811,15 +9059,15 @@ PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
 
   # plot female mortality at length
   if (PlotOpt==0 | PlotOpt==5) {
-    ylims = Get_yaxis_scale(Res$FemFAtLen)
+    ylims = Get_yaxis_scale(Res$ModelDiag$FemFAtLen)
     ymax = ylims$ymax; yint = ylims$yint
     xlims=Get_xaxis_scale(0:MaxLen)
     xmax = xlims$xmax; xint = xlims$xint
-    plot(midpt, Res$FemFAtLen,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),col="red",yaxt="n",xaxt="n",
+    plot(midpt, Res$ModelDiag$FemFAtLen,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),col="red",yaxt="n",xaxt="n",
          ylab="",xlab="")
-    # lines(Ages,Res$FemZAtAge,lty="dotted",col="red")
-    lines(midpt,Res$FemDiscFAtLen,lty="dotted",col="brown")
-    lines(midpt,Res$FemLandFAtLen,lty="dotted",col="purple")
+    # lines(Ages,Res$ModelDiag$FemZAtAge,lty="dotted",col="red")
+    lines(midpt,Res$ModelDiag$FemDiscFAtLen,lty="dotted",col="brown")
+    lines(midpt,Res$ModelDiag$FemLandFAtLen,lty="dotted",col="purple")
     lines(midpt,rep(NatMort,length(midpt)),lty="dashed")
     axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
@@ -8833,15 +9081,15 @@ PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
 
   # plot male mortality at age
   if (PlotOpt==0 | PlotOpt==6) {
-    ylims = Get_yaxis_scale(Res$MalFAtLen)
+    ylims = Get_yaxis_scale(Res$ModelDiag$MalFAtLen)
     ymax = ylims$ymax; yint = ylims$yint
     xlims=Get_xaxis_scale(0:MaxLen)
     xmax = xlims$xmax; xint = xlims$xint
-    plot(midpt, Res$MalFAtLen,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),col="blue",yaxt="n",xaxt="n",
+    plot(midpt, Res$ModelDiag$MalFAtLen,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),col="blue",yaxt="n",xaxt="n",
          ylab="",xlab="")
-    # lines(Ages, Res$MalZAtAge,lty="dotted",col="blue")
-    lines(midpt,Res$MalDiscFAtLen,lty="dotted",col="brown")
-    lines(midpt,Res$MalLandFAtLen,lty="dotted",col="purple")
+    # lines(Ages, Res$ModelDiag$MalZAtAge,lty="dotted",col="blue")
+    lines(midpt,Res$ModelDiag$MalDiscFAtLen,lty="dotted",col="brown")
+    lines(midpt,Res$ModelDiag$MalLandFAtLen,lty="dotted",col="purple")
     lines(midpt,rep(NatMort,length(midpt)),lty="dashed")
     axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
@@ -8855,17 +9103,17 @@ PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
 
   # plot fished and unfished female survival in terms of numbers given specified current fully-selected fishing mortality
   if (PlotOpt==0 | PlotOpt==7) {
-    ylims = Get_yaxis_scale(Res$Unfish_FemNPerRec)
+    ylims = Get_yaxis_scale(Res$ModelDiag$Unfish_FemNPerRecLen)
     ymax = ylims$ymax; yint = ylims$yint
     if (ymax <= 0) {
-      ymax = round(max(1.2*Res$Unfish_FemNPerRec),1)
+      ymax = round(max(1.2*Res$ModelDiag$Unfish_FemNPerRecLen),1)
       yint = ymax
     }
     xlims=Get_xaxis_scale(0:MaxLen)
     xmax = xlims$xmax; xint = xlims$xint
-    plot(midpt, Res$Unfish_FemNPerRec,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),col="red",yaxt="n",xaxt="n",
+    plot(midpt, Res$ModelDiag$Unfish_FemNPerRecLen,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),col="red",yaxt="n",xaxt="n",
          ylab="",xlab="")
-    lines(midpt, Res$Fish_FemNPerRec,col="red",lty="dotted")
+    lines(midpt, Res$ModelDiag$Fish_FemNPerRecLen,col="red",lty="dotted")
     axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
@@ -8878,17 +9126,17 @@ PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
 
   # plot fished and unfished male survival in terms of numbers given specified current fully-selected fishing mortality
   if (PlotOpt==0 | PlotOpt==8) {
-    ylims = Get_yaxis_scale(Res$Unfish_MalNPerRec)
+    ylims = Get_yaxis_scale(Res$ModelDiag$Unfish_MalNPerRecLen)
     ymax = ylims$ymax; yint = ylims$yint
     if (ymax <= 0) {
-      ymax = round(max(1.2*Res$Unfish_FemNPerRec),1)
+      ymax = round(max(1.2*Res$ModelDiag$Unfish_FemNPerRecLen),1)
       yint = ymax
     }
     xlims=Get_xaxis_scale(0:MaxLen)
     xmax = xlims$xmax; xint = xlims$xint
-    plot(midpt, Res$Unfish_MalNPerRec,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),col="blue",yaxt="n",xaxt="n",
+    plot(midpt, Res$ModelDiag$Unfish_MalNPerRecLen,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),col="blue",yaxt="n",xaxt="n",
          ylab="",xlab="")
-    lines(midpt, Res$Fish_MalNPerRec,col="blue",lty="dotted")
+    lines(midpt, Res$ModelDiag$Fish_MalNPerRecLen,col="blue",lty="dotted")
     axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
@@ -8901,17 +9149,17 @@ PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
 
   # plot fished and unfished mature female biomass at age given specified current fully-selected fishing mortality
   if (PlotOpt==0 | PlotOpt==9) {
-    ylims = Get_yaxis_scale(Res$Unfish_FemBiomAtAge)
+    ylims = Get_yaxis_scale(Res$ModelDiag$Unfish_FemBiomAtAge)
     ymax = ylims$ymax; yint = ylims$yint
-    if (max(Res$Unfish_FemBiomAtAge) < 0.2 * ymax) {
+    if (max(Res$ModelDiag$Unfish_FemBiomAtAge) < 0.2 * ymax) {
       ymax = ymax/5
       yint = yint/5
     }
     xlims=Get_xaxis_scale(c(0,Ages))
     xmax = xlims$xmax; xint = xlims$xint
-    plot(Ages, Res$Unfish_FemBiomAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),
+    plot(Ages, Res$ModelDiag$Unfish_FemBiomAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),
          col="red",yaxt="n",xaxt="n",ylab="",xlab="")
-    lines(Ages, Res$Fish_FemBiomAtAge,col="red",lty="dotted")
+    lines(Ages, Res$ModelDiag$Fish_FemBiomAtAge,col="red",lty="dotted")
     axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
@@ -8923,17 +9171,17 @@ PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
 
   # plot fished and unfished mature male biomass at age given specified current fully-selected fishing mortality
   if (PlotOpt==0 | PlotOpt==10) {
-    ylims = Get_yaxis_scale(Res$Unfish_MalBiomAtAge)
+    ylims = Get_yaxis_scale(Res$ModelDiag$Unfish_MalBiomAtAge)
     ymax = ylims$ymax; yint = ylims$yint
-    if (max(Res$Unfish_MalBiomAtAge) < 0.2 * ymax) {
+    if (max(Res$ModelDiag$Unfish_MalBiomAtAge) < 0.2 * ymax) {
       ymax = ymax/5
       yint = yint/5
     }
     xlims=Get_xaxis_scale(c(0,Ages))
     xmax = xlims$xmax; xint = xlims$xint
-    plot(Ages, Res$Unfish_MalBiomAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),
+    plot(Ages, Res$ModelDiag$Unfish_MalBiomAtAge,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),
          col="blue",yaxt="n",xaxt="n",ylab="",xlab="")
-    lines(Ages, Res$Fish_MalBiomAtAge,col="blue",lty="dotted")
+    lines(Ages, Res$ModelDiag$Fish_MalBiomAtAge,col="blue",lty="dotted")
     axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
@@ -8962,8 +9210,8 @@ PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
     plot(Res$FishMort, Res$YPRResults,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,max(Res$FishMort)),
          col="black",yaxt="n",xaxt="n",ylab="",xlab="")
     points(Current_F, Res$YPR,cex=1.2,col="black",pch=16)
-    lines(Res$FishMort, Res$EquilCatchResults,col="blue")
-    points(Current_F, Res$Equil_Catch, cex=1.2,col="blue",pch=16)
+    lines(Res$FishMort, Res$Eq_CatchResults,col="blue")
+    points(Current_F, Res$Eq_Catch, cex=1.2,col="blue",pch=16)
     axis(1,at=seq(0,max(Res$FishMort),0.5), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(1,at=seq(0,max(Res$FishMort),0.5), labels=seq(0,max(Res$FishMort),0.5),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
@@ -8979,9 +9227,9 @@ PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
   if (PlotOpt==0 | PlotOpt==12) {
     plot(Res$FishMort, Res$Fem_SPRResults,"l",frame.plot=F,ylim=c(0,1.0),xlim=c(0,max(Res$FishMort)),
          col="red",yaxt="n",xaxt="n",ylab="",xlab="", lty="dotted")
-    lines(Res$FishMort, Res$Equilmod_FemRelBiomResults,col="red",lty="dotted")
+    lines(Res$FishMort, Res$Eq_FemRelSpBiomResults,col="red",lty="dotted")
     points(Current_F, Res$Fem_SPR,cex=1.2,col="red",pch=16)
-    points(Current_F, Res$Equilmod_FemRelBiom,cex=1.2,col="red",pch=1)
+    points(Current_F, Res$Eq_FemRelSpBiom,cex=1.2,col="red",pch=1)
     axis(1,at=seq(0,max(Res$FishMort),0.5), cex.axis=0.8, lwd=1.75,lab=F) # x axis
     axis(2,at=seq(0,1,0.2), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(1,at=seq(0,max(Res$FishMort),0.5), labels=seq(0,max(Res$FishMort),0.5),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add x labels
@@ -8997,9 +9245,9 @@ PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
   if (PlotOpt==0 | PlotOpt==13) {
     plot(Res$FishMort, Res$Mal_SPRResults,"l",frame.plot=F,ylim=c(0,1.0),xlim=c(0,max(Res$FishMort)),
          col="blue",yaxt="n",xaxt="n",ylab="",xlab="", lty="dotted")
-    lines(Res$FishMort, Res$Equilmod_MalRelBiomResults,col="blue",lty="solid")
+    lines(Res$FishMort, Res$Eq_MalRelSpBiomResults,col="blue",lty="solid")
     points(Current_F, Res$Mal_SPR,cex=1.2,col="blue",pch=16)
-    points(Current_F, Res$Equilmod_MalRelBiom,cex=1.2,col="blue",pch=1)
+    points(Current_F, Res$Eq_MalRelSpBiom,cex=1.2,col="blue",pch=1)
     axis(1,at=seq(0,max(Res$FishMort),0.5), cex.axis=0.8, lwd=1.75,lab=F) # x axis
     axis(2,at=seq(0,1,0.2), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(1,at=seq(0,max(Res$FishMort),0.5), labels=seq(0,max(Res$FishMort),0.5),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add x labels
@@ -9013,9 +9261,9 @@ PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
   if (PlotOpt==0 | PlotOpt==14) {
     ymax = 1.0
     yint = 0.2
-    plot(Res$FishMort, Res$EquilRecResults,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,max(Res$FishMort)),
+    plot(Res$FishMort, Res$Eq_RecResults,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,max(Res$FishMort)),
          col="red",yaxt="n",xaxt="n",ylab="",xlab="")
-    points(Current_F, Res$Equil_Rec, cex=1.2,col="red",pch=16)
+    points(Current_F, Res$Eq_Rec, cex=1.2,col="red",pch=16)
     axis(1,at=seq(0,max(Res$FishMort),0.5), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(1,at=seq(0,max(Res$FishMort),0.5), labels=seq(0,max(Res$FishMort),0.5),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
@@ -9120,11 +9368,12 @@ PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
 #' RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 #' Current_F <- 0.2
 #' PlotOpt <- 0 # 0=all plots, 1=female size, 2=male size, 3=combined sex size, 4=female weight, 5=male weight, 6=combined sex weight
+#' Output_Opt = 2 # including additional length and weight outputs
 #' FittedRes=GetPerRecruitResults_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
 #'                                   RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
 #'                                   EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
 #'                                   FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-#'                                   ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F)
+#'                                   ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, Output_Opt)
 #' PlotPerRecruit_ExpCatchSizeDistns_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
 #'                                      RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
 #'                                      EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
@@ -9141,11 +9390,12 @@ PlotPerRecruit_ExpCatchSizeDistns_LB <- function(MaxModelAge, TimeStep, lbnd, ub
   if (is.list(FittedRes)) {
     Res =  FittedRes
   } else {
+    Output_Opt = 2 # 1=standard output, 2=with added length and weight outputs (slower)
     Res=GetPerRecruitResults_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                 RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                                 EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
                                 FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-                                ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F)
+                                ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, Output_Opt)
   }
   FishMort=Res$FishMort
 
@@ -9156,23 +9406,23 @@ PlotPerRecruit_ExpCatchSizeDistns_LB <- function(MaxModelAge, TimeStep, lbnd, ub
 
   # females - lengths
   if (PlotOpt==0 | PlotOpt==1) {
-    ylims = Get_yaxis_scale(c(Res$MeanCatchLenResults$FemMeanCatchLen.up95pi,
-                              Res$MeanCatchLenResults$MalMeanCatchLen.up95pi))
+    ylims = Get_yaxis_scale(c(Res$MeanCatchLenResults$FemCatchLen.97.5qntl,
+                              Res$MeanCatchLenResults$MalCatchLen.97.5qntl))
     ymax = ylims$ymax; yint=ylims$yint
     plot(FishMort, Res$MeanCatchLenResults[,2], "l", ylim=c(0,ymax), ylab = "Fem. length, mm", xlab = "Fishing mortality",
          col="red", bty='n', xaxt='n', yaxt='n')
     x = c(FishMort,rev(FishMort))
-    y = c(Res$MeanCatchLenResults$FemMeanCatchLen.lw95pi,
-          rev(Res$MeanCatchLenResults$FemMeanCatchLen.up95pi))
+    y = c(Res$MeanCatchLenResults$FemCatchLen.2.5qntl,
+          rev(Res$MeanCatchLenResults$FemCatchLen.97.5qntl))
     polygon(x,y, col="pink",border=NA)
-    y = c(Res$MeanCatchLenResults$FemMeanCatchLen.lw60pi,
-          rev(Res$MeanCatchLenResults$FemMeanCatchLen.up60pi))
+    y = c(Res$MeanCatchLenResults$FemCatchLen.20qntl,
+          rev(Res$MeanCatchLenResults$FemCatchLen.80qntl))
     polygon(x,y, col="light blue",border=NA)
     lines(FishMort, Res$MeanCatchLenResults[,2],col="red")
     x=min(which(FishMort>=Current_F))
     points(Current_F, Res$MeanCatchLenResults[x,2], pch=16, cex=2, col="red")
     legend('topright', bty='n', cex=0.8, lwd=c(5,5,-1), pch = c(NA,NA,16), col=c("light blue","pink","red"),
-           legend=c("60% Pred. Int.","95% Pred. Int.","Target F"))
+           legend=c("20 & 80 quantiles","2.5 & 97.5 quantiles","Target F"))
     axis(1,at=seq(0,max(FishMort),0.5), cex.axis=0.8, lwd=1.75,lab=F) # x axis
     axis(2,at=seq(0,ymax, yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(1,at=seq(0,max(FishMort),0.5), labels=seq(0,max(Res$FishMort),0.5),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add x labels
@@ -9181,23 +9431,23 @@ PlotPerRecruit_ExpCatchSizeDistns_LB <- function(MaxModelAge, TimeStep, lbnd, ub
 
   # males - lengths
   if (PlotOpt==0 | PlotOpt==2) {
-    ylims = Get_yaxis_scale(c(Res$MeanCatchLenResults$FemMeanCatchLen.up95pi,
-                              Res$MeanCatchLenResults$MalMeanCatchLen.up95pi))
+    ylims = Get_yaxis_scale(c(Res$MeanCatchLenResults$FemCatchLen.97.5qntl,
+                              Res$MeanCatchLenResults$MalCatchLen.97.5qntl))
     ymax = ylims$ymax; yint=ylims$yint
     plot(FishMort, Res$MeanCatchLenResults[,3], "l", ylim=c(0,ymax), ylab = "Mal. length, mm",
          xlab = "Fishing mortality", col="red", bty='n', xaxt='n', yaxt='n')
     x = c(FishMort,rev(FishMort))
-    y = c(Res$MeanCatchLenResults$MalMeanCatchLen.lw95pi,
-          rev(Res$MeanCatchLenResults$MalMeanCatchLen.up95pi))
+    y = c(Res$MeanCatchLenResults$MalCatchLen.2.5qntl,
+          rev(Res$MeanCatchLenResults$MalCatchLen.97.5qntl))
     polygon(x,y, col="pink",border=NA)
-    y = c(Res$MeanCatchLenResults$MalMeanCatchLen.lw60pi,
-          rev(Res$MeanCatchLenResults$MalMeanCatchLen.up60pi))
+    y = c(Res$MeanCatchLenResults$MalCatchLen.20qntl,
+          rev(Res$MeanCatchLenResults$MalCatchLen.80qntl))
     polygon(x,y, col="light blue",border=NA)
     lines(FishMort, Res$MeanCatchLenResults[,3],col="blue")
     x=min(which(FishMort>=Current_F))
     points(Current_F, Res$MeanCatchLenResults[x,3], pch=16, cex=2, col="blue")
     legend('topright', bty='n', cex=0.8, lwd=c(5,5,-1), pch = c(NA,NA,16), col=c("light blue","pink","blue"),
-           legend=c("60% Pred. Int.","95% Pred. Int.","Target F"))
+           legend=c("20 & 80 quantiles","2.5 & 97.5 quantiles","Target F"))
     axis(1,at=seq(0,max(FishMort),0.5), cex.axis=0.8, lwd=1.75,lab=F) # x axis
     axis(2,at=seq(0,ymax, yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(1,at=seq(0,max(FishMort),0.5), labels=seq(0,max(Res$FishMort),0.5),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add x labels
@@ -9206,23 +9456,23 @@ PlotPerRecruit_ExpCatchSizeDistns_LB <- function(MaxModelAge, TimeStep, lbnd, ub
 
   # combined sex - lengths
   if (PlotOpt==0 | PlotOpt==3) {
-    ylims = Get_yaxis_scale(c(Res$MeanCatchLenResults$FemMeanCatchLen.up95pi,
-                              Res$MeanCatchLenResults$MalMeanCatchLen.up95pi))
+    ylims = Get_yaxis_scale(c(Res$MeanCatchLenResults$CombSexCatchLen.2.5qntl,
+                              Res$MeanCatchLenResults$CombSexCatchLen.97.5qntl))
     ymax = ylims$ymax; yint=ylims$yint
     plot(FishMort, Res$MeanCatchLenResults[,4], "l", ylim=c(0,ymax), ylab = "Comb. sex length, mm",
          xlab = "Fishing mortality", col="red", bty='n', xaxt='n', yaxt='n')
     x = c(FishMort,rev(FishMort))
-    y = c(Res$MeanCatchLenResults$CombSexMeanCatchLen.lw95pi,
-          rev(Res$MeanCatchLenResults$CombSexMeanCatchLen.up95pi))
+    y = c(Res$MeanCatchLenResults$CombSexCatchLen.2.5qntl,
+          rev(Res$MeanCatchLenResults$CombSexCatchLen.97.5qntl))
     polygon(x,y, col="pink",border=NA)
-    y = c(Res$MeanCatchLenResults$CombSexMeanCatchLen.lw60pi,
-          rev(Res$MeanCatchLenResults$CombSexMeanCatchLen.up60pi))
+    y = c(Res$MeanCatchLenResults$CombSexCatchLen.20qntl,
+          rev(Res$MeanCatchLenResults$CombSexCatchLen.80qntl))
     polygon(x,y, col="light blue",border=NA)
     lines(FishMort, Res$MeanCatchLenResults[,3],col="orange")
     x=min(which(FishMort>=Current_F))
     points(Current_F, Res$MeanCatchLenResults[x,3], pch=16, cex=2, col="orange")
     legend('topright', bty='n', cex=0.8, lwd=c(5,5,-1), pch = c(NA,NA,16), col=c("light blue","pink","orange"),
-           legend=c("60% Pred. Int.","95% Pred. Int.","Target F"))
+           legend=c("20 & 80 quantiles","2.5 & 97.5 quantiles","Target F"))
     axis(1,at=seq(0,max(FishMort),0.5), cex.axis=0.8, lwd=1.75,lab=F) # x axis
     axis(2,at=seq(0,ymax, yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(1,at=seq(0,max(FishMort),0.5), labels=seq(0,max(Res$FishMort),0.5),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add x labels
@@ -9231,32 +9481,32 @@ PlotPerRecruit_ExpCatchSizeDistns_LB <- function(MaxModelAge, TimeStep, lbnd, ub
 
   # females - weights
   if (PlotOpt==0 | PlotOpt==4) {
-    if(max(c(Res$MeanCatchWtResults$FemMeanCatchWt.up95pi,
-             Res$MeanCatchWtResults$MalMeanCatchWt.up95pi)<1)) {
+    if(max(c(Res$MeanCatchWtResults$FemCatchWt.97.5qntl,
+             Res$MeanCatchWtResults$MalCatchWt.97.5qntl)<1)) {
       ScaleFact = 1000
       ylabel = "Fem. weight, g"
     } else {
       ScaleFact = 1
       ylabel = "Fem. weight, kg"
     }
-    ylims = Get_yaxis_scale(c(Res$MeanCatchWtResults$FemMeanCatchWt.up95pi,
-                            Res$MeanCatchWtResults$MalMeanCatchWt.up95pi))
+    ylims = Get_yaxis_scale(c(Res$MeanCatchWtResults$FemCatchWt.97.5qntl,
+                            Res$MeanCatchWtResults$MalCatchWt.97.5qntl))
     ymax = ylims$ymax*ScaleFact; yint=ylims$yint*ScaleFact
     plot(FishMort, Res$MeanCatchWtResults[,2]*ScaleFact, "l", ylim=c(0,ymax), ylab = ylabel,
          xlab = "Fishing mortality", col="red", bty='n', xaxt='n', yaxt='n')
     x = c(FishMort,rev(FishMort))
-    y = c(Res$MeanCatchWtResults$FemMeanCatchWt.lw95pi*ScaleFact,
-          rev(Res$MeanCatchWtResults$FemMeanCatchWt.up95pi*ScaleFact))
+    y = c(Res$MeanCatchWtResults$FemCatchWt.2.5qntl*ScaleFact,
+          rev(Res$MeanCatchWtResults$FemCatchWt.97.5qntl*ScaleFact))
     polygon(x,y, col="pink",border=NA)
-    y = c(Res$MeanCatchWtResults$FemMeanCatchWt.lw60pi*ScaleFact,
-          rev(Res$MeanCatchWtResults$FemMeanCatchWt.up60pi*ScaleFact))
+    y = c(Res$MeanCatchWtResults$FemCatchWt.20qntl*ScaleFact,
+          rev(Res$MeanCatchWtResults$FemCatchWt.80qntl*ScaleFact))
     polygon(x,y, col="light blue",border=NA)
     lines(FishMort, Res$MeanCatchWtResults[,2]*ScaleFact,col="red")
     x=min(which(FishMort>=Current_F))
     points(Current_F, Res$MeanCatchWtResults[x,2]*ScaleFact, pch=16, cex=2, col="red")
     # abline(h=100,lwd=2, lty="dotted")
     legend('topright', bty='n', cex=0.8, lwd=c(5,5,-1), pch = c(NA,NA,16), col=c("light blue","pink","red"),
-           legend=c("60% Pred. Int.","95% Pred. Int.","Target F"))
+           legend=c("20 & 80 quantiles","2.5 & 97.5 quantiles","Target F"))
     axis(1,at=seq(0,max(FishMort),0.5), cex.axis=0.8, lwd=1.75,lab=F) # x axis
     axis(2,at=seq(0,ymax, yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(1,at=seq(0,max(FishMort),0.5), labels=seq(0,max(Res$FishMort),0.5),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add x labels
@@ -9265,32 +9515,32 @@ PlotPerRecruit_ExpCatchSizeDistns_LB <- function(MaxModelAge, TimeStep, lbnd, ub
 
   # males - weights
   if (PlotOpt==0 | PlotOpt==5) {
-    if(max(c(Res$MeanCatchWtResults$FemMeanCatchWt.up95pi,
-             Res$MeanCatchWtResults$MalMeanCatchWt.up95pi)<1)) {
+    if(max(c(Res$MeanCatchWtResults$FemCatchWt.97.5qntl,
+             Res$MeanCatchWtResults$MalCatchWt.97.5qntl)<1)) {
       ScaleFact = 1000
       ylabel = "Mal. weight, g"
     } else {
       ScaleFact = 1
       ylabel = "Mal. weight, kg"
     }
-    ylims = Get_yaxis_scale(c(Res$MeanCatchWtResults$FemMeanCatchWt.up95pi,
-                              Res$MeanCatchWtResults$MalMeanCatchWt.up95pi))
+    ylims = Get_yaxis_scale(c(Res$MeanCatchWtResults$FemCatchWt.97.5qntl,
+                              Res$MeanCatchWtResults$MalCatchWt.97.5qntl))
     ymax = ylims$ymax*ScaleFact; yint=ylims$yint*ScaleFact
     plot(FishMort, Res$MeanCatchWtResults[,3]*ScaleFact, "l", ylim=c(0,ymax), ylab = ylabel,
          xlab = "Fishing mortality", col="red", bty='n', xaxt='n', yaxt='n')
     x = c(FishMort,rev(FishMort))
-    y = c(Res$MeanCatchWtResults$MalMeanCatchWt.lw95pi*ScaleFact,
-          rev(Res$MeanCatchWtResults$MalMeanCatchWt.up95pi*ScaleFact))
+    y = c(Res$MeanCatchWtResults$MalCatchWt.2.5qntl*ScaleFact,
+          rev(Res$MeanCatchWtResults$MalCatchWt.97.5qntl*ScaleFact))
     polygon(x,y, col="pink",border=NA)
-    y = c(Res$MeanCatchWtResults$MalMeanCatchWt.lw60pi*ScaleFact,
-          rev(Res$MeanCatchWtResults$MalMeanCatchWt.up60pi*ScaleFact))
+    y = c(Res$MeanCatchWtResults$MalCatchWt.20qntl*ScaleFact,
+          rev(Res$MeanCatchWtResults$MalCatchWt.80qntl*ScaleFact))
     polygon(x,y, col="light blue",border=NA)
     lines(FishMort, Res$MeanCatchWtResults[,3]*ScaleFact,col="blue")
     x=min(which(FishMort>=Current_F))
     points(Current_F, Res$MeanCatchWtResults[x,3]*ScaleFact, pch=16, cex=2, col="blue")
     # abline(h=100,lwd=2, lty="dotted")
     legend('topright', bty='n', cex=0.8, lwd=c(5,5,-1), pch = c(NA,NA,16), col=c("light blue","pink","blue"),
-           legend=c("60% Pred. Int.","95% Pred. Int.","Target F"))
+           legend=c("20 & 80 quantiles","2.5 & 97.5 quantiles","Target F"))
     axis(1,at=seq(0,max(FishMort),0.5), cex.axis=0.8, lwd=1.75,lab=F) # x axis
     axis(2,at=seq(0,ymax, yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(1,at=seq(0,max(FishMort),0.5), labels=seq(0,max(Res$FishMort),0.5),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add x labels
@@ -9299,32 +9549,32 @@ PlotPerRecruit_ExpCatchSizeDistns_LB <- function(MaxModelAge, TimeStep, lbnd, ub
 
   # combined sex - weights
   if (PlotOpt==0 | PlotOpt==6) {
-    if(max(c(Res$MeanCatchWtResults$FemMeanCatchWt.up95pi,
-             Res$MeanCatchWtResults$MalMeanCatchWt.up95pi)<1)) {
+    if(max(c(Res$MeanCatchWtResults$FemCatchWt.97.5qntl,
+             Res$MeanCatchWtResults$MalCatchWt.97.5qntl)<1)) {
       ScaleFact = 1000
       ylabel = "Comb. sex weight, g"
     } else {
       ScaleFact = 1
       ylabel = "Comb. sex weight, kg"
     }
-    ylims = Get_yaxis_scale(c(Res$MeanCatchWtResults$FemMeanCatchWt.up95pi,
-                              Res$MeanCatchWtResults$MalMeanCatchWt.up95pi))
+    ylims = Get_yaxis_scale(c(Res$MeanCatchWtResults$FemCatchWt.97.5qntl,
+                              Res$MeanCatchWtResults$MalCatchWt.97.5qntl))
     ymax = ylims$ymax*ScaleFact; yint=ylims$yint*ScaleFact
     plot(FishMort, Res$MeanCatchWtResults[,4]*ScaleFact, "l", ylim=c(0,ymax), ylab = "Comb. sex weight, g",
          xlab = "Fishing mortality", col="red", bty='n', xaxt='n', yaxt='n')
     x = c(FishMort,rev(FishMort))
-    y = c(Res$MeanCatchWtResults$CombSexMeanCatchWt.lw95pi*ScaleFact,
-          rev(Res$MeanCatchWtResults$CombSexMeanCatchWt.up95pi*ScaleFact))
+    y = c(Res$MeanCatchWtResults$CombSexCatchWt.2.5qntl*ScaleFact,
+          rev(Res$MeanCatchWtResults$CombSexCatchWt.97.5qntl*ScaleFact))
     polygon(x,y, col="pink",border=NA)
-    y = c(Res$MeanCatchWtResults$CombSexMeanCatchWt.lw60pi*ScaleFact,
-          rev(Res$MeanCatchWtResults$CombSexMeanCatchWt.up60pi*ScaleFact))
+    y = c(Res$MeanCatchWtResults$CombSexCatchWt.20qntl*ScaleFact,
+          rev(Res$MeanCatchWtResults$CombSexCatchWt.80qntl*ScaleFact))
     polygon(x,y, col="light blue",border=NA)
     lines(FishMort, Res$MeanCatchWtResults[,4]*ScaleFact,col="orange")
     x=min(which(FishMort>=Current_F))
     points(Current_F, Res$MeanCatchWtResults[x,4]*ScaleFact, pch=16, cex=2, col="orange")
     # abline(h=100,lwd=2, lty="dotted")
     legend('topright', bty='n', cex=0.8, lwd=c(5,5,-1), pch = c(NA,NA,16), col=c("light blue","pink","orange"),
-           legend=c("60% Pred. Int.","95% Pred. Int.","Target F"))
+           legend=c("20 & 80 quantiles","2.5 & 97.5 quantiles","Target F"))
     axis(1,at=seq(0,max(FishMort),0.5), cex.axis=0.8, lwd=1.75,lab=F) # x axis
     axis(2,at=seq(0,ymax, yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(1,at=seq(0,max(FishMort),0.5), labels=seq(0,max(Res$FishMort),0.5),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add x labels
@@ -9455,9 +9705,9 @@ PlotValuePerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, mid
   OptFishMort=Res$OptFishMort
   MaxValPerRec=Res$MaxValPerRec
   Fem_SPRResults=Res$Fem_SPRResults
-  Equilmod_FemRelBiomResults=Res$Equilmod_FemRelBiomResults
+  Eq_FemRelSpBiomResults=Res$Eq_FemRelSpBiomResults
   YPRResults=Res$YPRResults
-  EquilCatchResults=Res$EquilCatchResults
+  Eq_CatchResults=Res$Eq_CatchResults
   MinFishLenOfVal = Res$MinFishLenOfVal
 
   Res=CalcYPRAndSPRForFMort_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
@@ -9466,7 +9716,7 @@ PlotValuePerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, mid
                                FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
                                ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, OptFishMort)
 
-  WtAtLen = (Res$FemWtAtLen + Res$MalWtAtLen)/2
+  WtAtLen = (Res$ModelDiag$FemWtAtLen + Res$ModelDiag$MalWtAtLen)/2
 
 
 
@@ -9524,14 +9774,14 @@ PlotValuePerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, mid
     xlims = Get_xaxis_scale(FishMort)
     xmax = 2.0
     xint = xlims$xint
-    Equil_Catch = Res$Equil_Catch
+    Eq_Catch = Res$Eq_Catch
     ylims = Get_yaxis_scale(YPRResults)
     ymax = ylims$ymax
     yint = ylims$yint
-    plot(FishMort,EquilCatchResults,"l", xlab=xaxis_lab, ylab=yaxis_lab, yaxt="n",xaxt="n",bty="n",
+    plot(FishMort,Eq_CatchResults,"l", xlab=xaxis_lab, ylab=yaxis_lab, yaxt="n",xaxt="n",bty="n",
          xlim=c(0,xmax),ylim=c(0,ymax))
     x=which(FishMort==OptFishMort)
-    points(OptFishMort,EquilCatchResults[x],pch=16)
+    points(OptFishMort,Eq_CatchResults[x],pch=16)
     lines(FishMort,YPRResults,lty="dotted")
     points(OptFishMort,YPRResults[x],pch=16)
     axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1,lab=F) # y axis
@@ -9708,9 +9958,9 @@ Get_Relative_Value_Per_Recruit_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd,
   nFVals = length(FishMort)
   RelValPerRecAtFMort = rep(NA,nFVals)
   Fem_SPRResults = rep(NA,nFVals)
-  Equilmod_FemRelBiomResults = rep(NA,nFVals)
+  Eq_FemRelSpBiomResults = rep(NA,nFVals)
   YPRResults = rep(NA,nFVals)
-  EquilCatchResults = rep(NA,nFVals)
+  Eq_CatchResults = rep(NA,nFVals)
 
   for (i in 1:nFVals) {
     FMort=FishMort[i]
@@ -9720,13 +9970,13 @@ Get_Relative_Value_Per_Recruit_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd,
                                  FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
                                  ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, FMort)
 
-    RelValPerRecAtFMort[i] = sum(Res$CombSexCatchBiom*RelValAtLen*Res$Equil_Rec)
+    RelValPerRecAtFMort[i] = sum(Res$ModelDiag$CombSexCatchBiom*RelValAtLen*Res$Eq_Rec)
 
     # for comparison, also save female SPR and relbiom, and ypr and eq catch
     Fem_SPRResults[i] = Res$Fem_SPR
-    Equilmod_FemRelBiomResults[i] = Res$Equilmod_FemRelBiom
+    Eq_FemRelSpBiomResults[i] = Res$Eq_FemRelSpBiom
     YPRResults[i] = Res$YPR
-    EquilCatchResults[i] = Res$Equil_Catch
+    Eq_CatchResults[i] = Res$Eq_Catch
 
     cat("F",FishMort[i],"RelValPerRecAtFMort",RelValPerRecAtFMort[i], '\n')
   }
@@ -9740,9 +9990,9 @@ Get_Relative_Value_Per_Recruit_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd,
                  MaxValPerRec = MaxValPerRec,
                  OptFishMort = OptFishMort,
                  Fem_SPRResults = Fem_SPRResults,
-                 Equilmod_FemRelBiomResults = Equilmod_FemRelBiomResults,
+                 Eq_FemRelSpBiomResults = Eq_FemRelSpBiomResults,
                  YPRResults = YPRResults,
-                 EquilCatchResults = EquilCatchResults,
+                 Eq_CatchResults = Eq_CatchResults,
                  MinFishLenOfVal = MinFishLenOfVal)
 
   return(Results)
@@ -9911,10 +10161,10 @@ PlotPerRecruit_EqYield_no_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, t
   }
 
   # F vs YPR and equil catch
-  plot(Res$FishMort, Res$EquilCatchResults, "l", frame.plot=F, ylim=c(0, ymax), xlim=c(0, xmax),
+  plot(Res$FishMort, Res$Eq_CatchResults, "l", frame.plot=F, ylim=c(0, ymax), xlim=c(0, xmax),
        col="black", yaxt="n", xaxt="n", ylab="", xlab="")
   lines(Res$FishMort, Res$YPRResults, lty="dotted")
-  points(Current_F, Res$Equil_Catch, cex=1.2, col="black", pch=16)
+  points(Current_F, Res$Eq_Catch, cex=1.2, col="black", pch=16)
   points(Current_F, Res$YPR, cex=1.2, col="black", pch=1)
   axis(1, at=seq(0, xmax, xint), cex.axis=1, lwd=1.75, lab=F, line=-0.3)
   axis(2, at=seq(0, ymax, yint), cex.axis=1, lwd=1.75, lab=F, line=-0.3)
@@ -10045,30 +10295,31 @@ PlotPerRecruit_EqYield_no_err_LB <- function(MaxModelAge, TimeStep, Linf, vbK, t
                                              EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, RefPointPlotOpt, Current_F,
                                              MainLabel, xaxis_lab, yaxis_lab, xmax, xint, ymax, yint) {
 
+Output_Opt = 1 # 1=standard output, 2=with added length and weight outputs (slower)
 Res=GetPerRecruitResults_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                             RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                             EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
                             FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-                            ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F)
+                            ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, Output_Opt)
 
 if (is.na(yaxis_lab)) yaxis_lab = "Catch (kg)"
 if (is.na(xaxis_lab)) xaxis_lab = expression(paste(italic("F") ~ (year^{-1})))
 if (is.na(xmax)) xmax = max(Res$FishMort)
 if (is.na(xint)) xint = 0.5
 if (is.na(ymax)) {
-  ylims = Get_yaxis_scale(Res$Unfish_FemBiomAtAge)
+  ylims = Get_yaxis_scale(Res$YPRResults)
   ymax = ylims$ymax; yint = ylims$yint
-  if (max(Res$Unfish_FemBiomAtAge) < 0.2 * ymax) {
+  if (max(Res$YPRResults) < 0.2 * ymax) {
     ymax = ymax/5
     yint = yint/5
   }
 }
-
+max(Res$Eq_CatchResults)
 # F vs YPR and equil catch
-plot(Res$FishMort, Res$EquilCatchResults, "l", frame.plot=F, ylim=c(0, ymax), xlim=c(0, xmax),
+plot(Res$FishMort, Res$Eq_CatchResults, "l", frame.plot=F, ylim=c(0, ymax), xlim=c(0, xmax),
      col="black", yaxt="n", xaxt="n", ylab="", xlab="")
 lines(Res$FishMort, Res$YPRResults, lty="dotted")
-points(Current_F, Res$Equil_Catch, cex=1.2, col="black", pch=16)
+points(Current_F, Res$Eq_Catch, cex=1.2, col="black", pch=16)
 points(Current_F, Res$YPR, cex=1.2, col="black", pch=1)
 axis(1, at=seq(0, xmax, xint), cex.axis=1, lwd=1.75, lab=F, line = -0.3)
 axis(2, at=seq(0, ymax, yint), cex.axis=1, lwd=1.75, lab=F, line = -0.3)
@@ -10231,23 +10482,23 @@ PlotPerRecruit_Biom_no_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzer
   if (NatMort < 0.15) xmax = 1.0
 
   if (PlotOpt == 1) { # females
-    plot(Res$FishMort, Res$Equilmod_FemRelBiomResults, "l", frame.plot=F, ylim=c(0, 1), xlim=c(0, xmax),
+    plot(Res$FishMort, Res$Eq_FemRelSpBiomResults, "l", frame.plot=F, ylim=c(0, 1), xlim=c(0, xmax),
          col="black", yaxt="n", xaxt="n", ylab="", xlab="")
-    points(Current_F, Res$Equilmod_FemRelBiom, cex=1.2, col="black", pch=16)
+    points(Current_F, Res$Eq_FemRelSpBiom, cex=1.2, col="black", pch=16)
     legend("topleft", col="black", pch = 16, lty=0, legend="Estimate - females",
            bty="n", cex=0.8, inset = 0.05)
   }
   if (PlotOpt == 2) { # males
-    plot(Res$FishMort, Res$Equilmod_MalRelBiomResults, "l", frame.plot=F, ylim=c(0, 1), xlim=c(0, xmax),
+    plot(Res$FishMort, Res$Eq_MalRelSpBiomResults, "l", frame.plot=F, ylim=c(0, 1), xlim=c(0, xmax),
          col="black", yaxt="n", xaxt="n", ylab="", xlab="")
-    points(Current_F, Res$Equilmod_MalRelBiom, cex=1.2, col="black", pch=16)
+    points(Current_F, Res$Eq_MalRelSpBiom, cex=1.2, col="black", pch=16)
     legend("topleft", col="black", pch = 16, lty=0, legend="Estimate - males",
            bty="n", cex=0.8, inset = 0.05)
   }
   if (PlotOpt == 3) { # combined sex
-    plot(Res$FishMort, Res$Equilmod_CombSexRelBiomResults, "l", frame.plot=F, ylim=c(0, 1), xlim=c(0, xmax),
+    plot(Res$FishMort, Res$Eq_CombSexRelSpBiomResults, "l", frame.plot=F, ylim=c(0, 1), xlim=c(0, xmax),
          col="black", yaxt="n", xaxt="n", ylab="", xlab="")
-    points(Current_F, Res$Equilmod_CombSexRelBiom, cex=1.2, col="black", pch=16)
+    points(Current_F, Res$Eq_CombSexRelSpBiom, cex=1.2, col="black", pch=16)
     legend("topleft", col="black", pch = 16, lty=0, legend="Estimate - comb. sex",
            bty="n", cex=0.8, inset = 0.05)
   }
@@ -10380,34 +10631,35 @@ PlotPerRecruit_Biom_no_err_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, mid
                                           FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
                                           ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, PlotOpt, RefPointPlotOpt, Current_F) {
 
+  Output_Opt = 1 # 1=standard output, 2=with added length and weight outputs (slower)
   Res = GetPerRecruitResults_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                 RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                                 EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
                                 FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-                                ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F)
+                                ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, Output_Opt)
 
   # F vs SPR and Brel
   xmax = max(Res$FishMort)
   if (NatMort < 0.15) xmax = 1.0
 
   if (PlotOpt==1) { # plot females
-    plot(Res$FishMort, Res$Equilmod_FemRelBiomResults, "l", frame.plot=F, ylim=c(0, 1), xlim=c(0, xmax),
+    plot(Res$FishMort, Res$Eq_FemRelSpBiomResults, "l", frame.plot=F, ylim=c(0, 1), xlim=c(0, xmax),
          col="black", yaxt="n", xaxt="n", ylab="", xlab="")
-    points(Current_F, Res$Equilmod_FemRelBiom, cex=1.2, col="black", pch=16)
+    points(Current_F, Res$Eq_FemRelSpBiom, cex=1.2, col="black", pch=16)
     legend("topleft", col="black", pch = 16, lty=0, legend="Estimate - females",
            bty="n", cex=0.8, inset = 0.05)
   }
   if (PlotOpt==2) { # plot males
-    plot(Res$FishMort, Res$Equilmod_MalRelBiomResults, "l", frame.plot=F, ylim=c(0, 1), xlim=c(0, xmax),
+    plot(Res$FishMort, Res$Eq_MalRelSpBiomResults, "l", frame.plot=F, ylim=c(0, 1), xlim=c(0, xmax),
          col="black", yaxt="n", xaxt="n", ylab="", xlab="")
-    points(Current_F, Res$Equilmod_MalRelBiom, cex=1.2, col="black", pch=16)
+    points(Current_F, Res$Eq_MalRelSpBiom, cex=1.2, col="black", pch=16)
     legend("topleft", col="black", pch = 16, lty=0, legend="Estimate - males",
            bty="n", cex=0.8, inset = 0.05)
   }
   if (PlotOpt==3) { # plot males
-    plot(Res$FishMort, Res$Equilmod_CombSexRelBiomResults, "l", frame.plot=F, ylim=c(0, 1), xlim=c(0, xmax),
+    plot(Res$FishMort, Res$Eq_CombSexRelSpBiomResults, "l", frame.plot=F, ylim=c(0, 1), xlim=c(0, xmax),
          col="black", yaxt="n", xaxt="n", ylab="", xlab="")
-    points(Current_F, Res$Equilmod_CombSexRelBiom, cex=1.2, col="black", pch=16)
+    points(Current_F, Res$Eq_CombSexRelSpBiom, cex=1.2, col="black", pch=16)
     legend("topleft", col="black", pch = 16, lty=0, legend="Estimate - comb. sex",
            bty="n", cex=0.8, inset = 0.05)
   }
@@ -10486,9 +10738,9 @@ PlotPerRecruit_Biom_no_err_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, mid
 #' @param nReps number of random parameter sets from parametric resampling to generate per recruit outputs with error
 #'
 #' @return fishing mortality values for analysis (PerRec_FValues), female SPR estimates vs F (Fem_SPR_Vals)
-#' estimates of equilbrium female spawning biomass vs F (Equil_RelFemSpBiom_Vals), estimated BMSY values (BMSY_Vals)
+#' estimates of equilbrium female spawning biomass vs F (Eq_RelFemSpBiom_Vals), estimated BMSY values (BMSY_Vals)
 #' resampled female SPR values vs F (Sim_FemSPR=Sim_FemSPR), resampled equilbrium female, male and combined sex
-#' spawning biomass values vs F (Sim_Equil_RelFemSpBiom, Sim_Equil_RelMalSpBiom, Sim_Equil_RelCombSexSpBiom),
+#' spawning biomass values vs F (Sim_Eq_RelFemSpBiom, Sim_Eq_RelMalSpBiom, Sim_Eq_RelCombSexSpBiom),
 #' median female, male and combined sex SPR values vs F (EstFemSPR, EstMalSPR, EstCombSexSPR), median BMSY ratio estimate
 #' (EstMedBMSYratio), summary of estimates with associated 95 percent confidence limits (ResSummary_with_err).
 #'
@@ -10568,30 +10820,30 @@ GetPerRecruitResults_AB_with_err <- function(MaxModelAge, TimeStep, Linf, vbK, t
       Fem_SPR_Vals = rep(0, nReps)
       Mal_SPR_Vals = rep(0, nReps)
       CombSex_SPR_Vals = rep(0, nReps)
-      Equil_RelFemSpBiom_Vals = rep(0, nReps)
-      Equil_RelMalSpBiom_Vals = rep(0, nReps)
-      Equil_RelCombSexSpBiom_Vals = rep(0, nReps)
+      Eq_RelFemSpBiom_Vals = rep(0, nReps)
+      Eq_RelMalSpBiom_Vals = rep(0, nReps)
+      Eq_RelCombSexSpBiom_Vals = rep(0, nReps)
       BMSY_Vals = rep(0,nReps)
       Sim_FemSPR = data.frame(matrix(nrow=nReps, ncol=length(PREst$FishMort)))
       colnames(Sim_FemSPR) = PREst$FishMort
       Sim_FemSPR = as.matrix(Sim_FemSPR)
-      Sim_Equil_RelFemSpBiom = as.matrix(Sim_FemSPR)
-      Sim_Equil_RelMalSpBiom = Sim_Equil_RelFemSpBiom
-      Sim_Equil_RelCombSexSpBiom = Sim_Equil_RelFemSpBiom
+      Sim_Eq_RelFemSpBiom = as.matrix(Sim_FemSPR)
+      Sim_Eq_RelMalSpBiom = Sim_Eq_RelFemSpBiom
+      Sim_Eq_RelCombSexSpBiom = Sim_Eq_RelFemSpBiom
     }
 
     Fem_SPR_Vals[i] = PREst$Fem_SPR
     Mal_SPR_Vals[i] = PREst$Mal_SPR
     CombSex_SPR_Vals[i] = PREst$CombSex_SPR
 
-    Equil_RelFemSpBiom_Vals[i] = PREst$Equilmod_FemRelBiom
-    Equil_RelMalSpBiom_Vals[i] = PREst$Equilmod_MalRelBiom
-    Equil_RelCombSexSpBiom_Vals[i] = PREst$Equilmod_CombSexRelBiom
+    Eq_RelFemSpBiom_Vals[i] = PREst$Eq_FemRelSpBiom
+    Eq_RelMalSpBiom_Vals[i] = PREst$Eq_MalRelSpBiom
+    Eq_RelCombSexSpBiom_Vals[i] = PREst$Eq_CombSexRelSpBiom
 
     Sim_FemSPR[i,] = PREst$Fem_SPRResults
-    Sim_Equil_RelFemSpBiom[i,] = PREst$Equilmod_FemRelBiomResults
-    Sim_Equil_RelMalSpBiom[i,] = PREst$Equilmod_MalRelBiomResults
-    Sim_Equil_RelCombSexSpBiom[i,] = PREst$Equilmod_CombSexRelBiomResults
+    Sim_Eq_RelFemSpBiom[i,] = PREst$Eq_FemRelSpBiomResults
+    Sim_Eq_RelMalSpBiom[i,] = PREst$Eq_MalRelSpBiomResults
+    Sim_Eq_RelCombSexSpBiom[i,] = PREst$Eq_CombSexRelSpBiomResults
 
     BMSY_Vals[i] = PREst$BMSY_Thresh
 
@@ -10620,23 +10872,23 @@ GetPerRecruitResults_AB_with_err <- function(MaxModelAge, TimeStep, Linf, vbK, t
                              EstLow95CombSexSPR=EstLow95CombSexSPR,
                              EstUp95CombSexSPR=EstUp95CombSexSPR)
 
-  EstMedEquilRelFemSpBiom = round(median(Equil_RelFemSpBiom_Vals),3)
-  Low95EquilRelFemSpBiom = as.numeric(round(quantile(Equil_RelFemSpBiom_Vals, 0.025),3))
-  Upp95EquilRelFemSpBiom = as.numeric(round(quantile(Equil_RelFemSpBiom_Vals, 0.975),3))
+  EstMedEquilRelFemSpBiom = round(median(Eq_RelFemSpBiom_Vals),3)
+  Low95EquilRelFemSpBiom = as.numeric(round(quantile(Eq_RelFemSpBiom_Vals, 0.025),3))
+  Upp95EquilRelFemSpBiom = as.numeric(round(quantile(Eq_RelFemSpBiom_Vals, 0.975),3))
   EstEquilRelFemSpBiom = data.frame(EstMedEquilRelFemSpBiom=EstMedEquilRelFemSpBiom,
                                     Low95EquilRelFemSpBiom=Low95EquilRelFemSpBiom,
                                     Upp95EquilRelFemSpBiom=Upp95EquilRelFemSpBiom)
 
-  EstMedEquilRelMalSpBiom = round(median(Equil_RelMalSpBiom_Vals),3)
-  Low95EquilRelMalSpBiom = as.numeric(round(quantile(Equil_RelMalSpBiom_Vals, 0.025),3))
-  Upp95EquilRelMalSpBiom = as.numeric(round(quantile(Equil_RelMalSpBiom_Vals, 0.975),3))
+  EstMedEquilRelMalSpBiom = round(median(Eq_RelMalSpBiom_Vals),3)
+  Low95EquilRelMalSpBiom = as.numeric(round(quantile(Eq_RelMalSpBiom_Vals, 0.025),3))
+  Upp95EquilRelMalSpBiom = as.numeric(round(quantile(Eq_RelMalSpBiom_Vals, 0.975),3))
   EstEquilRelMalSpBiom = data.frame(EstMedEquilRelMalSpBiom=EstMedEquilRelMalSpBiom,
                                     Low95EquilRelMalSpBiom=Low95EquilRelMalSpBiom,
                                     Upp95EquilRelMalSpBiom=Upp95EquilRelMalSpBiom)
 
-  EstMedEquilRelCombSexSpBiom = round(median(Equil_RelCombSexSpBiom_Vals),3)
-  Low95EquilRelCombSexSpBiom = as.numeric(round(quantile(Equil_RelCombSexSpBiom_Vals, 0.025),3))
-  Upp95EquilRelCombSexSpBiom = as.numeric(round(quantile(Equil_RelCombSexSpBiom_Vals, 0.975),3))
+  EstMedEquilRelCombSexSpBiom = round(median(Eq_RelCombSexSpBiom_Vals),3)
+  Low95EquilRelCombSexSpBiom = as.numeric(round(quantile(Eq_RelCombSexSpBiom_Vals, 0.025),3))
+  Upp95EquilRelCombSexSpBiom = as.numeric(round(quantile(Eq_RelCombSexSpBiom_Vals, 0.975),3))
   EstEquilRelCombSexSpBiom = data.frame(EstMedEquilRelCombSexSpBiom=EstMedEquilRelCombSexSpBiom,
                                         Low95EquilRelCombSexSpBiom=Low95EquilRelCombSexSpBiom,
                                         Upp95EquilRelCombSexSpBiom=Upp95EquilRelCombSexSpBiom)
@@ -10664,12 +10916,12 @@ GetPerRecruitResults_AB_with_err <- function(MaxModelAge, TimeStep, Linf, vbK, t
 
   Results = list(PerRec_FValues = PREst$FishMort,
                  Fem_SPR_Vals=Fem_SPR_Vals,
-                 Equil_RelFemSpBiom_Vals=Equil_RelFemSpBiom_Vals,
+                 Eq_RelFemSpBiom_Vals=Eq_RelFemSpBiom_Vals,
                  BMSY_Vals=BMSY_Vals,
                  Sim_FemSPR=Sim_FemSPR,
-                 Sim_Equil_RelFemSpBiom=Sim_Equil_RelFemSpBiom,
-                 Sim_Equil_RelMalSpBiom=Sim_Equil_RelMalSpBiom,
-                 Sim_Equil_RelCombSexSpBiom=Sim_Equil_RelCombSexSpBiom,
+                 Sim_Eq_RelFemSpBiom=Sim_Eq_RelFemSpBiom,
+                 Sim_Eq_RelMalSpBiom=Sim_Eq_RelMalSpBiom,
+                 Sim_Eq_RelCombSexSpBiom=Sim_Eq_RelCombSexSpBiom,
                  EstFemSPR=EstFemSPR,
                  EstMalSPR=EstMalSPR,
                  EstCombSexSPR=EstCombSexSPR,
@@ -10733,9 +10985,9 @@ GetPerRecruitResults_AB_with_err <- function(MaxModelAge, TimeStep, Linf, vbK, t
 #' @param nReps number of resamping trials
 #'
 #' @return fishing mortality values for analysis (PerRec_FValues), female SPR estimates vs F (Fem_SPR_Vals)
-#' estimates of equilbrium female spawning biomass vs F (Equil_RelFemSpBiom_Vals), estimated BMSY values (BMSY_Vals)
+#' estimates of equilbrium female spawning biomass vs F (Eq_RelFemSpBiom_Vals), estimated BMSY values (BMSY_Vals)
 #' resampled female SPR values vs F (Sim_FemSPR=Sim_FemSPR), resampled equilbrium female, male and combined sex
-#' spawning biomass values vs F (Sim_Equil_RelFemSpBiom, Sim_Equil_RelMalSpBiom, Sim_Equil_RelCombSexSpBiom),
+#' spawning biomass values vs F (Sim_Eq_RelFemSpBiom, Sim_Eq_RelMalSpBiom, Sim_Eq_RelCombSexSpBiom),
 #' median female, male and combined sex SPR values vs F (EstFemSPR, EstMalSPR, EstCombSexSPR), median BMSY ratio estimate
 #' (EstMedBMSYratio), summary of estimates with associated 95 percent confidence limits (ResSummary_with_err).
 #'
@@ -10807,6 +11059,7 @@ GetPerRecruitResults_LB_with_err <- function(MaxModelAge, TimeStep, lbnd, ubnd, 
   FValues = rnorm(nReps, Current_F, Current_F_sd)
   hValues = rnorm(nReps, Steepness, Steepness_sd)
   MValues = rnorm(nReps, NatMort, NatMort_sd)
+  Output_Opt = 1 # 1=standard output, 2=with added length and weight outputs (slower)
 
   for (i in 1:nReps) {
     FMort = FValues[i]
@@ -10816,38 +11069,38 @@ GetPerRecruitResults_LB_with_err <- function(MaxModelAge, TimeStep, lbnd, ubnd, 
                                     RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                                     EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
                                     FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-                                    ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F)
+                                    ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, Output_Opt)
 
     if (i == 1) {
       Fem_SPR_Vals = rep(0, nReps)
       Mal_SPR_Vals = rep(0, nReps)
       CombSex_SPR_Vals = rep(0, nReps)
 
-      Equil_RelFemSpBiom_Vals = rep(0, nReps)
-      Equil_RelMalSpBiom_Vals = rep(0, nReps)
-      Equil_RelCombSexSpBiom_Vals = rep(0, nReps)
+      Eq_RelFemSpBiom_Vals = rep(0, nReps)
+      Eq_RelMalSpBiom_Vals = rep(0, nReps)
+      Eq_RelCombSexSpBiom_Vals = rep(0, nReps)
 
       BMSY_Vals = rep(0,nReps)
       Sim_FemSPR = data.frame(matrix(nrow=nReps, ncol=length(PREst$FishMort)))
       colnames(Sim_FemSPR) = PREst$FishMort
-      Sim_Equil_RelFemSpBiom = as.matrix(Sim_FemSPR)
-      Sim_Equil_RelMalSpBiom = Sim_Equil_RelFemSpBiom
-      Sim_Equil_RelCombSexSpBiom = Sim_Equil_RelFemSpBiom
+      Sim_Eq_RelFemSpBiom = as.matrix(Sim_FemSPR)
+      Sim_Eq_RelMalSpBiom = Sim_Eq_RelFemSpBiom
+      Sim_Eq_RelCombSexSpBiom = Sim_Eq_RelFemSpBiom
     }
 
     Fem_SPR_Vals[i] = PREst$Fem_SPR
     Mal_SPR_Vals[i] = PREst$Mal_SPR
     CombSex_SPR_Vals[i] = PREst$CombSex_SPR
 
-    Equil_RelFemSpBiom_Vals[i] = PREst$Equilmod_FemRelBiom
-    Equil_RelMalSpBiom_Vals[i] = PREst$Equilmod_MalRelBiom
-    Equil_RelCombSexSpBiom_Vals[i] = PREst$Equilmod_CombSexRelBiom
+    Eq_RelFemSpBiom_Vals[i] = PREst$Eq_FemRelSpBiom
+    Eq_RelMalSpBiom_Vals[i] = PREst$Eq_MalRelSpBiom
+    Eq_RelCombSexSpBiom_Vals[i] = PREst$Eq_CombSexRelSpBiom
 
     BMSY_Vals[i] = PREst$BMSY_Thresh
     Sim_FemSPR[i,] = PREst$Fem_SPRResults
-    Sim_Equil_RelFemSpBiom[i,] = PREst$Equilmod_FemRelBiomResults
-    Sim_Equil_RelMalSpBiom[i,] = PREst$Equilmod_MalRelBiomResults
-    Sim_Equil_RelCombSexSpBiom[i,] = PREst$Equilmod_CombSexRelBiomResults
+    Sim_Eq_RelFemSpBiom[i,] = PREst$Eq_FemRelSpBiomResults
+    Sim_Eq_RelMalSpBiom[i,] = PREst$Eq_MalRelSpBiomResults
+    Sim_Eq_RelCombSexSpBiom[i,] = PREst$Eq_CombSexRelSpBiomResults
 
     cat("i",i,'\n')
   }
@@ -10874,23 +11127,23 @@ GetPerRecruitResults_LB_with_err <- function(MaxModelAge, TimeStep, lbnd, ubnd, 
                          EstLow95CombSexSPR=EstLow95CombSexSPR,
                          EstUp95CombSexSPR=EstUp95CombSexSPR)
 
-  EstMedEquilRelFemSpBiom = round(median(Equil_RelFemSpBiom_Vals),3)
-  Low95EquilRelFemSpBiom = as.numeric(round(quantile(Equil_RelFemSpBiom_Vals, 0.025),3))
-  Upp95EquilRelFemSpBiom = as.numeric(round(quantile(Equil_RelFemSpBiom_Vals, 0.975),3))
+  EstMedEquilRelFemSpBiom = round(median(Eq_RelFemSpBiom_Vals),3)
+  Low95EquilRelFemSpBiom = as.numeric(round(quantile(Eq_RelFemSpBiom_Vals, 0.025),3))
+  Upp95EquilRelFemSpBiom = as.numeric(round(quantile(Eq_RelFemSpBiom_Vals, 0.975),3))
   EstEquilRelFemSpBiom = data.frame(EstMedEquilRelFemSpBiom=EstMedEquilRelFemSpBiom,
                                     Low95EquilRelFemSpBiom=Low95EquilRelFemSpBiom,
                                     Upp95EquilRelFemSpBiom=Upp95EquilRelFemSpBiom)
 
-  EstMedEquilRelMalSpBiom = round(median(Equil_RelMalSpBiom_Vals),3)
-  Low95EquilRelMalSpBiom = as.numeric(round(quantile(Equil_RelMalSpBiom_Vals, 0.025),3))
-  Upp95EquilRelMalSpBiom = as.numeric(round(quantile(Equil_RelMalSpBiom_Vals, 0.975),3))
+  EstMedEquilRelMalSpBiom = round(median(Eq_RelMalSpBiom_Vals),3)
+  Low95EquilRelMalSpBiom = as.numeric(round(quantile(Eq_RelMalSpBiom_Vals, 0.025),3))
+  Upp95EquilRelMalSpBiom = as.numeric(round(quantile(Eq_RelMalSpBiom_Vals, 0.975),3))
   EstEquilRelMalSpBiom = data.frame(EstMedEquilRelMalSpBiom=EstMedEquilRelMalSpBiom,
                                     Low95EquilRelMalSpBiom=Low95EquilRelMalSpBiom,
                                     Upp95EquilRelMalSpBiom=Upp95EquilRelMalSpBiom)
 
-  EstMedEquilRelCombSexSpBiom = round(median(Equil_RelCombSexSpBiom_Vals),3)
-  Low95EquilRelCombSexSpBiom = as.numeric(round(quantile(Equil_RelCombSexSpBiom_Vals, 0.025),3))
-  Upp95EquilRelCombSexSpBiom = as.numeric(round(quantile(Equil_RelCombSexSpBiom_Vals, 0.975),3))
+  EstMedEquilRelCombSexSpBiom = round(median(Eq_RelCombSexSpBiom_Vals),3)
+  Low95EquilRelCombSexSpBiom = as.numeric(round(quantile(Eq_RelCombSexSpBiom_Vals, 0.025),3))
+  Upp95EquilRelCombSexSpBiom = as.numeric(round(quantile(Eq_RelCombSexSpBiom_Vals, 0.975),3))
   EstEquilRelCombSexSpBiom = data.frame(EstMedEquilRelCombSexSpBiom=EstMedEquilRelCombSexSpBiom,
                                         Low95EquilRelCombSexSpBiom=Low95EquilRelCombSexSpBiom,
                                         Upp95EquilRelCombSexSpBiom=Upp95EquilRelCombSexSpBiom)
@@ -10918,12 +11171,12 @@ GetPerRecruitResults_LB_with_err <- function(MaxModelAge, TimeStep, lbnd, ubnd, 
 
   Results = list(PerRec_FValues = PREst$FishMort,
                  Fem_SPR_Vals=Fem_SPR_Vals,
-                 Equil_RelFemSpBiom_Vals=Equil_RelFemSpBiom_Vals,
+                 Eq_RelFemSpBiom_Vals=Eq_RelFemSpBiom_Vals,
                  BMSY_Vals=BMSY_Vals,
                  Sim_FemSPR=Sim_FemSPR,
-                 Sim_Equil_RelFemSpBiom=Sim_Equil_RelFemSpBiom,
-                 Sim_Equil_RelMalSpBiom=Sim_Equil_RelMalSpBiom,
-                 Sim_Equil_RelCombSexSpBiom=Sim_Equil_RelCombSexSpBiom,
+                 Sim_Eq_RelFemSpBiom=Sim_Eq_RelFemSpBiom,
+                 Sim_Eq_RelMalSpBiom=Sim_Eq_RelMalSpBiom,
+                 Sim_Eq_RelCombSexSpBiom=Sim_Eq_RelCombSexSpBiom,
                  EstFemSPR=EstFemSPR,
                  EstMalSPR=EstMalSPR,
                  EstCombSexSPR=EstCombSexSPR,
@@ -11141,9 +11394,9 @@ PlotPerRecruit_Biom_with_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
 
   # Plot per recruit outputs with uncertainty
   if (PlotOpt==1) { # plot females
-    EqB_med = apply(Res$Sim_Equil_RelFemSpBiom,2,quantile, probs=c(0.5))
-    EqB_lw = apply(Res$Sim_Equil_RelFemSpBiom,2,quantile, probs=c(0.025))
-    EqB_hi = apply(Res$Sim_Equil_RelFemSpBiom,2,quantile, probs=c(0.975))
+    EqB_med = apply(Res$Sim_Eq_RelFemSpBiom,2,quantile, probs=c(0.5))
+    EqB_lw = apply(Res$Sim_Eq_RelFemSpBiom,2,quantile, probs=c(0.025))
+    EqB_hi = apply(Res$Sim_Eq_RelFemSpBiom,2,quantile, probs=c(0.975))
     plot(Res$PerRec_FValues, EqB_med, "l", frame.plot=F, ylim=c(0,ymax), xlim=c(0,xmax),
          col="red", yaxt="n", xaxt="n", ylab="", xlab="", main=MainLabel)
     x=which(Res$PerRec_FValues==xmax)
@@ -11158,9 +11411,9 @@ PlotPerRecruit_Biom_with_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
   }
 
   if (PlotOpt==2) { # plot males
-    EqB_med = apply(Res$Sim_Equil_RelMalSpBiom,2,quantile, probs=c(0.5))
-    EqB_lw = apply(Res$Sim_Equil_RelMalSpBiom,2,quantile, probs=c(0.025))
-    EqB_hi = apply(Res$Sim_Equil_RelMalSpBiom,2,quantile, probs=c(0.975))
+    EqB_med = apply(Res$Sim_Eq_RelMalSpBiom,2,quantile, probs=c(0.5))
+    EqB_lw = apply(Res$Sim_Eq_RelMalSpBiom,2,quantile, probs=c(0.025))
+    EqB_hi = apply(Res$Sim_Eq_RelMalSpBiom,2,quantile, probs=c(0.975))
     plot(Res$PerRec_FValues, EqB_med, "l", frame.plot=F, ylim=c(0,ymax), xlim=c(0,xmax),
          col="blue", yaxt="n", xaxt="n", ylab="", xlab="", main=MainLabel)
     x=which(Res$PerRec_FValues==xmax)
@@ -11175,9 +11428,9 @@ PlotPerRecruit_Biom_with_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
   }
 
   if (PlotOpt==3) { # plot combined sex
-    EqB_med = apply(Res$Sim_Equil_RelCombSexSpBiom,2,quantile, probs=c(0.5))
-    EqB_lw = apply(Res$Sim_Equil_RelCombSexSpBiom,2,quantile, probs=c(0.025))
-    EqB_hi = apply(Res$Sim_Equil_RelCombSexSpBiom,2,quantile, probs=c(0.975))
+    EqB_med = apply(Res$Sim_Eq_RelCombSexSpBiom,2,quantile, probs=c(0.5))
+    EqB_lw = apply(Res$Sim_Eq_RelCombSexSpBiom,2,quantile, probs=c(0.025))
+    EqB_hi = apply(Res$Sim_Eq_RelCombSexSpBiom,2,quantile, probs=c(0.975))
     plot(Res$PerRec_FValues, EqB_med, "l", frame.plot=F, ylim=c(0,ymax), xlim=c(0,xmax),
          col="black", yaxt="n", xaxt="n", ylab="", xlab="", main=MainLabel)
     x=which(Res$PerRec_FValues==xmax)
@@ -11346,11 +11599,12 @@ PlotPerRecruit_Biom_with_err_LB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
 
 
   # get BMSY reference points
+  Output_Opt = 1 # 1=standard output, 2=with added length and weight outputs (slower)
   res=GetPerRecruitResults_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                               RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                               EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
                               FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-                              ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F)
+                              ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, Output_Opt)
 
 
   # if model already fitted, can input results rather than refit
@@ -11373,9 +11627,9 @@ PlotPerRecruit_Biom_with_err_LB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
   if (is.na(yint)) yint = 0.2
 
   if (PlotOpt==1) { # plot females
-    EqB_med = apply(Res$Sim_Equil_RelFemSpBiom,2,quantile, probs=c(0.5))
-    EqB_lw = apply(Res$Sim_Equil_RelFemSpBiom,2,quantile, probs=c(0.025))
-    EqB_hi = apply(Res$Sim_Equil_RelFemSpBiom,2,quantile, probs=c(0.975))
+    EqB_med = apply(Res$Sim_Eq_RelFemSpBiom,2,quantile, probs=c(0.5))
+    EqB_lw = apply(Res$Sim_Eq_RelFemSpBiom,2,quantile, probs=c(0.025))
+    EqB_hi = apply(Res$Sim_Eq_RelFemSpBiom,2,quantile, probs=c(0.975))
     plot(Res$PerRec_FValues, EqB_med, "l", frame.plot=F, ylim=c(0,ymax), xlim=c(0,xmax),
          col="red", yaxt="n", xaxt="n", ylab="", xlab="", main=MainLabel)
     x=which(Res$PerRec_FValues==xmax)
@@ -11391,9 +11645,9 @@ PlotPerRecruit_Biom_with_err_LB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
   }
 
   if (PlotOpt==2) { # plot males
-    EqB_med = apply(Res$Sim_Equil_RelMalSpBiom,2,quantile, probs=c(0.5))
-    EqB_lw = apply(Res$Sim_Equil_RelMalSpBiom,2,quantile, probs=c(0.025))
-    EqB_hi = apply(Res$Sim_Equil_RelMalSpBiom,2,quantile, probs=c(0.975))
+    EqB_med = apply(Res$Sim_Eq_RelMalSpBiom,2,quantile, probs=c(0.5))
+    EqB_lw = apply(Res$Sim_Eq_RelMalSpBiom,2,quantile, probs=c(0.025))
+    EqB_hi = apply(Res$Sim_Eq_RelMalSpBiom,2,quantile, probs=c(0.975))
     plot(Res$PerRec_FValues, EqB_med, "l", frame.plot=F, ylim=c(0,ymax), xlim=c(0,xmax),
          col="blue", yaxt="n", xaxt="n", ylab="", xlab="", main=MainLabel)
     x=which(Res$PerRec_FValues==xmax)
@@ -11408,9 +11662,9 @@ PlotPerRecruit_Biom_with_err_LB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
   }
 
   if (PlotOpt==3) { # plot combined sex
-    EqB_med = apply(Res$Sim_Equil_RelCombSexSpBiom,2,quantile, probs=c(0.5))
-    EqB_lw = apply(Res$Sim_Equil_RelCombSexSpBiom,2,quantile, probs=c(0.025))
-    EqB_hi = apply(Res$Sim_Equil_RelCombSexSpBiom,2,quantile, probs=c(0.975))
+    EqB_med = apply(Res$Sim_Eq_RelCombSexSpBiom,2,quantile, probs=c(0.5))
+    EqB_lw = apply(Res$Sim_Eq_RelCombSexSpBiom,2,quantile, probs=c(0.025))
+    EqB_hi = apply(Res$Sim_Eq_RelCombSexSpBiom,2,quantile, probs=c(0.975))
     plot(Res$PerRec_FValues, EqB_med, "l", frame.plot=F, ylim=c(0,ymax), xlim=c(0,xmax),
          col="black", yaxt="n", xaxt="n", ylab="", xlab="", main=MainLabel)
     x=which(Res$PerRec_FValues==xmax)

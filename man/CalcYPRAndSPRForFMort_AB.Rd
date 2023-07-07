@@ -109,15 +109,13 @@ CalcYPRAndSPRForFMort_AB(
 Ages considered in analysis (Ages), yield per recruit for combined sexes (YPR),
 female, male and combined sex spawning potential ratio (Fem_SPR, Mal_SPR, CombSex_SPR), unfished female
 survival at age (UnfishFemSurvAtAge, UnfishMalSurvAtAge), unfished female and male biomass mature biomass at age
-(UnfishFemBiomAtAge, UnfishMalBiomAtAge), fished female survival at age (FishedFemSurvAtAge, FishedMalSurvAtAge),
-fished female and male biomass mature biomass at age (FishedFemBiomAtAge, FishedMalBiomAtAge), female and male
+(UnfishFemSpBiomAtAge, UnfishMalSpBiomAtAge), fished female survival at age (FishFemSurvAtAge, FishMalSurvAtAge),
+fished female and male biomass mature biomass at age (FishFemSpBiomAtAge, FishMalSpBiomAtAge), female and male
 retained catch at age in numbers (FemCatchAtAgeNum, MalCatchAtAgeNum), female and male
 release catch at age in numbers (FemRelCatchAtAgeNum, MalRelCatchAtAgeNum), female and male retained catch at age in biomass
-(FemCatchAtAge, MalCatchAtAge), derived Beverton-Holt stock recruitment parameters and associated equilibrium
-recruitment derived from those parameters (BH_SRRa, BH_SRRb, BH_Equil_Rec), equilibrium recruitment for
-either Beverton-Holt or Ricker relationship (Equil_Rec), equilibrium catch (Equil_Catch), equilibrium
-female and male and spawning biomass (Equil_FemSpBiom, Equil_MalSpBiom), equilibrium relative female,
-male and combined sex spawning biomass (Equilmod_SPR, Equilmod_MalRelBiom, Equilmod_CombSexRelBiom),
+(FemCatchAtAge, MalCatchAtAge), equilibrium recruitment for either Beverton-Holt or Ricker relationship (Eq_Rec), equilibrium catch (Eq_Catch), equilibrium
+female and male and spawning biomass (Eq_FemSpBiom, Eq_MalSpBiom), equilibrium relative female,
+male and combined sex spawning biomass (Eq_SPR, Eq_MalRelSpBiom, Eq_CombSexRelSpBiom),
 female and male length at age (FemLenAtAge, MalLenAtAge), female and male weight at age
 (FemWtAtAge, MalWtAtAge), female, male and combined sex proportion mature at age (FemPropMatAtAge, MalPropMatAtAge, PropFemAtAge),
 female and male gear selectivity at age (FemGearSelAtAge, MalGearSelAtAge), female and male retention at age probabilities,

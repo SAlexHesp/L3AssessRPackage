@@ -119,10 +119,9 @@ Unfish_MalBiomPerRecAtAge), fished female and male biomass per recruit at age an
 Fish_MalBiomPerRecAtAge), unfished female and male biomass at age (Unfish_FemBiomAtAge, Unfish_MalBiomAtAge),
 fished female and male biomass at age (Fish_FemBiomAtAge, Fish_MalBiomAtAge), female and male catch biomass (FemCatchBiom, MalCatchBiom),
 yield per recruit for combined sexes (YPR), female, male and combined sex spawning potential ratio (Fem_SPR, Mal_SPR, CombSex_SPR),
-derived Beverton-Holt stock recruitment parameters and associated equilibrium recruitment derived from those
-parameters (BH_SRRa, BH_SRRb, BH_Equil_Rec), equilibrium recruitment for either Beverton-Holt or Ricker relationship (Equil_Rec),
-equilibrium catch (Equil_Catch), female and male and spawning biomass (Equil_FemSpBiom, Equil_MalSpBiom), equilibrium relative
-female, male and combined sex spawning biomass (Equilmod_FemRelBiom, Equilmod_MalRelBiom, Equilmod_CombSexRelBiom), mean size at
+equilibrium recruitment for either Beverton-Holt or Ricker relationship (Eq_Rec),
+equilibrium catch (Eq_Catch), female and male and spawning biomass (Eq_FemSpBiom, Eq_MalSpBiom), equilibrium relative
+female, male and combined sex spawning biomass (Eq_FemRelSpBiom, Eq_MalRelSpBiom, Eq_CombSexRelSpBiom), mean size at
 age of females and males (MeanSizeAtAge), female and male weight at length (FemWtAtLen, MalWtAtLen), female and male proportion
 mature at length (FemPropMatAtLen, MalPropMatAtLen), female and male gear selectivity at length (FemGearSelAtLen, MalGearSelAtLen),
 female and male retention at length (FemRetProbAtLen, MalRetProbAtLen), female and male selectivity of landings at length

@@ -170,11 +170,12 @@ NatMort <- 4.22 / MaxModelAge # natural mortality  (year-1)
 RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 Current_F <- 0.2
 PlotOpt <- 0 # 0=all plots, 1=female size, 2=male size, 3=combined sex size, 4=female weight, 5=male weight, 6=combined sex weight
+Output_Opt = 2 # including additional length and weight outputs
 FittedRes=GetPerRecruitResults_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                   RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                                   EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
                                   FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-                                  ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F)
+                                  ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, Output_Opt)
 PlotPerRecruit_ExpCatchSizeDistns_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                      RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                                      EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
