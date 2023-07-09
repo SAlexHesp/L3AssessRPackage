@@ -79,7 +79,7 @@ selectivity curve, and estimated von Bertalalnffy growth curve. The model is fit
 sample of fish length and age data, by minimising the overall negative log-likelihood,
 including the NLL associated with the marginal length composition and a conditional age at length NLL,
 given the parameters (selectivity, growth and mortality) and data, using nlminb.
-It provides various statistical outputs in include convergence statistics, parameter estimates
+It provides several statistical outputs including convergence statistics, parameter estimates
 and associated 95 percent confidence limits and associated variance-covariance matrix, calculated using
 the MASS package.
 }

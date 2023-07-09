@@ -1,0 +1,73 @@
+
+# install.packages("C:/~/L3Assess_0.1.0.tar.gz", source = TRUE, repos=NULL)
+# install.packages("C:/~/WAFishBiology_0.1.0.tar.gz", source = TRUE, repos=NULL)
+rm(list=ls())
+# library(WAFishBiology)
+library(L3Assess)
+
+# Simulate data
+SampleSize=5000 # sample size for retained catches (and same number for released fish, if an MLL is specified)
+set.seed(123)
+MaxAge = 30
+TimeStep = 1 # model timestep (e.g. 1 = annual, 1/12 = monthly)
+NatMort = 4.22/MaxAge
+FishMort = 0.2
+MaxLen = 1200
+LenInc = 20
+MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified
+SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
+SelectivityVec = NA # selectivity vector
+SelParams = c(200, 50) # L50, L95-L50 for gear selectivity
+RetenParams = NA # c(400, 50) # L50, L95-L50 for retention
+DiscMort = 0 # proportion of fish that die due to natural mortality
+# single sex, von Bertalanffy
+GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute
+Linf = 800
+vbK = 0.2
+CVSizeAtAge = 0.08
+GrowthParams = c(Linf, vbK)
+RefnceAges = NA
+Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
+                         SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen
+ObsDiscCatchFreqAtLen = Res$ObsDiscCatchFreqAtLen # NA # (or set to Res$ObsRetCatchFreqAtLen)
+
+
+PropReleased = NA # proportion of fish released, vector including mean and sd (option probably now obselete)
+midpt=Res$midpt
+lbnd=Res$lbnd
+ubnd=Res$ubnd
+InitFishMort = 0.25 # specify starting parameters
+InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform
+InitL50 = 210
+InitDelta = 60
+# InitL50Ret = 410
+# InitDeltaRet = 60
+# params = c(InitFishMort_logit, log(InitL50), log(InitDelta), log(InitL50Ret), log(InitDeltaRet))
+params = c(InitFishMort_logit, log(InitL50), log(InitDelta))
+FittedRes=GetLengthBasedCatchCurveResults(params, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
+                                    lbnd, ubnd, midpt, SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
+
+
+PlotLengthBasedCatchCurve_RetCatch(params, MLL, SelectivityType, ObsRetCatchFreqAtLen, lbnd, ubnd, midpt,
+                                   SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, GrowthCurveType,
+                                   GrowthParams, RefnceAges, MaxAge, NatMort, TimeStep, MainLabel=NA,
+                                   xaxis_lab=NA, yaxis_lab=NA, xmax=1500, xint=500,
+                                   ymax=0.15, yint=0.05, PlotCLs=TRUE, FittedRes, nReps=200)
+
+PlotLengthBasedCatchCurve_Selectivity(params, MLL, SelectivityType, ObsRetCatchFreqAtLen, lbnd, ubnd, midpt, SelectivityVec,
+                                      PropReleased, ObsDiscCatchFreqAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges,
+                                      MaxAge, NatMort, TimeStep, MainLabel=NA, xaxis_lab=NA, yaxis_lab=NA, xmax=1200, xint=200,
+                                      ymax=1.0, yint=0.2, PlotCLs=TRUE, FittedRes, nReps=200)
+
+PlotLengthBasedCatchCurve_Mortality(params, MLL, SelectivityType, ObsRetCatchFreqAtLen, lbnd, ubnd, midpt, SelectivityVec,
+                                    PropReleased, ObsDiscCatchFreqAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges,
+                                    MaxAge, NatMort, TimeStep, xmax=NA, xint=NA, ymax=NA, yint=NA, FittedRes)
+
+PlotLengthBasedCatchCurve_DiscCatch(params, MLL, SelectivityType, ObsRetCatchFreqAtLen, lbnd, ubnd, midpt,
+                                    SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, MaxAge, NatMort, TimeStep, MainLabel=NA,
+                                    xaxis_lab=NA, yaxis_lab=NA, xmax=1500, xint=500,
+                                    ymax=0.15, yint=0.05, PlotCLs=TRUE, FittedRes, nReps=200)
+
+
+

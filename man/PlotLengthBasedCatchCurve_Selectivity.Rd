@@ -157,7 +157,7 @@ RefnceAges = data.frame(t1=t1,t2=t2)
 Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen
-ObsDiscCatchFreqAtLen = NA # (or set to Res$ObsRetCatchFreqAtLen)
+ObsDiscCatchFreqAtLen = NA # (or set to Res$ObsDiscCatchFreqAtLen)
 PropReleased = NA # proportion of fish released, vector including mean and sd (option probably now obselete)
 midpt=Res$midpt
 lbnd=Res$lbnd

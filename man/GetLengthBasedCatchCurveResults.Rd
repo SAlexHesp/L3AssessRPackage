@@ -154,7 +154,7 @@ RefnceAges = data.frame(t1=t1,t2=t2)
 Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen
-ObsDiscCatchFreqAtLen = NA # (or set to Res$ObsRetCatchFreqAtLen)
+ObsDiscCatchFreqAtLen = NA # (or set to Res$ObsDiscCatchFreqAtLen)
 PropReleased = NA # proportion of fish released, vector including mean and sd (option probably now obselete)
 midpt=Res$midpt
 lbnd=Res$lbnd
@@ -164,6 +164,10 @@ InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform
 InitL50 = 400
 InitDelta = 100
 params = c(InitFishMort_logit, log(InitL50), log(InitDelta))
+# if estimating both selectivity and retention parameters
+# InitL50Ret = 410
+# InitDeltaRet = 60
+# params = c(InitFishMort_logit, log(InitL50), log(InitDelta), log(InitL50Ret), log(InitDeltaRet))
 Res=GetLengthBasedCatchCurveResults(params, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
                                     lbnd, ubnd, midpt, SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
 # Example with selectivity specified as a vector
@@ -199,7 +203,9 @@ midpt=Res$midpt
 lbnd=Res$lbnd
 ubnd=Res$ubnd
 InitFishMort = 0.25 # specify starting parameters
+InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform
 params = c(InitFishMort_logit)
+
 Res=GetLengthBasedCatchCurveResults(params, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
                                     lbnd, ubnd, midpt, SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
 }

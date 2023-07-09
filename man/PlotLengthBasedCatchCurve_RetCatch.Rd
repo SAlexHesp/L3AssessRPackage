@@ -157,7 +157,7 @@ RefnceAges = data.frame(t1=t1,t2=t2)
 Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen
-ObsDiscCatchFreqAtLen = NA # (or set to Res$ObsRetCatchFreqAtLen)
+ObsDiscCatchFreqAtLen = NA # (or set to Res$ObsDiscCatchFreqAtLen)
 PropReleased = NA # proportion of fish released, vector including mean and sd (option probably now obselete)
 midpt=Res$midpt
 lbnd=Res$lbnd
@@ -168,9 +168,10 @@ InitL50 = 400
 InitDelta = 100
 params = c(InitFishMort_logit, log(InitL50), log(InitDelta))
 FittedRes=GetLengthBasedCatchCurveResults(params, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
-                                    lbnd, ubnd, midpt, SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
+                                         lbnd, ubnd, midpt, SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
 PlotLengthBasedCatchCurve_RetCatch(params, MLL, SelectivityType, ObsRetCatchFreqAtLen, lbnd, ubnd, midpt,
-                                 SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, MaxAge, NatMort, TimeStep, MainLabel=NA,
-                                 xaxis_lab=NA, yaxis_lab=NA, xmax=1500, xint=500,
-                                 ymax=0.15, yint=0.05, PlotCLs=TRUE, FittedRes, nReps=200)
+                                   SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, GrowthCurveType, GrowthParams,
+                                   RefnceAges, MaxAge, NatMort, TimeStep, MainLabel=NA,
+                                   xaxis_lab=NA, yaxis_lab=NA, xmax=1500, xint=500,
+                                   ymax=0.15, yint=0.05, PlotCLs=TRUE, FittedRes, nReps=200)
 }
