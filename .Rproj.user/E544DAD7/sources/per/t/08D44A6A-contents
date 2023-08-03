@@ -147,6 +147,7 @@
    # ' Determine which equation is to be used
    if (a == 0) {
      if (b == 0) {
+
        # Eqn(18)
        y = y1 * exp(log(y2 / y1) * (Age - t1) / (t2 - t1))
 
@@ -156,9 +157,9 @@
      } else {          #(b == 0)
        # Eqn(17)
        # First, let's work out tzero
-       #cat("Age", Age, "y1",y1,"y2",y2,"b",b,'\n')
-       tzero = t1 - (y1 ^ b) * (t2 - t1) / (y2 ^ b - y1 ^ b)
 
+       tzero = t1 - (y1 ^ b) * (t2 - t1) / (y2 ^ b - y1 ^ b)
+       # cat("SchnuteGrowthfunction: 1 Age",Age,"tzero",tzero,'\n')
        if (Age < tzero) {
          y = 0
        } else {
@@ -166,7 +167,7 @@
          y = v ^ (1 / b)
        }
      }
-   }# a == 0
+   } # a == 0
 
    if (a != 0) {
      if (b == 0) {
@@ -176,16 +177,21 @@
          y = 0 }
      } else {
        # Eqn(15)
+
        # First. let's work out tzero
-       if (1 + (y1 ^ b) * (1 - exp(-a * (t2 - t1))) / (y2 ^ b - y1 ^ b) <= 0) {
-         tzero = t1 - log(1E-4) / a
+       if (t1 == 0 & y1 == 0) { # i.e. if t1 is set to zero, and y1 also set to zero
+         tzero = 0
        } else {
-         tzero = t1 - log(1 + (y1 ^ b) * (1 - exp(-a * (t2 - t1))) / (y2 ^ b - y1 ^ b)) / a
+         if (1 + (y1 ^ b) * (1 - exp(-a * (t2 - t1))) / (y2 ^ b - y1 ^ b) <= 0) {
+           tzero = t1 - log(1E-4) / a
+         } else {
+           tzero = t1 - log(1 + (y1 ^ b) * (1 - exp(-a * (t2 - t1))) / (y2 ^ b - y1 ^ b)) / a
+         }
+         if (is.nan(tzero)) {
+           cat("SchnuteGrowthfunction: Problem calculating tzero",'\n')
+         }
        }
-       if (is.nan(tzero)) {
-         cat("SchnuteGrowthfunction: Problem calculating tzero",'\n')
-       }
-       # cat("Age",Age, "tzero",tzero, '\n')
+       # cat("SchnuteGrowthfunction: 2 Age",Age,"tzero",tzero,'\n')
        if (Age < tzero) {
          y = 0
        } else {
@@ -195,7 +201,7 @@
        } # else
      } # b == 0
    }  # a != 0
-
+   # cat("SchnuteGrowthfunction: 3",'\n')
    return(y)
  } # end function
 
@@ -205,7 +211,7 @@
  #' Calculate age given length, from Schnute growth function
  #'
  #' @keywords internal
- #' @param MaxAge maximumm age of species to be considered by model
+ #' @param MaxAge maximum age of species to be considered by model
  #' @param FishLen specified length
  #' @param t1 first reference age
  #' @param t2 second reference age
@@ -221,12 +227,16 @@
    # (can be used when both a and b are not equal to zero)
    Linf = ((exp(a*t2)*y2^b-exp(a*t1)*y1^b)/(exp(a*t2)-exp(a*t1)))^(1/b)
 
-   if (FishLen > Linf-1) {
-     FishLen=Linf-1
-   }
+   #cat("InverseSchnuteGrowthfunction: FishLen",FishLen,"a",a,"b",b,"y1",y1,"y2",y2,'\n')
 
-   Age=log(1-(FishLen^b-y1^b)/(y2^b-y1^b)*(1-exp(-a*(t2-t1))))/-a+t1
-   # cat("Linf",Linf,"MaxAge",MaxAge,"FishLen",FishLen,"Age",Age,'\n')
+   if (is.nan(Linf)) {
+     Age = MaxAge
+   } else if (FishLen >= Linf-1) {
+     Age = MaxAge
+   } else {
+      Age=log(1-(FishLen^b-y1^b)/(y2^b-y1^b)*(1-exp(-a*(t2-t1))))/-a+t1
+   }
+   #cat("Linf",Linf,"MaxAge",MaxAge,"FishLen",FishLen,"Age",Age,'\n')
 
    return(Age)
  }
@@ -4925,10 +4935,12 @@ Calcs_LenCovertCatchCurve_Schnute <- function(GrowthParams, RefnceAges, ObsRetCa
   i=0
   for (j in PeakLencl:LastLenCl) {
     i=i+1
-
-    Age_lbndlencl[i] = InverseSchnuteGrowthfunction(MaxAge, lbnd[j], t1, t2, y1, y2, a, b)
-    Age_ubndlencl[i] = InverseSchnuteGrowthfunction(MaxAge, ubnd[j], t1, t2, y1, y2, a, b)
-    Age_midptlencl[i] = InverseSchnuteGrowthfunction(MaxAge, midpt[j], t1, t2, y1, y2, a, b)
+    FishLen = lbnd[j]
+    Age_lbndlencl[i] = InverseSchnuteGrowthfunction(MaxAge, FishLen, t1, t2, y1, y2, a, b)
+    FishLen = ubnd[j]
+    Age_ubndlencl[i] = InverseSchnuteGrowthfunction(MaxAge, FishLen, t1, t2, y1, y2, a, b)
+    FishLen = midpt[j]
+    Age_midptlencl[i] = InverseSchnuteGrowthfunction(MaxAge, FishLen, t1, t2, y1, y2, a, b)
     DeltaT_yrs[i] = max(0,Age_ubndlencl[i] - Age_lbndlencl[i])
     Obs_ln_n_dt[i] = log(ObsRetCatchFreqAtLen[j] / DeltaT_yrs[i])
   }
@@ -5892,6 +5904,8 @@ PlotAgeBasedCatchCurveResults_NormalSpace <- function(RecAssump, SpecRecAge, Min
   if (PlotCLs == TRUE) {
     sm1 = spline(Ages[j], Res$EstFreq_Zlow[1:length(jj)], n=100, method="natural")
     sm2 = spline(Ages[j], Res$EstFreq_Zup[1:length(j)], n=100, method="natural")
+    if (length(which(sm1$y<0))>0) sm1$y[1:max(which(sm1$y<0))]=0
+    if (length(which(sm2$y<0))>0) sm2$y[1:max(which(sm2$y<0))]=0
     x = c(sm1$x, rev(sm2$x)) # using shading for 95% CLs
     y = c(sm1$y, rev(sm2$y))
     polygon(x,y, col="pink",border=NA)
@@ -8254,6 +8268,7 @@ k=1
                  BMSY_Targ=BMSY_Targ,
                  BMSY_Thresh=BMSY_Thresh,
                  BMSY_Lim=BMSY_Lim,
+                 maxeqCatch = maxeqCatch,
                  FmaxeqCatch = FmaxeqCatch,
                  FishMort = FishMort,
                  YPRResults = YPRResults,

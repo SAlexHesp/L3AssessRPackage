@@ -7,7 +7,7 @@
 InverseSchnuteGrowthfunction(MaxAge, FishLen, t1, t2, y1, y2, a, b)
 }
 \arguments{
-\item{MaxAge}{maximumm age of species to be considered by model}
+\item{MaxAge}{maximum age of species to be considered by model}
 
 \item{FishLen}{specified length}
 

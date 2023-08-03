@@ -2,7 +2,7 @@
 % Please edit documentation in R/L3Analyses.R
 \name{CalcGillnetSelectivity}
 \alias{CalcGillnetSelectivity}
-\title{Calculate gillnet selectivity}
+\title{Calculate gillnet selectivity using the method of Kirkwood and Walker (1986)}
 \usage{
 CalcGillnetSelectivity(theta1, theta2, MeshSize_mm, nMeshes, nLenCl, midpt)
 }
