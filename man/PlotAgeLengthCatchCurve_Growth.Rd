@@ -137,15 +137,15 @@ midpt=Res$midpt
 ubnd=Res$ubnd
 # get data - 1 sex (or combined sexes)
 ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen # 1 sex
-ObsRetCatchFreqAtLengthAndAge = as.matrix(Res$ObsCatchFreqAtLengthAndDecAge) # 1 sex
+ObsRetCatchFreqAtLengthAndAge = as.matrix(Res$ObsRetCatchFreqAtLengthAndDecAge) # 1 sex
 # # get data - 2 sexes
 # ObsRetCatchFreqAtLen <- data.frame(matrix(nrow = 2, ncol = length(midpt))) # 2 sex
 # colnames(ObsRetCatchFreqAtLen) <- midpt
 # ObsRetCatchFreqAtLen[1,] = Res$ObsRetCatchFreqAtLen_Fem
 # ObsRetCatchFreqAtLen[2,] = Res$ObsRetCatchFreqAtLen_Mal
-# ObsRetCatchFreqAtLengthAndAge = array(c(unlist(Res$ObsCatchFreqAtLengthAndDecAge_Fem), unlist(Res$ObsCatchFreqAtLengthAndDecAge_Mal)),
-#                                       c(nTimeSteps, length(midpt), 2), dimnames=list(rownames(Res$ObsCatchFreqAtLengthAndDecAge_Fem),
-#                                                                                      colnames(Res$ObsCatchFreqAtLengthAndDecAge_Fem)))
+# ObsRetCatchFreqAtLengthAndAge = array(c(unlist(Res$ObsRetCatchFreqAtLengthAndDecAge_Fem), unlist(Res$ObsRetCatchFreqAtLengthAndDecAge_Mal)),
+#                                       c(nTimeSteps, length(midpt), 2), dimnames=list(rownames(Res$ObsRetCatchFreqAtLengthAndDecAge_Fem),
+#                                                                                      colnames(Res$ObsRetCatchFreqAtLengthAndDecAge_Fem)))
 # get params - 1 sex
 InitFishMort = 0.3 # specify starting parameters
 InitL50 = 320
@@ -187,7 +187,7 @@ midpt=Res$midpt
 ubnd=Res$ubnd
 # get data - 1 sex (or combined sexes)
 ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen # 1 sex
-ObsRetCatchFreqAtLengthAndAge = as.matrix(Res$ObsCatchFreqAtLengthAndDecAge) # 1 sex
+ObsRetCatchFreqAtLengthAndAge = as.matrix(Res$ObsRetCatchFreqAtLengthAndDecAge) # 1 sex
 # get params - 1 sex
 InitFishMort = 0.3 # specify starting parameters
 InitLinf = 800

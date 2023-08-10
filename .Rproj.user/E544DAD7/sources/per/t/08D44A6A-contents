@@ -1747,15 +1747,15 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, GrowthCurveType, GrowthPa
 #' ubnd=Res$ubnd
 #' # get data - 1 sex (or combined sexes)
 #' ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen # 1 sex
-#' ObsRetCatchFreqAtLengthAndAge = as.matrix(Res$ObsCatchFreqAtLengthAndDecAge) # 1 sex
+#' ObsRetCatchFreqAtLengthAndAge = as.matrix(Res$ObsRetCatchFreqAtLengthAndDecAge) # 1 sex
 #' # # get data - 2 sexes
 #' # ObsRetCatchFreqAtLen <- data.frame(matrix(nrow = 2, ncol = length(midpt))) # 2 sex
 #' # colnames(ObsRetCatchFreqAtLen) <- midpt
 #' # ObsRetCatchFreqAtLen[1,] = Res$ObsRetCatchFreqAtLen_Fem
 #' # ObsRetCatchFreqAtLen[2,] = Res$ObsRetCatchFreqAtLen_Mal
-#' # ObsRetCatchFreqAtLengthAndAge = array(c(unlist(Res$ObsCatchFreqAtLengthAndDecAge_Fem), unlist(Res$ObsCatchFreqAtLengthAndDecAge_Mal)),
-#' #                                       c(nTimeSteps, length(midpt), 2), dimnames=list(rownames(Res$ObsCatchFreqAtLengthAndDecAge_Fem),
-#' #                                                                                      colnames(Res$ObsCatchFreqAtLengthAndDecAge_Fem)))
+#' # ObsRetCatchFreqAtLengthAndAge = array(c(unlist(Res$ObsRetCatchFreqAtLengthAndDecAge_Fem), unlist(Res$ObsRetCatchFreqAtLengthAndDecAge_Mal)),
+#' #                                       c(nTimeSteps, length(midpt), 2), dimnames=list(rownames(Res$ObsRetCatchFreqAtLengthAndDecAge_Fem),
+#' #                                                                                      colnames(Res$ObsRetCatchFreqAtLengthAndDecAge_Fem)))
 #' # get params - 1 sex
 #' InitFishMort = 0.3 # specify starting parameters
 #' InitL50 = 320
@@ -1797,7 +1797,7 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, GrowthCurveType, GrowthPa
 #' ubnd=Res$ubnd
 #' # get data - 1 sex (or combined sexes)
 #' ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen # 1 sex
-#' ObsRetCatchFreqAtLengthAndAge = as.matrix(Res$ObsCatchFreqAtLengthAndDecAge) # 1 sex
+#' ObsRetCatchFreqAtLengthAndAge = as.matrix(Res$ObsRetCatchFreqAtLengthAndDecAge) # 1 sex
 #' # get params - 1 sex
 #' InitFishMort = 0.3 # specify starting parameters
 #' InitLinf = 800
@@ -2407,18 +2407,18 @@ SimLenAndAgeFreqData <- function(SampleSize, MaxAge, TimeStep, NatMort, FishMort
   TotCatchAtLen_Mal = CatchCurveResults_Mal$TotCatchAtLen
   TotCatchAtLen = TotCatchAtLen_Fem + TotCatchAtLen_Mal
 
-  # retained catch at decimal and and length
+  # retained catch at decimal age and length
   SelLandAtLength = CatchCurveResults_Fem$SelLandAtLength # selectivity of landings
   RetCatchAtDecAgeLen_Fem = as.matrix(unlist(CatchCurveResults_Fem$RetCatchAtDecAgeLen)) # retained catches, decimal ages and lengths
   RetCatchAtDecAgeLen_Mal = as.matrix(unlist(CatchCurveResults_Mal$RetCatchAtDecAgeLen))
   RetCatchAtDecAgeLen = RetCatchAtDecAgeLen_Fem + RetCatchAtDecAgeLen_Mal # single sex or combined sexes
 
-  # discarded catch at decimal and and length
+  # discarded catch at decimal age and length
   DiscCatchAtDecAgeLen_Fem = as.matrix(unlist(CatchCurveResults_Fem$DiscCatchAtDecAgeLen)) # retained catches, decimal ages and lengths
   DiscCatchAtDecAgeLen_Mal = as.matrix(unlist(CatchCurveResults_Mal$DiscCatchAtDecAgeLen))
   DiscCatchAtDecAgeLen = DiscCatchAtDecAgeLen_Fem + DiscCatchAtDecAgeLen_Mal # single sex or combined sexes
 
-  # total catch at decimal and and length (discards plus retained catches)
+  # total catch at decimal age and length (discards plus retained catches)
   TotCatchAtDecAgeLen_Fem = as.matrix(unlist(CatchCurveResults_Fem$TotCatchAtDecAgeLen)) # retained catches, decimal ages and lengths
   TotCatchAtDecAgeLen_Mal = as.matrix(unlist(CatchCurveResults_Mal$TotCatchAtDecAgeLen))
   TotCatchAtDecAgeLen = TotCatchAtDecAgeLen_Fem + TotCatchAtDecAgeLen_Mal # single sex or combined sexes
@@ -2487,17 +2487,25 @@ SimLenAndAgeFreqData <- function(SampleSize, MaxAge, TimeStep, NatMort, FishMort
   TotCatchAtDecAge_Mal = rowSums(TotCatchAtDecAgeLen_Mal)
   TotCatchAtDecAge = TotCatchAtDecAge_Fem + TotCatchAtDecAge_Mal
 
-  # catch proportions at decimal age
-  ExpCatchPropAtDecAge_Fem = RetCatchAtDecAge_Fem / sum(RetCatchAtDecAge_Fem)
-  ExpCatchPropAtDecAge_Mal = RetCatchAtDecAge_Mal / sum(RetCatchAtDecAge_Mal)
-  ExpCatchPropAtDecAge = RetCatchAtDecAge / sum(RetCatchAtDecAge)
+  # Retained catch proportions at decimal age
+  ExpRetCatchPropAtDecAge_Fem = RetCatchAtDecAge_Fem / sum(RetCatchAtDecAge_Fem)
+  ExpRetCatchPropAtDecAge_Mal = RetCatchAtDecAge_Mal / sum(RetCatchAtDecAge_Mal)
+  ExpRetCatchPropAtDecAge = RetCatchAtDecAge / sum(RetCatchAtDecAge)
+
+  # Discarded catch proportions at decimal age
+  ExpDiscCatchPropAtDecAge_Fem = DiscCatchAtDecAge_Fem / sum(DiscCatchAtDecAge_Fem)
+  ExpDiscCatchPropAtDecAge_Mal = DiscCatchAtDecAge_Mal / sum(DiscCatchAtDecAge_Mal)
+  ExpDiscCatchPropAtDecAge = DiscCatchAtDecAge / sum(DiscCatchAtDecAge)
 
   ExpRetCatchPropLengthGivenDecAge_Fem <- data.frame(matrix(nrow = nTimeSteps, ncol = nLenCl))
   colnames(ExpRetCatchPropLengthGivenDecAge_Fem) <- midpt
   ExpRetCatchPropLengthGivenDecAge_Fem = as.matrix(ExpRetCatchPropLengthGivenDecAge_Fem)
   ExpRetCatchPropLengthGivenDecAge_Mal = ExpRetCatchPropLengthGivenDecAge_Fem
+  ExpDiscCatchPropLengthGivenDecAge_Fem = ExpRetCatchPropLengthGivenDecAge_Fem
+  ExpDiscCatchPropLengthGivenDecAge_Mal = ExpRetCatchPropLengthGivenDecAge_Fem
 
   for (j in 1:nTimeSteps) {
+    # retained catches
     if (sum(RetCatchAtDecAgeLen_Fem[j,])==0) {
       ExpRetCatchPropLengthGivenDecAge_Fem[j,] = 0
     } else {
@@ -2508,82 +2516,173 @@ SimLenAndAgeFreqData <- function(SampleSize, MaxAge, TimeStep, NatMort, FishMort
     } else {
       ExpRetCatchPropLengthGivenDecAge_Mal[j,] = RetCatchAtDecAgeLen_Mal[j,] / sum(RetCatchAtDecAgeLen_Mal[j,])
     }
+    # discarded catches
+    if (sum(DiscCatchAtDecAgeLen_Fem[j,])==0) {
+      ExpDiscCatchPropLengthGivenDecAge_Fem[j,] = 0
+    } else {
+      ExpDiscCatchPropLengthGivenDecAge_Fem[j,] = DiscCatchAtDecAgeLen_Fem[j,] / sum(DiscCatchAtDecAgeLen_Fem[j,])
+    }
+    if (sum(DiscCatchAtDecAgeLen_Mal[j,])==0) {
+      ExpDiscCatchPropLengthGivenDecAge_Mal[j,] = 0
+    } else {
+      ExpDiscCatchPropLengthGivenDecAge_Mal[j,] = DiscCatchAtDecAgeLen_Mal[j,] / sum(DiscCatchAtDecAgeLen_Mal[j,])
+    }
   }
-
-
-  ExpCatchPropDecAgeGivenLength_Fem = ExpRetCatchPropLengthGivenDecAge_Fem
-  ExpCatchPropDecAgeGivenLength_Mal = ExpRetCatchPropLengthGivenDecAge_Fem
-  ObsCatchPropDecAgeAtLength_Fem = ExpRetCatchPropLengthGivenDecAge_Fem
-  ObsCatchPropDecAgeAtLength_Mal = ExpRetCatchPropLengthGivenDecAge_Fem
+  # retained catches
+  ExpRetCatchPropDecAgeGivenLength_Fem = ExpRetCatchPropLengthGivenDecAge_Fem
+  ExpRetCatchPropDecAgeGivenLength_Mal = ExpRetCatchPropLengthGivenDecAge_Fem
   FractDenom_Fem = rep(0,nLenCl); FractDenom_Mal = rep(0,nLenCl)
   for (i in 1:nLenCl) {
     for (j in 1:nTimeSteps) {
-      FractDenom_Fem[i] = FractDenom_Fem[i] + (ExpRetCatchPropLengthGivenDecAge_Fem[j,i] * ExpCatchPropAtDecAge_Fem[j])
+      FractDenom_Fem[i] = FractDenom_Fem[i] + (ExpRetCatchPropLengthGivenDecAge_Fem[j,i] * ExpRetCatchPropAtDecAge_Fem[j])
       if (FractDenom_Fem[i] == 0) {
         FractDenom_Fem[i] = 1E-20
       }
-      FractDenom_Mal[i] = FractDenom_Mal[i] + (ExpRetCatchPropLengthGivenDecAge_Mal[j,i] * ExpCatchPropAtDecAge_Mal[j])
+      FractDenom_Mal[i] = FractDenom_Mal[i] + (ExpRetCatchPropLengthGivenDecAge_Mal[j,i] * ExpRetCatchPropAtDecAge_Mal[j])
       if (FractDenom_Mal[i] == 0) {
         FractDenom_Mal[i]= 1E-20
       }
     }
     for (j in 1:nTimeSteps) {
-      ExpCatchPropDecAgeGivenLength_Fem[j,i] = (ExpRetCatchPropLengthGivenDecAge_Fem[j,i] * ExpCatchPropAtDecAge_Fem[j]) / FractDenom_Fem[i]
-      ExpCatchPropDecAgeGivenLength_Mal[j,i] = (ExpRetCatchPropLengthGivenDecAge_Mal[j,i] * ExpCatchPropAtDecAge_Mal[j]) / FractDenom_Mal[i]
+      ExpRetCatchPropDecAgeGivenLength_Fem[j,i] = (ExpRetCatchPropLengthGivenDecAge_Fem[j,i] * ExpRetCatchPropAtDecAge_Fem[j]) / FractDenom_Fem[i]
+      ExpRetCatchPropDecAgeGivenLength_Mal[j,i] = (ExpRetCatchPropLengthGivenDecAge_Mal[j,i] * ExpRetCatchPropAtDecAge_Mal[j]) / FractDenom_Mal[i]
+    }
+  }
+  # discarded catches
+  ExpDiscCatchPropDecAgeGivenLength_Fem = ExpRetCatchPropLengthGivenDecAge_Fem
+  ExpDiscCatchPropDecAgeGivenLength_Mal = ExpRetCatchPropLengthGivenDecAge_Fem
+  FractDenom_Fem = rep(0,nLenCl); FractDenom_Mal = rep(0,nLenCl)
+  for (i in 1:nLenCl) {
+    for (j in 1:nTimeSteps) {
+      FractDenom_Fem[i] = FractDenom_Fem[i] + (ExpDiscCatchPropLengthGivenDecAge_Fem[j,i] * ExpDiscCatchPropAtDecAge_Fem[j])
+      if (FractDenom_Fem[i] == 0) {
+        FractDenom_Fem[i] = 1E-20
+      }
+      FractDenom_Mal[i] = FractDenom_Mal[i] + (ExpDiscCatchPropLengthGivenDecAge_Mal[j,i] * ExpDiscCatchPropAtDecAge_Mal[j])
+      if (FractDenom_Mal[i] == 0) {
+        FractDenom_Mal[i]= 1E-20
+      }
+    }
+    for (j in 1:nTimeSteps) {
+      ExpDiscCatchPropDecAgeGivenLength_Fem[j,i] = (ExpDiscCatchPropLengthGivenDecAge_Fem[j,i] * ExpDiscCatchPropAtDecAge_Fem[j]) / FractDenom_Fem[i]
+      ExpDiscCatchPropDecAgeGivenLength_Mal[j,i] = (ExpDiscCatchPropLengthGivenDecAge_Mal[j,i] * ExpDiscCatchPropAtDecAge_Mal[j]) / FractDenom_Mal[i]
+    }
+    if (sum(ExpDiscCatchPropDecAgeGivenLength_Fem[,i]) == 0) {
+      ExpDiscCatchPropDecAgeGivenLength_Fem[,i] = 1E-20
+    }
+    if (sum(ExpDiscCatchPropDecAgeGivenLength_Mal[,i]) == 0) {
+      ExpDiscCatchPropDecAgeGivenLength_Mal[,i] = 1E-20
     }
   }
 
   # observed catch frequencies at length and decimal age
-  ObsCatchFreqAtLengthAndDecAge_Fem = ExpRetCatchPropLengthGivenDecAge_Fem
-  ObsCatchFreqAtLengthAndDecAge_Mal = ExpRetCatchPropLengthGivenDecAge_Fem
-  ObsCatchFreqAtLengthAndDecAge = ExpRetCatchPropLengthGivenDecAge_Fem
+  ObsRetCatchFreqAtLengthAndDecAge_Fem = ExpRetCatchPropLengthGivenDecAge_Fem
+  ObsRetCatchFreqAtLengthAndDecAge_Mal = ExpRetCatchPropLengthGivenDecAge_Fem
+  ObsRetCatchFreqAtLengthAndDecAge = ExpRetCatchPropLengthGivenDecAge_Fem
+  ObsDiscCatchFreqAtLengthAndDecAge_Fem = ExpRetCatchPropLengthGivenDecAge_Fem
+  ObsDiscCatchFreqAtLengthAndDecAge_Mal = ExpRetCatchPropLengthGivenDecAge_Fem
+  ObsDiscCatchFreqAtLengthAndDecAge = ExpRetCatchPropLengthGivenDecAge_Fem
+
+  # cat("ObsRetCatchFreqAtLen_Fem",ObsRetCatchFreqAtLen_Fem,'\n')
+  # cat("ObsDiscCatchFreqAtLen_Fem",ObsDiscCatchFreqAtLen_Fem,'\n')
+  # cat("",'\n')
+  # cat("ExpRetCatchPropDecAgeGivenLength_Fem",ExpRetCatchPropDecAgeGivenLength_Fem,'\n')
+  # cat("",'\n')
+  # cat("ExpDiscCatchPropDecAgeGivenLength_Fem",ExpDiscCatchPropDecAgeGivenLength_Fem,'\n')
+
   for (i in 1:nLenCl) {
-    ObsCatchFreqAtLengthAndDecAge_Fem[,i] = rmultinom(1, ObsRetCatchFreqAtLen_Fem[i], ExpCatchPropDecAgeGivenLength_Fem[,i])
-    ObsCatchFreqAtLengthAndDecAge_Mal[,i] = rmultinom(1, ObsRetCatchFreqAtLen_Mal[i], ExpCatchPropDecAgeGivenLength_Mal[,i])
-    ObsCatchFreqAtLengthAndDecAge[,i] = ObsCatchFreqAtLengthAndDecAge_Fem[,i] + ObsCatchFreqAtLengthAndDecAge_Mal[,i]
+    # retained catches
+    ObsRetCatchFreqAtLengthAndDecAge_Fem[,i] = rmultinom(1, ObsRetCatchFreqAtLen_Fem[i], ExpRetCatchPropDecAgeGivenLength_Fem[,i])
+    ObsRetCatchFreqAtLengthAndDecAge_Mal[,i] = rmultinom(1, ObsRetCatchFreqAtLen_Mal[i], ExpRetCatchPropDecAgeGivenLength_Mal[,i])
+    ObsRetCatchFreqAtLengthAndDecAge[,i] = ObsRetCatchFreqAtLengthAndDecAge_Fem[,i] + ObsRetCatchFreqAtLengthAndDecAge_Mal[,i]
+    # discarded catches
+    ObsDiscCatchFreqAtLengthAndDecAge_Fem[,i] = rmultinom(1, ObsDiscCatchFreqAtLen_Fem[i], ExpDiscCatchPropDecAgeGivenLength_Fem[,i])
+    ObsDiscCatchFreqAtLengthAndDecAge_Mal[,i] = rmultinom(1, ObsDiscCatchFreqAtLen_Mal[i], ExpDiscCatchPropDecAgeGivenLength_Mal[,i])
+    ObsDiscCatchFreqAtLengthAndDecAge[,i] = ObsDiscCatchFreqAtLengthAndDecAge_Fem[,i] + ObsDiscCatchFreqAtLengthAndDecAge_Mal[,i]
   }
 
   # generate data for individual fish (age classes and mid points of length classes)
-  ObsDecAge_Fem = rep(NA, SampleSize_Fem); ObsDecAge_Mal = rep(NA, SampleSize_Mal); ObsDecAge = rep(NA, SampleSize[1])
-  ObsAgeCl_Fem = rep(NA, SampleSize_Fem); ObsAgeCl_Mal = rep(NA, SampleSize_Mal); ObsAgeCl = rep(NA, SampleSize[1])
-  ObsLenClMidPt_Fem = rep(NA, SampleSize_Fem); ObsLenClMidPt_Mal = rep(NA, SampleSize_Mal); ObsLenClMidPt = rep(NA, SampleSize[1])
+  ObsDecAgeRetCatch_Fem = rep(NA, SampleSize_Fem); ObsDecAgeRetCatch_Mal = rep(NA, SampleSize_Mal); ObsDecAgeRetCatch = rep(NA, SampleSize[1])
+  ObsAgeClRetCatch_Fem = rep(NA, SampleSize_Fem); ObsAgeClRetCatch_Mal = rep(NA, SampleSize_Mal); ObsAgeClRetCatch = rep(NA, SampleSize[1])
+  ObsLenClRetCatchMidPt_Fem = rep(NA, SampleSize_Fem); ObsLenClRetCatchMidPt_Mal = rep(NA, SampleSize_Mal); ObsLenClRetCatchMidPt = rep(NA, SampleSize[1])
 
-  # females
+  # females - retained catch
   strt=1; fnsh=0
   for (j in 1:nTimeSteps) {
     for (i in 1:nLenCl) {
-      x=ObsCatchFreqAtLengthAndDecAge_Fem[j,i] # number of fish in current length and age class
+      x=ObsRetCatchFreqAtLengthAndDecAge_Fem[j,i] # number of fish in current length and age class
       if(x>0) {
         fnsh=strt+x-1
-        ObsDecAge_Fem[strt:fnsh]=j*TimeStep
-        ObsLenClMidPt_Fem[strt:fnsh]=midpt[i]
+        ObsDecAgeRetCatch_Fem[strt:fnsh]=j*TimeStep
+        ObsLenClRetCatchMidPt_Fem[strt:fnsh]=midpt[i]
         strt=strt+x
       }
     }
   }
-  # males
+  # males - retained catch
   strt=1; fnsh=0
   for (j in 1:nTimeSteps) {
     for (i in 1:nLenCl) {
-      x=ObsCatchFreqAtLengthAndDecAge_Mal[j,i] # number of fish in current length and age class
+      x=ObsRetCatchFreqAtLengthAndDecAge_Mal[j,i] # number of fish in current length and age class
       if(x>0) {
         fnsh=strt+x-1
-        ObsDecAge_Mal[strt:fnsh]=j*TimeStep
-        ObsLenClMidPt_Mal[strt:fnsh]=midpt[i]
+        ObsDecAgeRetCatch_Mal[strt:fnsh]=j*TimeStep
+        ObsLenClRetCatchMidPt_Mal[strt:fnsh]=midpt[i]
         strt=strt+x
       }
     }
   }
 
-  ObsAgeCl_Fem = floor(round(ObsDecAge_Fem,6)); ObsAgeCl_Mal = floor(round(ObsDecAge_Mal,6))
-  ObsAgeCl = c(ObsAgeCl_Fem, ObsAgeCl_Mal) # decimal ages combined sexes
-  ObsDecAge = c(ObsDecAge_Fem, ObsDecAge_Mal) # decimal ages combined sexes
-  ObsLenClMidPt = c(ObsLenClMidPt_Fem, ObsLenClMidPt_Mal)
+  ObsDecAgeDiscCatch_Fem = rep(NA, DiscSampleSize_Fem); ObsDecAgeDiscCatch_Mal = rep(NA, DiscSampleSize_Mal); ObsDecAgeDiscCatch = rep(NA, DiscSampleSize)
+  ObsAgeClDiscCatch_Fem = rep(NA, DiscSampleSize_Fem); ObsAgeClDiscCatch_Mal = rep(NA, DiscSampleSize_Mal); ObsAgeClDiscCatch = rep(NA, DiscSampleSize)
+  ObsLenClDiscCatchMidPt_Fem = rep(NA, DiscSampleSize_Fem); ObsLenClDiscCatchMidPt_Mal = rep(NA, DiscSampleSize_Mal); ObsLenClDiscCatchMidPt = rep(NA, DiscSampleSize)
 
-  # random fish lengths, within each length class, for each of the fish
-  ObsRandLen_Fem = round(ObsLenClMidPt_Fem + runif(SampleSize_Fem,-LenInc, LenInc),0)
-  ObsRandLen_Mal = round(ObsLenClMidPt_Mal + runif(SampleSize_Mal,-LenInc, LenInc),0)
-  ObsRandLen = c(ObsRandLen_Fem, ObsRandLen_Mal)
+  # females - discarded catch
+  strt=1; fnsh=0
+  for (j in 1:nTimeSteps) {
+    for (i in 1:nLenCl) {
+      x=ObsDiscCatchFreqAtLengthAndDecAge_Fem[j,i] # number of fish in current length and age class
+      if(x>0) {
+        fnsh=strt+x-1
+        ObsDecAgeDiscCatch_Fem[strt:fnsh]=j*TimeStep
+        ObsLenClDiscCatchMidPt_Fem[strt:fnsh]=midpt[i]
+        strt=strt+x
+      }
+    }
+  }
+  # males - discarded catch
+  strt=1; fnsh=0
+  for (j in 1:nTimeSteps) {
+    for (i in 1:nLenCl) {
+      x=ObsDiscCatchFreqAtLengthAndDecAge_Mal[j,i] # number of fish in current length and age class
+      if(x>0) {
+        fnsh=strt+x-1
+        ObsDecAgeDiscCatch_Mal[strt:fnsh]=j*TimeStep
+        ObsLenClDiscCatchMidPt_Mal[strt:fnsh]=midpt[i]
+        strt=strt+x
+      }
+    }
+  }
+
+  ObsAgeClRetCatch_Fem = floor(round(ObsDecAgeRetCatch_Fem,6)); ObsAgeClRetCatch_Mal = floor(round(ObsDecAgeRetCatch_Mal,6))
+  ObsAgeClRetCatch = c(ObsAgeClRetCatch_Fem, ObsAgeClRetCatch_Mal) # decimal ages combined sexes
+  ObsDecAgeRetCatch = c(ObsDecAgeRetCatch_Fem, ObsDecAgeRetCatch_Mal) # decimal ages combined sexes
+  ObsLenClRetCatchMidPt = c(ObsLenClRetCatchMidPt_Fem, ObsLenClRetCatchMidPt_Mal)
+
+  ObsAgeClDiscCatch_Fem = floor(round(ObsDecAgeDiscCatch_Fem,6)); ObsAgeClDiscCatch_Mal = floor(round(ObsDecAgeDiscCatch_Mal,6))
+  ObsAgeClDiscCatch = c(ObsAgeClDiscCatch_Fem, ObsAgeClDiscCatch_Mal) # decimal ages combined sexes
+  ObsDecAgeDiscCatch = c(ObsDecAgeDiscCatch_Fem, ObsDecAgeDiscCatch_Mal) # decimal ages combined sexes
+  ObsLenClDiscCatchMidPt = c(ObsLenClDiscCatchMidPt_Fem, ObsLenClDiscCatchMidPt_Mal)
+
+  # random fish lengths, within each length class, for each of the fish in retained catches
+  ObsRandLenRetCatch_Fem = round(ObsLenClRetCatchMidPt_Fem + runif(SampleSize_Fem,-LenInc, LenInc),0)
+  ObsRandLenRetCatch_Mal = round(ObsLenClRetCatchMidPt_Mal + runif(SampleSize_Mal,-LenInc, LenInc),0)
+  ObsRandLenRetCatch = c(ObsRandLenRetCatch_Fem, ObsRandLenRetCatch_Mal)
+
+  # # random fish lengths, within each length class, for each of the fish in discarded catches
+  ObsRandLenDiscCatch_Fem = round(ObsLenClDiscCatchMidPt_Fem + runif(DiscSampleSize_Fem,-LenInc, LenInc),0)
+  ObsRandLenDiscCatch_Mal = round(ObsLenClDiscCatchMidPt_Mal + runif(DiscSampleSize_Mal,-LenInc, LenInc),0)
+  ObsRandLenDiscCatch = c(ObsRandLenDiscCatch_Fem, ObsRandLenDiscCatch_Mal)
 
   # get frequencies at integer ages
   MinAge = floor(TimeStep)
@@ -2596,16 +2695,16 @@ SimLenAndAgeFreqData <- function(SampleSize, MaxAge, TimeStep, NatMort, FishMort
   ObsCatchFreqAtLengthAndIntAge=ObsCatchFreqAtLengthAndIntAge_Fem
   nTimeSteps = length(seq(TimeStep,MaxAge,TimeStep))
 
-  for (i in 1:length(ObsAgeCl_Fem)) {
-    tempAge = ObsAgeCl_Fem[i]
-    tempLen = ObsLenClMidPt_Fem[i]
+  for (i in 1:length(ObsAgeClRetCatch_Fem)) {
+    tempAge = ObsAgeClRetCatch_Fem[i]
+    tempLen = ObsLenClRetCatchMidPt_Fem[i]
     j = tempAge - MinAge + 1
     k = which(midpt==tempLen)
     ObsCatchFreqAtLengthAndIntAge_Fem[j,k] = ObsCatchFreqAtLengthAndIntAge_Fem[j,k] + 1
   }
-  for (i in 1:length(ObsAgeCl_Mal)) {
-    tempAge = ObsAgeCl_Mal[i]
-    tempLen = ObsLenClMidPt_Mal[i]
+  for (i in 1:length(ObsAgeClRetCatch_Mal)) {
+    tempAge = ObsAgeClRetCatch_Mal[i]
+    tempLen = ObsLenClRetCatchMidPt_Mal[i]
     j = tempAge - MinAge + 1
     k = which(midpt==tempLen)
     ObsCatchFreqAtLengthAndIntAge_Mal[j,k] = ObsCatchFreqAtLengthAndIntAge_Mal[j,k] + 1
@@ -2616,16 +2715,16 @@ SimLenAndAgeFreqData <- function(SampleSize, MaxAge, TimeStep, NatMort, FishMort
     ObsRetCatchFreqAtLen_Fem = NA; ObsRetCatchFreqAtLen_Mal = NA
     RetCatchAtDecAge_Fem = NA; RetCatchAtDecAge_Mal = NA
     DiscCatchAtDecAge_Fem = NA; DiscCatchAtDecAge_Mal = NA
-    ExpCatchPropAtDecAge_Fem = NA; ExpCatchPropAtDecAge_Mal = NA
+    ExpRetCatchPropAtDecAge_Fem = NA; ExpRetCatchPropAtDecAge_Mal = NA
     ExpRetCatchPropLengthGivenDecAge_Fem = NA; ExpRetCatchPropLengthGivenDecAge_Mal = NA
-    ExpCatchPropDecAgeGivenLength_Fem = NA; ExpCatchPropDecAgeGivenLength_Mal = NA
-    ObsCatchFreqAtLengthAndDecAge_Fem = NA; ObsCatchFreqAtLengthAndDecAge_Mal = NA
-    ObsLenClMidPt_Fem = NA; ObsLenClMidPt_Mal = NA
+    ExpRetCatchPropDecAgeGivenLength_Fem = NA; ExpRetCatchPropDecAgeGivenLength_Mal = NA
+    ObsRetCatchFreqAtLengthAndDecAge_Fem = NA; ObsRetCatchFreqAtLengthAndDecAge_Mal = NA
+    ObsLenClRetCatchMidPt_Fem = NA; ObsLenClRetCatchMidPt_Mal = NA
   }
   if (is.data.frame(GrowthParams)) { # params inputted as separate sex
     RetCatchAtDecAge = NA
     DiscCatchAtDecAge = NA
-    ObsCatchFreqAtLengthAndDecAge = NA
+    ObsRetCatchFreqAtLengthAndDecAge = NA
   }
 
   # get expected proportion and associated sd of fish that are released
@@ -2657,6 +2756,9 @@ SimLenAndAgeFreqData <- function(SampleSize, MaxAge, TimeStep, NatMort, FishMort
                  ObsDiscCatchFreqAtLen = ObsDiscCatchFreqAtLen,
                  ObsDiscCatchFreqAtLen_Fem = ObsDiscCatchFreqAtLen_Fem,
                  ObsDiscCatchFreqAtLen_Mal = ObsDiscCatchFreqAtLen_Mal,
+                 ObsRandLenDiscCatch = ObsRandLenDiscCatch,
+                 ObsRandLenDiscCatch_Fem = ObsRandLenDiscCatch_Fem,
+                 ObsRandLenDiscCatch_Mal = ObsRandLenDiscCatch_Mal,
                  RetCatchAtDecAge_Fem = RetCatchAtDecAge_Fem,
                  RetCatchAtDecAge_Mal = RetCatchAtDecAge_Mal,
                  RetCatchAtDecAge = RetCatchAtDecAge,
@@ -2666,31 +2768,34 @@ SimLenAndAgeFreqData <- function(SampleSize, MaxAge, TimeStep, NatMort, FishMort
                  TotCatchAtDecAge_Fem = TotCatchAtDecAge_Fem,
                  TotCatchAtDecAge_Mal = TotCatchAtDecAge_Mal,
                  TotCatchAtDecAge = TotCatchAtDecAge,
-                 ExpCatchPropAtDecAge = ExpCatchPropAtDecAge,
-                 ExpCatchPropAtDecAge_Fem = ExpCatchPropAtDecAge_Fem,
-                 ExpCatchPropAtDecAge_Mal = ExpCatchPropAtDecAge_Mal,
+                 ExpRetCatchPropAtDecAge = ExpRetCatchPropAtDecAge,
+                 ExpRetCatchPropAtDecAge_Fem = ExpRetCatchPropAtDecAge_Fem,
+                 ExpRetCatchPropAtDecAge_Mal = ExpRetCatchPropAtDecAge_Mal,
                  ExpRetCatchPropLengthGivenDecAge_Fem = ExpRetCatchPropLengthGivenDecAge_Fem,
                  ExpRetCatchPropLengthGivenDecAge_Mal = ExpRetCatchPropLengthGivenDecAge_Mal,
-                 ExpCatchPropDecAgeGivenLength_Fem = ExpCatchPropDecAgeGivenLength_Fem,
-                 ExpCatchPropDecAgeGivenLength_Mal = ExpCatchPropDecAgeGivenLength_Mal,
-                 ObsCatchFreqAtLengthAndDecAge_Fem = ObsCatchFreqAtLengthAndDecAge_Fem,
-                 ObsCatchFreqAtLengthAndDecAge_Mal = ObsCatchFreqAtLengthAndDecAge_Mal,
-                 ObsCatchFreqAtLengthAndDecAge = ObsCatchFreqAtLengthAndDecAge,
+                 ExpRetCatchPropDecAgeGivenLength_Fem = ExpRetCatchPropDecAgeGivenLength_Fem,
+                 ExpRetCatchPropDecAgeGivenLength_Mal = ExpRetCatchPropDecAgeGivenLength_Mal,
+                 ObsRetCatchFreqAtLengthAndDecAge_Fem = ObsRetCatchFreqAtLengthAndDecAge_Fem,
+                 ObsRetCatchFreqAtLengthAndDecAge_Mal = ObsRetCatchFreqAtLengthAndDecAge_Mal,
+                 ObsRetCatchFreqAtLengthAndDecAge = ObsRetCatchFreqAtLengthAndDecAge,
                  ObsCatchFreqAtLengthAndIntAge_Fem = ObsCatchFreqAtLengthAndIntAge_Fem,
                  ObsCatchFreqAtLengthAndIntAge_Mal = ObsCatchFreqAtLengthAndIntAge_Mal,
                  ObsCatchFreqAtLengthAndIntAge = ObsCatchFreqAtLengthAndIntAge,
-                 ObsDecAge = ObsDecAge,
-                 ObsDecAge_Fem = ObsDecAge_Fem,
-                 ObsDecAge_Mal = ObsDecAge_Mal,
-                 ObsAgeCl = ObsAgeCl,
-                 ObsAgeCl_Fem = ObsAgeCl_Fem,
-                 ObsAgeCl_Mal = ObsAgeCl_Mal,
-                 ObsLenClMidPt = ObsLenClMidPt,
-                 ObsLenClMidPt_Fem = ObsLenClMidPt_Fem,
-                 ObsLenClMidPt_Mal = ObsLenClMidPt_Mal,
-                 ObsRandLen = ObsRandLen,
-                 ObsRandLen_Fem = ObsRandLen_Fem,
-                 ObsRandLen_Mal = ObsRandLen_Mal,
+                 ObsDecAgeRetCatch = ObsDecAgeRetCatch,
+                 ObsDecAgeRetCatch_Fem = ObsDecAgeRetCatch_Fem,
+                 ObsDecAgeRetCatch_Mal = ObsDecAgeRetCatch_Mal,
+                 ObsDecAgeDiscCatch = ObsDecAgeDiscCatch,
+                 ObsDecAgeDiscCatch_Fem = ObsDecAgeDiscCatch_Fem,
+                 ObsDecAgeDiscCatch_Mal = ObsDecAgeDiscCatch_Mal,
+                 ObsAgeClRetCatch = ObsAgeClRetCatch,
+                 ObsAgeClRetCatch_Fem = ObsAgeClRetCatch_Fem,
+                 ObsAgeClRetCatch_Mal = ObsAgeClRetCatch_Mal,
+                 ObsLenClRetCatchMidPt = ObsLenClRetCatchMidPt,
+                 ObsLenClRetCatchMidPt_Fem = ObsLenClRetCatchMidPt_Fem,
+                 ObsLenClRetCatchMidPt_Mal = ObsLenClRetCatchMidPt_Mal,
+                 ObsRandLenRetCatch = ObsRandLenRetCatch,
+                 ObsRandLenRetCatch_Fem = ObsRandLenRetCatch_Fem,
+                 ObsRandLenRetCatch_Mal = ObsRandLenRetCatch_Mal,
                  PropReleased = PropReleased,
                  PropReleased_sd = PropReleased_sd,
                  MeanLenReleased = MeanLenReleased,
@@ -3654,15 +3759,15 @@ PlotLengthBasedCatchCurve_Mortality <- function(params, MLL, SelectivityType, Ob
 #' ubnd=Res$ubnd
 #' # get data - 1 sex (or combined sexes)
 #' ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen # 1 sex
-#' ObsRetCatchFreqAtLengthAndAge = as.matrix(Res$ObsCatchFreqAtLengthAndDecAge) # 1 sex
+#' ObsRetCatchFreqAtLengthAndAge = as.matrix(Res$ObsRetCatchFreqAtLengthAndDecAge) # 1 sex
 #' # # get data - 2 sexes
 #' # ObsRetCatchFreqAtLen <- data.frame(matrix(nrow = 2, ncol = length(midpt))) # 2 sex
 #' # colnames(ObsRetCatchFreqAtLen) <- midpt
 #' # ObsRetCatchFreqAtLen[1,] = Res$ObsRetCatchFreqAtLen_Fem
 #' # ObsRetCatchFreqAtLen[2,] = Res$ObsRetCatchFreqAtLen_Mal
-#' # ObsRetCatchFreqAtLengthAndAge = array(c(unlist(Res$ObsCatchFreqAtLengthAndDecAge_Fem), unlist(Res$ObsCatchFreqAtLengthAndDecAge_Mal)),
-#' #                                       c(nTimeSteps, length(midpt), 2), dimnames=list(rownames(Res$ObsCatchFreqAtLengthAndDecAge_Fem),
-#' #                                                                                      colnames(Res$ObsCatchFreqAtLengthAndDecAge_Fem)))
+#' # ObsRetCatchFreqAtLengthAndAge = array(c(unlist(Res$ObsRetCatchFreqAtLengthAndDecAge_Fem), unlist(Res$ObsRetCatchFreqAtLengthAndDecAge_Mal)),
+#' #                                       c(nTimeSteps, length(midpt), 2), dimnames=list(rownames(Res$ObsRetCatchFreqAtLengthAndDecAge_Fem),
+#' #                                                                                      colnames(Res$ObsRetCatchFreqAtLengthAndDecAge_Fem)))
 #' # get params - 1 sex
 #' InitFishMort = 0.3 # specify starting parameters
 #' InitL50 = 320
@@ -3704,7 +3809,7 @@ PlotLengthBasedCatchCurve_Mortality <- function(params, MLL, SelectivityType, Ob
 #' ubnd=Res$ubnd
 #' # get data - 1 sex (or combined sexes)
 #' ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen # 1 sex
-#' ObsRetCatchFreqAtLengthAndAge = as.matrix(Res$ObsCatchFreqAtLengthAndDecAge) # 1 sex
+#' ObsRetCatchFreqAtLengthAndAge = as.matrix(Res$ObsRetCatchFreqAtLengthAndDecAge) # 1 sex
 #' # get params - 1 sex
 #' InitFishMort = 0.3 # specify starting parameters
 #' InitLinf = 800
@@ -3942,15 +4047,15 @@ PlotAgeLengthCatchCurve_MargLength <- function(params, RefnceAges, MLL, GrowthCu
 #' ubnd=Res$ubnd
 #' # get data - 1 sex (or combined sexes)
 #' ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen # 1 sex
-#' ObsRetCatchFreqAtLengthAndAge = as.matrix(Res$ObsCatchFreqAtLengthAndDecAge) # 1 sex
+#' ObsRetCatchFreqAtLengthAndAge = as.matrix(Res$ObsRetCatchFreqAtLengthAndDecAge) # 1 sex
 #' # # get data - 2 sexes
 #' # ObsRetCatchFreqAtLen <- data.frame(matrix(nrow = 2, ncol = length(midpt))) # 2 sex
 #' # colnames(ObsRetCatchFreqAtLen) <- midpt
 #' # ObsRetCatchFreqAtLen[1,] = Res$ObsRetCatchFreqAtLen_Fem
 #' # ObsRetCatchFreqAtLen[2,] = Res$ObsRetCatchFreqAtLen_Mal
-#' # ObsRetCatchFreqAtLengthAndAge = array(c(unlist(Res$ObsCatchFreqAtLengthAndDecAge_Fem), unlist(Res$ObsCatchFreqAtLengthAndDecAge_Mal)),
-#' #                                       c(nTimeSteps, length(midpt), 2), dimnames=list(rownames(Res$ObsCatchFreqAtLengthAndDecAge_Fem),
-#' #                                                                                      colnames(Res$ObsCatchFreqAtLengthAndDecAge_Fem)))
+#' # ObsRetCatchFreqAtLengthAndAge = array(c(unlist(Res$ObsRetCatchFreqAtLengthAndDecAge_Fem), unlist(Res$ObsRetCatchFreqAtLengthAndDecAge_Mal)),
+#' #                                       c(nTimeSteps, length(midpt), 2), dimnames=list(rownames(Res$ObsRetCatchFreqAtLengthAndDecAge_Fem),
+#' #                                                                                      colnames(Res$ObsRetCatchFreqAtLengthAndDecAge_Fem)))
 #' # get params - 1 sex
 #' InitFishMort = 0.3 # specify starting parameters
 #' InitL50 = 320
@@ -3992,7 +4097,7 @@ PlotAgeLengthCatchCurve_MargLength <- function(params, RefnceAges, MLL, GrowthCu
 #' ubnd=Res$ubnd
 #' # get data - 1 sex (or combined sexes)
 #' ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen # 1 sex
-#' ObsRetCatchFreqAtLengthAndAge = as.matrix(Res$ObsCatchFreqAtLengthAndDecAge) # 1 sex
+#' ObsRetCatchFreqAtLengthAndAge = as.matrix(Res$ObsRetCatchFreqAtLengthAndDecAge) # 1 sex
 #' # get params - 1 sex
 #' InitFishMort = 0.3 # specify starting parameters
 #' InitLinf = 800
@@ -4017,15 +4122,15 @@ PlotAgeLengthCatchCurve_Growth <- function(params, RefnceAges, MLL, GrowthCurveT
   if (is.vector(ObsRetCatchFreqAtLen)) {
     SampleSize = sum(ObsRetCatchFreqAtLen)
     ObsAge = rep(NA, SampleSize)
-    ObslenClMidPt = rep(NA, SampleSize)
+    ObsLenClRetCatchMidPt = rep(NA, SampleSize)
   }
   if (is.data.frame(ObsRetCatchFreqAtLen)) {
     SampleSize_F = sum(ObsRetCatchFreqAtLen[1,])
     SampleSize_M = sum(ObsRetCatchFreqAtLen[2,])
     ObsAge_F = rep(NA, SampleSize_F)
     ObsAge_M = rep(NA, SampleSize_M)
-    ObslenClMidPt_F = rep(NA, SampleSize_F)
-    ObslenClMidPt_M = rep(NA, SampleSize_M)
+    ObsLenClRetCatchMidPt_F = rep(NA, SampleSize_F)
+    ObsLenClRetCatchMidPt_M = rep(NA, SampleSize_M)
   }
 
   strt=1; fnsh=0
@@ -4044,7 +4149,7 @@ PlotAgeLengthCatchCurve_Growth <- function(params, RefnceAges, MLL, GrowthCurveT
         if(x>0) {
           fnsh=strt+x-1
           ObsAge[strt:fnsh]=i*TimeStep
-          ObslenClMidPt[strt:fnsh]=midpt[j]
+          ObsLenClRetCatchMidPt[strt:fnsh]=midpt[j]
           strt=strt+x
         }
       }
@@ -4054,7 +4159,7 @@ PlotAgeLengthCatchCurve_Growth <- function(params, RefnceAges, MLL, GrowthCurveT
         if(x>0) {
           fnshF=strtF+x-1
           ObsAge_F[strtF:fnshF]=i*TimeStep
-          ObslenClMidPt_F[strtF:fnshF]=midpt[j]
+          ObsLenClRetCatchMidPt_F[strtF:fnshF]=midpt[j]
           strtF=strtF+x
         }
         # males
@@ -4062,7 +4167,7 @@ PlotAgeLengthCatchCurve_Growth <- function(params, RefnceAges, MLL, GrowthCurveT
         if(x>0) {
           fnshM=strtM+x-1
           ObsAge_M[strtM:fnshM]=i*TimeStep
-          ObslenClMidPt_M[strtM:fnshM]=midpt[j]
+          ObsLenClRetCatchMidPt_M[strtM:fnshM]=midpt[j]
           strtM=strtM+x
         }
       }
@@ -4322,15 +4427,15 @@ PlotAgeLengthCatchCurve_Growth <- function(params, RefnceAges, MLL, GrowthCurveT
 #' ubnd=Res$ubnd
 #' # get data - 1 sex (or combined sexes)
 #' ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen # 1 sex
-#' ObsRetCatchFreqAtLengthAndAge = as.matrix(Res$ObsCatchFreqAtLengthAndDecAge) # 1 sex
+#' ObsRetCatchFreqAtLengthAndAge = as.matrix(Res$ObsRetCatchFreqAtLengthAndDecAge) # 1 sex
 #' # # get data - 2 sexes
 #' # ObsRetCatchFreqAtLen <- data.frame(matrix(nrow = 2, ncol = length(midpt))) # 2 sex
 #' # colnames(ObsRetCatchFreqAtLen) <- midpt
 #' # ObsRetCatchFreqAtLen[1,] = Res$ObsRetCatchFreqAtLen_Fem
 #' # ObsRetCatchFreqAtLen[2,] = Res$ObsRetCatchFreqAtLen_Mal
-#' # ObsRetCatchFreqAtLengthAndAge = array(c(unlist(Res$ObsCatchFreqAtLengthAndDecAge_Fem), unlist(Res$ObsCatchFreqAtLengthAndDecAge_Mal)),
-#' #                                       c(nTimeSteps, length(midpt), 2), dimnames=list(rownames(Res$ObsCatchFreqAtLengthAndDecAge_Fem),
-#' #                                                                                      colnames(Res$ObsCatchFreqAtLengthAndDecAge_Fem)))
+#' # ObsRetCatchFreqAtLengthAndAge = array(c(unlist(Res$ObsRetCatchFreqAtLengthAndDecAge_Fem), unlist(Res$ObsRetCatchFreqAtLengthAndDecAge_Mal)),
+#' #                                       c(nTimeSteps, length(midpt), 2), dimnames=list(rownames(Res$ObsRetCatchFreqAtLengthAndDecAge_Fem),
+#' #                                                                                      colnames(Res$ObsRetCatchFreqAtLengthAndDecAge_Fem)))
 #' # get params - 1 sex
 #' InitFishMort = 0.3 # specify starting parameters
 #' InitL50 = 320
@@ -4372,7 +4477,7 @@ PlotAgeLengthCatchCurve_Growth <- function(params, RefnceAges, MLL, GrowthCurveT
 #' ubnd=Res$ubnd
 #' # get data - 1 sex (or combined sexes)
 #' ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen # 1 sex
-#' ObsRetCatchFreqAtLengthAndAge = as.matrix(Res$ObsCatchFreqAtLengthAndDecAge) # 1 sex
+#' ObsRetCatchFreqAtLengthAndAge = as.matrix(Res$ObsRetCatchFreqAtLengthAndDecAge) # 1 sex
 #' # get params - 1 sex
 #' InitFishMort = 0.3 # specify starting parameters
 #' InitLinf = 800
@@ -4550,15 +4655,15 @@ PlotAgeLengthCatchCurve_Selectivity <- function(params, RefnceAges, MLL, GrowthC
 #' ubnd=Res$ubnd
 #' # get data - 1 sex (or combined sexes)
 #' ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen # 1 sex
-#' ObsRetCatchFreqAtLengthAndAge = as.matrix(Res$ObsCatchFreqAtLengthAndDecAge) # 1 sex
+#' ObsRetCatchFreqAtLengthAndAge = as.matrix(Res$ObsRetCatchFreqAtLengthAndDecAge) # 1 sex
 #' # # get data - 2 sexes
 #' # ObsRetCatchFreqAtLen <- data.frame(matrix(nrow = 2, ncol = length(midpt))) # 2 sex
 #' # colnames(ObsRetCatchFreqAtLen) <- midpt
 #' # ObsRetCatchFreqAtLen[1,] = Res$ObsRetCatchFreqAtLen_Fem
 #' # ObsRetCatchFreqAtLen[2,] = Res$ObsRetCatchFreqAtLen_Mal
-#' # ObsRetCatchFreqAtLengthAndAge = array(c(unlist(Res$ObsCatchFreqAtLengthAndDecAge_Fem), unlist(Res$ObsCatchFreqAtLengthAndDecAge_Mal)),
-#' #                                       c(nTimeSteps, length(midpt), 2), dimnames=list(rownames(Res$ObsCatchFreqAtLengthAndDecAge_Fem),
-#' #                                                                                      colnames(Res$ObsCatchFreqAtLengthAndDecAge_Fem)))
+#' # ObsRetCatchFreqAtLengthAndAge = array(c(unlist(Res$ObsRetCatchFreqAtLengthAndDecAge_Fem), unlist(Res$ObsRetCatchFreqAtLengthAndDecAge_Mal)),
+#' #                                       c(nTimeSteps, length(midpt), 2), dimnames=list(rownames(Res$ObsRetCatchFreqAtLengthAndDecAge_Fem),
+#' #                                                                                      colnames(Res$ObsRetCatchFreqAtLengthAndDecAge_Fem)))
 #' # get params - 1 sex
 #' InitFishMort = 0.3 # specify starting parameters
 #' InitL50 = 320
@@ -4600,7 +4705,7 @@ PlotAgeLengthCatchCurve_Selectivity <- function(params, RefnceAges, MLL, GrowthC
 #' ubnd=Res$ubnd
 #' # get data - 1 sex (or combined sexes)
 #' ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen # 1 sex
-#' ObsRetCatchFreqAtLengthAndAge = as.matrix(Res$ObsCatchFreqAtLengthAndDecAge) # 1 sex
+#' ObsRetCatchFreqAtLengthAndAge = as.matrix(Res$ObsRetCatchFreqAtLengthAndDecAge) # 1 sex
 #' # get params - 1 sex
 #' InitFishMort = 0.3 # specify starting parameters
 #' InitLinf = 800
@@ -8478,7 +8583,7 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
     axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
     axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
-    mtext(expression(paste(plain("Total length (mm"),plain(")"))),las=3,side=2,line=2.5,cex=0.7,lwd=1.75)
+    mtext(expression(paste(plain("Fish length (mm"),plain(")"))),las=3,side=2,line=2.5,cex=0.7,lwd=1.75)
     mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
     legend('bottomright', col=c("red","blue"),legend=c("Female","Male"),bty='n', cex=0.8,lwd=1.75)
   }
@@ -8975,7 +9080,7 @@ PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
     axis(2,at=seq(0,ymax,yint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
     axis(1,at=seq(0,xmax,xint), labels=seq(0,xmax,xint),cex.axis=0.8,line=0,las=1,lwd=1.5,tick=F) #add y labels
     axis(2,at=seq(0,ymax,yint), cex.axis=0.8,line=0,las = 1,lwd=1.5,tick=F) #add y labels
-    mtext(expression(paste(plain("Total length (mm"),plain(")"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
+    mtext(expression(paste(plain("Fish length (mm"),plain(")"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
     mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
     legend('bottomright', col=c("red","blue"),legend=c("Female","Male"),bty='n', cex=0.8,lwd=1.75)
   }
