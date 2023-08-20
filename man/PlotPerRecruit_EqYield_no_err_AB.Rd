@@ -26,9 +26,12 @@ PlotPerRecruit_EqYield_no_err_AB(
   mat_A50,
   mat_A95,
   EstMatAtAge,
-  sel_A50,
-  sel_A95,
-  EstSelAtAge,
+  Gear_sel_A50,
+  Gear_sel_A95,
+  EstGearSelAtAge,
+  Land_sel_A50,
+  Land_sel_A95,
+  EstLandSelAtAge,
   ret_Pmax,
   ret_A50,
   ret_A95,
@@ -37,7 +40,6 @@ PlotPerRecruit_EqYield_no_err_AB(
   Steepness,
   SRrel_Type,
   NatMort,
-  RefPointPlotOpt,
   Current_F,
   MainLabel,
   xaxis_lab,
@@ -90,11 +92,15 @@ PlotPerRecruit_EqYield_no_err_AB(
 
 \item{EstMatAtAge}{vector of proportion mature at age (set to NA if using age at maturity parameters)}
 
-\item{sel_A50}{logistic parameter for gear selectivity curve}
+\item{Gear_sel_A50}{logistic parameter for gear selectivity curve}
 
-\item{sel_A95}{logistic parameter for gear selectivity curve}
+\item{Gear_sel_A95}{logistic parameter for gear selectivity curve}
 
-\item{EstSelAtAge}{vector of gear selectivity at age (set to NA if using age at gear selectivity parameters)}
+\item{EstGearSelAtAge}{vector for gear selectivity at age (set to NA if using age at gear selectivity parameters)}
+
+\item{Land_sel_A50}{logistic parameter for selectivity of landings curve}
+
+\item{Land_sel_A95}{logistic parameter for selectivity of landings curve}
 
 \item{ret_Pmax}{logistic parameter for fish retention curve}
 
@@ -111,8 +117,6 @@ PlotPerRecruit_EqYield_no_err_AB(
 \item{SRrel_Type}{1 = Beverton-Holt, 2=Ricker stock-recruitment relationship}
 
 \item{NatMort}{natural mortality}
-
-\item{RefPointPlotOpt}{plotting option for reference points, 0=don't plot, 1=plot defaults, 2=plot BMSY ref points}
 
 \item{Current_F}{estimate of current fishing mortality}
 
@@ -159,9 +163,12 @@ FinalSex_A95 <- NA # Logistic sex change relationship parameters (95\% of max pr
 mat_A50 <- c(2.5, 2.5) # females, males - Logistic length (mm) at maturity relationship parameters
 mat_A95 <- c(3.5, 3.5) # females, males - Logistic length (mm) at maturity relationship parameters
 EstMatAtAge <- data.frame(EstFemMatAtAge=NA, EstMalMatAtAge=NA) # maturity at age (from age 0), inputted as values in data frame
-sel_A50 <- c(2.5, 2.5) # females, males - Logistic age selectivity relationship parameters
-sel_A95 <- c(3.5, 3.5) # females, males - Logistic age selectivity relationship parameters
-EstSelAtAge <- data.frame(EstFemSelAtAge=NA, EstMalSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
+Gear_sel_A50 <- c(2.5, 2.5) # females, males - Logistic age selectivity relationship parameters
+Gear_sel_A95 <- c(3.5, 3.5) # females, males - Logistic age selectivity relationship parameters
+EstGearSelAtAge <- data.frame(EstFemSelAtAge=NA, EstMalSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
+Land_sel_A50 <- c(2.5, 2.5) # females, males - Logistic age selectivity relationship parameters
+Land_sel_A95 <- c(3.5, 3.5) # females, males - Logistic age selectivity relationship parameters
+EstLandSelAtAge <- data.frame(EstFemSelAtAge=NA, EstMalSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
 ret_Pmax <- NA  # maximum retention, values lower than 1 imply discarding of fish above MLL
 ret_A50 <- NA  # females, males - Logistic age fish retention at age parameters
 ret_A95 <- NA  # females, males - Logistic age fish retention at age parameters
@@ -171,12 +178,12 @@ Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitme
 SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
 NatMort = 0.2 # natural mortality  (year-1)
 Current_F <- 0.07 # estimate of fishing mortality, e.g. from catch curve analysis
-RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 PlotPerRecruit_EqYield_no_err_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
                      lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale,
                      ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95,
-                     mat_A50, mat_A95, EstMatAtAge, sel_A50, sel_A95, EstSelAtAge, ret_Pmax, ret_A50, ret_A95,
-                     EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, RefPointPlotOpt, Current_F,
+                     mat_A50, mat_A95, EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge,
+                     Land_sel_A50, Land_sel_A95, EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95,
+                     EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, Current_F,
                      MainLabel=NA, xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA, ymax=NA, yint=NA)
 # # Example 2: hermaphroditic species
 # InitRecruit <- 1 # Initial recruitment
@@ -200,9 +207,12 @@ PlotPerRecruit_EqYield_no_err_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLen
 # mat_A50 <- c(20, 20) # females, males - Logistic length (mm) at maturity relationship parameters
 # mat_A95 <- c(30, 30) # females, males - Logistic length (mm) at maturity relationship parameters
 # EstMatAtAge <- data.frame(EstFemMatAtAge=NA, EstMalMatAtAge=NA) # maturity at age (from age 0), inputted as values in data frame
-# sel_A50 <- c(15, 15) # females, males - Logistic age selectivity relationship parameters
-# sel_A95 <- c(25, 25) # females, males - Logistic age selectivity relationship parameters
-# EstSelAtAge <- data.frame(EstFemSelAtAge=NA, EstMalSelAtAge=NA) # fish retention at age (from age 0), inputted as values in data frame
+# Gear_sel_A50 <- c(15, 15) # females, males - Logistic age selectivity relationship parameters
+# Gear_sel_A95 <- c(25, 25) # females, males - Logistic age selectivity relationship parameters
+# EstGearSelAtAge <- data.frame(EstFemSelAtAge=NA, EstMalSelAtAge=NA) # fish retention at age (from age 0), inputted as values in data frame
+# Land_sel_A50 <- c(2.5, 2.5) # females, males - Logistic age selectivity relationship parameters
+# Land_sel_A95 <- c(3.5, 3.5) # females, males - Logistic age selectivity relationship parameters
+# EstLandSelAtAge <- data.frame(EstFemSelAtAge=NA, EstMalSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
 # ret_Pmax <- NA  # maximum retention, values lower than 1 imply discarding of fish above MLL
 # ret_A50 <- NA  # females, males - Logistic age fish retention at age parameters
 # ret_A95 <- NA  # females, males - Logistic age fish retention at age parameters
@@ -212,11 +222,11 @@ PlotPerRecruit_EqYield_no_err_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLen
 # SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
 # NatMort = 0.07 # natural mortality  (year-1)
 # Current_F <- 0.07 # estimate of fishing mortality, e.g. from catch curve analysis
-# RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 # PlotPerRecruit_EqYield_no_err_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
 #                       lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale,
 #                       ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95,
-#                       mat_A50, mat_A95, EstMatAtAge, sel_A50, sel_A95, EstSelAtAge, ret_Pmax, ret_A50, ret_A95,
-#                       EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, RefPointPlotOpt, Current_F,
+#                       mat_A50, mat_A95, EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge,
+#                       Land_sel_A50, Land_sel_A95, EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95,
+#                       EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, Current_F,
 #                       MainLabel=NA, xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA, ymax=NA, yint=NA)
 }

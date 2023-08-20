@@ -26,9 +26,12 @@ GetPerRecruitResults_AB_with_err(
   mat_A50,
   mat_A95,
   EstMatAtAge,
-  sel_A50,
-  sel_A95,
-  EstSelAtAge,
+  Gear_sel_A50,
+  Gear_sel_A95,
+  EstGearSelAtAge,
+  Land_sel_A50,
+  Land_sel_A95,
+  EstLandSelAtAge,
   ret_Pmax,
   ret_A50,
   ret_A95,
@@ -86,11 +89,17 @@ GetPerRecruitResults_AB_with_err(
 
 \item{EstMatAtAge}{vector of proportion mature at age (set to NA if using age at maturity parameters)}
 
-\item{sel_A50}{logistic parameter for gear selectivity curve}
+\item{Gear_sel_A50}{logistic parameter for gear selectivity curve}
 
-\item{sel_A95}{logistic parameter for gear selectivity curve}
+\item{Gear_sel_A95}{logistic parameter for gear selectivity curve}
 
-\item{EstSelAtAge}{vector of gear selectivity at age (set to NA if using age at gear selectivity parameters)}
+\item{EstGearSelAtAge}{vector of gear selectivity at age (set to NA if using age at gear selectivity parameters)}
+
+\item{Land_sel_A50}{logistic parameter for selectivity of landings curve}
+
+\item{Land_sel_A95}{logistic parameter for selectivity of landings curve}
+
+\item{EstLandSelAtAge}{vector for for selectivity of landings at age (set to NA if using age at selectivity of landings parameters)}
 
 \item{ret_Pmax}{logistic parameter for fish retention curve}
 
@@ -157,9 +166,12 @@ FinalSex_A95 <- NA # Logistic sex change relationship parameters (95\% of max pr
 mat_A50 <- c(2.5, 2.5) # females, males - Logistic length (mm) at maturity relationship parameters
 mat_A95 <- c(3.5, 3.5) # females, males - Logistic length (mm) at maturity relationship parameters
 EstMatAtAge <- data.frame(EstFemMatAtAge=NA, EstMalMatAtAge=NA) # maturity at age (from age 0), inputted as values in data frame
-sel_A50 <- c(2.5, 2.5) # females, males - Logistic age selectivity relationship parameters
-sel_A95 <- c(3.5, 3.5) # females, males - Logistic age selectivity relationship parameters
-EstSelAtAge <- data.frame(EstFemSelAtAge=NA, EstMalSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
+Gear_sel_A50 <- c(2.5, 2.5) # females, males - Logistic age selectivity relationship parameters
+Gear_sel_A95 <- c(3.5, 3.5) # females, males - Logistic age selectivity relationship parameters
+EstGearSelAtAge <- data.frame(EstFemSelAtAge=NA, EstMalSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
+Land_sel_A50 <- c(2.5, 2.5) # females, males - Logistic age selectivity relationship parameters
+Land_sel_A95 <- c(3.5, 3.5) # females, males - Logistic age selectivity relationship parameters
+EstLandSelAtAge <- data.frame(EstFemSelAtAge=NA, EstMalSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
 ret_Pmax <- NA  # maximum retention, values lower than 1 imply discarding of fish above MLL
 ret_A50 <- NA  # females, males - Logistic age fish retention at age parameters
 ret_A95 <- NA  # females, males - Logistic age fish retention at age parameters
@@ -177,7 +189,7 @@ nReps = 50
 GetPerRecruitResults_AB_with_err(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
                               lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern,
                               InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95, mat_A50, mat_A95,
-                              EstMatAtAge, sel_A50, sel_A95, EstSelAtAge, ret_Pmax, ret_A50, ret_A95, EstRetenAtAge,
-                              DiscMort, Steepness, Steepness_sd, SRrel_Type, NatMort, NatMort_sd, Current_F,
-                              Current_F_sd, nReps)
+                              EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95,
+                              EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness, Steepness_sd,
+                              SRrel_Type, NatMort, NatMort_sd, Current_F, Current_F_sd, nReps)
 }

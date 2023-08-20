@@ -5,35 +5,47 @@
 \title{Calculate gear selectivity and retention at age}
 \usage{
 CalcSelectivityAndRetentionAtAge(
-  EstSelAtAge,
+  EstGearSelAtAge,
   EstRetenAtAge,
   Ages,
-  sel_A50,
-  sel_A95,
+  Gear_sel_A50,
+  Gear_sel_A95,
+  Land_sel_A50,
+  Land_sel_A95,
+  EstLandSelAtAge,
   ret_A50,
   ret_A95,
-  ret_Pmax
+  ret_Pmax,
+  DiscMort
 )
 }
 \arguments{
-\item{EstSelAtAge}{input vector for gear selectivity at age (may be set to NA)}
+\item{EstGearSelAtAge}{input vector for gear selectivity at age (may be set to NA)}
 
 \item{EstRetenAtAge}{input vector for fish retention at age (may be set to NA)}
 
 \item{Ages}{ages for analysis calculated from max age and model timestep}
 
-\item{sel_A50}{logistic gear selectivity curve parameter}
+\item{Gear_sel_A50}{logistic gear selectivity curve parameter}
 
-\item{sel_A95}{logistic gear selectivity curve parameter}
+\item{Gear_sel_A95}{logistic gear selectivity curve parameter}
+
+\item{Land_sel_A50}{logistic parameter for selectivity of landings curve}
+
+\item{Land_sel_A95}{logistic parameter for selectivity of landings curve}
+
+\item{EstLandSelAtAge}{vector for for selectivity of landings at age (set to NA if using age at selectivity of landings parameters)}
 
 \item{ret_A50}{logistic gear retention curve parameter}
 
 \item{ret_A95}{logistic gear retention curve parameter}
 
 \item{ret_Pmax}{logistic gear retention curve parameter}
+
+\item{DiscMort}{proportion of fish that die following capture and release}
 }
 \value{
-FemGearSelAtAge, MalGearSelAtAge, FemRetProbAtAge, MalRetProbAtAge
+FemGearSelAtAge, MalGearSelAtAge, FemRetProbAtAge, MalRetProbAtAge, FemSelLandAtAge, MalSelLandAtAge, FemSelDiscAtAge, MalSelDiscAtAge
 }
 \description{
 Calculate gear selectivity and retention at age, given input parameters or vectors

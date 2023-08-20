@@ -4,16 +4,12 @@
 \alias{GetGrowthModelType}
 \title{Allocate number for alternative length based catch curve models}
 \usage{
-GetGrowthModelType(CatchCurveType, GrowthCurveType, GrowthParams)
+GetGrowthModelType(GrowthCurveType, GrowthParams)
 }
 \arguments{
-\item{CatchCurveType}{1=length based, 2=age and length based}
-
 \item{GrowthCurveType}{1=von Bertalanffy, 2=Schnute}
 
-\item{GrowthParams}{(von Bertalanffy or Schnute growth parameters), GrowthModelType
-1=von Bertalanffy 1 sex, 2= von Bertalanffy 2 sexes, 3=Schnute 1 sex, 4=Schnute 2 sexes, and
-CVSizeAtAge for 1 or 2 sex model}
+\item{GrowthParams}{(von Bertalanffy or Schnute growth parameters)}
 }
 \value{
 GrowthModelType 1=length-based von Bertalanffy, 2=length-based Schnute,

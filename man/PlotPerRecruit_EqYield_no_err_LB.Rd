@@ -26,9 +26,9 @@ PlotPerRecruit_EqYield_no_err_LB(
   mat_A50,
   mat_A95,
   EstMatAtAge,
-  sel_A50,
-  sel_A95,
-  EstSelAtAge,
+  Gear_sel_A50,
+  Gear_sel_A95,
+  EstGearSelAtAge,
   ret_Pmax,
   ret_A50,
   ret_A95,
@@ -128,6 +128,12 @@ PlotPerRecruit_EqYield_no_err_LB(
 
 \item{sel_L95}{logistic parameter for gear selectivity curve}
 
+\item{Land_sel_A50}{logistic parameter for selectivity of landings curve}
+
+\item{Land_sel_A95}{logistic parameter for selectivity of landings curve}
+
+\item{EstLandSelAtAge}{vector for for selectivity of landings at age (set to NA if using age at selectivity of landings parameters)}
+
 \item{ret_L50}{logistic parameter for fish retention curve}
 
 \item{ret_L95}{logistic parameter for fish retention curve}
@@ -192,7 +198,7 @@ Current_F = 0.2
 PlotPerRecruit_EqYield_no_err_LB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
                                              lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale,
                                              ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95,
-                                             mat_A50, mat_A95, EstMatAtAge, sel_A50, sel_A95, EstSelAtAge, ret_Pmax, ret_A50, ret_A95,
+                                             mat_A50, mat_A95, EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, ret_Pmax, ret_A50, ret_A95,
                                              EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, RefPointPlotOpt, Current_F,
                                              MainLabel=NA, xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA, ymax=NA, yint=NA)
 }
