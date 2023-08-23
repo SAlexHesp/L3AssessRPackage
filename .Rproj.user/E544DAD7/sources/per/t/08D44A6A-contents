@@ -2507,7 +2507,7 @@ if (is.na(MLL) & is.na(RetenParams[1])) {
 
   # get expected mean length and associated sd of released fish
   MeanLenReleased = sum((DiscCatchAtLen * midpt)) / sum(DiscCatchAtLen)
-  MeanLenReleased_sd = sqrt((sum((Res$DiscCatchAtLen * (midpt^2))) / sum(DiscCatchAtLen)) - MeanLenReleased^2)
+  MeanLenReleased_sd = sqrt((sum((DiscCatchAtLen * (midpt^2))) / sum(DiscCatchAtLen)) - MeanLenReleased^2)
 }
 
   Results = list(PropReleased = PropReleased,
@@ -2942,6 +2942,7 @@ SimLenAndAgeFreqData <- function(SampleSize, MaxAge, TimeStep, NatMort, FishMort
                    MeanSizeAtAge = MeanSizeAtAge,
                    TimestepGrowthSizeInc = TimestepGrowthSizeInc,
                    MeanEndingLength = MeanEndingLength,
+                   SelAtLength = SelAtLength,
                    RetAtLength = RetAtLength,
                    SelLandAtLength = SelLandAtLength,
                    DiscCatchAtLen = DiscCatchAtLen,
@@ -8869,12 +8870,12 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
          ylab="",xlab="",cex=0.8)
     if (DiscMort == 0) {
       lines(Res$ModelDiag$Ages, Res$ModelDiag$FemSelLandAtAge, "l", col="red",lty="dotted", cex=0.8)
-      legend('bottomright', col=c("red","red"),legend=c("Fem. mature","Fem. reten."),
+      legend('bottomright', col=c("red","red"),legend=c("Fem. mature","Fem. sel_land."),
              lty=c("solid","dotted"),bty='n', cex=0.8,lwd=1.75)
     } else {
       lines(Res$ModelDiag$Ages,Res$ModelDiag$FemSelLandAtAge, "l", col="red",lty="dotted",cex=0.8)
       lines(Res$ModelDiag$Ages,Res$ModelDiag$FemSelDiscAtAge, "l", col="brown",lty="dotted",cex=0.8)
-      legend('bottomright', col=c("red","red","brown"),legend=c("Fem. mature","Fem. land.","Fem. disc."),
+      legend('bottomright', col=c("red","red","brown"),legend=c("Fem. mature","Fem. sel_land.","Fem. disc."),
              lty=c("solid","dotted","dotted"),bty='n', cex=0.8,lwd=1.75)
     }
     axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
@@ -8898,12 +8899,12 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
          ylab="",xlab="", cex=0.8)
     if (DiscMort == 0) {
       lines(Res$ModelDiag$Ages, Res$ModelDiag$FemSelLandAtAge, "l", col="blue",lty="dotted", cex=0.8)
-      legend('bottomright', col=c("blue","blue"),legend=c("Male mature","Male reten."),
+      legend('bottomright', col=c("blue","blue"),legend=c("Male mature","Male sel_land."),
              lty=c("solid","dotted"),bty='n', cex=0.8,lwd=1.75)
     } else {
       lines(Res$ModelDiag$Ages, Res$ModelDiag$FemSelLandAtAge, "l", col="blue",lty="dotted", cex=0.8)
       lines(Res$ModelDiag$Ages, Res$ModelDiag$FemSelDiscAtAge, "l", col="purple",lty="dotted", cex=0.8)
-      legend('bottomright', col=c("blue","blue","purple"),legend=c("Male mature","Male land.", "Male disc."),
+      legend('bottomright', col=c("blue","blue","purple"),legend=c("Male mature","Male sel_land.", "Male disc."),
              lty=c("solid","dotted","dotted"),bty='n', cex=0.8,lwd=1.75)
     }
     axis(1,at=seq(0,xmax,xint), cex.axis=0.8, lwd=1.75,lab=F) # y axis
