@@ -2186,6 +2186,7 @@ SimAgeFreqData <- function(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, 
 #'
 #' @param nTimeSteps number of model timesteps
 #' @param nLenCl number of length classes
+#' @param midpt mid points of length classes
 #' @param RetCatchAtDecAgeLen_Fem expected female retained catches at length and decimal age
 #' @param RetCatchAtDecAgeLen_Mal expected male retained catches at length and decimal age
 #' @param DiscCatchAtDecAgeLen_Fem expected female discarded catches at length and decimal age
@@ -2194,7 +2195,7 @@ SimAgeFreqData <- function(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, 
 #' @return ExpRetCatchPropLengthGivenDecAge_Fem, ExpRetCatchPropLengthGivenDecAge_Mal, ExpDiscCatchPropLengthGivenDecAge_Fem,
 #' ExpDiscCatchPropLengthGivenDecAge_Mal
 #'
-CalcCatchLenPropGivenAge <- function(nTimeSteps, nLenCl, RetCatchAtDecAgeLen_Fem, RetCatchAtDecAgeLen_Mal,
+CalcCatchLenPropGivenAge <- function(nTimeSteps, nLenCl, midpt, RetCatchAtDecAgeLen_Fem, RetCatchAtDecAgeLen_Mal,
                                      DiscCatchAtDecAgeLen_Fem, DiscCatchAtDecAgeLen_Mal) {
 
   EmptyFrame <- data.frame(matrix(nrow = nTimeSteps, ncol = nLenCl))
@@ -2246,6 +2247,7 @@ CalcCatchLenPropGivenAge <- function(nTimeSteps, nLenCl, RetCatchAtDecAgeLen_Fem
 #'
 #' @param nTimeSteps number of model timesteps
 #' @param nLenCl number of length classes
+#' @param midpt mid points of length classes
 #' @param ExpRetCatchPropLengthGivenDecAge_Fem expected female retained catches at length given decimal age
 #' @param ExpRetCatchPropAtDecAge_Fem expected female retained catches at decimal age
 #' @param ExpRetCatchPropLengthGivenDecAge_Mal expected male retained catches at length given decimal age
@@ -2257,7 +2259,7 @@ CalcCatchLenPropGivenAge <- function(nTimeSteps, nLenCl, RetCatchAtDecAgeLen_Fem
 #'
 #' @return ExpRetCatchPropDecAgeGivenLength_Fem, ExpRetCatchPropDecAgeGivenLength_Mal, ExpDiscCatchPropDecAgeGivenLength_Fem,
 #' ExpDiscCatchPropDecAgeGivenLength_Mal
-CalcCatchAgePropGivenLen <- function(nTimeSteps, nLenCl, ExpRetCatchPropLengthGivenDecAge_Fem, ExpRetCatchPropAtDecAge_Fem,
+CalcCatchAgePropGivenLen <- function(nTimeSteps, nLenCl, midpt, ExpRetCatchPropLengthGivenDecAge_Fem, ExpRetCatchPropAtDecAge_Fem,
                                      ExpRetCatchPropLengthGivenDecAge_Mal, ExpRetCatchPropAtDecAge_Mal,
                                      ExpDiscCatchPropLengthGivenDecAge_Fem, ExpDiscCatchPropAtDecAge_Fem,
                                      ExpDiscCatchPropLengthGivenDecAge_Mal, ExpDiscCatchPropAtDecAge_Mal) {
@@ -2814,7 +2816,7 @@ SimLenAndAgeFreqData <- function(SampleSize, MaxAge, TimeStep, NatMort, FishMort
   ExpDiscCatchPropAtDecAge = DiscCatchAtDecAge / sum(DiscCatchAtDecAge)
 
   # Expected catch proportions at length, in each age class
-  CatchLenPropRes = CalcCatchLenPropGivenAge(nTimeSteps, nLenCl, RetCatchAtDecAgeLen_Fem, RetCatchAtDecAgeLen_Mal,
+  CatchLenPropRes = CalcCatchLenPropGivenAge(nTimeSteps, nLenCl, midpt, RetCatchAtDecAgeLen_Fem, RetCatchAtDecAgeLen_Mal,
                                        DiscCatchAtDecAgeLen_Fem, DiscCatchAtDecAgeLen_Mal)
   ExpRetCatchPropLengthGivenDecAge_Fem = CatchLenPropRes$ExpRetCatchPropLengthGivenDecAge_Fem
   ExpRetCatchPropLengthGivenDecAge_Mal = CatchLenPropRes$ExpRetCatchPropLengthGivenDecAge_Mal
@@ -2822,7 +2824,7 @@ SimLenAndAgeFreqData <- function(SampleSize, MaxAge, TimeStep, NatMort, FishMort
   ExpDiscCatchPropLengthGivenDecAge_Mal = CatchLenPropRes$ExpDiscCatchPropLengthGivenDecAge_Mal
 
   # Expected catch proportions at age, given length
-  CatchAgePropRes = CalcCatchAgePropGivenLen(nTimeSteps, nLenCl, ExpRetCatchPropLengthGivenDecAge_Fem, ExpRetCatchPropAtDecAge_Fem,
+  CatchAgePropRes = CalcCatchAgePropGivenLen(nTimeSteps, nLenCl, midpt, ExpRetCatchPropLengthGivenDecAge_Fem, ExpRetCatchPropAtDecAge_Fem,
                                        ExpRetCatchPropLengthGivenDecAge_Mal, ExpRetCatchPropAtDecAge_Mal,
                                        ExpDiscCatchPropLengthGivenDecAge_Fem, ExpDiscCatchPropAtDecAge_Fem,
                                        ExpDiscCatchPropLengthGivenDecAge_Mal, ExpDiscCatchPropAtDecAge_Mal)

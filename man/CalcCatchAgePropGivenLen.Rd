@@ -7,6 +7,7 @@
 CalcCatchAgePropGivenLen(
   nTimeSteps,
   nLenCl,
+  midpt,
   ExpRetCatchPropLengthGivenDecAge_Fem,
   ExpRetCatchPropAtDecAge_Fem,
   ExpRetCatchPropLengthGivenDecAge_Mal,
@@ -21,6 +22,8 @@ CalcCatchAgePropGivenLen(
 \item{nTimeSteps}{number of model timesteps}
 
 \item{nLenCl}{number of length classes}
+
+\item{midpt}{mid points of length classes}
 
 \item{ExpRetCatchPropLengthGivenDecAge_Fem}{expected female retained catches at length given decimal age}
 
