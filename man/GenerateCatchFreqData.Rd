@@ -69,8 +69,12 @@ GenerateCatchFreqData(
 \item{ExpDiscCatchPropDecAgeGivenLength_Mal}{expected male discarded catch prop at decimal age given length}
 }
 \value{
-ExpRetCatchPropLengthGivenDecAge_Fem, ExpRetCatchPropLengthGivenDecAge_Mal, ExpDiscCatchPropLengthGivenDecAge_Fem,
-ExpDiscCatchPropLengthGivenDecAge_Mal
+ObsRetCatchFreqAtLengthAndDecAge_Fem, ObsRetCatchFreqAtLengthAndDecAge_Mal, ObsRetCatchFreqAtLengthAndDecAge,
+ObsDiscCatchFreqAtLengthAndDecAge_Fem, ObsDiscCatchFreqAtLengthAndDecAge_Mal, ObsDiscCatchFreqAtLengthAndDecAge,
+ObsDecAgeRetCatch_Fem, ObsDecAgeRetCatch_Mal, ObsDecAgeRetCatch, ObsDecAgeDiscCatch_Fem, ObsDecAgeDiscCatch_Mal,
+ObsDecAgeDiscCatch, ObsAgeClRetCatch_Fem, ObsAgeClRetCatch_Mal, ObsAgeClRetCatch, ObsAgeClDiscCatch_Fem,
+ObsAgeClDiscCatch_Mal, ObsAgeClDiscCatch, ObsLenClRetCatchMidPt_Fem, ObsLenClRetCatchMidPt_Mal, ObsLenClRetCatchMidPt,
+ObsLenClDiscCatchMidPt_Fem, ObsLenClDiscCatchMidPt_Mal, ObsLenClDiscCatchMidPt
 }
 \description{
 Generate random observed catch frequencies for each length class in each age class, and marginal length and age frequencies
