@@ -6826,7 +6826,7 @@ CalcSelectivityAndRetentionAtAge <- function(EstGearSelAtAge, EstRetenAtAge, Age
   } else if (!is.na(Land_sel_A50[1])) {
     FemSelLandAtAge <- 1/(1+exp(-log(19) * (Ages - Land_sel_A50[1]) / (Land_sel_A95[1] - Land_sel_A50[1])))
     MalSelLandAtAge <- 1/(1+exp(-log(19) * (Ages - Land_sel_A50[2]) / (Land_sel_A95[2] - Land_sel_A50[2])))
-  } else if (!is.na(EstGearSelAtAge[1,1]) & !is.na(FemRetProbAtAge[1,1])) {
+  } else if (!is.na(FemGearSelAtAge[1]) & !is.na(FemRetProbAtAge[1])) {
     FemSelLandAtAge <- FemGearSelAtAge * FemRetProbAtAge
     MalSelLandAtAge <- MalGearSelAtAge * MalRetProbAtAge
   }
