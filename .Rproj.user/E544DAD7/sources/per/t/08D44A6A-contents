@@ -711,9 +711,13 @@ GetLengthBasedCatchCurveResults <- function (params, GrowthCurveType, GrowthPara
 {
   nlmb <- nlminb(params, CalcObjFunc_LengthBasedCatchCurve,
                  gradient = NULL, hessian = TRUE)
-  (hess.out = optimHess(nlmb$par, CalcObjFunc_LengthBasedCatchCurve))
-  (vcov.Params = solve(hess.out))
-  (ses = sqrt(diag(vcov.Params)))
+  hess.out = optimHess(nlmb$par, CalcObjFunc_LengthBasedCatchCurve)
+  vcov.Params = solve(hess.out)
+  ses = sqrt(diag(vcov.Params))
+
+  # compute parameter correlation matrix
+  temp = diag(1/sqrt(diag(vcov.Params)))
+  cor.Params=temp %*% vcov.Params %*% temp
 
   # Get Z estimate and 95 percent confidence limits
   temp = c(nlmb$par[1], nlmb$par[1] + c(-1.96, 1.96) * ses[1]) # logit space
@@ -812,6 +816,7 @@ GetLengthBasedCatchCurveResults <- function (params, GrowthCurveType, GrowthPara
                  params = nlmb$par,
                  convergence = nlmb$convergence,
                  vcov.Params = vcov.Params,
+                 cor.Params = cor.Params,
                  RetCatch_SampleSize = sum(ObsRetCatchFreqAtLen),
                  DiscCatch_SampleSize = sum(ObsDiscCatchFreqAtLen),
                  EstPropRetained = EstPropRetained,
@@ -984,30 +989,28 @@ CalcNLLMargLengthComposition <- function(ObsRetCatchFreqAtLen, ExpRetCatchPropIn
 #' @param SelectivityType 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
 #'
 #' @return values of growth parameters given specified catch curve, growth and selectivity model option
-GetSelectParams_AgeAndLengthBasedCatchCurvesCalcs <- function(params, CatchCurveType, SelectivityType) {
+GetSelectParams_AgeAndLengthBasedCatchCurvesCalcs <- function(Res, params, CatchCurveType, SelectivityType) {
 
-  # get selectivity parameters for length based catch curve model
-
-  L50 = NA
-  L95 = NA
-  L50_ret = NA
-  L95_ret = NA
+  # get selectivity parameters for length based or length and age based catch curve model
+  L50 = NA; L95 = NA
+  L50_ret = NA; L95_ret = NA
 
   if (SelectivityType == 2) { # logistic selectivity
     L50 = exp(params[2])
-    L95 = L50 + exp(params[3])
+    L95 = exp(params[3])
     if (CatchCurveType==1) { # length-based catch curve
       if (length(params)==5) { # estimating logistic selectiviy and logistic retention (using discard and retained catch data)
         L50_ret = exp(params[4])
-        L95_ret = L50_ret + exp(params[5])
+        L95_ret = exp(params[5])
       }
     }
   }
 
-  result = list(L50 = L50,
-                L95 = L95,
-                L50_ret = L50_ret,
-                L95_ret = L95_ret)
+  SelParams = c(L50, L95)
+  RetenParams = c(L50_ret, L95_ret)
+
+  result = list(SelParams = SelParams,
+                RetenParams = RetenParams)
 
   return(result)
 }
@@ -1142,7 +1145,7 @@ GetGrowthInputsForLengthTransitionMatrices <- function(MaxAge, TimeStep, nLenCl,
   # growth calcs for single sex catch curve (or using combined growth curve for both sexes)
   Ages = seq(TimeStep,MaxAge,TimeStep)
   t1=NA; t2=NA; y1=NA; y2=NA; a=NA; b=NA
-
+  Linf = NA
 
   if (GrowthModelType == 1) { # von Bertalanffy, single sex
     Linf = GrowthParams[1]
@@ -1220,7 +1223,8 @@ GetGrowthInputsForLengthTransitionMatrices <- function(MaxAge, TimeStep, nLenCl,
                 y1=y1,
                 y2=y2,
                 a=a,
-                b=b)
+                b=b,
+                Linf=Linf)
 
   return(result)
 }
@@ -1274,7 +1278,6 @@ GetGrowthModelType <- function (GrowthCurveType, GrowthParams)
 #' @param RefnceAges Schnute growth reference ages for 2 sex catch curve models
 #'
 #' @return Linf asymptotic length parameter
-#'
 CalcAsymptoticLengthFromSchnuteParams <- function (GrowthModelType, Res, GrowthParams, RefnceAges)
 {
 
@@ -1290,6 +1293,58 @@ CalcAsymptoticLengthFromSchnuteParams <- function (GrowthModelType, Res, GrowthP
     Linf = max(Linf1,Linf2)
   }
   return(Linf)
+}
+
+#' Calculate penalties for selectivity and reset parameters values when necessary
+#'
+#' This function ensures that the length at 95% selectivity does not exceed Linf, and
+#' that this length is greater than the length at 50% selectivity by at least 2 mm
+#'
+#' @keywords internal
+#' @param Res list of outputs from GetGrowthInputsForLengthTransitionMatrices function
+#' @param GrowthCurveType 1=von Bertalanffy, 2=Schnute
+#' @param GrowthModelType # 1=1 sex, von Bertalanffy, 2=2 sexes, von Bertalanffy, 3=1 sex, Schnute, 4=2 sexes, Schnute
+#' @param GrowthParams input growth parameters
+#' @param Linf input growth reference ages
+#' @param SelectivityType 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
+#' @param SelParams selectivity parameters L50, L95-L50
+#'
+#' @return Linf asymptotic length parameter
+CalcSelectivityPenalties <- function (Res, GrowthCurveType, GrowthModelType, GrowthParams, RefnceAges, SelectivityType, SelParams) {
+
+  if (GrowthCurveType==1) { # von Bertalanffy
+    if (GrowthModelType == 1) { # single sex, von Bertalanffy
+      Linf = Res$Linf
+    } else { # 2 sexes, von Bertalanffy
+      Linf = max(Res$Linf)
+    }
+  }
+
+  if (GrowthCurveType==2) { # Schnute
+    # calc Linf from Schnute growth curve params
+    Linf = CalcAsymptoticLengthFromSchnuteParams(GrowthModelType, Res, GrowthParams, RefnceAges)
+  }
+
+  # ensure L95 < Linf
+  L95_Pen = 0; L50_Pen = 0
+  if (SelectivityType == 2) { # logistic selectivity
+    if (sum(SelParams) > max(Linf)) {
+      L95_Pen = (sum(SelParams) - max(Linf))^2
+      SelParams[2] = max(Linf) - SelParams[1]
+    }
+    # calculate L50 penalty
+    if (SelParams[1] > (sum(SelParams) - 2)) {
+      L50_Pen = ((sum(SelParams) - 2) - SelParams[1])^2
+      SelParams[1] = sum(SelParams) - 2
+    }
+  }
+
+  Results = list(L95_Pen=L95_Pen,
+                 L50_Pen=L50_Pen,
+                 SelParams=SelParams)
+
+  return(Results)
+
 }
 
 #' Calculations for length and age and lengths-based catch curves
@@ -1344,18 +1399,21 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, GrowthCurveType, GrowthPa
                                                MLL, SelectivityType, lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep)
 {
 
-  # get parameters for specified growth curve and catch curve type
-  res = GetSelectParams_AgeAndLengthBasedCatchCurvesCalcs(params, CatchCurveType, SelectivityType)
-  L50 = res$L50; L95 = res$L95; L50_ret = res$L50_ret; L95_ret = res$L95_ret
+  nTimeSteps = length(seq(TimeStep,MaxAge,TimeStep))
+  Ages = seq(TimeStep, MaxAge, TimeStep)
+  AgeCl = floor(round(Ages,6))
+  nAgeCl = length(unique(AgeCl))
+  MinAge = min(AgeCl)
 
   # get GrowthModelType
   if (CatchCurveType==1) { # length based
     GrowthModelType = GetGrowthModelType(GrowthCurveType, GrowthParams)
   }
+
   if (CatchCurveType==2) { # length and age based
     res2=GetGrowthParams_AgeAndLengthBasedCatchCurvesCalcs(params, GrowthCurveType, SelectivityType)
-    GrowthParams = res2$GrowthParams
     GrowthModelType = res2$GrowthModelType
+    GrowthParams = res2$GrowthParams
     CVSizeAtAge = res2$CVSizeAtAge
   }
 
@@ -1367,55 +1425,20 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, GrowthCurveType, GrowthPa
   TimestepGrowthSizeInc = Res$TimestepGrowthSizeInc
   MeanEndingLength = Res$MeanEndingLength
 
-  # calc Linf from Schnute growth curve params, for selectivity penalty function
-  if (GrowthCurveType==2) {
-    Linf = CalcAsymptoticLengthFromSchnuteParams(GrowthModelType, Res, GrowthParams, RefnceAges)
-  }
+  # get parameters for specified growth curve and catch curve type
+  ParamRes = GetSelectParams_AgeAndLengthBasedCatchCurvesCalcs(Res, params, CatchCurveType, SelectivityType)
+  SelParams = ParamRes$SelParams; RetenParams = ParamRes$RetenParams
 
-  # ensure L95 < Linf
-  L95_Pen = 0
-  L50_Pen = 0
-  if (SelectivityType == 2) { # logistic selectivity
-    if (L95 > max(Linf)) {
-      L95_Pen = (L95 - max(Linf))^2
-      L95 = max(Linf)
-    }
-    # calculate L50 penalty
-    if (L50 > (L95 - 2)) {
-      L50_Pen = ((L95 - 2) - L50)^2
-      L50 = L95 - 2
-    }
-  }
+  # ensure L95 < Linf and that L95>L50+2
+  ParamPenRes = CalcSelectivityPenalties(Res, GrowthCurveType, GrowthModelType, GrowthParams, RefnceAges, SelectivityType, SelParams)
+  L95_Pen = ParamPenRes$L95_Pen; L50_Pen = ParamPenRes$L50_Pen; SelParams = ParamPenRes$SelParams
 
-  # selectivity
-  if (SelectivityType == 1) { # inputted as vector
-    SelAtLength = SelectivityVec
-  }
-  if (SelectivityType == 2) { # logistic gear selectivity
-    SelAtLength = CalcLogisticSelOrReten(L50, L95, midpt)
-  }
-
-  # retention
-  if (!is.na(L50_ret)) { # calculate retention curve
-    RetAtLength = CalcLogisticSelOrReten(L50_ret, L95_ret, midpt)
-  } else {
-    if (is.na(MLL)) { # specifying retention as 1, i.e. all fish caught are retained
-      RetAtLength = rep(1,length(midpt))
-    } else { # knife edge retention at MLL
-      RetAtLength = rep(1E-20,length(midpt))
-      RetAtLength[which(midpt>=MLL)]=1
-    }
-  }
+  # get selectivity and retention
+  SelRes = GetSelectivityAndRetention(midpt, SelectivityType, SelParams, SelectivityVec, RetenParams, MLL)
+  SelAtLength = SelRes$SelAtLength; RetAtLength = SelRes$RetAtLength
 
   # get size distribution for juvenile recruits
   RecLenDist = CalcSizeDistOfRecruits(MeanSizeAtAge, CVSizeAtAge, lbnd, ubnd, midpt, nLenCl) # length distribution of 1+ recruits
-
-  nTimeSteps = length(seq(TimeStep,MaxAge,TimeStep))
-  Ages = seq(TimeStep, MaxAge, TimeStep)
-  AgeCl = floor(round(Ages,6))
-  nAgeCl = length(unique(AgeCl))
-  MinAge = min(AgeCl)
-
 
   if (GrowthModelType ==  1 | GrowthModelType == 3) { # single sex
     # Calculate length transition matrix
@@ -1809,9 +1832,13 @@ GetAgeAndLengthBasedCatchCurveResults <- function (params, RefnceAges, MLL, Grow
                  gradient = NULL, hessian = TRUE, control=list(eval.max=1000, iter.max=1000))
 
 
-  (hess.out = optimHess(nlmb$par, CalcObjFunc_AgeAndLengthBasedCatchCurve))
-  (vcov.Params = solve(hess.out))
-  (ses = sqrt(diag(vcov.Params)))
+  hess.out = optimHess(nlmb$par, CalcObjFunc_AgeAndLengthBasedCatchCurve)
+  vcov.Params = solve(hess.out)
+  ses = sqrt(diag(vcov.Params))
+
+  # compute parameter correlation matrix
+  temp = diag(1/sqrt(diag(vcov.Params)))
+  cor.Params=temp %*% vcov.Params %*% temp
 
   # Get estimates of parameters and their 95 percent confidence limits
   ParamEst = GetParamRes_AgeAndLengthBasedCatchCurve(GrowthCurveType, SelectivityType, params, nlmb, ses)
@@ -1834,6 +1861,7 @@ GetAgeAndLengthBasedCatchCurveResults <- function (params, RefnceAges, MLL, Grow
 
   ModelDiag = list(params = nlmb$par,
                    vcov.Params = vcov.Params,
+                   cor.Params = cor.Params,
                    SelAtLength=res$SelAtLength,
                    RetAtLength = res$RetAtLength,
                    SelLandAtLength = res$SelLandAtLength,
@@ -3297,7 +3325,7 @@ PlotLengthBasedCatchCurve_RetCatch <- function(params, MLL, SelectivityType, Obs
   if (is.data.frame(GrowthParams)) {
     lines(midpt, Res$ExpRetCatchPropInLenClass_Fem, lty="dotted", col="dark grey")
     lines(midpt, Res$ExpRetCatchPropInLenClass_Mal, lty="dotted", col="blue")
-    legend("bottomleft", legend=c("Female","Male"), y.intersp = 1.0, inset=c(0.05,0.05),
+    legend("bottomright", legend=c("Female","Male"), y.intersp = 1.0, inset=c(0.05,0.05),
            cex = 0.8, bty="n", lty="dotted", col=c("dark grey","blue"))
   }
   if (PlotCLs == TRUE) {
@@ -6087,9 +6115,14 @@ GetLogisticCatchCurveResults <- function (ln_params, NatMort, Ages, ObsAgeFreq)
   nlmb$objective
   nlmb$convergence
   nlmb$par
-  (hess.out = optimHess(nlmb$par, Calculate_NLL_LogisticCatchCurve))
-  (vcov.Params = solve(hess.out))
-  (ses = sqrt(diag(vcov.Params)))
+  hess.out = optimHess(nlmb$par, Calculate_NLL_LogisticCatchCurve)
+  vcov.Params = solve(hess.out)
+  ses = sqrt(diag(vcov.Params))
+
+  # compute parameter correlation matrix
+  temp = diag(1/sqrt(diag(vcov.Params)))
+  cor.Params=temp %*% vcov.Params %*% temp
+
   EstFMort = c(exp(nlmb$par[1]), exp(nlmb$par[1] + c(-1.96, 1.96) * ses[1]))
   EstSelA50 = c(exp(nlmb$par[2]), exp(nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
   EstSelA95 = c(exp(nlmb$par[3]), exp(nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
@@ -6151,6 +6184,7 @@ GetLogisticCatchCurveResults <- function (ln_params, NatMort, Ages, ObsAgeFreq)
                  ParamEst = ParamEst,
                  Estlnparams = nlmb$par,
                  vcov.Params = vcov.Params,
+                 cor.Params = cor.Params,
                  lnEstFMort_se = ses[1],
                  lnEstSelA50_se = ses[2],
                  lnEstFSelA95_se = ses[3],
@@ -11974,6 +12008,8 @@ PlotPerRecruit_Biom_with_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
   axis(1, at=seq(0, xmax, xint), labels = seq(0, xmax, xint),
        cex.axis=1, line=-0.5, las=1, lwd=1, tick=F)
   axis(2, at=seq(0, ymax, yint), cex.axis=1, line=-0.5, las=1, lwd=1, tick=F)
+  mtext(yaxis_lab, las=3, side=2, line=3, cex=1.2, lwd=1.75)
+  mtext(xaxis_lab, las=1, side=1, line=3, cex=1.2, lwd=1.75)
 
   if (RefPointPlotOpt == 1) {
     lines(abline(h = 0.4, col = "green"))
@@ -11989,8 +12025,6 @@ PlotPerRecruit_Biom_with_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
     legend("topright", col = c("green", "orange", "red"), lty = c("solid", "solid", "solid"),
            legend = c("1.2BMSY", "BMSY",  "0.5BMSY"), bty = "n", cex = 0.8, lwd = 1.75)
   }
-
-
 }
 
 #' Plot of SPR and relative equilibrium biomass vs F from length-based per recruit analysis and extended analysis
@@ -12225,8 +12259,6 @@ PlotPerRecruit_Biom_with_err_LB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
     legend("topright", col = c("green", "orange", "red"), lty = c("solid", "solid", "solid"),
            legend = c("1.2BMSY", "BMSY",  "0.5BMSY"), bty = "n", cex = 0.8, lwd = 1.75)
   }
-
-
 }
 
 
