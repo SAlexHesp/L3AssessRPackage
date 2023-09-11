@@ -665,7 +665,7 @@ VisualiseGrowthApplyingLTM <- function (nFish, TimeStep, MaxAge, Growth_params, 
 #' # InitL50Ret = 410
 #' # InitDeltaRet = 60
 #' # params = c(InitFishMort_logit, log(InitL50), log(InitDelta), log(InitL50Ret), log(InitDeltaRet))
-#' Res=GetLengthBasedCatchCurveResults(params, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
+#' FittedRes=GetLengthBasedCatchCurveResults(params, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
 #'                                     lbnd, ubnd, midpt, SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
 #' # Example with selectivity specified as a vector
 #' # Simulate data
@@ -682,6 +682,7 @@ VisualiseGrowthApplyingLTM <- function (nFish, TimeStep, MaxAge, Growth_params, 
 #' lbnd = seq(0,MaxLen - LenInc, LenInc)
 #' midpt = lbnd + (LenInc/2)
 #' SelectivityVec = 1 / (1 + exp(-log(19)*(midpt-400)/(500-400)))
+#' PropReleased = NA
 #' SelParams = c(NA, NA) # L50, L95-L50 for gear selectivity
 #' RetenParams = c(NA, NA) # L50, L95-L50 for retention
 #' DiscMort = 0 # proportion of fish that die due to natural mortality
@@ -703,7 +704,7 @@ VisualiseGrowthApplyingLTM <- function (nFish, TimeStep, MaxAge, Growth_params, 
 #' InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform
 #' params = c(InitFishMort_logit)
 #'
-#' Res=GetLengthBasedCatchCurveResults(params, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
+#' FittedRes=GetLengthBasedCatchCurveResults(params, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
 #'                                     lbnd, ubnd, midpt, SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
 #' @export
 GetLengthBasedCatchCurveResults <- function (params, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
@@ -716,13 +717,18 @@ GetLengthBasedCatchCurveResults <- function (params, GrowthCurveType, GrowthPara
   ses = sqrt(diag(vcov.Params))
 
   # compute parameter correlation matrix
-  temp = diag(1/sqrt(diag(vcov.Params)))
-  cor.Params=temp %*% vcov.Params %*% temp
+  cor.Params = NA
+  if (length(params)>1) {
+    temp = diag(1/sqrt(diag(vcov.Params)))
+    cor.Params=temp %*% vcov.Params %*% temp
+  }
 
   # Get Z estimate and 95 percent confidence limits
   temp = c(nlmb$par[1], nlmb$par[1] + c(-1.96, 1.96) * ses[1]) # logit space
   EstFMort = 1/(1+exp(-temp)) # inverse logit transformed value
 
+  EstL50_sel = NA; EstDelta_sel = NA
+  EstL50_ret = NA; EstDelta_ret = NA
   if (SelectivityType == 1) { # inputted as specified selectivity vector
     ParamEst = t(data.frame(FMort = round(EstFMort, 2)))
   }
@@ -751,19 +757,16 @@ GetLengthBasedCatchCurveResults <- function (params, GrowthCurveType, GrowthPara
   # calculate approximate cv for lengths at max age (growth diagnostic), if single timestep
   CV_LenAtMaxAge_Results = GetMaxLenAtAgeCV_AgeAndLengthBasedCatchCurve(TimeStep, res, MaxAge)
 
-  # get expected proportions of fish that are retained and released
-  EstPropReleased = sum(res$DiscCatchAtLen) / sum(res$TotCatchAtLen)
-  EstPropRetained = 1 - EstPropReleased
+  # get summary statistics relating to retained fish
+  RetCatchAtLen = ObsRetCatchFreqAtLen;
+  DiscCatchAtLen = ObsDiscCatchFreqAtLen
+  TotCatchAtLen = RetCatchAtLen + DiscCatchAtLen;
+  SampleSize = sum(TotCatchAtLen)
+  RetStats = GetRetainedCatchStats(midpt, RetCatchAtLen, TotCatchAtLen, SampleSize)
 
-  # get expected mean lengths of retained and released fish, and sample sizes
-  if (is.na(ObsDiscCatchFreqAtLen[1])) {
-    DiscCatch_SampleSize = 0
-    ExpMeanLenReleased = NA
-  } else {
-    DiscCatch_SampleSize = sum(ObsDiscCatchFreqAtLen)
-    ExpMeanLenReleased = sum((res$DiscCatchAtLen * res$midpt)) / sum(res$DiscCatchAtLen)
-  }
-  ExpMeanLenRetained = sum((res$RetCatchAtLen * res$midpt)) / sum(res$RetCatchAtLen)
+  # get summary statistics relating to discarded fish
+  RetenParams = c(EstL50_ret[1], EstDelta_ret[1])
+  DiscStats = GetDiscardCatchStats(midpt, MLL, RetenParams, DiscCatchAtLen, TotCatchAtLen, SampleSize)
 
   ModelDiag = list(midpt=res$midpt,
                    MeanSizeAtAge=res$MeanSizeAtAge,
@@ -806,11 +809,15 @@ GetLengthBasedCatchCurveResults <- function (params, GrowthCurveType, GrowthPara
                         convergence = nlmb$convergence,
                         nll = nlmb$objective,
                         RetCatch_SampleSize = sum(ObsRetCatchFreqAtLen),
-                        DiscCatch_SampleSize = DiscCatch_SampleSize,
-                        EstPropRetained = EstPropRetained,
-                        EstPropReleased = EstPropReleased,
-                        ExpMeanLenReleased = ExpMeanLenReleased,
-                        ExpMeanLenRetained = ExpMeanLenRetained)
+                        DiscCatch_SampleSize = sum(ObsRetCatchFreqAtLen),
+                        PropRetained = RetStats$PropRetained,
+                        PropRetained_sd = RetStats$PropRetained_sd,
+                        MeanLenRetained = RetStats$MeanLenRetained,
+                        MeanLenRetained_sd = RetStats$MeanLenRetained_sd,
+                        PropReleased = DiscStats$PropReleased,
+                        PropReleased_sd = DiscStats$PropReleased_sd,
+                        MeanLenReleased = DiscStats$MeanLenReleased,
+                        MeanLenReleased_sd = DiscStats$MeanLenReleased_sd)
 
   Results = list(ParamEst = ParamEst,
                  params = nlmb$par,
@@ -819,10 +826,6 @@ GetLengthBasedCatchCurveResults <- function (params, GrowthCurveType, GrowthPara
                  cor.Params = cor.Params,
                  RetCatch_SampleSize = sum(ObsRetCatchFreqAtLen),
                  DiscCatch_SampleSize = sum(ObsDiscCatchFreqAtLen),
-                 EstPropRetained = EstPropRetained,
-                 EstPropReleased = EstPropReleased,
-                 ExpMeanLenReleased = ExpMeanLenReleased,
-                 ExpMeanLenRetained = ExpMeanLenRetained,
                  ResultsSummary = ResultsSummary,
                  ModelDiag = ModelDiag)
 
@@ -2578,6 +2581,38 @@ if (is.na(MLL) & is.na(RetenParams[1])) {
 
 }
 
+#' Get retained catch summary statistics
+#'
+#' Calculate prop retained and mean length of retained fish
+#'
+#' @keywords internal
+#'
+#' @param midpt mid points of length classes
+#' @param RetCatchAtLen discarded catch at length
+#' @param TotCatchAtLen total catch at length
+#' @param SampleSize sample sizes
+#'
+#' @return PropReleased, PropReleased_sd, MeanLenReleased, MeanLenReleased_sd
+GetRetainedCatchStats <- function(midpt, RetCatchAtLen, TotCatchAtLen, SampleSize) {
+
+    # get expected proportion and associated sd of fish that are retained
+    PropRetained = sum(RetCatchAtLen) / sum(TotCatchAtLen)
+    PropRetained_sd = sqrt(PropRetained * (1 - PropRetained)) / sum(SampleSize)
+
+    # get expected mean length and associated sd of released fish
+    MeanLenRetained = sum((RetCatchAtLen * midpt)) / sum(RetCatchAtLen)
+    MeanLenRetained_sd = sqrt((sum((RetCatchAtLen * (midpt^2))) / sum(RetCatchAtLen)) - MeanLenRetained^2)
+
+  Results = list(PropRetained = PropRetained,
+                 PropRetained_sd = PropRetained_sd,
+                 MeanLenRetained = MeanLenRetained,
+                 MeanLenRetained_sd = MeanLenRetained_sd)
+
+  return(Results)
+
+}
+
+
 #' Get fish selectivity and retention vectors
 #'
 #' Get fish selectivity and retention vectors, depending on user inputs
@@ -2599,9 +2634,13 @@ GetSelectivityAndRetention <- function(midpt, SelectivityType, SelParams, Select
     SelAtLength = SelectivityVec
   }
   if (SelectivityType == 2) { # logistic gear selectivity
-    L50=SelParams[1]
-    L95=L50 + SelParams[2]
-    SelAtLength = CalcLogisticSelOrReten(L50, L95, midpt)
+    if (!is.na(SelParams[1])) { # calculate selectivity curve
+      L50=SelParams[1]
+      L95=L50 + SelParams[2]
+      SelAtLength = CalcLogisticSelOrReten(L50, L95, midpt)
+    } else { # selectivity curve is unknown.
+      cat("Gear selectivity params or a selectivity vector needs to be specified",'\n')
+    }
   }
 
   # retention
@@ -3077,6 +3116,9 @@ SimLenAndAgeFreqData <- function(SampleSize, MaxAge, TimeStep, NatMort, FishMort
   CatchRes = GetRetCatchFreqAtLenAndIntAge(TimeStep, MaxAge, midpt, nLenCl, ObsAgeClRetCatch_Fem, ObsAgeClRetCatch_Mal,
                                          ObsLenClRetCatchMidPt_Fem, ObsLenClRetCatchMidPt_Mal)
 
+  # get summary statistics relating to retained fish
+  RetStats = GetRetainedCatchStats(midpt, RetCatchAtLen, TotCatchAtLen, SampleSize)
+
   # get summary statistics relating to discarded fish
   DiscStats = GetDiscardCatchStats(midpt, MLL, RetenParams, DiscCatchAtLen, TotCatchAtLen, SampleSize)
 
@@ -3120,6 +3162,10 @@ SimLenAndAgeFreqData <- function(SampleSize, MaxAge, TimeStep, NatMort, FishMort
                    ObsAgeClDiscCatch = CatchFreqRes$ObsAgeClDiscCatch,
                    ObsAgeClDiscCatch_Fem = CatchFreqRes$ObsAgeClDiscCatch_Fem,
                    ObsAgeClDiscCatch_Mal = CatchFreqRes$ObsAgeClDiscCatch_Mal,
+                   PropRetained = RetStats$PropRetained,
+                   PropRetained_sd = RetStats$PropRetained_sd,
+                   MeanLenRetained = RetStats$MeanLenRetained,
+                   MeanLenRetained_sd = RetStats$MeanLenRetained_sd,
                    PropReleased = DiscStats$PropReleased,
                    PropReleased_sd = DiscStats$PropReleased_sd,
                    MeanLenReleased = DiscStats$MeanLenReleased,
@@ -3707,9 +3753,9 @@ PlotLengthBasedCatchCurve_Selectivity <- function(params, MLL, SelectivityType, 
 
 
   if (SelectivityType == 1) { # input selectivity as vector
-    EstProp.sim = SelAtLength
-    EstProp.sim_low = SelAtLength
-    EstProp.sim_up = SelAtLength
+    EstProp.sim = SelectivityVec
+    EstProp.sim_low = SelectivityVec
+    EstProp.sim_up = SelectivityVec
   }
 
   if (is.na(xaxis_lab)) xaxis_lab = "Length (mm)"
