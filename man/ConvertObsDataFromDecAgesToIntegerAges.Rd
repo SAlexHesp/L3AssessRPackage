@@ -21,7 +21,7 @@ ConvertObsDataFromDecAgesToIntegerAges(
 \item{ObsRetCatchFreqAtLengthAndAge}{observed decimal age and length frequency data}
 }
 \value{
-ObsCatchFreqAtLengthAndIntAge
+ObsRetCatchFreqAtLengthAndIntAge
 }
 \description{
 Convert observed length and age data from decimal ages to integer age classes, used in age and

@@ -4,19 +4,33 @@
 \alias{GetRetainedCatchStats}
 \title{Get retained catch summary statistics}
 \usage{
-GetRetainedCatchStats(midpt, RetCatchAtLen, TotCatchAtLen, SampleSize)
+GetRetainedCatchStats(
+  ObsRetCatchFreqAtLen,
+  ObsTotCatchAtLen,
+  ObsLenClRetCatchMidPt_Fem,
+  ObsLenClRetCatchMidPt_Mal,
+  ObsAgeClRetCatch_Fem,
+  ObsAgeClRetCatch_Mal
+)
 }
 \arguments{
-\item{midpt}{mid points of length classes}
+\item{ObsRetCatchFreqAtLen}{randomly-generated length frequency data for retained fish}
 
-\item{RetCatchAtLen}{discarded catch at length}
+\item{ObsTotCatchAtLen}{randomly-generated length frequency data for retained and discarded fish}
 
-\item{TotCatchAtLen}{total catch at length}
+\item{ObsLenClRetCatchMidPt_Fem}{randomly-generated length data for females}
 
-\item{SampleSize}{sample sizes}
+\item{ObsLenClRetCatchMidPt_Mal}{randomly-generated length data for males}
+
+\item{ObsAgeClRetCatch_Fem}{randomly-generated age class data for females}
+
+\item{ObsAgeClRetCatch_Mal}{randomly-generated length class data for females}
 }
 \value{
-PropReleased, PropReleased_sd, MeanLenReleased, MeanLenReleased_sd
+ObsPropRetFish, ObsPropRetFish_sd, ObsMeanLenRetFish_Fem, ObsMeanLenRetFish_Mal, ObsMeanLenRetFish,
+ObsLenRetFish_sd_Fem, ObsLenRetFish_sd_Mal, ObsLenRetFish_sd, ObsMeanLenRetFish_sd_Fem, ObsMeanLenRetFish_sd_Mal,
+ObsMeanLenRetFish_sd, ObsMeanAgeRetFish_Fem, ObsMeanAgeRetFish_Mal, ObsMeanAgeRetFish, ObsAgeRetFish_sd_Fem,
+ObsAgeRetFish_sd_Mal, ObsAgeRetFish_sd, ObsMeanAgeRetFish_sd_Fem, ObsMeanAgeRetFish_sd_Mal, ObsMeanAgeRetFish_sd
 }
 \description{
 Calculate prop retained and mean length of retained fish

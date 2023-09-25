@@ -5,29 +5,38 @@
 \title{Get discarded catch summary statistics}
 \usage{
 GetDiscardCatchStats(
-  midpt,
   MLL,
   RetenParams,
-  DiscCatchAtLen,
-  TotCatchAtLen,
-  SampleSize
+  ObsDiscCatchFreqAtLen,
+  ObsTotCatchAtLen,
+  ObsLenClDiscCatchMidPt_Fem,
+  ObsLenClDiscCatchMidPt_Mal,
+  ObsAgeClDiscCatch_Fem,
+  ObsAgeClDiscCatch_Mal
 )
 }
 \arguments{
-\item{midpt}{mid points of length classes}
-
 \item{MLL}{minimum legal length}
 
 \item{RetenParams}{parameters for fish retention}
 
-\item{DiscCatchAtLen}{discarded catch at length}
+\item{ObsDiscCatchFreqAtLen}{randomly-generated length frequency data for discarded fish}
 
-\item{TotCatchAtLen}{total catch at length}
+\item{ObsTotCatchAtLen}{randomly-generated length frequency data for discarded and retained fish}
 
-\item{SampleSize}{sample sizes}
+\item{ObsLenClDiscCatchMidPt_Fem}{randomly-generated length data for discarded females}
+
+\item{ObsLenClDiscCatchMidPt_Mal}{randomly-generated length data for discarded males}
+
+\item{ObsAgeClDiscCatch_Fem}{randomly-generated age data for discarded females}
+
+\item{ObsAgeClDiscCatch_Mal}{randomly-generated age data for discarded males}
 }
 \value{
-PropReleased, PropReleased_sd, MeanLenReleased, MeanLenReleased_sd
+ObsPropDiscFish, ObsPropDiscFish_sd, ObsMeanLenDiscFish_Fem, ObsMeanLenDiscFish_Mal, ObsMeanLenDiscFish,
+ObsLenDiscFish_sd_Fem, ObsLenDiscFish_sd_Mal, ObsLenDiscFish_sd, ObsMeanLenDiscFish_sd_Fem, ObsMeanLenDiscFish_sd_Mal,
+ObsMeanLenDiscFish_sd, ObsMeanAgeDiscFish_Fem, ObsMeanAgeDiscFish_Mal, ObsMeanAgeDiscFish, ObsAgeDiscFish_sd_Fem,
+ObsAgeDiscFish_sd_Mal, ObsAgeDiscFish_sd, ObsMeanAgeDiscFish_sd_Fem, ObsMeanAgeDiscFish_sd_Mal, ObsMeanAgeDiscFish_sd
 }
 \description{
 Calculate prop discarded and mean length of discarded fish

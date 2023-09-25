@@ -25,8 +25,9 @@ SimLenAndAgeFreqData(
 )
 }
 \arguments{
-\item{SampleSize}{required same size, single value generates same number of retained and discarded fish,
-# can also specify vector, e.g. SampleSize=c(10000, 2000), produces 10000 retained fish, 2000 discarded fish}
+\item{SampleSize}{required same size, single value generates this number of retained fish, and routines
+then determines an expected sample size for discarded fish based on input assumptions for selectivity and
+retention. Can also specify vector, e.g. SampleSize=c(10000, 2000) produces 10000 retained fish, 2000 discarded fish}
 
 \item{MaxAge}{maximum age}
 

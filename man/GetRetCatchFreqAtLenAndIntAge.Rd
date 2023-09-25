@@ -2,7 +2,7 @@
 % Please edit documentation in R/L3Analyses.R
 \name{GetRetCatchFreqAtLenAndIntAge}
 \alias{GetRetCatchFreqAtLenAndIntAge}
-\title{Get catch frequencies at length and integer ages}
+\title{Get retained catch frequencies at length in each integer age, and in each age class}
 \usage{
 GetRetCatchFreqAtLenAndIntAge(
   TimeStep,
@@ -33,9 +33,10 @@ GetRetCatchFreqAtLenAndIntAge(
 \item{ObsLenClRetCatchMidPt_Mal}{generated male catch in each length class}
 }
 \value{
-ObsCatchFreqAtLengthAndIntAge_Fem, ObsCatchFreqAtLengthAndIntAge_Mal, ObsCatchFreqAtLengthAndIntAge
+ObsRetCatchFreqAtLengthAndIntAge_Fem, ObsRetCatchFreqAtLengthAndIntAge_Mal, ObsRetCatchFreqAtLengthAndIntAge,
+ObsRetCatchFreqAtIntAge_Fem, ObsRetCatchFreqAtIntAge_Mal, ObsRetCatchFreqAtIntAge
 }
 \description{
-Get catch frequencies in each of the length classes at each integer age
+Get retained catch frequencies in each of the length classes at each integer age, and in each age class
 }
 \keyword{internal}
