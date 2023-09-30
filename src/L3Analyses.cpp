@@ -195,11 +195,11 @@ List CalcCatches_AgeAndLengthBasedCatchCurves_cpp(NumericVector params, const do
                       Named("Fish_NPerRec") = Fish_NPerRec,
                       Named("FAtLen") = FAtLen,
                       Named("ZAtLen") = ZAtLen,
+                      Named("FAtLenCapt") = FAtLenCapt,
                       Named("FAtLenReten") = FAtLenReten,
                       Named("FAtLenDisc") = FAtLenDisc);
 
 } // end function
-
 
 // [[Rcpp::export]]
 NumericMatrix CalcLTM_cpp(NumericVector TimeStepGrowthSizeInc, const double CVSizeAtAge,

@@ -1,11 +1,17 @@
 {
     "args": [
         "-std=gnu++17",
-        "-IC:/~/R-4.3.0/include",
+        "-IC:/~/R-4.3.1/include",
         "-DNDEBUG",
-        "-IC:/~/R-4.3.0/library/Rcpp/include",
+        "-IC:/Users/ash/AppData/Local/R/win-library/4.3/Rcpp/include",
         "-DEIGEN_DONT_VECTORIZE",
         "-nostdinc",
+        "-Ic:/rtools43/x86_64~1.pos/bin/../lib/gcc/x86_64-w64-mingw32.static.posix/12.2.0/include/c++",
+        "-Ic:/rtools43/x86_64~1.pos/bin/../lib/gcc/x86_64-w64-mingw32.static.posix/12.2.0/include/c++/x86_64-w64-mingw32.static.posix",
+        "-Ic:/rtools43/x86_64~1.pos/bin/../lib/gcc/x86_64-w64-mingw32.static.posix/12.2.0/include/c++/backward",
+        "-Ic:/rtools43/x86_64~1.pos/bin/../lib/gcc/x86_64-w64-mingw32.static.posix/12.2.0/include",
+        "-Ic:/rtools43/x86_64~1.pos/bin/../lib/gcc/x86_64-w64-mingw32.static.posix/12.2.0/../../../../include",
+        "-Ic:/rtools43/x86_64~1.pos/bin/../lib/gcc/x86_64-w64-mingw32.static.posix/12.2.0/include-fixed",
         "-include",
         "C:/~/L3AssessRPackage/.Rproj.user/E544DAD7/compilation-database/mingw64/cpp-definitions.h"
     ],
@@ -13,6 +19,6 @@
     "is_cpp": true,
     "hash": "1685164109",
     "compiler": "6762244524107556826",
-    "rversion": "4.3.0",
+    "rversion": "4.3.1",
     "dbversion": 4
 }

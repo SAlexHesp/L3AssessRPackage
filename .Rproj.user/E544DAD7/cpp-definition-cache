@@ -1,10 +1,10 @@
 [
     {
         "file": "C:/~/L3AssessRPackage/src/L3Analyses.cpp",
-        "file_last_write": 1688711022.0,
+        "file_last_write": 1696062808.0,
         "definitions": [
             {
-                "usr": "c:@F@CalcExpCatchPropIntAgeGivenLength_cpp#1I#1I#I#I#",
+                "usr": "c:@F@CalcExpCatchPropIntAgeGivenLength_cpp#1I#1I#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "CalcExpCatchPropIntAgeGivenLength_cpp(const int, const int, Rcpp::NumericMatrix, Rcpp::NumericVector)",
@@ -14,7 +14,7 @@
                 "hidden": false
             },
             {
-                "usr": "c:@F@CalcNLLCondAgeAtLength_cpp#1I#1I#I#I#",
+                "usr": "c:@F@CalcNLLCondAgeAtLength_cpp#1I#1I#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "CalcNLLCondAgeAtLength_cpp(const int, const int, Rcpp::NumericMatrix, Rcpp::NumericVector)",
@@ -24,7 +24,7 @@
                 "hidden": false
             },
             {
-                "usr": "c:@F@CalcCatches_AgeAndLengthBasedCatchCurves_cpp#I#1d#I#1d#1I#1d#1I#1I#I#I#I#1d#I#",
+                "usr": "c:@F@CalcCatches_AgeAndLengthBasedCatchCurves_cpp#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#1d#S0_#1d#1I#1d#1I#1I#S0_#S0_#S0_#1d#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "CalcCatches_AgeAndLengthBasedCatchCurves_cpp(Rcpp::NumericVector, const double, Rcpp::NumericVector, const double, const int, const double, const int, const int, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, const double, Rcpp::NumericMatrix)",
@@ -34,7 +34,7 @@
                 "hidden": false
             },
             {
-                "usr": "c:@F@CalcLTM_cpp#I#1d#I#I#I#1I#",
+                "usr": "c:@F@CalcLTM_cpp#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#1d#S0_#S0_#S0_#1I#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "CalcLTM_cpp(Rcpp::NumericVector, const double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, const int)",
@@ -44,7 +44,7 @@
                 "hidden": false
             },
             {
-                "usr": "c:@F@UpdateGrowthAndSurvival_cpp#1I#1d#1I#1I#1d#I#1d#I#I#I#I#I#I#I#1d#I#I#",
+                "usr": "c:@F@UpdateGrowthAndSurvival_cpp#1I#1d#1I#1I#1d#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#1d#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S0_#S0_#S1_#S1_#1d#S1_#S1_#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "UpdateGrowthAndSurvival_cpp(const int, const double, const int, const int, const double, Rcpp::NumericMatrix, const double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, const double, Rcpp::NumericVector, Rcpp::NumericVector)",
