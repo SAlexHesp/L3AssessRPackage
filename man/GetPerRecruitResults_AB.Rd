@@ -201,7 +201,7 @@ TimeStep <- 1 # Model time step (y) (for shorter-lived species, might be appropr
 Linf <- c(1000, 1000) # mm - von Bertalanffy growth model parameters - Females, males
 vbK <- c(0.1, 0.1) # year-1 - von Bertalanffy growth model parameters - Females, males
 tzero <- c(0, 0) # years - von Bertalanffy growth model parameters - Females, males
-EstLenAtAge <- data.frame(EstMalLenAtAge=NA, EstMalLenAtAge=NA) # length at age (from age 0), inputted as values in data frame
+EstLenAtAge <- data.frame(EstFemLenAtAge=NA, EstMalLenAtAge=NA) # length at age (from age 0), inputted as values in data frame
 lenwt_a <- NA # combined sexes - weight (g) vs length (mm, TL) relationship parameters
 ln_lenwt_a <- -11.0 # for log-log relationship
 lenwt_b <- 3.0 # combined sexes - weight (g) vs length (mm, TL) relationship parameters
