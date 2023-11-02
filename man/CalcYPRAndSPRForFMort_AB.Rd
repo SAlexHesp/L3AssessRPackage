@@ -164,14 +164,14 @@ mat_A95 <- c(3.5, 3.5) # females, males - Logistic length (mm) at maturity relat
 EstMatAtAge <- data.frame(EstFemMatAtAge=NA, EstMalMatAtAge=NA) # maturity at age (from age 0), inputted as values in data frame
 Gear_sel_A50 <- NA # females, males - Logistic age selectivity relationship parameters
 Gear_sel_A95 <- NA # females, males - Logistic age selectivity relationship parameters
-EstGearSelAtAge <- data.frame(EstFemSelAtAge=NA, EstMalSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
+EstGearSelAtAge <- data.frame(FemGearSelAtAge=NA, MalGearSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
 Land_sel_A50 <- c(2.5, 2.5) # females, males - Logistic age selectivity relationship parameters
 Land_sel_A95 <- c(3.5, 3.5) # females, males - Logistic age selectivity relationship parameters
-EstLandSelAtAge <- data.frame(EstFemSelAtAge=NA, EstMalSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
+EstLandSelAtAge <- data.frame(FemSelLandAtAge=NA, MalSelLandAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
 ret_Pmax <- NA  # maximum retention, values lower than 1 imply discarding of fish above MLL
 ret_A50 <- NA  # females, males - Logistic age fish retention at age parameters
 ret_A95 <- NA  # females, males - Logistic age fish retention at age parameters
-EstRetenAtAge <- data.frame(EstFemRetenAtAge=NA, EstMalRetenAtAge=NA) # fish retention at age (from age 0), inputted as values in data frame
+EstRetenAtAge <- data.frame(FemRetProbAtAge=NA, MalRetProbAtAge=NA) # fish retention at age (from age 0), inputted as values in data frame
 DiscMort <- 0.0 # discard mortality (e.g. 50\% released fish die = 0.5)
 Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
 SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
@@ -205,16 +205,16 @@ FinalSex_A95 <- 60 # Logistic sex change relationship parameters (95\% of max pr
 mat_A50 <- c(20, 20) # females, males - Logistic length (mm) at maturity relationship parameters
 mat_A95 <- c(30, 30) # females, males - Logistic length (mm) at maturity relationship parameters
 EstMatAtAge <- data.frame(EstFemMatAtAge=NA, EstMalMatAtAge=NA) # maturity at age (from age 0), inputted as values in data frame
-Gear_sel_A50 <- NA # females, males - Logistic age selectivity relationship parameters
-Gear_sel_A95 <- NA # females, males - Logistic age selectivity relationship parameters
-EstGearSelAtAge <- data.frame(EstFemSelAtAge=NA, EstMalSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
-Land_sel_A50 <- c(2.5, 2.5) # females, males - Logistic age selectivity relationship parameters
-Land_sel_A95 <- c(3.5, 3.5) # females, males - Logistic age selectivity relationship parameters
-EstLandSelAtAge <- data.frame(EstFemSelAtAge=NA, EstMalSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
+Gear_sel_A50 <- c(20, 20) # females, males - Logistic age selectivity relationship parameters
+Gear_sel_A95 <- c(30, 30) # females, males - Logistic age selectivity relationship parameters
+EstGearSelAtAge <- data.frame(FemGearSelAtAge=NA, MalGearSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
+Land_sel_A50 <- c(25, 25) # females, males - Logistic age selectivity relationship parameters
+Land_sel_A95 <- c(35, 35) # females, males - Logistic age selectivity relationship parameters
+EstLandSelAtAge <- data.frame(FemSelLandAtAge=NA, MalSelLandAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
 ret_Pmax <- NA  # maximum retention, values lower than 1 imply discarding of fish above MLL
 ret_A50 <- NA  # females, males - Logistic age fish retention at age parameters
 ret_A95 <- NA  # females, males - Logistic age fish retention at age parameters
-EstRetenAtAge <- data.frame(EstFemRetenAtAge=NA, EstMalRetenAtAge=NA) # fish retention at age (from age 0), inputted as values in data frame
+EstRetenAtAge <- data.frame(FemRetProbAtAge=NA, MalRetProbAtAge=NA) # fish retention at age (from age 0), inputted as values in data frame
 DiscMort <- 0.0 # discard mortality (e.g. 50\% released fish die = 0.5)
 Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
 SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker

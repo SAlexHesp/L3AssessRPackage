@@ -1312,7 +1312,9 @@ CalcAsymptoticLengthFromSchnuteParams <- function (GrowthModelType, Res, GrowthP
 
   if (GrowthModelType == 3) { # Schnute single sex
     t1=Res$t1; t2=Res$t2; y1=Res$y1; y2=Res$y2; a=Res$a; b=Res$b
+    if (a <= 0) a=0.01
     Linf = ((exp(a*t2)*y2^b-exp(a*t1)*y1^b)/(exp(a*t2)-exp(a*t1)))^(1/b)
+    # cat("CalcAsymptoticLengthFromSchnuteParams2: a = ",a,"b = ",b, "y1 =",y1, "y2 =",y2,"Linf = ",Linf,'\n')
   }
   if (GrowthModelType == 4) { # Schnute separate sexes
     t1=RefnceAges[,1]; t2=RefnceAges[,2]; y1=GrowthParams[,1]; y2=GrowthParams[,2];
@@ -1357,6 +1359,9 @@ CalcSelectivityPenalties <- function (Res, GrowthCurveType, GrowthModelType, Gro
   # ensure L95 < Linf
   L95_Pen = 0; L50_Pen = 0
   if (SelectivityType == 2) { # logistic selectivity
+    # cat("CalcSelectivityPenalties: GrowthParams = ",GrowthParams,'\n')
+    # cat("CalcSelectivityPenalties: SelParams = ",SelParams,'\n')
+    # cat("CalcSelectivityPenalties: Linf = ",Linf,'\n')
     if (sum(SelParams) > max(Linf)) {
       L95_Pen = (sum(SelParams) - max(Linf))^2
       SelParams[2] = max(Linf) - SelParams[1]
@@ -1444,6 +1449,7 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, GrowthCurveType, GrowthPa
     GrowthModelType = res2$GrowthModelType
     GrowthParams = res2$GrowthParams
     CVSizeAtAge = res2$CVSizeAtAge
+    # cat("AgeAndLengthBasedCatchCurvesCalcs: GrowthParams =", GrowthParams,"\n")
   }
 
   # get key inputs for length transition matrices
@@ -3965,8 +3971,9 @@ PlotSimLenAndAgeFreqData <- function(MaxAge, MaxLen, SimRes, PlotOpt) {
     xlims = Get_xaxis_scale(SimRes$midpt)
     xmax = xlims$xmax
     xint = xlims$xint
-    ymax = 0.5
-    yint = 0.1
+    ylims = Get_yaxis_scale(c(0,SimRes$ModelDiag$FAtLen_Fem))
+    ymax = ylims$ymax
+    yint = ylims$yint
     yaxis_lab = expression(paste(italic("F") ~ (year^{-1})))
     xaxis_lab = "Length (mm)"
     plot(SimRes$midpt, SimRes$ModelDiag$FAtLen_Fem, "l", main="F (retention + discard mortality)", cex.main=1.0, pch=1, cex=0.6,
@@ -3983,8 +3990,9 @@ PlotSimLenAndAgeFreqData <- function(MaxAge, MaxLen, SimRes, PlotOpt) {
     xlims = Get_xaxis_scale(SimRes$midpt)
     xmax = xlims$xmax
     xint = xlims$xint
-    ymax = 0.5
-    yint = 0.1
+    ylims = Get_yaxis_scale(c(0,SimRes$ModelDiag$FAtLen_Fem))
+    ymax = ylims$ymax
+    yint = ylims$yint
     yaxis_lab = expression(paste(italic("F") ~ (year^{-1})))
     xaxis_lab = "Length (mm)"
     plot(SimRes$midpt, SimRes$ModelDiag$FAtLenReten_Fem, "l", main="F (retention)", cex.main=1.0, pch=1, cex=0.6,
@@ -4001,8 +4009,9 @@ PlotSimLenAndAgeFreqData <- function(MaxAge, MaxLen, SimRes, PlotOpt) {
     xlims = Get_xaxis_scale(SimRes$midpt)
     xmax = xlims$xmax
     xint = xlims$xint
-    ymax = 0.5
-    yint = 0.1
+    ylims = Get_yaxis_scale(c(0,SimRes$ModelDiag$FAtLen_Fem))
+    ymax = ylims$ymax
+    yint = ylims$yint
     yaxis_lab = expression(paste(italic("F") ~ (year^{-1})))
     xaxis_lab = "Length (mm)"
     plot(SimRes$midpt, SimRes$ModelDiag$FAtLenDisc_Fem*DiscMort, "l", main="F (discard mortality)", cex.main=1.0, pch=1, cex=0.6,
@@ -5791,7 +5800,7 @@ PlotAgeLengthCatchCurve_Selectivity <- function(params, RefnceAges, MLL, GrowthC
   AddAxesAndTickLabelsToPlot(xmin=NA, xmax, xint, ymin=NA, ymax, yint, cexval=NA, cexaxisval=NA, lwdval=NA, lineval=NA, lasval=NA)
   if (SelectivityType==2) { # logistic selectivity
     L50est=paste("L50 =",round(exp(params[2]),0),"mm")
-    L95est=paste("L95 =",round(exp(params[3]),0),"mm")
+    L95est=paste("L95-L50 =",round(exp(params[3]),0),"mm")
     legend("topleft", pch=-1, legend=c(L50est, L95est), lty="solid",col="black",
            bty='n', cex=0.6,lwd=-1, y.intersp=1.0)
   }
@@ -7895,14 +7904,14 @@ CalcSelectivityAndRetentionAtAge <- function(EstGearSelAtAge, EstRetenAtAge, Age
 #' EstMatAtAge <- data.frame(EstFemMatAtAge=NA, EstMalMatAtAge=NA) # maturity at age (from age 0), inputted as values in data frame
 #' Gear_sel_A50 <- NA # females, males - Logistic age selectivity relationship parameters
 #' Gear_sel_A95 <- NA # females, males - Logistic age selectivity relationship parameters
-#' EstGearSelAtAge <- data.frame(EstFemSelAtAge=NA, EstMalSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
+#' EstGearSelAtAge <- data.frame(FemGearSelAtAge=NA, MalGearSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
 #' Land_sel_A50 <- c(2.5, 2.5) # females, males - Logistic age selectivity relationship parameters
 #' Land_sel_A95 <- c(3.5, 3.5) # females, males - Logistic age selectivity relationship parameters
-#' EstLandSelAtAge <- data.frame(EstFemSelAtAge=NA, EstMalSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
+#' EstLandSelAtAge <- data.frame(FemSelLandAtAge=NA, MalSelLandAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
 #' ret_Pmax <- NA  # maximum retention, values lower than 1 imply discarding of fish above MLL
 #' ret_A50 <- NA  # females, males - Logistic age fish retention at age parameters
 #' ret_A95 <- NA  # females, males - Logistic age fish retention at age parameters
-#' EstRetenAtAge <- data.frame(EstFemRetenAtAge=NA, EstMalRetenAtAge=NA) # fish retention at age (from age 0), inputted as values in data frame
+#' EstRetenAtAge <- data.frame(FemRetProbAtAge=NA, MalRetProbAtAge=NA) # fish retention at age (from age 0), inputted as values in data frame
 #' DiscMort <- 0.0 # discard mortality (e.g. 50% released fish die = 0.5)
 #' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
 #' SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
@@ -7936,16 +7945,16 @@ CalcSelectivityAndRetentionAtAge <- function(EstGearSelAtAge, EstRetenAtAge, Age
 #' mat_A50 <- c(20, 20) # females, males - Logistic length (mm) at maturity relationship parameters
 #' mat_A95 <- c(30, 30) # females, males - Logistic length (mm) at maturity relationship parameters
 #' EstMatAtAge <- data.frame(EstFemMatAtAge=NA, EstMalMatAtAge=NA) # maturity at age (from age 0), inputted as values in data frame
-#' Gear_sel_A50 <- NA # females, males - Logistic age selectivity relationship parameters
-#' Gear_sel_A95 <- NA # females, males - Logistic age selectivity relationship parameters
-#' EstGearSelAtAge <- data.frame(EstFemSelAtAge=NA, EstMalSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
-#' Land_sel_A50 <- c(2.5, 2.5) # females, males - Logistic age selectivity relationship parameters
-#' Land_sel_A95 <- c(3.5, 3.5) # females, males - Logistic age selectivity relationship parameters
-#' EstLandSelAtAge <- data.frame(EstFemSelAtAge=NA, EstMalSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
+#' Gear_sel_A50 <- c(20, 20) # females, males - Logistic age selectivity relationship parameters
+#' Gear_sel_A95 <- c(30, 30) # females, males - Logistic age selectivity relationship parameters
+#' EstGearSelAtAge <- data.frame(FemGearSelAtAge=NA, MalGearSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
+#' Land_sel_A50 <- c(25, 25) # females, males - Logistic age selectivity relationship parameters
+#' Land_sel_A95 <- c(35, 35) # females, males - Logistic age selectivity relationship parameters
+#' EstLandSelAtAge <- data.frame(FemSelLandAtAge=NA, MalSelLandAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
 #' ret_Pmax <- NA  # maximum retention, values lower than 1 imply discarding of fish above MLL
 #' ret_A50 <- NA  # females, males - Logistic age fish retention at age parameters
 #' ret_A95 <- NA  # females, males - Logistic age fish retention at age parameters
-#' EstRetenAtAge <- data.frame(EstFemRetenAtAge=NA, EstMalRetenAtAge=NA) # fish retention at age (from age 0), inputted as values in data frame
+#' EstRetenAtAge <- data.frame(FemRetProbAtAge=NA, MalRetProbAtAge=NA) # fish retention at age (from age 0), inputted as values in data frame
 #' DiscMort <- 0.0 # discard mortality (e.g. 50% released fish die = 0.5)
 #' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
 #' SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
@@ -9081,10 +9090,10 @@ CalcYPRAndSPRForFMort_LB<- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
 #' EstMatAtAge <- data.frame(EstFemMatAtAge=NA, EstMalMatAtAge=NA) # maturity at age (from age 0), inputted as values in data frame
 #' Gear_sel_A50 <- NA # females, males - Logistic age selectivity relationship parameters
 #' Gear_sel_A95 <- NA # females, males - Logistic age selectivity relationship parameters
-#' EstGearSelAtAge <- data.frame(EstFemSelAtAge=NA, EstMalSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
+#' EstGearSelAtAge <- data.frame(FemGearSelAtAge=NA, MalGearSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
 #' Land_sel_A50 <- c(2.5, 2.5) # females, males - Logistic age selectivity relationship parameters
 #' Land_sel_A95 <- c(3.5, 3.5) # females, males - Logistic age selectivity relationship parameters
-#' EstLandSelAtAge <- data.frame(EstFemSelAtAge=NA, EstMalSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
+#' EstLandSelAtAge <- data.frame(FemSelLandAtAge=NA, MalSelLandAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
 #' ret_Pmax <- NA  # maximum retention, values lower than 1 imply discarding of fish above MLL
 #' ret_A50 <- NA  # females, males - Logistic age fish retention at age parameters
 #' ret_A95 <- NA  # females, males - Logistic age fish retention at age parameters
@@ -9122,12 +9131,12 @@ CalcYPRAndSPRForFMort_LB<- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
 #' mat_A50 <- c(20, 20) # females, males - Logistic length (mm) at maturity relationship parameters
 #' mat_A95 <- c(30, 30) # females, males - Logistic length (mm) at maturity relationship parameters
 #' EstMatAtAge <- data.frame(EstFemMatAtAge=NA, EstMalMatAtAge=NA) # maturity at age (from age 0), inputted as values in data frame
-#' Gear_sel_A50 <- NA # females, males - Logistic age selectivity relationship parameters
-#' Gear_sel_A95 <- NA # females, males - Logistic age selectivity relationship parameters
-#' EstGearSelAtAge <- data.frame(EstFemSelAtAge=NA, EstMalSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
-#' Land_sel_A50 <- c(2.5, 2.5) # females, males - Logistic age selectivity relationship parameters
-#' Land_sel_A95 <- c(3.5, 3.5) # females, males - Logistic age selectivity relationship parameters
-#' EstLandSelAtAge <- data.frame(EstFemSelAtAge=NA, EstMalSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
+#' Gear_sel_A50 <- c(20, 20) # females, males - Logistic age selectivity relationship parameters
+#' Gear_sel_A95 <- c(30, 30) # females, males - Logistic age selectivity relationship parameters
+#' EstGearSelAtAge <- data.frame(FemGearSelAtAge=NA, MalGearSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
+#' Land_sel_A50 <- c(25, 25) # females, males - Logistic age selectivity relationship parameters
+#' Land_sel_A95 <- c(35, 35) # females, males - Logistic age selectivity relationship parameters
+#' EstLandSelAtAge <- data.frame(FemSelLandAtAge=NA, MalSelLandAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
 #' ret_Pmax <- NA  # maximum retention, values lower than 1 imply discarding of fish above MLL
 #' ret_A50 <- NA  # females, males - Logistic age fish retention at age parameters
 #' ret_A95 <- NA  # females, males - Logistic age fish retention at age parameters
@@ -9768,10 +9777,10 @@ GetPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
 #' EstMatAtAge <- data.frame(EstFemMatAtAge=NA, EstMalMatAtAge=NA) # maturity at age (from age 0), inputted as values in data frame
 #' Gear_sel_A50 <- c(2.5, 2.5) # females, males - Logistic age selectivity relationship parameters
 #' Gear_sel_A95 <- c(3.5, 3.5) # females, males - Logistic age selectivity relationship parameters
-#' EstGearSelAtAge <- data.frame(EstFemSelAtAge=NA, EstMalSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
+#' EstGearSelAtAge <- data.frame(FemGearSelAtAge=NA, MalGearSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
 #' Land_sel_A50 <- NA # females, males - Logistic age selectivity relationship parameters
 #' Land_sel_A95 <- NA # females, males - Logistic age selectivity relationship parameters
-#' EstLandSelAtAge <- data.frame(EstFemSelAtAge=NA, EstMalSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
+#' EstLandSelAtAge <- data.frame(FemSelLandAtAge=NA, MalSelLandAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
 #' ret_Pmax <- NA  # maximum retention, values lower than 1 imply discarding of fish above MLL
 #' ret_A50 <- NA  # females, males - Logistic age fish retention at age parameters
 #' ret_A95 <- NA  # females, males - Logistic age fish retention at age parameters
@@ -9815,12 +9824,12 @@ GetPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
 #' mat_A50 <- c(20, 20) # females, males - Logistic length (mm) at maturity relationship parameters
 #' mat_A95 <- c(30, 30) # females, males - Logistic length (mm) at maturity relationship parameters
 #' EstMatAtAge <- data.frame(EstFemMatAtAge=NA, EstMalMatAtAge=NA) # maturity at age (from age 0), inputted as values in data frame
-#' Gear_sel_A50 <- c(10, 10) # females, males - Logistic age selectivity relationship parameters
-#' Gear_sel_A95 <- c(20, 20) # females, males - Logistic age selectivity relationship parameters
-#' EstGearSelAtAge <- data.frame(EstFemSelAtAge=NA, EstMalSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
-#' Land_sel_A50 <- NA # females, males - Logistic age selectivity relationship parameters
-#' Land_sel_A95 <- NA # females, males - Logistic age selectivity relationship parameters
-#' EstLandSelAtAge <- data.frame(EstFemSelAtAge=NA, EstMalSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
+#' Gear_sel_A50 <- c(20, 20) # females, males - Logistic age selectivity relationship parameters
+#' Gear_sel_A95 <- c(30, 30) # females, males - Logistic age selectivity relationship parameters
+#' EstGearSelAtAge <- data.frame(FemGearSelAtAge=NA, MalGearSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
+#' Land_sel_A50 <- c(25, 25) # females, males - Logistic age selectivity relationship parameters
+#' Land_sel_A95 <- c(35, 35) # females, males - Logistic age selectivity relationship parameters
+#' EstLandSelAtAge <- data.frame(FemSelLandAtAge=NA, MalSelLandAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
 #' ret_Pmax <- c(1,1)  # maximum retention, values lower than 1 imply discarding of fish above MLL
 #' ret_A50 <- c(15, 15)  # females, males - Logistic age fish retention at age parameters
 #' ret_A95 <- c(25, 25)  # females, males - Logistic age fish retention at age parameters
@@ -10148,7 +10157,7 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
     points(Current_F, Res$YPR,cex=1.2,col="black",pch=16)
     lines(Res$FishMort, Res$Eq_CatchResults,col="blue")
     points(Current_F, Res$Eq_Catch, cex=1.2,col="blue",pch=16)
-    AddAxesAndTickLabelsToPlot(xmin=NA, xmax, xint, ymin=NA, ymax, yint, cexval=NA, cexaxisval=0.8, lwdval=1.5, lineval=NA, lasval=NA)
+    AddAxesAndTickLabelsToPlot(xmin=NA, xmax=max(Res$FishMort), xint=0.5, ymin=NA, ymax, yint, cexval=NA, cexaxisval=0.8, lwdval=1.5, lineval=NA, lasval=NA)
     mtext(expression(paste(plain("YPR / Eq.Catch (kg"),plain(")"))),las=3,side=2,line=2.5,cex=0.7,lwd=1.75)
     mtext(expression(paste(italic("F") ~ (year^{-1}))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
     legend('topright', col=c("black","blue"),lty=c("solid","solid"),
@@ -11441,10 +11450,10 @@ Get_Relative_Value_Per_Recruit_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd,
 #' EstMatAtAge <- data.frame(EstFemMatAtAge=NA, EstMalMatAtAge=NA) # maturity at age (from age 0), inputted as values in data frame
 #' Gear_sel_A50 <- c(2.5, 2.5) # females, males - Logistic age selectivity relationship parameters
 #' Gear_sel_A95 <- c(3.5, 3.5) # females, males - Logistic age selectivity relationship parameters
-#' EstGearSelAtAge <- data.frame(EstFemSelAtAge=NA, EstMalSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
+#' EstGearSelAtAge <- data.frame(FemGearSelAtAge=NA, MalGearSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
 #' Land_sel_A50 <- c(2.5, 2.5) # females, males - Logistic age selectivity relationship parameters
 #' Land_sel_A95 <- c(3.5, 3.5) # females, males - Logistic age selectivity relationship parameters
-#' EstLandSelAtAge <- data.frame(EstFemSelAtAge=NA, EstMalSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
+#' EstLandSelAtAge <- data.frame(FemSelLandAtAge=NA, MalSelLandAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
 #' ret_Pmax <- NA  # maximum retention, values lower than 1 imply discarding of fish above MLL
 #' ret_A50 <- NA  # females, males - Logistic age fish retention at age parameters
 #' ret_A95 <- NA  # females, males - Logistic age fish retention at age parameters
@@ -11483,12 +11492,12 @@ Get_Relative_Value_Per_Recruit_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd,
 #' # mat_A50 <- c(20, 20) # females, males - Logistic length (mm) at maturity relationship parameters
 #' # mat_A95 <- c(30, 30) # females, males - Logistic length (mm) at maturity relationship parameters
 #' # EstMatAtAge <- data.frame(EstFemMatAtAge=NA, EstMalMatAtAge=NA) # maturity at age (from age 0), inputted as values in data frame
-#' # Gear_sel_A50 <- c(15, 15) # females, males - Logistic age selectivity relationship parameters
-#' # Gear_sel_A95 <- c(25, 25) # females, males - Logistic age selectivity relationship parameters
-#' # EstGearSelAtAge <- data.frame(EstFemSelAtAge=NA, EstMalSelAtAge=NA) # fish retention at age (from age 0), inputted as values in data frame
-#' # Land_sel_A50 <- c(2.5, 2.5) # females, males - Logistic age selectivity relationship parameters
-#' # Land_sel_A95 <- c(3.5, 3.5) # females, males - Logistic age selectivity relationship parameters
-#' # EstLandSelAtAge <- data.frame(EstFemSelAtAge=NA, EstMalSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
+#' # Gear_sel_A50 <- c(20, 20) # females, males - Logistic age selectivity relationship parameters
+#' # Gear_sel_A95 <- c(30, 30) # females, males - Logistic age selectivity relationship parameters
+#' # EstGearSelAtAge <- data.frame(FemGearSelAtAge=NA, MalGearSelAtAge=NA) # fish retention at age (from age 0), inputted as values in data frame
+#' # Land_sel_A50 <- c(25, 25) # females, males - Logistic age selectivity relationship parameters
+#' # Land_sel_A95 <- c(35, 35) # females, males - Logistic age selectivity relationship parameters
+#' # EstLandSelAtAge <- data.frame(FemSelLandAtAge=NA, MalSelLandAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
 #' # ret_Pmax <- NA  # maximum retention, values lower than 1 imply discarding of fish above MLL
 #' # ret_A50 <- NA  # females, males - Logistic age fish retention at age parameters
 #' # ret_A95 <- NA  # females, males - Logistic age fish retention at age parameters
@@ -11785,10 +11794,10 @@ legend("topleft", col="black", pch = c(16,1), lty=0, legend=c("Est_EqYield","Est
 #' EstMatAtAge <- data.frame(EstFemMatAtAge=NA, EstMalMatAtAge=NA) # maturity at age (from age 0), inputted as values in data frame
 #' Gear_sel_A50 <- c(2.5, 2.5) # females, males - Logistic age selectivity relationship parameters
 #' Gear_sel_A95 <- c(3.5, 3.5) # females, males - Logistic age selectivity relationship parameters
-#' EstGearSelAtAge <- data.frame(EstFemSelAtAge=NA, EstMalSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
+#' EstGearSelAtAge <- data.frame(FemGearSelAtAge=NA, MalGearSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
 #' Land_sel_A50 <- c(2.5, 2.5) # females, males - Logistic age selectivity relationship parameters
 #' Land_sel_A95 <- c(3.5, 3.5) # females, males - Logistic age selectivity relationship parameters
-#' EstLandSelAtAge <- data.frame(EstFemSelAtAge=NA, EstMalSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
+#' EstLandSelAtAge <- data.frame(FemSelLandAtAge=NA, MalSelLandAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
 #' ret_Pmax <- NA  # maximum retention, values lower than 1 imply discarding of fish above MLL
 #' ret_A50 <- NA  # females, males - Logistic age fish retention at age parameters
 #' ret_A95 <- NA  # females, males - Logistic age fish retention at age parameters
@@ -11830,10 +11839,10 @@ legend("topleft", col="black", pch = c(16,1), lty=0, legend=c("Est_EqYield","Est
 #' EstMatAtAge <- data.frame(EstFemMatAtAge=NA, EstMalMatAtAge=NA) # maturity at age (from age 0), inputted as values in data frame
 #' Gear_sel_A50 <- c(20, 20) # females, males - Logistic age selectivity relationship parameters
 #' Gear_sel_A95 <- c(30, 30) # females, males - Logistic age selectivity relationship parameters
-#' EstGearSelAtAge <- data.frame(EstFemSelAtAge=NA, EstMalSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
+#' EstGearSelAtAge <- data.frame(FemGearSelAtAge=NA, MalGearSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
 #' Land_sel_A50 <- c(25, 25) # females, males - Logistic age selectivity relationship parameters
 #' Land_sel_A95 <- c(35, 35) # females, males - Logistic age selectivity relationship parameters
-#' EstLandSelAtAge <- data.frame(EstFemSelAtAge=NA, EstMalSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
+#' EstLandSelAtAge <- data.frame(FemSelLandAtAge=NA, MalSelLandAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
 #' ret_Pmax <- NA  # maximum retention, values lower than 1 imply discarding of fish above MLL
 #' ret_A50 <- NA  # females, males - Logistic age fish retention at age parameters
 #' ret_A95 <- NA  # females, males - Logistic age fish retention at age parameters
@@ -12161,10 +12170,10 @@ PlotPerRecruit_Biom_no_err_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, mid
 #' EstMatAtAge <- data.frame(EstFemMatAtAge=NA, EstMalMatAtAge=NA) # maturity at age (from age 0), inputted as values in data frame
 #' Gear_sel_A50 <- c(2.5, 2.5) # females, males - Logistic age selectivity relationship parameters
 #' Gear_sel_A95 <- c(3.5, 3.5) # females, males - Logistic age selectivity relationship parameters
-#' EstGearSelAtAge <- data.frame(EstFemSelAtAge=NA, EstMalSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
+#' EstGearSelAtAge <- data.frame(FemGearSelAtAge=NA, MalGearSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
 #' Land_sel_A50 <- c(2.5, 2.5) # females, males - Logistic age selectivity relationship parameters
 #' Land_sel_A95 <- c(3.5, 3.5) # females, males - Logistic age selectivity relationship parameters
-#' EstLandSelAtAge <- data.frame(EstFemSelAtAge=NA, EstMalSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
+#' EstLandSelAtAge <- data.frame(FemSelLandAtAge=NA, MalSelLandAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
 #' ret_Pmax <- NA  # maximum retention, values lower than 1 imply discarding of fish above MLL
 #' ret_A50 <- NA  # females, males - Logistic age fish retention at age parameters
 #' ret_A95 <- NA  # females, males - Logistic age fish retention at age parameters
@@ -12669,10 +12678,10 @@ GetPerRecruitResults_LB_with_err <- function(MaxModelAge, TimeStep, lbnd, ubnd, 
 #' EstMatAtAge <- data.frame(EstFemMatAtAge=NA, EstMalMatAtAge=NA) # maturity at age (from age 0), inputted as values in data frame
 #' Gear_sel_A50 <- c(2.5, 2.5) # females, males - Logistic age selectivity relationship parameters
 #' Gear_sel_A95 <- c(3.5, 3.5) # females, males - Logistic age selectivity relationship parameters
-#' EstGearSelAtAge <- data.frame(EstFemSelAtAge=NA, EstMalSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
+#' EstGearSelAtAge <- data.frame(FemGearSelAtAge=NA, MalGearSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
 #' Land_sel_A50 <- c(2.5, 2.5) # females, males - Logistic age selectivity relationship parameters
 #' Land_sel_A95 <- c(3.5, 3.5) # females, males - Logistic age selectivity relationship parameters
-#' EstLandSelAtAge <- data.frame(EstFemSelAtAge=NA, EstMalSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
+#' EstLandSelAtAge <- data.frame(FemSelLandAtAge=NA, MalSelLandAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
 #' ret_Pmax <- NA  # maximum retention, values lower than 1 imply discarding of fish above MLL
 #' ret_A50 <- NA  # females, males - Logistic age fish retention at age parameters
 #' ret_A95 <- NA  # females, males - Logistic age fish retention at age parameters
@@ -12726,10 +12735,10 @@ GetPerRecruitResults_LB_with_err <- function(MaxModelAge, TimeStep, lbnd, ubnd, 
 #' EstMatAtAge <- data.frame(EstFemMatAtAge=NA, EstMalMatAtAge=NA) # maturity at age (from age 0), inputted as values in data frame
 #' Gear_sel_A50 <- c(20, 20) # females, males - Logistic age selectivity relationship parameters
 #' Gear_sel_A95 <- c(30, 30) # females, males - Logistic age selectivity relationship parameters
-#' EstGearSelAtAge <- data.frame(EstFemSelAtAge=NA, EstMalSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
+#' EstGearSelAtAge <- data.frame(FemGearSelAtAge=NA, MalGearSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
 #' Land_sel_A50 <- c(25, 25) # females, males - Logistic age selectivity relationship parameters
 #' Land_sel_A95 <- c(35, 35) # females, males - Logistic age selectivity relationship parameters
-#' EstLandSelAtAge <- data.frame(EstFemSelAtAge=NA, EstMalSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
+#' EstLandSelAtAge <- data.frame(FemSelLandAtAge=NA, MalSelLandAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
 #' ret_Pmax <- NA  # maximum retention, values lower than 1 imply discarding of fish above MLL
 #' ret_A50 <- NA  # females, males - Logistic age fish retention at age parameters
 #' ret_A95 <- NA  # females, males - Logistic age fish retention at age parameters
@@ -13166,5 +13175,317 @@ GetPerRecruitGrowthPredIntervals_LB <- function(MaxModelAge, nLenCl, midpt, lbnd
 
 }
 
+#' Plot assumed error distributions for M, F and h in per recruit analysis allowing for error
+#'
+#' This function plots assumed error distributions for M, F and h in per recruit analysis allowing for error, based on user inputs
+#' for mean and sd of these parameters. Parameters are assumed to be normally distributed.
+#'
+#' @param NatMort mean for natural mortality
+#' @param NatMort_sd sd for natural mortality
+#' @param Current_F mean for fishing mortality
+#' @param Current_F_sd sd for fishing mortality
+#' @param Steepness mean for steepness of stock recruitment relationship
+#' @param Steepness_sd sd for steepness of stock recruitment relationship
+#' @export
+PlotPerRecruit_Param_Err_Distns <- function(NatMort,NatMort_sd,Current_F,Current_F_sd,Steepness,Steepness_sd) {
+
+  .pardefault <- par(no.readonly = TRUE) # store current par settings
+  set.seed(123)
+  nReps = 100000
+
+  # Assumed distribution for natural mortality
+  par(mfrow=c(2,2), mar=c(5,4,1,1), oma=c(1,1,1,1))
+  xaxis_lab = expression(paste(italic("M ") ~ y^{-1}))
+  yaxis_lab = "Frequency"
+  M_FreqDat = hist(rnorm(nReps,NatMort,NatMort_sd),plot=F)
+  xlims = Get_xaxis_scale(M_FreqDat$breaks)
+  xmax = xlims$xmax
+  xmin = xlims$xmin
+  ylims = Get_yaxis_scale(M_FreqDat$counts)
+  ymax = ylims$ymax
+  hist(rnorm(nReps,NatMort,NatMort_sd),xlab=xaxis_lab, ylab=yaxis_lab,
+       xlim=c(xmin,xmax), ylim=c(0,ymax), main="")
+  abline(v=NatMort,lwd=2)
+  legend("topright", legend=c(paste("mean =",NatMort),paste("sd =",NatMort_sd)), inset=c(0.13,0),
+         lty=1, cex = 0.8, bty="n", lwd=-1, col="black")
 
 
+  # Assumed distribution for fishing mortality (e.g. as estimated from catch curve)
+  xaxis_lab = expression(paste(italic("F ") ~ y^{-1}))
+  yaxis_lab = "Frequency"
+  F_FreqDat = hist(rnorm(nReps,Current_F,Current_F_sd),plot=F)
+  xlims = Get_xaxis_scale(F_FreqDat$breaks)
+  xmax = xlims$xmax
+  xmin = xlims$xmin
+  ylims = Get_yaxis_scale(F_FreqDat$counts)
+  ymax = ylims$ymax
+  hist(rnorm(nReps,Current_F,Current_F_sd),xlab=xaxis_lab, ylab=yaxis_lab,
+       xlim=c(xmin,xmax), ylim=c(0,ymax), main="")
+  abline(v=Current_F,lwd=2)
+  legend("topright", legend=c(paste("mean =",Current_F),paste("sd =",Current_F_sd)), inset=c(0.13,0),
+         lty=1, cex = 0.8, bty="n", lwd=-1, col="black")
+
+  # Assumed distribution for steepness
+  xaxis_lab = "h"
+  yaxis_lab = "Frequency"
+  h_FreqDat = hist(rnorm(nReps,Steepness,Steepness_sd),plot=F)
+  xlims = Get_xaxis_scale(h_FreqDat$breaks)
+  xmax = xlims$xmax
+  xmin = xlims$xmin
+  ylims = Get_yaxis_scale(h_FreqDat$counts)
+  ymax = ylims$ymax
+  hist(rnorm(nReps,Steepness,Steepness_sd),xlab=xaxis_lab, ylab=yaxis_lab,
+       xlim=c(xmin,xmax), ylim=c(0,ymax), main="")
+  abline(v=Steepness,lwd=2)
+  legend("topright", legend=c(paste("mean =",Steepness),paste("sd =",Steepness_sd)), inset=c(0.13,0),
+         lty=1, cex = 0.8, bty="n", lwd=-1, col="black")
+
+  par(.pardefault)
+
+}
+
+#' Produces WA risk matrix for relative biomass estimates from per recruit analysis, and probabilities
+#'
+#' This function outputs a risk matrix plot Produces WA risk matrix for relative biomass estimates from
+#' age or length based per recruit analysis (allowing for error in h, M and F), and associated
+#' likelihoods and risk levels (for each consequence level and overall)
+#'
+#' @param RefPointOpt 1=proxy, 2=BMSY ratio reference points
+#' @param FittedRes save results from age or length based per recruit analysis with err (get functions)
+#' @param nReps number of estimates of relative biomass from resampling
+#' @return plot of risk matrix for relative biomass, likelihoods for consequence levels, and risks for consequence
+#' levels and overall
+#' @examples
+#' InitRecruit <- 1 # Initial recruitment
+#' MaxModelAge <- 20 # maximum age considered by model, years
+#' TimeStep <- 1 # Model time step (y) (for shorter-lived species, might be appropriate to use a smaller time step)
+#' Linf <- c(550, 500) # mm - von Bertalanffy growth model parameters - Females, males
+#' vbK <- c(0.5, 0.5) # year-1 - von Bertalanffy growth model parameters - Females, males
+#' tzero <- c(0, 0) # years - von Bertalanffy growth model parameters - Females, males
+#' EstLenAtAge <- data.frame(EstFemLenAtAge=NA, EstMalLenAtAge=NA) # length at age (from age 0), inputted as values in data frame
+#' lenwt_a <- 0.000005 # combined sexes - weight (g) vs length (mm, TL) relationship parameters
+#' ln_lenwt_a <- NA # for log-log relationship
+#' lenwt_b <- 3 # combined sexes - weight (g) vs length (mm, TL) relationship parameters
+#' WLrel_Type <- 1 # 1=power, 2=log-log relationship
+#' EstWtAtAge <- data.frame(EstFemWtAtAge=NA, EstMalWtAtAge=NA) # weight at age (from age 0), inputted as values in data frame
+#' ReprodScale <- 1 # 1=default (standard calculations for spawning biomass), 2=hyperallometric reproductive scaling with female mass (i.e. BOFFF effects)
+#' ReprodPattern <- 1 # 1 = gonochoristic (separate sexes), 2 = protogynous (female to male sex change), 3 = protandrous (male to female sex change)
+#' InitRatioFem <- 0.5 # Ratio of females to males at age zero
+#' FinalSex_Pmax <- NA # Logistic sex change relationship parameters (max probability of final sex)
+#' FinalSex_A50 <- NA # Logistic sex change relationship parameters (inflection point)
+#' FinalSex_A95 <- NA # Logistic sex change relationship parameters (95% of max probability)
+#' mat_A50 <- c(2.5, 2.5) # females, males - Logistic length (mm) at maturity relationship parameters
+#' mat_A95 <- c(3.5, 3.5) # females, males - Logistic length (mm) at maturity relationship parameters
+#' EstMatAtAge <- data.frame(EstFemMatAtAge=NA, EstMalMatAtAge=NA) # maturity at age (from age 0), inputted as values in data frame
+#' Gear_sel_A50 <- c(2.5, 2.5) # females, males - Logistic age selectivity relationship parameters
+#' Gear_sel_A95 <- c(3.5, 3.5) # females, males - Logistic age selectivity relationship parameters
+#' EstGearSelAtAge <- data.frame(FemGearSelAtAge=NA, MalGearSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
+#' Land_sel_A50 <- c(2.5, 2.5) # females, males - Logistic age selectivity relationship parameters
+#' Land_sel_A95 <- c(3.5, 3.5) # females, males - Logistic age selectivity relationship parameters
+#' EstLandSelAtAge <- data.frame(FemSelLandAtAge=NA, MalSelLandAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
+#' ret_Pmax <- NA  # maximum retention, values lower than 1 imply discarding of fish above MLL
+#' ret_A50 <- NA  # females, males - Logistic age fish retention at age parameters
+#' ret_A95 <- NA  # females, males - Logistic age fish retention at age parameters
+#' EstRetenAtAge <- data.frame(EstFemRetenAtAge=rep(1,MaxModelAge+1), EstMalRetenAtAge=rep(1,MaxModelAge+1)) # fish retention at age (from age 0), inputted as values in data frame
+#' DiscMort <- 0.0 # discard mortality (e.g. 50% released fish die = 0.5)
+#' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
+#' Steepness_sd <- 0.025
+#' SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
+#' NatMort <- 0.2 # natural mortality  (year-1)
+#' NatMort_sd <- 0.025
+#' Current_F <- 0.3 # estimate of fishing mortality, e.g. from catch curve analysis
+#' Current_F_sd <- 0.005
+#' PlotOpt <- 1 # 1=females, 2=males, 3=combined sex
+#' RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
+#' nReps=25
+#' FittedRes=GetPerRecruitResults_AB_with_err(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
+#'                                            lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern,
+#'                                            InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95, mat_A50, mat_A95,
+#'                                            EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95,
+#'                                            EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness, Steepness_sd,
+#'                                            SRrel_Type, NatMort, NatMort_sd, Current_F, Current_F_sd, nReps)
+#' PlotPerRecruit_RiskMatrix_RelBiom(RefPointOpt, FittedRes, nReps)
+#' @export
+PlotPerRecruit_RiskMatrix_RelBiom <- function(RefPointOpt, FittedRes, nReps) {
+
+
+  RefPointOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
+
+  # use proxy reference points for biomass
+  if (RefPointOpt==1) {
+    Targ = 0.4; Thresh = 0.3; Lim = 0.2
+  }
+  # use BMSY ratio reference points for biomass
+  if (RefPointOpt==2) {
+    Targ = 1.2 * FittedRes$EstMedBMSYratio
+    Thresh = FittedRes$EstMedBMSYratio
+    Lim = 0.5 * FittedRes$EstMedBMSYratio
+  }
+
+
+  plot(1:6,1:6,cex=0,ylab=NA,xlab=NA,xaxt='n',yaxt='n',bty='n', xlim=c(1,6), ylim=c(1,6))
+  for (i in 1:5) {
+    for (j in 1:5) {
+      xval=c(i,i,6,6); yval=c(j,6,6,j)
+      polygon(x=xval,y=yval, col="white",border=T)
+    }
+  }
+
+  text(1.5,1.7,"Major", cex=0.8)
+  text(1.5,1.3,"B<Lim", cex=0.8)
+  text(1.5,2.7,"High", cex=0.8)
+  text(1.5,2.3,"Lim<B<Thresh", cex=0.8)
+  text(1.5,3.7,"Moderate", cex=0.8)
+  text(1.5,3.3,"Thresh<B<Targ", cex=0.8)
+  text(1.5,4.7,"Minor", cex=0.8)
+  text(1.5,4.3,"B>Targ", cex=0.8)
+  text(2.5,5.7,"Remote", cex=0.8)
+  text(2.5,5.3,"<5%", cex=0.8)
+  text(3.5,5.7,"Unlikely", cex=0.8)
+  text(3.5,5.3,"5- <20%", cex=0.8)
+  text(4.5,5.7,"Possible", cex=0.8)
+  text(4.5,5.3,"20- <50%", cex=0.8)
+  text(5.5,5.7,"Likely", cex=0.8)
+  text(5.5,5.3,">= 50%", cex=0.8)
+  mtext("Consequence",las=3,side=2,line=0,cex=1.2)
+  mtext("Likelihood",las=1,side=3,line=0,cex=1.2)
+
+  # calculate likelihoods for each consequence level
+  Prob_Minor = round(length(which(FittedRes$Eq_RelFemSpBiom_Vals > Targ)) / nReps,2) # B>targ
+  Prob_Moderate = round(length(which(FittedRes$Eq_RelFemSpBiom_Vals < Targ &
+                                       FittedRes$Eq_RelFemSpBiom_Vals > Thresh)) / nReps,2) #thresh<B<targ
+  Prob_High = round(length(which(FittedRes$Eq_RelFemSpBiom_Vals < Thresh &
+                                   FittedRes$Eq_RelFemSpBiom_Vals > Lim)) / nReps,2) #lim<B<thresh
+  Prob_Major = round(length(which(FittedRes$Eq_RelFemSpBiom_Vals < Lim)) / nReps,1) #B<lim
+
+  Brel_likelihoods <- data.frame(Prob_Minor=Prob_Minor,
+                                 Prob_Moderate=Prob_Moderate,
+                                 Prob_High=Prob_High,
+                                 Prob_Major=Prob_Major,
+                                 nReps=nReps)
+
+  # calculate risk scores for each consequence level
+  if (Prob_Minor*100 < 5) {
+    Risk_Minor = "Negligble"
+    xval=c(2,2,3,3); yval=c(4,5,5,4)
+    polygon(x=xval,y=yval, col="lightblue",border=T)
+    text(2.5,4.5,"Negligble", cex=0.8)
+  }
+  if (Prob_Minor*100 >= 5 & Prob_Minor*100 < 20) {
+    Risk_Minor = "Negligble"
+    xval=c(3,3,4,4); yval=c(4,5,5,4)
+    polygon(x=xval,y=yval, col="lightblue",border=T)
+    text(3.5,4.5,"Negligble", cex=0.8)
+  }
+  if (Prob_Minor*100 >= 20 & Prob_Minor*100 < 50) {
+    Risk_Minor = "Low"
+    xval=c(4,4,5,5); yval=c(4,5,5,4)
+    polygon(x=xval,y=yval, col="lightgreen",border=T)
+    text(4.5,4.5,"Low", cex=0.8)
+  }
+  if (Prob_Minor*100 >= 50) {
+    Risk_Minor = "Low"
+    xval=c(5,5,6,6); yval=c(4,5,5,4)
+    polygon(x=xval,y=yval, col="lightgreen",border=T)
+    text(5.5,4.5,"Low", cex=0.8)
+  }
+
+  if (Prob_Moderate*100 < 5)  {
+    Risk_Moderate = "Negligble"
+    xval=c(2,2,3,3); yval=c(3,4,4,3)
+    polygon(x=xval,y=yval, col="lightblue",border=T)
+    text(2.5,3.5,"Negligble", cex=0.8)
+  }
+  if (Prob_Moderate*100 >= 5 & Prob_Moderate*100 < 20) {
+    Risk_Moderate = "Low"
+    xval=c(3,3,4,4); yval=c(3,4,4,3)
+    polygon(x=xval,y=yval, col="lightgreen",border=T)
+    text(3.5,3.5,"Low", cex=0.8)
+  }
+  if (Prob_Moderate*100 >= 20 & Prob_Moderate*100 < 50) {
+    Risk_Moderate = "Medium"
+    xval=c(4,4,5,5); yval=c(3,4,4,3)
+    polygon(x=xval,y=yval, col="yellow",border=T)
+    text(4.5,3.5,"Medium", cex=0.8)
+  }
+  if (Prob_Moderate*100 >= 50) {
+    Risk_Moderate = "Medium"
+    xval=c(5,5,6,6); yval=c(3,4,4,3)
+    polygon(x=xval,y=yval, col="yellow",border=T)
+    text(5.5,3.5,"Medium", cex=0.8)
+  }
+
+  if (Prob_High*100 < 5) {
+    Risk_High = "Low"
+    xval=c(2,2,3,3); yval=c(2,3,3,2)
+    polygon(x=xval,y=yval, col="lightgreen",border=T)
+    text(2.5,2.5,"Low", cex=0.8)
+  }
+  if (Prob_High*100 >= 5 & Prob_High*100 < 20) {
+    Risk_High = "Medium"
+    xval=c(3,3,4,4); yval=c(2,3,3,2)
+    polygon(x=xval,y=yval, col="yellow",border=T)
+    text(3.5,2.5,"Medium", cex=0.8)
+  }
+  if (Prob_High*100 >= 20 & Prob_High*100 < 50) {
+    Risk_High = "High"
+    xval=c(4,4,5,5); yval=c(2,3,3,2)
+    polygon(x=xval,y=yval, col="orange",border=T)
+    text(4.5,2.5,"High", cex=0.8)
+  }
+  if (Prob_High*100 >= 50) {
+    Risk_High = "High"
+    xval=c(5,5,6,6); yval=c(2,3,3,2)
+    polygon(x=xval,y=yval, col="orange",border=T)
+    text(5.5,2.5,"High", cex=0.8)
+  }
+
+  if (Prob_Major*100 < 5) {
+    Risk_Major = "Low"
+    xval=c(2,2,3,3); yval=c(1,2,2,1)
+    polygon(x=xval,y=yval, col="lightgreen",border=T)
+    text(2.5,1.5,"Low", cex=0.8)
+  }
+  if (Prob_Major*100 >= 5 & Prob_Major*100 < 20) {
+    Risk_Major = "Medium"
+    xval=c(3,3,4,4); yval=c(1,2,2,1)
+    polygon(x=xval,y=yval, col="yellow",border=T)
+    text(3.5,1.5,"Medium", cex=0.8)
+  }
+  if (Prob_Major*100 >= 20 & Prob_Major*100 < 50) {
+    Risk_Major = "Severe"
+    xval=c(4,4,5,5); yval=c(1,2,2,1)
+    polygon(x=xval,y=yval, col="red",border=T)
+    text(4.5,1.5,"Severe", cex=0.8)
+  }
+  if (Prob_Major*100 >= 50) {
+    Risk_Major = "Severe"
+    xval=c(5,5,6,6); yval=c(1,2,2,1)
+    polygon(x=xval,y=yval, col="red",border=T)
+    text(5.5,1.5,"Severe", cex=0.8)
+  }
+
+  Brel_risks <- data.frame(Risk_Minor=Risk_Minor,
+                           Risk_Moderate=Risk_Moderate,
+                           Risk_High=Risk_High,
+                           Risk_Major=Risk_Major)
+
+  if (length(which(Brel_risks=="Severe")>0)) {
+    RiskOverall = "Severe"
+  } else if (length(which(Brel_risks=="High")>0)) {
+    RiskOverall = "High"
+  } else if (length(which(Brel_risks=="Medium")>0)) {
+    RiskOverall = "Medium"
+  } else if (length(which(Brel_risks=="Low")>0)) {
+    RiskOverall = "Low"
+  } else {
+    RiskOverall = "Negligible"
+  }
+  Brel_risks$RiskOverall=RiskOverall
+
+  Results = list(Brel_risks=Brel_risks,
+                 Brel_likelihoods=Brel_likelihoods)
+
+  return(Results)
+
+}
