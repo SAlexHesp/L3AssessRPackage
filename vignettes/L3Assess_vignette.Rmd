@@ -23,7 +23,7 @@ Fig_Path = "C:/~/L3AssessPackage/vignettes/"
 ```
 
 # Introduction
-#### Last updated May 2023 (Alex Hesp - DPIRD)
+#### Last updated November 2023 (Alex Hesp - DPIRD)
 
 This package is intended as a toolbox of methods with analyses for conducting "level 3" assessments in Western Australia. These methods are typically "equilibrium" approaches, used when size and/or age data are available, together with information on various biological attributes of species, such as estimates of natural mortality, growth and maturity.  
 
@@ -64,7 +64,7 @@ where, for a given random data set, $\hat{N_t}$ is the estimated number at relat
 #### Apply the Chapman and Robson (1960) mortality estimator
 
 Key functions relevant to applying this method are:
-GetChapmanRobsonMortalityResults()
+GetChapmanRobsonMortalityResults()  
 PlotAgeBasedCatchCurveResults_NormalSpace()  
 PlotAgeBasedCatchCurveResults_LogSpace()  
 Refer to help files and example code, showing function inputs and outputs.
@@ -402,11 +402,12 @@ Note that this catch curve routine was recently updated to allow use of alternat
 
 Key functions relevant to applying this method are:  
 SimLenAndAgeFreqData()  
-VisualiseGrowthApplyingLTM()  
 GetLengthBasedCatchCurveResults()  
-PlotLengthBasedCatchCurve_RetCatch()  
 PlotLengthBasedCatchCurve_Selectivity()  
 PlotLengthBasedCatchCurve_Mortality()  
+PlotLengthBasedCatchCurve_RetCatch()  
+PlotLengthBasedCatchCurve_DiscCatch()  
+VisualiseGrowthApplyingLTM()  
 Refer to help files and example code, showing function inputs and outputs.
 
 ## Length and age-based catch curve
@@ -500,7 +501,8 @@ A function is provided in the package for simulating length and age data, using 
 ### Apply routine for simulating length and/or age data
 
 Key functions relevant to applying this method are:  
-SimLenAndAgeFreqData()
+SimLenAndAgeFreqData()  
+PlotSimLenAndAgeFreqData()
 
 ## Age-based per recruit analysis
 
@@ -640,6 +642,20 @@ $$
 \theta_s = \sum_{a=0}^{A}N_{a,s}W_{a,s}P_{a,s}
 $$
 where $N_{a,s}$, $W_{a,s}$ and $P_{a,s}$, respectively, are the number, weight and proportion of mature fish, that are of sex $s$ and age $a$.
+
+### Apply age-based per recruit analysis
+
+Key functions relevant to applying this method are:  
+CalcYPRAndSPRForFMort_AB()  
+GetPerRecruitResults_AB()  
+PlotPerRecruitResults_AB()  
+PlotPerRecruit_Biom_no_err_AB()
+PlotPerRecruit_Yield_no_err_AB()
+PlotPerRecruit_Param_Err_Distns()
+GetPerRecruitResults_with_err_AB()
+PlotPerRecruit_Biom_with_err_AB()
+PlotPerRecruit_RiskMatrix_RelBiom()
+Refer to help files and example code, showing function inputs and outputs.
 
 
 ## Length-based per recruit analysis
@@ -870,22 +886,36 @@ The value of $B_{rel}$ corresponding to $B_{MSY}$ is calculated as the level at 
 
 This implementation of per recruit analysis allows for incorporation uncertainty in estimates of fishing mortality, natural mortality and steepness, assuming independent normal distributions for each of these parameters. Estimates of key outputs from per recruit analysis, with uncertainty, are produced using parametric sampling to produce a specified number (e.g. 500) of F, M and h values, which are inputted into the deterministic per recruit equations (i.e. within the CalcYPRAndSPRForFMort() function), to produce 500 sets of estimated results of key parameters of interest. Lower and Upper 95% confidence limits are taken as the 2.5 and 97.5 percentiles of the 500 estimates. 
 
-Note, it is also possible to incorporate other sources of uncertainty, such as for growth and maturity ogives, if estimates are available for the both parameters of each ogive and associated variance-covariance matrix (such as are outputted by the WAFishBiolgy R package. 'Wrapper' code has been developed but not yet been built into the package. The process involves use of the CalcYPRAndSPRForFMort() function for each set of input parameters, and storing and analysing the outputs to produce confidence limits.     
+Note, it is also possible to incorporate other sources of uncertainty, such as for growth and maturity curves, if estimates are available for the both parameters of each curve and associated variance-covariance matrix (such as are outputted by the WAFishBiolgy R package. 'Wrapper' code, involving use of the CalcYPRAndSPRForFMort() function for each set of input parameters, and storing and analysing the outputs to produce confidence limits, has not yet been implemented.     
+
+### Risk calculations and associated plots for relative biomass estimates from per recruit analysis
 
 
+### Calculation of prediction intervals for growth curves used in length-based per recruit analysis
 
-### Apply age-based per recruit analysis
+
+### Calculation of expected size sizes and prediction intervals at different levels of fishing
+
+
+### Value per recruit calculations
+
+
+### Apply length-based per recruit analysis
 
 Key functions relevant to applying this method are:  
-CalcYPRAndSPRForFMort_AB()  
-GetPerRecruitResults_AB()  
-GetPerRecruitResults_with_err_AB()
-PlotPerRecruitResults_AB()  
-PlotPerRecruit_Biom_no_err_AB()
-PlotPerRecruit_Biom_with_err_AB()
-PlotPerRecruit_Yield_no_err_AB()
+CalcYPRAndSPRForFMort_LB()  
+GetPerRecruitResults_LB()  
+PlotPerRecruitResults_LB()  
+PlotPerRecruit_Biom_no_err_LB()  
+PlotPerRecruit_Yield_no_err_LB()  
+PlotPerRecruit_Param_Err_Distns()  
+GetPerRecruitResults_with_err_LB()  
+PlotPerRecruit_Biom_with_err_LB()  
+PlotPerRecruit_RiskMatrix_RelBiom()  
+GetPerRecruitGrowthPredIntervals_LB()  
+PlotPerRecruit_ExpCatchSizeDistns_LB()  
+Get_Relative_Value_Per_Recruit_LB()  
 Refer to help files and example code, showing function inputs and outputs.
-
 
 
 ## References:
