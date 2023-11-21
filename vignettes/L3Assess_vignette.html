@@ -302,6 +302,8 @@ analysis</a></li>
 recruit - age-based per recruit analysis</a></li>
 <li><a href="#spawning-potential-ratio---age-based-per-recruit-analysis" id="toc-spawning-potential-ratio---age-based-per-recruit-analysis">Spawning
 potential ratio - age-based per recruit analysis</a></li>
+<li><a href="#apply-age-based-per-recruit-analysis" id="toc-apply-age-based-per-recruit-analysis">Apply age-based per
+recruit analysis</a></li>
 </ul></li>
 <li><a href="#length-based-per-recruit-analysis" id="toc-length-based-per-recruit-analysis">Length-based per recruit
 analysis</a>
@@ -323,7 +325,18 @@ length-based per recruit models)</a>
 <ul>
 <li><a href="#allowing-for-error-in-per-recruit-calculations" id="toc-allowing-for-error-in-per-recruit-calculations">Allowing for
 error in per recruit calculations</a></li>
-<li><a href="#apply-age-based-per-recruit-analysis" id="toc-apply-age-based-per-recruit-analysis">Apply age-based per
+<li><a href="#risk-calculations-and-associated-plots-for-relative-biomass-estimates-from-per-recruit-analysis" id="toc-risk-calculations-and-associated-plots-for-relative-biomass-estimates-from-per-recruit-analysis">Risk
+calculations and associated plots for relative biomass estimates from
+per recruit analysis</a></li>
+<li><a href="#calculation-of-prediction-intervals-for-growth-curves-used-in-length-based-per-recruit-analysis" id="toc-calculation-of-prediction-intervals-for-growth-curves-used-in-length-based-per-recruit-analysis">Calculation
+of prediction intervals for growth curves used in length-based per
+recruit analysis</a></li>
+<li><a href="#calculation-of-expected-size-sizes-and-prediction-intervals-at-different-levels-of-fishing" id="toc-calculation-of-expected-size-sizes-and-prediction-intervals-at-different-levels-of-fishing">Calculation
+of expected size sizes and prediction intervals at different levels of
+fishing</a></li>
+<li><a href="#value-per-recruit-calculations" id="toc-value-per-recruit-calculations">Value per recruit
+calculations</a></li>
+<li><a href="#apply-length-based-per-recruit-analysis" id="toc-apply-length-based-per-recruit-analysis">Apply length-based per
 recruit analysis</a></li>
 </ul></li>
 <li><a href="#references" id="toc-references">References:</a></li>
@@ -333,8 +346,8 @@ recruit analysis</a></li>
 
 <div id="introduction" class="section level1">
 <h1>Introduction</h1>
-<div id="last-updated-may-2023-alex-hesp---dpird" class="section level4">
-<h4>Last updated May 2023 (Alex Hesp - DPIRD)</h4>
+<div id="last-updated-november-2023-alex-hesp---dpird" class="section level4">
+<h4>Last updated November 2023 (Alex Hesp - DPIRD)</h4>
 <p>This package is intended as a toolbox of methods with analyses for
 conducting “level 3” assessments in Western Australia. These methods are
 typically “equilibrium” approaches, used when size and/or age data are
@@ -426,7 +439,7 @@ estimated frequencies at age can be visualised in normal or log space
 <div id="apply-the-chapman-and-robson-1960-mortality-estimator" class="section level4">
 <h4>Apply the Chapman and Robson (1960) mortality estimator</h4>
 <p>Key functions relevant to applying this method are:
-GetChapmanRobsonMortalityResults()
+GetChapmanRobsonMortalityResults()<br />
 PlotAgeBasedCatchCurveResults_NormalSpace()<br />
 PlotAgeBasedCatchCurveResults_LogSpace()<br />
 Refer to help files and example code, showing function inputs and
@@ -866,11 +879,12 @@ throughout the year.</p>
 <h3>Apply length-based catch curve</h3>
 <p>Key functions relevant to applying this method are:<br />
 SimLenAndAgeFreqData()<br />
-VisualiseGrowthApplyingLTM()<br />
 GetLengthBasedCatchCurveResults()<br />
-PlotLengthBasedCatchCurve_RetCatch()<br />
 PlotLengthBasedCatchCurve_Selectivity()<br />
 PlotLengthBasedCatchCurve_Mortality()<br />
+PlotLengthBasedCatchCurve_RetCatch()<br />
+PlotLengthBasedCatchCurve_DiscCatch()<br />
+VisualiseGrowthApplyingLTM()<br />
 Refer to help files and example code, showing function inputs and
 outputs.</p>
 </div>
@@ -1015,7 +1029,8 @@ rmultinom() function from within R.</p>
 <div id="apply-routine-for-simulating-length-andor-age-data" class="section level3">
 <h3>Apply routine for simulating length and/or age data</h3>
 <p>Key functions relevant to applying this method are:<br />
-SimLenAndAgeFreqData()</p>
+SimLenAndAgeFreqData()<br />
+PlotSimLenAndAgeFreqData()</p>
 </div>
 </div>
 <div id="age-based-per-recruit-analysis" class="section level2">
@@ -1176,6 +1191,18 @@ SPR_{s=1:2} =
 \theta_s = \sum_{a=0}^{A}N_{a,s}W_{a,s}P_{a,s}
 \]</span> where <span class="math inline">\(N_{a,s}\)</span>, <span class="math inline">\(W_{a,s}\)</span> and <span class="math inline">\(P_{a,s}\)</span>, respectively, are the number,
 weight and proportion of mature fish, that are of sex <span class="math inline">\(s\)</span> and age <span class="math inline">\(a\)</span>.</p>
+</div>
+<div id="apply-age-based-per-recruit-analysis" class="section level3">
+<h3>Apply age-based per recruit analysis</h3>
+<p>Key functions relevant to applying this method are:<br />
+CalcYPRAndSPRForFMort_AB()<br />
+GetPerRecruitResults_AB()<br />
+PlotPerRecruitResults_AB()<br />
+PlotPerRecruit_Biom_no_err_AB() PlotPerRecruit_Yield_no_err_AB()
+PlotPerRecruit_Param_Err_Distns() GetPerRecruitResults_with_err_AB()
+PlotPerRecruit_Biom_with_err_AB() PlotPerRecruit_RiskMatrix_RelBiom()
+Refer to help files and example code, showing function inputs and
+outputs.</p>
 </div>
 </div>
 <div id="length-based-per-recruit-analysis" class="section level2">
@@ -1482,23 +1509,45 @@ results of key parameters of interest. Lower and Upper 95% confidence
 limits are taken as the 2.5 and 97.5 percentiles of the 500
 estimates.</p>
 <p>Note, it is also possible to incorporate other sources of
-uncertainty, such as for growth and maturity ogives, if estimates are
-available for the both parameters of each ogive and associated
+uncertainty, such as for growth and maturity curves, if estimates are
+available for the both parameters of each curve and associated
 variance-covariance matrix (such as are outputted by the WAFishBiolgy R
-package. ‘Wrapper’ code has been developed but not yet been built into
-the package. The process involves use of the CalcYPRAndSPRForFMort()
+package. ‘Wrapper’ code, involving use of the CalcYPRAndSPRForFMort()
 function for each set of input parameters, and storing and analysing the
-outputs to produce confidence limits.</p>
+outputs to produce confidence limits, has not yet been implemented.</p>
 </div>
-<div id="apply-age-based-per-recruit-analysis" class="section level3">
-<h3>Apply age-based per recruit analysis</h3>
+<div id="risk-calculations-and-associated-plots-for-relative-biomass-estimates-from-per-recruit-analysis" class="section level3">
+<h3>Risk calculations and associated plots for relative biomass
+estimates from per recruit analysis</h3>
+</div>
+<div id="calculation-of-prediction-intervals-for-growth-curves-used-in-length-based-per-recruit-analysis" class="section level3">
+<h3>Calculation of prediction intervals for growth curves used in
+length-based per recruit analysis</h3>
+</div>
+<div id="calculation-of-expected-size-sizes-and-prediction-intervals-at-different-levels-of-fishing" class="section level3">
+<h3>Calculation of expected size sizes and prediction intervals at
+different levels of fishing</h3>
+</div>
+<div id="value-per-recruit-calculations" class="section level3">
+<h3>Value per recruit calculations</h3>
+</div>
+<div id="apply-length-based-per-recruit-analysis" class="section level3">
+<h3>Apply length-based per recruit analysis</h3>
 <p>Key functions relevant to applying this method are:<br />
-CalcYPRAndSPRForFMort_AB()<br />
-GetPerRecruitResults_AB()<br />
-GetPerRecruitResults_with_err_AB() PlotPerRecruitResults_AB()<br />
-PlotPerRecruit_Biom_no_err_AB() PlotPerRecruit_Biom_with_err_AB()
-PlotPerRecruit_Yield_no_err_AB() Refer to help files and example code,
-showing function inputs and outputs.</p>
+CalcYPRAndSPRForFMort_LB()<br />
+GetPerRecruitResults_LB()<br />
+PlotPerRecruitResults_LB()<br />
+PlotPerRecruit_Biom_no_err_LB()<br />
+PlotPerRecruit_Yield_no_err_LB()<br />
+PlotPerRecruit_Param_Err_Distns()<br />
+GetPerRecruitResults_with_err_LB()<br />
+PlotPerRecruit_Biom_with_err_LB()<br />
+PlotPerRecruit_RiskMatrix_RelBiom()<br />
+GetPerRecruitGrowthPredIntervals_LB()<br />
+PlotPerRecruit_ExpCatchSizeDistns_LB()<br />
+Get_Relative_Value_Per_Recruit_LB()<br />
+Refer to help files and example code, showing function inputs and
+outputs.</p>
 </div>
 </div>
 <div id="references" class="section level2">

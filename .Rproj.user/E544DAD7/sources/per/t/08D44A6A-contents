@@ -6399,6 +6399,7 @@ PlotAgeLengthCatchCurve_Pears_Resid <- function(params, RefnceAges, MLL, GrowthC
 
   # calculate the Pearson residuals (for a multinomial distribution)
   # single sex - Pearson residuals
+
   if (is.vector(ObsRetCatchFreqAtLen)) {
     PearResid <- data.frame(matrix(nrow = nAgeCl, ncol = nLenCl))
     colnames(PearResid) <- midpt
@@ -6406,9 +6407,10 @@ PlotAgeLengthCatchCurve_Pears_Resid <- function(params, RefnceAges, MLL, GrowthC
       PearResid[,i]=0
       if (sum(ObsRetCatchFreqAtLengthAndIntAge[,i]) > 1) {
         Prop_Resid = (ObsCatchPropAgeAtLength[,i] - ExpRetCatchPropIntAgeGivenLength[,i])
+        cat('\n')
         Prop_Var = sqrt(ExpRetCatchPropIntAgeGivenLength[,i]*(1-ExpRetCatchPropIntAgeGivenLength[,i]) /
                           sum(ObsRetCatchFreqAtLengthAndIntAge[,i]))
-        Prop_Var[which(Prop_Var==0)]=1E-4
+        Prop_Var[which(Prop_Var<=0.01)]=0.01
         PearResid[,i] = Prop_Resid / Prop_Var
       }
     }
@@ -6425,14 +6427,14 @@ PlotAgeLengthCatchCurve_Pears_Resid <- function(params, RefnceAges, MLL, GrowthC
         Prop_Resid = (ObsCatchPropAgeAtLength_Fem[,i] - ExpRetCatchPropIntAgeGivenLength_Fem[,i])
         Prop_Var = sqrt(ExpRetCatchPropIntAgeGivenLength_Fem[,i]*(1-ExpRetCatchPropIntAgeGivenLength_Fem[,i]) /
                           sum(ObsRetCatchFreqAtLengthAndIntAge_Fem[,i]))
-        Prop_Var[which(Prop_Var==0)]=1E-4
+        Prop_Var[which(Prop_Var<=0.01)]=0.01
         PearResid_Fem[,i] = Prop_Resid / Prop_Var
       }
       if (sum(ObsRetCatchFreqAtLengthAndIntAge_Mal[,i]) > 1) {
         Prop_Resid = (ObsCatchPropAgeAtLength_Mal[,i] - ExpRetCatchPropIntAgeGivenLength_Mal[,i])
         Prop_Var = sqrt(ExpRetCatchPropIntAgeGivenLength_Mal[,i]*(1-ExpRetCatchPropIntAgeGivenLength_Mal[,i]) /
                           sum(ObsRetCatchFreqAtLengthAndIntAge_Mal[,i]))
-        Prop_Var[which(Prop_Var==0)]=1E-4
+        Prop_Var[which(Prop_Var<=0.01)]=0.01
         PearResid_Mal[,i] = Prop_Resid / Prop_Var
       }
 
@@ -10505,7 +10507,7 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
     AddAxesAndTickLabelsToPlot(xmin=NA, xmax, xint, ymin=NA, ymax, yint, cexval=NA, cexaxisval=0.8, lwdval=1.5, lineval=NA, lasval=NA)
     mtext(expression(paste(plain("Mat. biom. at age (kg"),plain(")"))),las=3,side=2,line=2.5,cex=0.7,lwd=1.75)
     mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
-    legend('topright', col=c("red","red"),lty=c("solid","dotted"),legend=c("Fem. unfish","Fem unfish"),bty='n', cex=1.0,lwd=1.75)
+    legend('topright', col=c("red","red"),lty=c("solid","dotted"),legend=c("Fem. unfish","Fem fish"),bty='n', cex=1.0,lwd=1.75)
   }
 
   # plot fished and unfished mature male biomass at age given specified current fully-selected fishing mortality
@@ -10524,7 +10526,7 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
     AddAxesAndTickLabelsToPlot(xmin=NA, xmax, xint, ymin=NA, ymax, yint, cexval=NA, cexaxisval=0.8, lwdval=1.5, lineval=NA, lasval=NA)
     mtext(expression(paste(plain("Mat. biom. at age (kg"),plain(")"))),las=3,side=2,line=2.5,cex=0.7,lwd=1.75)
     mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
-    legend('topright', col=c("blue","blue"),lty=c("solid","dotted"),legend=c("Mal. unfish","Mal. unfish"),bty='n', cex=1.0,lwd=1.75)
+    legend('topright', col=c("blue","blue"),lty=c("solid","dotted"),legend=c("Mal. unfish","Mal. fish"),bty='n', cex=1.0,lwd=1.75)
   }
 
   #Plot 3:
@@ -10775,12 +10777,12 @@ PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
   # plot growth curve
   if (PlotOpt==0 | PlotOpt==1) {
     if (PlotOpt==0 | PlotOpt==1) {
-      y1=max(Res$ModelDiag$MeanSizeAtAge[1,])
-      y2=max(Res$ModelDiag$MeanSizeAtAge[2,])
+      y1=max(Growth_95PLs)
+      y2=max(Growth_95PLs)
       if (y1 > y2) {
-        ylims = Get_yaxis_scale(c(0,Res$ModelDiag$MeanSizeAtAge[1,]))
+        ylims = Get_yaxis_scale(Growth_95PLs)
       } else {
-        ylims = Get_yaxis_scale(c(0,Res$ModelDiag$MeanSizeAtAge[2,]))
+        ylims = Get_yaxis_scale(Growth_95PLs)
       }
       ymax = ylims$ymax; yint = ylims$yint
       xlims = Get_xaxis_scale(Ages)
@@ -10836,12 +10838,12 @@ PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
          ylab="",xlab="",cex=0.8)
     if (DiscMort == 0) {
       lines(midpt, Res$ModelDiag$FemSelLandAtLen, "l", col="red",lty="dotted", cex=0.8)
-      legend('topleft', col=c("red","red"),legend=c("Fem. mature","Fem. reten."),
+      legend('topleft', col=c("red","red"),legend=c("Fem. mature","Fem. sel. land."),
              lty=c("solid","dotted"),bty='n', cex=0.8,lwd=1.75)
     } else {
       lines(midpt,Res$ModelDiag$FemSelLandAtLen, "l", col="red",lty="dotted",cex=0.8)
       lines(midpt,Res$ModelDiag$FemSelDiscAtLen, "l", col="brown",lty="dotted",cex=0.8)
-      legend('topleft', col=c("red","red","brown"),legend=c("Fem. mature","Fem. land.","Fem. disc."),
+      legend('topleft', col=c("red","red","brown"),legend=c("Fem. mature","Fem. sel. land.","Fem. sel. disc."),
              lty=c("solid","dotted","dotted"),bty='n', cex=0.8,lwd=1.75)
     }
     AddAxesAndTickLabelsToPlot(xmin=NA, xmax, xint, ymin=NA, ymax=1, yint=0.5, cexval=NA, cexaxisval=0.8, lwdval=1.5, lineval=NA, lasval=NA)
@@ -10862,12 +10864,12 @@ PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
          ylab="",xlab="", cex=0.8)
     if (DiscMort == 0) {
       lines(midpt, Res$ModelDiag$FemSelLandAtLen, "l", col="blue",lty="dotted", cex=0.8)
-      legend('topleft', col=c("blue","blue"),legend=c("Male mature","Male reten."),
+      legend('topleft', col=c("blue","blue"),legend=c("Male mature","Male sel. land."),
              lty=c("solid","dotted"),bty='n', cex=0.8,lwd=1.75)
     } else {
       lines(midpt, Res$ModelDiag$FemSelLandAtLen, "l", col="blue",lty="dotted", cex=0.8)
       lines(midpt, Res$ModelDiag$FemSelDiscAtLen, "l", col="purple",lty="dotted", cex=0.8)
-      legend('topleft', col=c("blue","blue","purple"),legend=c("Male mature","Male land.", "Male disc."),
+      legend('topleft', col=c("blue","blue","purple"),legend=c("Male mature","Male sel. land.", "Male disc."),
              lty=c("solid","dotted","dotted"),bty='n', cex=0.8,lwd=1.75)
     }
     AddAxesAndTickLabelsToPlot(xmin=NA, xmax, xint, ymin=NA, ymax=1, yint=0.5, cexval=NA, cexaxisval=0.8, lwdval=1.5, lineval=NA, lasval=NA)
