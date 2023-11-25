@@ -9,9 +9,10 @@ As with other packages in github, to install L3Assess, first ensure you have the
 Then, use: 
 
 library(devtools)
-
 devtools::install_github("SAlexHesp/L3AssessRPackage", build_vignettes=TRUE)
 
-library(L3Assess)
+If you already have a version of the L3Assess package installed but wish to update, I suggest using the line of code below rather than the one above 
+to ensure the updated version is installed.
+devtools::install_github("SAlexHesp/L3AssessRPackage", build_vignettes=TRUE, force=TRUE)
 
 
