@@ -4,18 +4,19 @@
 \alias{Calculate_NLL_LogisticCatchCurve}
 \title{Return negative log-likelihood for a catch curve with age-based, logistic selectivity}
 \usage{
-Calculate_NLL_LogisticCatchCurve(ln_params)
+Calculate_NLL_LogisticCatchCurve(params)
 }
 \arguments{
-\item{ln_params}{model parameters log(c(FMort, SelA50, SelA95)}
+\item{params}{model parameters log(c(FMort, SelA50, SelDelta) for multinomial NLL or
+log(c(FMort, SelA50, SelDelta, theta) for Dirichlet multinomial NLL}
 }
 \value{
 negative log-likelihood (NLL)
 }
 \description{
-This function returns the negative log-likelihood, given age frequency data, a value total mortality,
-and age-based selectivity parameters, for a catch curve with age-based, logistic selectivity.
-Function requires an estimate of natural mortality (NatMort), a value for maximum age (MaxAge)
-and age frequency data (stored in memory in R)
+This function returns the multinomial or Dirichlet multinomial negative log-likelihood, given age
+frequency data, a value total mortality, and age-based selectivity parameters, for a catch curve with
+age-based, logistic selectivity. Function requires an estimate of natural mortality (NatMort), a value
+for maximum age (MaxAge) and age frequency data (stored in memory in R)
 }
 \keyword{internal}

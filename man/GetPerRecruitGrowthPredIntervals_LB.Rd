@@ -4,17 +4,10 @@
 \alias{GetPerRecruitGrowthPredIntervals_LB}
 \title{Get 95 percent prediction intervals for growth curves used in length-based per recruit analysis}
 \usage{
-GetPerRecruitGrowthPredIntervals_LB(
-  MaxModelAge,
-  nLenCl,
-  midpt,
-  lbnd,
-  ubnd,
-  Res
-)
+GetPerRecruitGrowthPredIntervals_LB(nTimeSteps, nLenCl, midpt, lbnd, ubnd, Res)
 }
 \arguments{
-\item{MaxModelAge}{maximum age considered by model}
+\item{nTimeSteps}{number of model timesteps}
 
 \item{nLenCl}{number of length classes}
 

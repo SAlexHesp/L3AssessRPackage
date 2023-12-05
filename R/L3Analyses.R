@@ -7323,33 +7323,34 @@ GetChapmanRobsonMortalityResults <- function(RecAssump, SpecRecAge, MinAge, MaxA
 
 #' Return negative log-likelihood for a catch curve with age-based, logistic selectivity
 #'
-#' This function returns the negative log-likelihood, given age frequency data, a value total mortality,
-#' and age-based selectivity parameters, for a catch curve with age-based, logistic selectivity.
-#' Function requires an estimate of natural mortality (NatMort), a value for maximum age (MaxAge)
-#' and age frequency data (stored in memory in R)
+#' This function returns the multinomial or Dirichlet multinomial negative log-likelihood, given age
+#' frequency data, a value total mortality, and age-based selectivity parameters, for a catch curve with
+#' age-based, logistic selectivity. Function requires an estimate of natural mortality (NatMort), a value
+#' for maximum age (MaxAge) and age frequency data (stored in memory in R)
 #'
 #' @keywords internal
 #'
-#' @param ln_params model parameters log(c(FMort, SelA50, SelA95)
+#' @param params model parameters log(c(FMort, SelA50, SelDelta) for multinomial NLL or
+#' log(c(FMort, SelA50, SelDelta, theta) for Dirichlet multinomial NLL
 #'
 #' @return negative log-likelihood (NLL)
-Calculate_NLL_LogisticCatchCurve <- function(ln_params) {
+Calculate_NLL_LogisticCatchCurve <- function(params) {
 
-  FMort = exp(ln_params[1])
-  SelA50 = exp(ln_params[2])
-  SelA95 = exp(ln_params[3])
+  FMort = exp(params[1])
+  SelA50 = exp(params[2])
+  SelDelta = exp(params[3])
+  SelA95 = SelA50 + SelDelta
+  # inverse logit transformed value
+  if (length(params)==4) {
+    temp = params[4]
+    DM_theta = 1/(1+exp(-temp));
+  }
 
-  # selectivity
   SelAtAge = rep(0,length(Ages))
   SelAtAge = 1 / (1 + exp(-log(19) * (Ages - SelA50) / (SelA95 - SelA50)))
-
-  # fishing mortality at age
   FAtAge = SelAtAge * FMort
-
-  # total mortality at age
   ZAtAge = NatMort + FAtAge
 
-  # popn. numbers at age
   N = numeric(length(Ages))
   N[1] = 1
   k=1
@@ -7358,16 +7359,12 @@ Calculate_NLL_LogisticCatchCurve <- function(ln_params) {
   for (i in seq(MinAge+1,MaxAge,1)) {
     k=k+1
     if (i < MaxAge) {
-      N[k] = N[k-1] * exp(-ZAtAge[k])
+      N[k] = N[k-1] * exp(-ZAtAge[k-1])
     } else {
       N[k] = N[k-1] * exp(-ZAtAge[k-1]) / (1 - exp(-ZAtAge[k]))
     }
   }
-
-  # catch at age
   CatchAtAge = N * (FAtAge / ZAtAge) * (1 - exp(-ZAtAge))
-
-  # calculate expected catch proportion at age
   ExpPropAtAge = CatchAtAge / sum(CatchAtAge)
 
   # calculate F penalty
@@ -7376,8 +7373,32 @@ Calculate_NLL_LogisticCatchCurve <- function(ln_params) {
     F_Pen = 1000 * (FMort - 2.0)^2
   }
 
-  # calculate multinonmial negative log-likelihood
-  NLL = -sum((ObsAgeFreq * log(ExpPropAtAge + 1E-4))) + F_Pen
+  # calculate multinomial negative log-likelihood
+  if (length(params==3)) {
+    NLL = -sum((ObsAgeFreq * log(ExpPropAtAge + 1E-4))) + F_Pen
+  }
+
+  # calculate Dirichlet multinomial negative log-likelihood
+  if (length(params)==4) {
+    SampleSize = sum(ObsAgeFreq)
+    nAges = length(ObsAgeFreq)
+    ObsPropAtAge = ObsAgeFreq/SampleSize
+    sum1 = 0; sum2 = 0; NLL = 0
+    for (t in 1:nAges) {
+      sum1 = sum1 + lgamma(SampleSize * ObsPropAtAge[t] + 1)
+      sum2 = sum2 + (lgamma(SampleSize * ObsPropAtAge[t] + DM_theta * SampleSize * ExpPropAtAge[t])
+                     - lgamma(DM_theta * SampleSize * ExpPropAtAge[t]))
+    }
+    NLL = -(lgamma(SampleSize+1) - sum1 + (lgamma(DM_theta * SampleSize) - lgamma(SampleSize + DM_theta * SampleSize)) + sum2)
+    NLL = NLL + F_Pen
+
+  }
+
+  if (length(params)==3) {
+    cat("NLL",NLL,"F_Pen",F_Pen,"params",exp(params),'\n')
+  } else {
+    cat("NLL",NLL,"F_Pen",F_Pen,"params",c(FMort, SelA50, SelDelta, DM_theta),'\n')
+  }
 
   return(NLL)
 
@@ -7386,12 +7407,14 @@ Calculate_NLL_LogisticCatchCurve <- function(ln_params) {
 #' Get statistical outputs from a fitted catch curve with age-based, logistic selectivity
 #'
 #' This function fits a catch curve with an asymptotic, age-based logistic selectivity curve,
-#' to a sample of fish age frequency data, by minimising the negative log-likelihood associated
-#' with the parameters and data, using nlminb. It provides various statistical outputs including
-#' convergence statistics, parameter estimates and associated 95 percent confidence limits and associated
-#' variance-covariance matrix, calculated using the MASS package
+#' to a sample of fish age frequency data, by minimising either a multinomial or Dirichlet
+#' multinomial the negative log-likelihood associated with the parameters and data, using nlminb.
+#' It provides various statistical outputs including convergence statistics, parameter estimates
+#' and associated 95 percent confidence limits and associated variance-covariance matrix, calculated
+#' using the MASS package
 #'
-#' @param ln_params initial values of model parameters log(c(FMort, SelA50, SelA95)
+#' @param params model parameters log(c(FMort, SelA50, SelDelta) for multinomial NLL or
+#' log(c(FMort, SelA50, SelDelta, theta) for Dirichlet multinomial NLL
 #' @param NatMort natural mortality
 #' @param Ages ages in observed data
 #' @param ObsAgeFreq observed age frequency data
@@ -7399,15 +7422,18 @@ Calculate_NLL_LogisticCatchCurve <- function(ln_params) {
 #' @return negative log-likelihood (nll), nlminb convergence diagnostic (convergence)
 #' sample size (SampleSize), parameter estimates with lower and upper 95 percent
 #' confidence limits (ParamEst), point estimates for parameters estimated in log space (Estlnparams),
-#' variance-covariance matrix for estimated parameters (vcov.Params), standard errors for estimated
-#' parameters (lnEstFMort_se, lnEstSelA50_se, lnEstFSelA95_se), selectivity at age (SelAtAge), fishing
+#' variance-covariance matrix for estimated parameters (vcov.Params), parameter correlation matrix (cor.Params),
+#' standard errors for estimated parameters (lnEstFMort_se, lnEstSelA50_se, lnEstFSelA95_se), selectivity at age (SelAtAge), fishing
 #' mortality at age (FAtAge), estimated frequencies at age with associated 95 percent confidence limits
 #' (EstFreq, EstFreq_Zlow, EstFreq_Zup), random values of parameters in log space from parametric resampling,
 #' using rmultinom function (lnparams.sims), and associated median and lower 2.5 and upper 97.5 percentiles
 #' of estimates for frequency at age (EstFreq.sim), selectivity parameters in normal space (SelA50.sim, SelA95.sim),
-#' fishing mortality (FMort.sim) and total mortality (EstZMort.sim)
-#'
+#' fishing mortality (FMort.sim) and total mortality (EstZMort.sim), estimated parameters from saved par
+#' object (Estparams), Dirichlet multinomial effective sample size estimate (EffSampSize), if using this
+#' objective function
 #' @examples
+#' # fit logistic catch cuve model using multinomial likelihood
+#' # simulate data
 #' set.seed(123)
 #' MinAge = 1
 #' MaxAge = 40
@@ -7420,18 +7446,66 @@ Calculate_NLL_LogisticCatchCurve <- function(ln_params) {
 #' SampleSize = 1000 # required number of fish for age sample
 #' Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
 #' ObsAgeFreq = unlist(as.vector(Res$CatchSample))
+#' # fit model
 #' Init_FMort = 0.2
-#' Init_SelA50 = 5
-#' Init_SelA95 = 7
-#' ln_params = log(c(Init_FMort, Init_SelA50, Init_SelA95))
-#' res=GetLogisticCatchCurveResults(ln_params, NatMort, Ages, ObsAgeFreq)
+#' Init_SelA50 = 3
+#' Init_SelDelta = 2
+#' params = log(c(Init_FMort, Init_SelA50, Init_SelDelta))
+#' res=GetLogisticCatchCurveResults(params, NatMort, Ages, ObsAgeFreq)
+#' # fit logistic catch curve model using Dirichlet multinomial likelihood
+#' # get expected catch proportions at age, for simulating data
+#' MinAge = 1
+#' MaxAge = 40
+#' Ages = MinAge:MaxAge
+#' NatMort <- exp(1.46 - (1.01 * (log(MaxAge)))) # i.e. Hoenig's (1983) eqn for fish
+#' FMort = 0.1
+#' SelA50 = 5
+#' SelA95 = 7
+#' SelAtAge = rep(0, length(Ages))
+#' N = rep(0, length(Ages))
+#' SelAtAge = 1/(1 + exp(-log(19) * (Ages - SelA50)/(SelA95 - SelA50)))
+#' FAtAge = SelAtAge * FMort
+#' ZAtAge = NatMort + FAtAge
+#' k = 1
+#' N[1] = 1
+#' for (i in seq(MinAge + 1, MaxAge, 1)) {
+#'   k = k + 1
+#'   if (i < MaxAge) {
+#'     N[k] = N[k-1] * exp(-ZAtAge[k-1])
+#'   }
+#'   else {
+#'     N[k] = N[k-1] * exp(-ZAtAge[k-1])/(1 - exp(-ZAtAge[k]))
+#'   }
+#' }
+#' CatchAtAge = N * (FAtAge/ZAtAge) * (1 - exp(-ZAtAge))
+#' PropAtAge = CatchAtAge/sum(CatchAtAge)
+#' library(dirmult)
+#' # Simulate data from a Dirichlet multinomial distribution
+#' # J = number of fish sampling events
+#' # K = number of age classes
+#' # n = number of fish sampled from each sampling event
+#' # pi = expected proportion at age
+#' # theta = amount of autocorrelation between ages of fish within sampling events
+#' set.seed(123)
+#' theta_val = 0.3
+#' simDat = simPop(J=50, K=nAges, n=10, pi=PropAtAge, theta=theta_val)
+#' simAges = data.frame(simDat$data)
+#' colnames(simAges)=Ages
+#' simAgeFreq = colSums(simAges)
+#' ObsAgeFreq = as.vector(simAgeFreq)
+#' # fit catch curve
+#' Init_FMort = 0.2
+#' Init_SelA50 = 3
+#' Init_SelDelta = 2
+#' Init_theta = 0.5
+#' Init_theta_logit = log(Init_theta/(1-Init_theta)) # logit transform (so theta is always between 0 and 1)
+#' params = c(log(Init_FMort), log(Init_SelA50), log(Init_SelDelta), Init_theta_logit)
+#' res=GetLogisticCatchCurveResults(params, NatMort, Ages, ObsAgeFreq)
 #' @export
-GetLogisticCatchCurveResults <- function (ln_params, NatMort, Ages, ObsAgeFreq)
+GetLogisticCatchCurveResults <- function (params, NatMort, Ages, ObsAgeFreq)
 {
-  nlmb = nlminb(ln_params, Calculate_NLL_LogisticCatchCurve)
-  nlmb$objective
-  nlmb$convergence
-  nlmb$par
+
+  nlmb = nlminb(params, Calculate_NLL_LogisticCatchCurve)
   hess.out = optimHess(nlmb$par, Calculate_NLL_LogisticCatchCurve)
   vcov.Params = solve(hess.out)
   ses = sqrt(diag(vcov.Params))
@@ -7442,14 +7516,30 @@ GetLogisticCatchCurveResults <- function (ln_params, NatMort, Ages, ObsAgeFreq)
 
   EstFMort = c(exp(nlmb$par[1]), exp(nlmb$par[1] + c(-1.96, 1.96) * ses[1]))
   EstSelA50 = c(exp(nlmb$par[2]), exp(nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
-  EstSelA95 = c(exp(nlmb$par[3]), exp(nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
+  EstSelDelta = c(exp(nlmb$par[3]), exp(nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
+  EstSelA95 = EstSelA50[1] + EstSelDelta[1]
+
+  # inverse logit transformed value for Dirichlet multinomial theta parameter
+  if (length(params)==4) {
+    temp = c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4])
+    EstTheta = 1/(1+exp(-temp));
+  }
+
   SelAtAge = rep(0, length(Ages))
   SelAtAge = 1/(1 + exp(-log(19) * (Ages - EstSelA50[1])/(EstSelA95[1] - EstSelA50[1])))
   FAtAge = SelAtAge * EstFMort[1]
   ZAtAge = NatMort + FAtAge
-  ParamEst = t(data.frame(FMort = round(EstFMort, 3), SelA50 = round(EstSelA50,3),
-                          SelA95 = round(EstSelA95, 3)))
+
+  if (length(params)==3) {
+    ParamEst = t(data.frame(FMort = round(EstFMort, 3), SelA50 = round(EstSelA50,3),
+                            EstSelDelta = round(EstSelDelta, 3)))
+  }
+  if (length(params)==4) {
+    ParamEst = t(data.frame(FMort = round(EstFMort, 3), SelA50 = round(EstSelA50,3),
+                            EstSelDelta = round(EstSelDelta, 3), Theta = round(EstTheta, 3)))
+  }
   colnames(ParamEst) = c("Estimate", "lw_95%CL", "up_95%CL")
+
   SampleSize = sum(ObsAgeFreq)
   nll = nlmb$objective
   convergence = nlmb$convergence
@@ -7460,13 +7550,23 @@ GetLogisticCatchCurveResults <- function (ln_params, NatMort, Ages, ObsAgeFreq)
   EstFreq.sim = data.frame(matrix(nrow = 500, ncol = length(Ages)))
   colnames(EstFreq.sim) <- Ages
   SelA50.sim = rep(0,500)
+  SelDelta.sim = rep(0,500)
   SelA95.sim = rep(0,500)
   FMort.sim = rep(0,500)
   EstZMort.sim = rep(0,500)
+  if (length(params)==4) EstTheta.sim = rep(0,500)
+
   for (j in 1:500) {
     FMort.sim[j] = exp(sims[j, 1])
     SelA50.sim[j] = exp(sims[j, 2])
-    SelA95.sim[j] = exp(sims[j, 3])
+    SelDelta.sim[j] = exp(sims[j, 3])
+    SelA95.sim[j] = SelA50.sim[j] + SelDelta.sim[j]
+
+    if (length(params)==4) {
+      temp = sims[j, 4]
+      EstTheta.sim= 1/(1+exp(-temp))
+    }
+
     SelAtAge.sim = rep(0, length(Ages))
     SelAtAge.sim = 1/(1 + exp(-log(19) * (Ages - SelA50.sim[j])/(SelA95.sim[j] -
                                                                    SelA50.sim[j])))
@@ -7480,10 +7580,10 @@ GetLogisticCatchCurveResults <- function (ln_params, NatMort, Ages, ObsAgeFreq)
     for (i in seq(MinAge + 1, MaxAge, 1)) {
       k = k + 1
       if (i < MaxAge) {
-        N.sim[k] = N.sim[k - 1] * exp(-ZAtAge.sim[k - 1])
+        N.sim[k] = N.sim[k-1] * exp(-ZAtAge.sim[k-1])
       }
       else {
-        N.sim[k] = N.sim[k - 1] * exp(-ZAtAge.sim[k - 1])/(1 - exp(-ZAtAge.sim[k]))
+        N.sim[k] = N.sim[k-1] * exp(-ZAtAge.sim[k-1])/(1 - exp(-ZAtAge.sim[k]))
       }
     }
     CatchAtAge.sim = N.sim * (FAtAge.sim/ZAtAge.sim) * (1 - exp(-ZAtAge.sim))
@@ -7495,32 +7595,42 @@ GetLogisticCatchCurveResults <- function (ln_params, NatMort, Ages, ObsAgeFreq)
   EstFreq_Zlow = apply(EstFreq.sim, 2, quantile, probs = 0.025)
   EstFreq_Zup = apply(EstFreq.sim, 2, quantile, probs = 0.975)
 
+  ModelDiag = list(lnEstFMort.se = ses[1],
+                   lnEstSelA50.se = ses[2],
+                   lnEstFSelA95.se = ses[3],
+                   SelAtAge = SelAtAge,
+                   FAtAge = FAtAge,
+                   EstFreq = EstFreq,
+                   EstFreq_Zlow = EstFreq_Zlow,
+                   EstFreq_Zup = EstFreq_Zup,
+                   params.sims = sims,
+                   EstFreq.sim = EstFreq.sim,
+                   SelA50.sim = SelA50.sim,
+                   SelDelta.sim = SelDelta.sim,
+                   SelA95.sim = SelA95.sim,
+                   FMort.sim = FMort.sim,
+                   EstZMort.sim = EstZMort.sim,
+                   Estparams = nlmb$par)
+
   results = list(nll = nll,
                  convergence = convergence,
                  SampleSize = SampleSize,
                  ParamEst = ParamEst,
-                 Estlnparams = nlmb$par,
                  vcov.Params = vcov.Params,
                  cor.Params = cor.Params,
-                 lnEstFMort_se = ses[1],
-                 lnEstSelA50_se = ses[2],
-                 lnEstFSelA95_se = ses[3],
-                 SelAtAge = SelAtAge,
-                 FAtAge = FAtAge,
-                 EstFreq = EstFreq,
-                 EstFreq_Zlow = EstFreq_Zlow,
-                 EstFreq_Zup = EstFreq_Zup,
-                 lnparams.sims = sims,
-                 EstFreq.sim = EstFreq.sim,
-                 SelA50.sim = SelA50.sim,
-                 SelA95.sim = SelA95.sim,
-                 FMort.sim = FMort.sim,
-                 EstZMort.sim = EstZMort.sim)
+                 ModelDiag = ModelDiag)
+
+  # Dirichlet multinomial effective sample size
+  if (length(params)==4) {
+    temp = ((1+ (EstTheta*sum(ObsAgeFreq))) / (1 + EstTheta))
+    EffSampSize <- t(data.frame(EffSampSize = temp))
+    colnames(EffSampSize) = c("Estimate", "lw_95%CL", "up_95%CL")
+    results$EffSampSize = EffSampSize
+  }
+
+
   return(results)
 }
-
-
-
 
 #' Plot age based catch curve results in normal space
 #'
@@ -10507,7 +10617,7 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
     AddAxesAndTickLabelsToPlot(xmin=NA, xmax, xint, ymin=NA, ymax, yint, cexval=NA, cexaxisval=0.8, lwdval=1.5, lineval=NA, lasval=NA)
     mtext(expression(paste(plain("Mat. biom. at age (kg"),plain(")"))),las=3,side=2,line=2.5,cex=0.7,lwd=1.75)
     mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
-    legend('topright', col=c("red","red"),lty=c("solid","dotted"),legend=c("Fem. unfish","Fem fish"),bty='n', cex=1.0,lwd=1.75)
+    legend('topright', col=c("red","red"),lty=c("solid","dotted"),legend=c("Fem. unfish","Fem. fish"),bty='n', cex=1.0,lwd=1.75)
   }
 
   # plot fished and unfished mature male biomass at age given specified current fully-selected fishing mortality
@@ -10757,7 +10867,8 @@ PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
                                EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
                                FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
                                ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, FMort)
-  Growth_95PLs = GetPerRecruitGrowthPredIntervals_LB(MaxModelAge, nLenCl, midpt, lbnd, ubnd, Res)
+
+  Growth_95PLs = GetPerRecruitGrowthPredIntervals_LB(nTimeSteps, nLenCl, midpt, lbnd, ubnd, Res)
 
 
   Output_Opt = 1 # 1=standard output, 2=with added length and weight outputs (slower)
@@ -13530,19 +13641,19 @@ PlotPerRecruit_Biom_with_err_LB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
 #'
 #' This function outputs 95 percent prediction intervals for growth curves used in length-based per recruit analysis
 #'
-#' @param MaxModelAge maximum age considered by model
+#' @param nTimeSteps number of model timesteps
 #' @param nLenCl number of length classes
 #' @param lbnd lower bounds of length classes
 #' @param ubnd upper bounds of length classes
 #' @param midpt mid points bounds of length classes
 #' @param Res object containing results outputted by CalcYPRAndSPRForFMort_LB function
 #' @export
-GetPerRecruitGrowthPredIntervals_LB <- function(MaxModelAge, nLenCl, midpt, lbnd, ubnd, Res) {
+GetPerRecruitGrowthPredIntervals_LB <- function(nTimeSteps, nLenCl, midpt, lbnd, ubnd, Res) {
 
-  FemLenAtAge_lw = rep(NA,MaxModelAge); FemLenAtAge_hi = rep(NA,MaxModelAge)
-  MalLenAtAge_lw = rep(NA,MaxModelAge); MalLenAtAge_hi = rep(NA,MaxModelAge)
+  FemLenAtAge_lw = rep(NA,nTimeSteps); FemLenAtAge_hi = rep(NA,nTimeSteps)
+  MalLenAtAge_lw = rep(NA,nTimeSteps); MalLenAtAge_hi = rep(NA,nTimeSteps)
 
-  for (i in 1:MaxModelAge) {
+  for (i in 1:nTimeSteps) {
 
     # calc length class distribution for age class
     FemProbs = Res$ModelDiag$Fish_FemNPerRecAtAge[i,] / sum(Res$ModelDiag$Fish_FemNPerRecAtAge[i,])
