@@ -7724,7 +7724,6 @@ PlotAgeBasedCatchCurveResults_NormalSpace <- function(RecAssump, SpecRecAge, Min
     if (is.na(MainLabel)) MainLabel = "Logistic selectivity"
   }
 
-
   # Chapman-Robson
   if (CatchCurveModel == 1) {
     Z_value = round(Res$EstZMort[1],digits=3)
@@ -7761,8 +7760,13 @@ PlotAgeBasedCatchCurveResults_NormalSpace <- function(RecAssump, SpecRecAge, Min
   axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
   axis(2, at = seq(0, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
   if (PlotCLs == TRUE) {
-    sm1 = spline(Ages[j], Res$EstFreq_Zlow[1:length(jj)], n=100, method="natural")
-    sm2 = spline(Ages[j], Res$EstFreq_Zup[1:length(j)], n=100, method="natural")
+    if (CatchCurveModel == 3) {
+      sm1 = spline(Ages[j], Res$ModelDiag$EstFreq_Zlow[1:length(jj)], n=100, method="natural")
+      sm2 = spline(Ages[j], Res$ModelDiag$EstFreq_Zup[1:length(j)], n=100, method="natural")
+    } else {
+      sm1 = spline(Ages[jj], Res$EstFreq_Zlow[1:length(jj)], n=100, method="natural")
+      sm2 = spline(Ages[j], Res$EstFreq_Zup[1:length(j)], n=100, method="natural")
+    }
     if (length(which(sm1$y<0))>0) sm1$y[1:max(which(sm1$y<0))]=0
     if (length(which(sm2$y<0))>0) sm2$y[1:max(which(sm2$y<0))]=0
     x = c(sm1$x, rev(sm2$x)) # using shading for 95% CLs
@@ -7771,8 +7775,11 @@ PlotAgeBasedCatchCurveResults_NormalSpace <- function(RecAssump, SpecRecAge, Min
   }
   # lines(Ages[jjj], Res$EstFreq[1:length(jjj)], col="black")
   points(Ages, ObsAgeFreq, pch=16, cex=0.8)
-  points(Ages[j], Res$EstFreq[1:length(j)], col="red", pch=1, cex=0.8)
-
+  if (CatchCurveModel == 3) {
+    points(Ages[j], Res$ModelDiag$EstFreq[1:length(j)], col="red", pch=1, cex=0.8)
+  } else {
+    points(Ages[j], Res$EstFreq[1:length(j)], col="red", pch=1, cex=0.8)
+  }
   if (PlotCLs == FALSE) { # if not plotting confidence intervals, can include last age
     xx=which(Ages==max(Ages)) # position of last age
     points(Ages[x:xx], Res$EstFreq[1:length(x:xx)], col="red", pch=1, cex=0.8)
@@ -7780,8 +7787,6 @@ PlotAgeBasedCatchCurveResults_NormalSpace <- function(RecAssump, SpecRecAge, Min
 
   legend("topright", legend=bquote(paste("Z = ", .(Z_value), " ",y^-1)), y.intersp = 1.5, inset=c(0.13,0),
          lty=1, cex = 1, bty="n",seg.len = 0)
-  # legend("topleft", legend=c("Observed","Estimated"), y.intersp = 1.0, inset=c(0.13,0),
-  #        lty=1, cex = 0.8, bty="n", seg.len = 0, pch=c(16,1), col=c("black","red"))
 }
 
 #' Plot age based catch curve results in log space
@@ -7907,9 +7912,8 @@ PlotAgeBasedCatchCurveResults_LogSpace <- function(RecAssump, SpecRecAge, MinFre
   # logistic selectivity
   if (CatchCurveModel == 3) {
     Z_value = round(Res$ParamEst[1,1] + NatMort,digits=3)
-    # x=which(Ages==min(which(log(Res$EstFreq_Zlow)>0))) # RecAge position
-    x=min(which(log(Res$EstFreq_Zlow)>0)) # RecAge position
-    xx=length(which(log(Res$EstFreq_Zlow) > -1)) # position of last age
+    x=min(which(log(Res$ModelDiag$EstFreq_Zlow)>0)) # RecAge position
+    xx=length(which(log(Res$ModelDiag$EstFreq_Zlow) > -1)) # position of last age
     j = seq(x,xx,1) # up
   }
 
@@ -7919,6 +7923,7 @@ PlotAgeBasedCatchCurveResults_LogSpace <- function(RecAssump, SpecRecAge, MinFre
   axis(2, at = seq(ymin, ymax, yint), line = 0.2, labels = F)
   axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
   axis(2, at = seq(ymin, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
+
   # Chap-Rob
   if (CatchCurveModel == 1) {
     if (PlotCLs == TRUE) {
@@ -7928,39 +7933,32 @@ PlotAgeBasedCatchCurveResults_LogSpace <- function(RecAssump, SpecRecAge, MinFre
       y = c(sm1$y, rev(sm2$y))
       polygon(x,y, col="pink",border=NA)
     }
-    # lines(Ages[jjj], log(Res$EstFreq[kkk]), col="red")
     points(Ages[jjj], log(Res$EstFreq[kkk]), pch=1, col="red", cex=0.6)
   }
   if (CatchCurveModel == 2) {
     if (PlotCLs == TRUE) {
-
       sm1 = spline(Ages[j], log(Res$EstFreq_Zup[1:length(j)]), n=100, method="natural")
       sm2 = spline(Ages[j], log(Res$EstFreq_Zlow[1:length(jj)]), n=100, method="natural")
       x = c(sm1$x, rev(sm2$x)) # using shading for 95% CLs
       y = c(sm1$y, rev(sm2$y))
       polygon(x,y, col="pink",border=NA)
     }
-    # lines(Ages[jjj], log(Res$EstFreq[1:length(jjj)]), col="red")
     points(Ages[jjj], log(Res$EstFreq[1:length(jjj)]), pch=1, col="red", cex=0.6)
   }
   if (CatchCurveModel == 3) {
     if (PlotCLs == TRUE) {
-
-      sm1 = spline(Ages[j], log(Res$EstFreq_Zup[j]), n=100, method="natural")
-      sm2 = spline(Ages[j], log(Res$EstFreq_Zlow[j]), n=100, method="natural")
+      sm1 = spline(Ages[j], log(Res$ModelDiag$EstFreq_Zup[j]), n=100, method="natural")
+      sm2 = spline(Ages[j], log(Res$ModelDiag$EstFreq_Zlow[j]), n=100, method="natural")
       x = c(sm1$x, rev(sm2$x)) # using shading for 95% CLs
       y = c(sm1$y, rev(sm2$y))
       polygon(x,y, col="pink",border=NA)
     }
-    #lines(Ages[j], log(Res$EstFreq[j]), col="red")
-    points(Ages, log(Res$EstFreq), pch=1, col="red", cex=0.6)
+    points(Ages[j], log(Res$ModelDiag$EstFreq[j]), pch=1, col="red", cex=0.6)
   }
 
   points(Ages, log(ObsAgeFreq), pch=16, cex=0.8)
   legend("topright", legend=bquote(paste("Z = ", .(Z_value), " ",y^-1)), y.intersp = 1.5, inset=c(0.13,0),
          lty=1, cex = 1, bty="n",seg.len = 0)
-  # legend("topleft", legend=c("Observed","Estimated"), y.intersp = 1.0, inset=c(0.13,0),
-  #        lty=1, cex = 0.8, bty="n", seg.len = 0, pch=c(16,1), col=c("black","red"))
 }
 
 
@@ -8303,15 +8301,20 @@ CalcSelectivityAndRetentionAtAge <- function(EstGearSelAtAge, EstRetenAtAge, Age
 
     # if gear selectivity unknown, but selectivity of landings and and probability of retention inputted.
     # probability of retention may sometimes be assumed from MLL.
-    if (!is.na(FemSelLandAtAge[1]) & !is.na(FemRetProbAtAge[1])) {
-      FemGearSelAtAge <- FemSelLandAtAge / FemRetProbAtAge
-      MalGearSelAtAge <- MalSelLandAtAge / MalRetProbAtAge
+    if (is.na(FemGearSelAtAge[1])) {
+      if (!is.na(FemSelLandAtAge[1]) & !is.na(FemRetProbAtAge[1])) {
+        FemGearSelAtAge <- FemSelLandAtAge / FemRetProbAtAge
+        MalGearSelAtAge <- MalSelLandAtAge / MalRetProbAtAge
+      }
     }
+
     # if probability of retention is unknown, but selectivity of landings and gear selectivity are known.
     # probability of retention may sometimes be assumed from MLL.
-    if (!is.na(FemSelLandAtAge[1]) & !is.na(FemGearSelAtAge[1])) {
-      FemRetProbAtAge <- FemSelLandAtAge / FemGearSelAtAge
-      MalRetProbAtAge <- MalSelLandAtAge / MalGearSelAtAge
+    if (is.na(FemRetProbAtAge[1])) {
+      if (!is.na(FemSelLandAtAge[1]) & !is.na(FemGearSelAtAge[1])) {
+        FemRetProbAtAge <- FemSelLandAtAge / FemGearSelAtAge
+        MalRetProbAtAge <- MalSelLandAtAge / MalGearSelAtAge
+      }
     }
 
     if (is.na(FemGearSelAtAge[1])) cat("Problem, FemGearSelAtAge[1]=NA. Need to input more info.",'\n')
