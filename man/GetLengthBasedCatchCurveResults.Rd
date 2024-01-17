@@ -6,6 +6,7 @@
 \usage{
 GetLengthBasedCatchCurveResults(
   params,
+  DistnType,
   GrowthCurveType,
   GrowthParams,
   RefnceAges,
@@ -27,6 +28,8 @@ GetLengthBasedCatchCurveResults(
 }
 \arguments{
 \item{params}{vector of model parameters in log space (params) to be estimated}
+
+\item{DistnType}{1 = Multinomial, 2 = Dirichlet multinomial}
 
 \item{GrowthCurveType}{1 = von Bertalanffy, 2 = Schnute}
 
@@ -119,6 +122,7 @@ RefnceAges = NA
 Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 # 2 sexes, von Bertalanffy
+DistnType = 1 # 1 = Multinomial, 2 = Dirichlet multinomial
 GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute
 Linf = c(700,850)
 vbK = c(0.3,0.2)
@@ -128,6 +132,7 @@ RefnceAges = NA
 Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 # 1 sex, Schnute
+DistnType = 1 # 1 = Multinomial, 2 = Dirichlet multinomial
 GrowthCurveType = 2 # 1 = von Bertalanffy, 2 = Schnute
 t1 = 0.5 # growth - Schnute
 t2 = 25 # growth - Schnute
@@ -141,6 +146,7 @@ CVSizeAtAge = 0.05
 Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 # 2 sexes, Schnute
+DistnType = 1 # 1 = Multinomial, 2 = Dirichlet multinomial
 GrowthCurveType = 2 # 1 = von Bertalanffy, 2 = Schnute
 t1 = c(0.5,0.5) # growth - Schnute
 t2 = c(25,25) # growth - Schnute
@@ -168,7 +174,7 @@ params = c(InitFishMort_logit, log(InitL50), log(InitDelta))
 # InitL50Ret = 410
 # InitDeltaRet = 60
 # params = c(InitFishMort_logit, log(InitL50), log(InitDelta), log(InitL50Ret), log(InitDeltaRet))
-FittedRes=GetLengthBasedCatchCurveResults(params, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
+FittedRes=GetLengthBasedCatchCurveResults(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
                                     lbnd, ubnd, midpt, SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
 # Example with selectivity specified as a vector
 # Simulate data
@@ -190,6 +196,7 @@ SelParams = c(NA, NA) # L50, L95-L50 for gear selectivity
 RetenParams = c(NA, NA) # L50, L95-L50 for retention
 DiscMort = 0 # proportion of fish that die due to natural mortality
 # single sex, von Bertalanffy
+DistnType = 1 # 1 = Multinomial, 2 = Dirichlet multinomial
 GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute
 Linf = 800
 vbK = 0.2
@@ -207,6 +214,58 @@ InitFishMort = 0.25 # specify starting parameters
 InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform
 params = c(InitFishMort_logit)
 
-FittedRes=GetLengthBasedCatchCurveResults(params, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
+FittedRes=GetLengthBasedCatchCurveResults(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
                                     lbnd, ubnd, midpt, SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
+
+# Fit length-based catch curve to length-frequency data generated from Dirchlet multinomial distribution.
+# First, use SimLenAndAgeFreqData function to calculate expected proportions at length
+set.seed(123)
+SampleSize=5000 # sample size for retained catches (and same number for released fish, if an MLL is specified)
+MaxAge = 30
+TimeStep = 1 # model timestep (e.g. 1 = annual, 1/12 = monthly)
+NatMort = 4.22/MaxAge
+FishMort = 0.2
+MaxLen = 1200
+LenInc = 20
+MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified
+SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
+SelectivityVec = NA # selectivity vector
+SelParams = c(300, 50) # L50, L95-L50 for gear selectivity
+RetenParams = c(500, 50) # L50, L95-L50 for retention
+DiscMort = 0 # proportion of fish that die due to natural mortality
+# single sex, von Bertalanffy
+GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute
+Linf = 800
+vbK = 0.2
+CVSizeAtAge = 0.08
+GrowthParams = c(Linf, vbK)
+RefnceAges = NA
+Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
+                         SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+# Now simulate length-frequency data from Dirchlet multinomial distribution.
+set.seed(122)
+nSampEvents = 50
+nFishPerSampEvent = 20
+theta_val = 0.3
+midpt = Res$midpt
+ExpPropAtLen = Res$ModelDiag$ExpRetCatchPropAtLen
+res=SimLenFreqDat_DirMultDistn(nSampEvents, nFishPerSampEvent, theta_val, midpt, ExpPropAtLen)
+plot(res$midpt, res$simLenFreq, "o")
+# Fit length-based catch curve, assuming Dirichlet multinomial distribution
+ObsRetCatchFreqAtLen = res$simLenFreq
+ObsDiscCatchFreqAtLen = NA # (or set to Res$ObsDiscCatchFreqAtLen)
+PropReleased = NA # proportion of fish released, vector including mean and sd (option probably now obselete)
+midpt=Res$midpt
+lbnd=Res$lbnd
+ubnd=Res$ubnd
+InitFishMort = 0.25 # specify starting parameters
+InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform
+InitL50 = 400
+InitDelta = 100
+DistnType=2
+InitTheta = 0.3 # specify starting parameters
+InitTheta_logit = log(InitTheta/(1-InitTheta)) # logit transform
+params = c(InitFishMort_logit, log(InitL50), log(InitDelta),InitTheta_logit)
+FittedRes=GetLengthBasedCatchCurveResults(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
+                                          lbnd, ubnd, midpt, SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
 }

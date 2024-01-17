@@ -54,7 +54,7 @@ GetInputsForPlotting_Cond_AL(
 
 \item{TimeStep}{model timestep (e.g. 1 = annual, 1/12 = monthly)}
 
-\item{FittedRes}{saved results from GetLengthBasedCatchCurveResults function (model will be refitted if set to NA)}
+\item{FittedRes}{saved results from GetAgeAndLengthBasedCatchCurveResults function (model will be refitted if set to NA)}
 }
 \value{
 ObsRetCatchFreqAtLengthAndIntAge, ObsCatchPropAgeAtLength, ExpRetCatchPropIntAgeGivenLength (single sex),

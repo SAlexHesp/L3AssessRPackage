@@ -6,6 +6,7 @@
 \usage{
 PlotLengthBasedCatchCurve_DiscCatch(
   params,
+  DistnType,
   MLL,
   SelectivityType,
   ObsRetCatchFreqAtLen,
@@ -113,6 +114,7 @@ SelParams = c(300, 50) # L50, L95-L50 for gear selectivity
 RetenParams = NA # L50, L95-L50 for retention
 DiscMort = 0 # proportion of fish that die due to natural mortality
 # single sex, von Bertalanffy
+DistnType = 1 # 1 = Multinomial, 2 = Dirichlet multinomial
 GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute
 Linf = 800
 vbK = 0.2
@@ -132,9 +134,9 @@ InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform
 InitL50 = 400
 InitDelta = 100
 params = c(InitFishMort_logit, log(InitL50), log(InitDelta))
-FittedRes=GetLengthBasedCatchCurveResults(params, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
+FittedRes=GetLengthBasedCatchCurveResults(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
                                           lbnd, ubnd, midpt, SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
-PlotLengthBasedCatchCurve_DiscCatch(params, MLL, SelectivityType, ObsRetCatchFreqAtLen, lbnd, ubnd, midpt,
+PlotLengthBasedCatchCurve_DiscCatch(params, DistnType, MLL, SelectivityType, ObsRetCatchFreqAtLen, lbnd, ubnd, midpt,
                                     SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, MaxAge, NatMort, TimeStep, MainLabel=NA,
                                     xaxis_lab=NA, yaxis_lab=NA, xmax=1500, xint=500,
                                     ymax=0.15, yint=0.05, PlotCLs=TRUE, FittedRes, nReps=200)

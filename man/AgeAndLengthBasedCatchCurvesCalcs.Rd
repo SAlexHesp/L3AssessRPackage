@@ -6,6 +6,7 @@
 \usage{
 AgeAndLengthBasedCatchCurvesCalcs(
   params,
+  DistnType,
   GrowthCurveType,
   GrowthParams,
   RefnceAges,
@@ -25,6 +26,8 @@ AgeAndLengthBasedCatchCurvesCalcs(
 }
 \arguments{
 \item{params}{vector of model parameters in log space (params) to be estimated}
+
+\item{DistnType}{1 = Multinomial, 2 = Dirichlet multinomial}
 
 \item{GrowthCurveType}{1 = von Bertalanffy, 2 = Schnute}
 
