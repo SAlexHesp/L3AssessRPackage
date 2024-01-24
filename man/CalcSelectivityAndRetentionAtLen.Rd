@@ -8,9 +8,11 @@ CalcSelectivityAndRetentionAtLen(
   midpt,
   sel_L50,
   sel_L95,
+  EstGearSelAtLen,
   ret_L50,
   ret_L95,
-  ret_Pmax
+  ret_Pmax,
+  EstRetenAtLen
 )
 }
 \arguments{
@@ -18,11 +20,15 @@ CalcSelectivityAndRetentionAtLen(
 
 \item{sel_L95}{logistic gear selectivity curve parameter}
 
+\item{EstGearSelAtLen}{gear selectivity inputted as vector}
+
 \item{ret_L50}{logistic gear retention curve parameter}
 
 \item{ret_L95}{logistic gear retention curve parameter}
 
 \item{ret_Pmax}{logistic gear retention curve parameter}
+
+\item{EstRetenAtLen}{lretention curve inputted as vector}
 
 \item{Ages}{ages for analysis calculated from max age and model timestep}
 }

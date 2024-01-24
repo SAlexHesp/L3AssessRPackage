@@ -9375,21 +9375,35 @@ CalcPerRecruitFishLenAndFishWtStats<- function(lbnd, midpt, ubnd, FemCatchNumLen
 #' @param Ages ages for analysis calculated from max age and model timestep
 #' @param sel_L50 logistic gear selectivity curve parameter
 #' @param sel_L95 logistic gear selectivity curve parameter
+#' @param EstGearSelAtLen gear selectivity inputted as vector
 #' @param ret_L50 logistic gear retention curve parameter
 #' @param ret_L95 logistic gear retention curve parameter
 #' @param ret_Pmax logistic gear retention curve parameter
+#' @param EstRetenAtLen lretention curve inputted as vector
 #'
 #' @return FemGearSelAtAge, MalGearSelAtAge, FemRetProbAtAge, MalRetProbAtAge
-CalcSelectivityAndRetentionAtLen <- function(midpt, sel_L50, sel_L95, ret_L50, ret_L95, ret_Pmax) {
+CalcSelectivityAndRetentionAtLen <- function(midpt, sel_L50, sel_L95, EstGearSelAtLen,
+                                             ret_L50, ret_L95, ret_Pmax, EstRetenAtLen) {
 
+  # Calculate gear selectivity at length
+  FemGearSelAtLen <- NA; MalGearSelAtLen <- NA
+  if (!is.na(EstGearSelAtLen[1,1])) {
+    FemGearSelAtLen <- EstGearSelAtLen[,1]
+    MalGearSelAtLen <- EstGearSelAtLen[,2]
+  } else if (!is.na(sel_L50[1])){
+    FemGearSelAtLen <- 1/(1+exp(-log(19) * (midpt - sel_L50[1]) / (sel_L95[1] - sel_L50[1])))
+    MalGearSelAtLen <- 1/(1+exp(-log(19) * (midpt - sel_L50[2]) / (sel_L95[2] - sel_L50[2])))
+  }
 
-  # Calculate gear selectivity at age
-  FemGearSelAtLen <- 1/(1+exp(-log(19) * (midpt - sel_L50[1]) / (sel_L95[1] - sel_L50[1])))
-  MalGearSelAtLen <- 1/(1+exp(-log(19) * (midpt - sel_L50[2]) / (sel_L95[2] - sel_L50[2])))
-
-  # Calculate fish retention at age
-  FemRetProbAtLen <- ret_Pmax[1] / (1+exp(-log(19) * (midpt - ret_L50[1]) / (ret_L95[1] - ret_L50[1])))
-  MalRetProbAtLen <- ret_Pmax[2] / (1+exp(-log(19) * (midpt - ret_L50[2]) / (ret_L95[2] - ret_L50[2])))
+  # Calculate fish retention at length
+  FemRetProbAtLen <- NA; MalRetProbAtLen <- NA
+  if (!is.na(EstRetenAtLen[1,1])) {
+    FemRetProbAtLen <- EstRetenAtLen[,1]
+    MalRetProbAtLen <- EstRetenAtLen[,2]
+  } else if (!is.na(ret_L50[1])) {
+    FemRetProbAtLen <- ret_Pmax[1] / (1+exp(-log(19) * (midpt - ret_L50[1]) / (ret_L95[1] - ret_L50[1])))
+    MalRetProbAtLen <- ret_Pmax[2] / (1+exp(-log(19) * (midpt - ret_L50[2]) / (ret_L95[2] - ret_L50[2])))
+  }
 
   # Calculate selectivity of landings at age
   FemSelLandAtLen <- FemGearSelAtLen * FemRetProbAtLen
@@ -9492,9 +9506,11 @@ CalcFishingMortalityAtLen <- function(FMort, DiscMort, FemSelDiscAtLen, MalSelDi
 #' @param EstMatAtLen vector of proportion mature at length (set to NA if using age at maturity parameters)
 #' @param sel_L50 logistic parameter for gear selectivity curve
 #' @param sel_L95 logistic parameter for gear selectivity curve
+#' @param EstGearSelAtLen gear selectivity curve inputted as vector
 #' @param ret_Pmax logistic parameter for fish retention curve
 #' @param ret_L50 logistic parameter for fish retention curve
 #' @param ret_L95 logistic parameter for fish retention curve
+#' @param EstRetenAtLen retention curve inputted as vector
 #' @param DiscMort proportion of fish that die following capture and release
 #' @param Steepness steepness parameter of Beverton-Holt or Ricker stock-recruitment relationship
 #' @param SRrel_Type 1 = Beverton-Holt, 2=Ricker stock-recruitment relationship
@@ -9555,9 +9571,13 @@ CalcFishingMortalityAtLen <- function(FMort, DiscMort, FemSelDiscAtLen, MalSelDi
 #'                           EstMalMatAtLen=NA) # maturity at length, inputted as values in data frame
 #' sel_L50 <- c(250, 250) # females, males - Logistic length selectivity relationship parameters
 #' sel_L95 <- c(300, 300) # females, males - Logistic length selectivity relationship parameters
+#' EstGearSelAtLen <- data.frame(EstFemGearSelAtLen=NA,
+#'                               EstMalGearSelAtLen=NA)
 #' ret_Pmax <- c(1.0, 1.0) # maximum retention, values lower than 1 imply discarding of fish above MLL
 #' ret_L50 <- c(250, 250) # females, males - Logistic fish retention at length parameters
 #' ret_L95 <- c(300, 300) # females, males - Logistic fish retention at length parameters
+#' EstRetenAtLen <- data.frame(EsFemtRetenAtLen=NA,
+#'                             EstMalRetenAtLen=NA)
 #' DiscMort <- 0.25 # discard mortality (e.g. 50% released fish die = 0.5)
 #' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
 #' SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
@@ -9566,14 +9586,14 @@ CalcFishingMortalityAtLen <- function(FMort, DiscMort, FemSelDiscAtLen, MalSelDi
 #' Res=CalcYPRAndSPRForFMort_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
 #'                              RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
 #'                              EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
-#'                              FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-#'                              ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, FMort)
+#'                              FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+#'                              ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, FMort)
 #' @export
 CalcYPRAndSPRForFMort_LB<- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                     RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                                     EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
-                                    FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-                                    ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, FMort) {
+                                    FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+                                    ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, FMort) {
 
   if (FMort < 0.0001) FMort = 0.0001 # set negligible fishing mortality for unfished stock,
   # to allow calculations associated with expected catch size distribtion, i.e. from a survey
@@ -9599,7 +9619,8 @@ CalcYPRAndSPRForFMort_LB<- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
 
   # calculate selectivity and retention at length, including for landings and discards
   # using retention-function approach
-  res=CalcSelectivityAndRetentionAtLen(midpt, sel_L50, sel_L95, ret_L50, ret_L95, ret_Pmax)
+  res=CalcSelectivityAndRetentionAtLen(midpt, sel_L50, sel_L95, EstGearSelAtLen,
+                                       ret_L50, ret_L95, ret_Pmax, EstRetenAtLen)
   FemGearSelAtLen = res$FemGearSelAtLen; MalGearSelAtLen = res$MalGearSelAtLen
   FemRetProbAtLen = res$FemRetProbAtLen; MalRetProbAtLen = res$MalRetProbAtLen
   FemSelLandAtLen = res$FemSelLandAtLen; MalSelLandAtLen = res$MalSelLandAtLen
@@ -10096,9 +10117,11 @@ GetPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Est
 #' @param EstMatAtLen vector of proportion mature at length (set to NA if using length at maturity parameters)
 #' @param sel_L50 logistic parameter for gear selectivity curve
 #' @param sel_L95 logistic parameter for gear selectivity curve
+#' @param EstGearSelAtLen gear selectivity curve inputted as vector
 #' @param ret_Pmax logistic parameter for fish retention curve
 #' @param ret_L50 logistic parameter for fish retention curve
 #' @param ret_L95 logistic parameter for fish retention curve
+#' @param EstRetenAtLen retention curve inputted as vector
 #' @param DiscMort proportion of fish that die following capture and release
 #' @param Steepness steepness parameter of Beverton-Holt or Ricker stock-recruitment relationship
 #' @param SRrel_Type 1 = Beverton-Holt, 2=Ricker stock-recruitment relationship
@@ -10167,9 +10190,13 @@ GetPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Est
 #'                           EstMalMatAtLen=NA) # maturity at length, inputted as values in data frame
 #' sel_L50 <- c(250, 250) # females, males - Logistic length selectivity relationship parameters
 #' sel_L95 <- c(300, 300) # females, males - Logistic length selectivity relationship parameters
+#' EstGearSelAtLen <- data.frame(EstFemGearSelAtLen=NA,
+#'                               EstMalGearSelAtLen=NA)
 #' ret_Pmax <- c(1.0, 1.0) # maximum retention, values lower than 1 imply discarding of fish above MLL
 #' ret_L50 <- c(250, 250) # females, males - Logistic fish retention at length parameters
 #' ret_L95 <- c(300, 300) # females, males - Logistic fish retention at length parameters
+#' EstRetenAtLen <- data.frame(EsFemtRetenAtLen=NA,
+#'                             EstMalRetenAtLen=NA)
 #' DiscMort <- 0.25 # discard mortality (e.g. 50% released fish die = 0.5)
 #' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
 #' SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
@@ -10179,14 +10206,14 @@ GetPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Est
 #' Res=GetPerRecruitResults_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
 #'                             RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
 #'                             EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
-#'                             FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-#'                             ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, Output_Opt)
+#'                             FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+#'                             ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, Output_Opt)
 #' @export
 GetPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                     RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                                     EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
-                                    FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-                                    ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, Output_Opt) {
+                                    FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+                                    ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, Output_Opt) {
 
   FishMort <- seq(0,2,0.01)
   nFVals <- length(FishMort) # fishing mortality
@@ -10238,8 +10265,8 @@ GetPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
     Res = CalcYPRAndSPRForFMort_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                    RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                                    EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
-                                   FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-                                   ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, FMort)
+                                   FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+                                   ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, FMort)
 
 
 
@@ -10397,8 +10424,8 @@ GetPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
   Res2 = CalcYPRAndSPRForFMort_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                   RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                                   EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
-                                  FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-                                  ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, FMort)
+                                  FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+                                  ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, FMort)
 
   # get results associated with predicted length and weight distributions
   if (Output_Opt==2) {
@@ -11032,9 +11059,11 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
 #' @param EstMatAtLen vector of proportion mature at length (set to NA if using length at maturity parameters)
 #' @param sel_L50 logistic parameter for gear selectivity curve
 #' @param sel_L95 logistic parameter for gear selectivity curve
+#' @param EstGearSelAtLen gear selectivity curve inputted as vector
 #' @param ret_Pmax logistic parameter for fish retention curve
 #' @param ret_L50 logistic parameter for fish retention curve
 #' @param ret_L95 logistic parameter for fish retention curve
+#' @param EstRetenAtLen retention curve inputted as vector
 #' @param DiscMort proportion of fish that die following capture and release
 #' @param Steepness steepness parameter of Beverton-Holt or Ricker stock-recruitment relationship
 #' @param SRrel_Type 1 = Beverton-Holt, 2=Ricker stock-recruitment relationship
@@ -11080,9 +11109,13 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
 #'                           EstMalMatAtLen=NA) # maturity at length, inputted as values in data frame
 #' sel_L50 <- c(250, 250) # females, males - Logistic length selectivity relationship parameters
 #' sel_L95 <- c(300, 300) # females, males - Logistic length selectivity relationship parameters
+#' EstGearSelAtLen <- data.frame(EstFemGearSelAtLen=NA,
+#'                               EstMalGearSelAtLen=NA)
 #' ret_Pmax <- c(1.0, 1.0) # maximum retention, values lower than 1 imply discarding of fish above MLL
 #' ret_L50 <- c(250, 250) # females, males - Logistic fish retention at length parameters
 #' ret_L95 <- c(300, 300) # females, males - Logistic fish retention at length parameters
+#' EstRetenAtLen <- data.frame(EsFemtRetenAtLen=NA,
+#'                             EstMalRetenAtLen=NA)
 #' DiscMort <- 0.25 # discard mortality (e.g. 50% released fish die = 0.5)
 #' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
 #' SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
@@ -11095,14 +11128,14 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
 #' PlotPerRecruitResults_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
 #'                                      RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
 #'                                      EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
-#'                                      FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-#'                                      ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, PlotOpt)
+#'                                      FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+#'                                      ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, PlotOpt)
 #' @export
 PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                      RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                                      EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
-                                     FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-                                     ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, PlotOpt) {
+                                     FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+                                     ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, PlotOpt) {
 
   .pardefault <- par(no.readonly = TRUE) # store current par settings
 
@@ -11114,8 +11147,8 @@ PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
   Res=CalcYPRAndSPRForFMort_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                                EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
-                               FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-                               ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, FMort)
+                               FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+                               ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, FMort)
 
   Growth_95PLs = GetPerRecruitGrowthPredIntervals_LB(nTimeSteps, nLenCl, midpt, lbnd, ubnd, Res)
 
@@ -11124,8 +11157,8 @@ PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
   Res = GetPerRecruitResults_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                 RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                                 EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
-                                FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-                                ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, Output_Opt)
+                                FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+                                ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, Output_Opt)
 
 
   #Plot 1:
@@ -11472,9 +11505,11 @@ PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
 #' @param EstMatAtLen vector of proportion mature at length (set to NA if using age at maturity parameters)
 #' @param sel_L50 logistic parameter for gear selectivity curve
 #' @param sel_L95 logistic parameter for gear selectivity curve
+#' @param EstGearSelAtLen gear selectivity curve inputted as vector
 #' @param ret_Pmax logistic parameter for fish retention curve
 #' @param ret_L50 logistic parameter for fish retention curve
 #' @param ret_L95 logistic parameter for fish retention curve
+#' @param EstRetenAtLen retention curve inputted as vector
 #' @param DiscMort proportion of fish that die following capture and release
 #' @param Steepness steepness parameter of Beverton-Holt or Ricker stock-recruitment relationship
 #' @param SRrel_Type 1 = Beverton-Holt, 2=Ricker stock-recruitment relationship
@@ -11522,9 +11557,13 @@ PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
 #'                           EstMalMatAtLen=NA) # maturity at length, inputted as values in data frame
 #' sel_L50 <- c(250, 250) # females, males - Logistic length selectivity relationship parameters
 #' sel_L95 <- c(300, 300) # females, males - Logistic length selectivity relationship parameters
+#' EstGearSelAtLen <- data.frame(EstFemGearSelAtLen=NA,
+#'                               EstMalGearSelAtLen=NA)
 #' ret_Pmax <- c(1.0, 1.0) # maximum retention, values lower than 1 imply discarding of fish above MLL
 #' ret_L50 <- c(250, 250) # females, males - Logistic fish retention at length parameters
 #' ret_L95 <- c(300, 300) # females, males - Logistic fish retention at length parameters
+#' EstRetenAtLen <- data.frame(EsFemtRetenAtLen=NA,
+#'                             EstMalRetenAtLen=NA)
 #' DiscMort <- 0.25 # discard mortality (e.g. 50% released fish die = 0.5)
 #' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
 #' SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
@@ -11534,22 +11573,22 @@ PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
 #' PlotOpt <- 0 # 0=all plots, 1=female size, 2=male size, 3=combined sex size, 4=female weight, 5=male weight, 6=combined sex weight
 #' Output_Opt = 2 # including additional length and weight outputs
 #' FittedRes=GetPerRecruitResults_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
-#'                                   RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
-#'                                   EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
-#'                                   FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-#'                                   ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, Output_Opt)
+#'                             RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
+#'                             EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
+#'                             FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+#'                             ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, Output_Opt)
 #' PlotPerRecruit_ExpCatchSizeDistns_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
 #'                                      RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
 #'                                      EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
-#'                                      FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-#'                                      ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, FittedRes, PlotOpt,
+#'                                      FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+#'                                      ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, FittedRes, PlotOpt,
 #'                                      xmax=NA, xint=NA)
 #' @export
 PlotPerRecruit_ExpCatchSizeDistns_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                                  RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                                                  EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
-                                                 FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-                                                 ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, FittedRes, PlotOpt,
+                                                 FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+                                                 ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, FittedRes, PlotOpt,
                                                  xmax=NA, xint=NA) {
 
   # if model already fitted, can input results rather than refit
@@ -11560,8 +11599,8 @@ PlotPerRecruit_ExpCatchSizeDistns_LB <- function(MaxModelAge, TimeStep, lbnd, ub
     Res=GetPerRecruitResults_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                 RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                                 EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
-                                FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-                                ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, Output_Opt)
+                                FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+                                ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, Output_Opt)
   }
   FishMort=Res$FishMort
 
@@ -11770,9 +11809,11 @@ PlotPerRecruit_ExpCatchSizeDistns_LB <- function(MaxModelAge, TimeStep, lbnd, ub
 #' @param EstMatAtLen vector of proportion mature at length (set to NA if using age at maturity parameters)
 #' @param sel_L50 logistic parameter for gear selectivity curve
 #' @param sel_L95 logistic parameter for gear selectivity curve
+#' @param EstGearSelAtLen gear selectivity curve inputted as vector
 #' @param ret_Pmax logistic parameter for fish retention curve
 #' @param ret_L50 logistic parameter for fish retention curve
 #' @param ret_L95 logistic parameter for fish retention curve
+#' @param EstRetenAtLen retention curve inputted as vector
 #' @param DiscMort proportion of fish that die following capture and release
 #' @param Steepness steepness parameter of Beverton-Holt or Ricker stock-recruitment relationship
 #' @param SRrel_Type 1 = Beverton-Holt, 2=Ricker stock-recruitment relationship
@@ -11816,9 +11857,13 @@ PlotPerRecruit_ExpCatchSizeDistns_LB <- function(MaxModelAge, TimeStep, lbnd, ub
 #'                           EstMalMatAtLen=NA) # maturity at age (from age 0), inputted as values in data frame
 #' sel_L50 <- c(250, 250) # females, males - Logistic age selectivity relationship parameters
 #' sel_L95 <- c(300, 300) # females, males - Logistic age selectivity relationship parameters
+#' EstGearSelAtLen <- data.frame(EstFemGearSelAtLen=NA,
+#'                               EstMalGearSelAtLen=NA)
 #' ret_Pmax <- c(1.0, 1.0) # maximum retention, values lower than 1 imply discarding of fish above MLL
 #' ret_L50 <- c(250, 250) # females, males - Logistic age fish retention at age parameters
 #' ret_L95 <- c(300, 300) # females, males - Logistic age fish retention at age parameters
+#' EstRetenAtLen <- data.frame(EsFemtRetenAtLen=NA,
+#'                             EstMalRetenAtLen=NA)
 #' DiscMort <- 0.25 # discard mortality (e.g. 50% released fish die = 0.5)
 #' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
 #' SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
@@ -11829,19 +11874,19 @@ PlotPerRecruit_ExpCatchSizeDistns_LB <- function(MaxModelAge, TimeStep, lbnd, ub
 #' FittedRes = Get_Relative_Value_Per_Recruit_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
 #'                                               RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
 #'                                               EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
-#'                                               FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-#'                                               ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, MinFishWtOfVal, ValScaleFact)
+#'                                               FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+#'                                               ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, MinFishWtOfVal, ValScaleFact)
 #' PlotValuePerRecruitResults_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
 #'                               RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
 #'                               EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
-#'                               FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-#'                               ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, MinFishWtOfVal, ValScaleFact, FittedRes, PlotOpt)
+#'                               FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+#'                               ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, MinFishWtOfVal, ValScaleFact, FittedRes, PlotOpt)
 #' @export
 PlotValuePerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                           RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                                           EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
-                                          FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-                                          ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, MinFishWtOfVal, ValScaleFact,
+                                          FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+                                          ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, MinFishWtOfVal, ValScaleFact,
                                           FittedRes, PlotOpt) {
 
 
@@ -11851,8 +11896,8 @@ PlotValuePerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, mid
     Res = Get_Relative_Value_Per_Recruit_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                             RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                                             EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
-                                            FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-                                            ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, MinFishWtOfVal, ValScaleFact)
+                                            FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+                                            ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, MinFishWtOfVal, ValScaleFact)
   }
 
   RelValAtLen=Res$RelValAtLen
@@ -11868,8 +11913,8 @@ PlotValuePerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, mid
   Res=CalcYPRAndSPRForFMort_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                                EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
-                               FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-                               ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, OptFishMort)
+                               FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+                               ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, FMort)
 
   WtAtLen = (Res$ModelDiag$FemWtAtLen + Res$ModelDiag$MalWtAtLen)/2
 
@@ -11991,9 +12036,11 @@ PlotValuePerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, mid
 #' @param EstMatAtLen vector of proportion mature at length (set to NA if using age at maturity parameters)
 #' @param sel_L50 logistic parameter for gear selectivity curve
 #' @param sel_L95 logistic parameter for gear selectivity curve
+#' @param EstGearSelAtLen gear selectivity curve inputted as vector
 #' @param ret_Pmax logistic parameter for fish retention curve
 #' @param ret_L50 logistic parameter for fish retention curve
 #' @param ret_L95 logistic parameter for fish retention curve
+#' @param EstRetenAtLen retention curve inputted as vector
 #' @param DiscMort proportion of fish that die following capture and release
 #' @param Steepness steepness parameter of Beverton-Holt or Ricker stock-recruitment relationship
 #' @param SRrel_Type 1 = Beverton-Holt, 2=Ricker stock-recruitment relationship
@@ -12039,9 +12086,13 @@ PlotValuePerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, mid
 #'                           EstMalMatAtLen=NA) # maturity at age (from age 0), inputted as values in data frame
 #' sel_L50 <- c(250, 250) # females, males - Logistic age selectivity relationship parameters
 #' sel_L95 <- c(300, 300) # females, males - Logistic age selectivity relationship parameters
+#' EstGearSelAtLen <- data.frame(EstFemGearSelAtLen=NA,
+#'                               EstMalGearSelAtLen=NA)
 #' ret_Pmax <- c(1.0, 1.0) # maximum retention, values lower than 1 imply discarding of fish above MLL
 #' ret_L50 <- c(250, 250) # females, males - Logistic age fish retention at age parameters
 #' ret_L95 <- c(300, 300) # females, males - Logistic age fish retention at age parameters
+#' EstRetenAtLen <- data.frame(EsFemtRetenAtLen=NA,
+#'                             EstMalRetenAtLen=NA)
 #' DiscMort <- 0.25 # discard mortality (e.g. 50% released fish die = 0.5)
 #' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
 #' SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
@@ -12051,21 +12102,21 @@ PlotValuePerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, mid
 #' FittedRes = Get_Relative_Value_Per_Recruit_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
 #'                                               RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
 #'                                               EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
-#'                                               FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-#'                                               ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, MinFishWtOfVal, ValScaleFact)
+#'                                               FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+#'                                               ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, MinFishWtOfVal, ValScaleFact)
 #' @export
 Get_Relative_Value_Per_Recruit_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                               RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                                               EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
-                                              FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-                                              ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, MinFishWtOfVal, ValScaleFact) {
+                                              FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+                                              ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, MinFishWtOfVal, ValScaleFact) {
 
   # get weight length relationships
   Res=CalcYPRAndSPRForFMort_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                                EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
-                               FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-                               ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, FMort=0.01)
+                               FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+                               ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, FMort=0.01)
 
 
   if (is.na(EstWtAtLen[1,1])) {
@@ -12110,8 +12161,8 @@ Get_Relative_Value_Per_Recruit_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd,
     Res=CalcYPRAndSPRForFMort_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                  RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                                  EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
-                                 FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-                                 ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, FMort)
+                                 FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+                                 ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, FMort)
 
     RelValPerRecAtFMort[i] = sum(Res$ModelDiag$CombSexCatchBiom*RelValAtLen*Res$Eq_Rec)
 
@@ -12140,352 +12191,6 @@ Get_Relative_Value_Per_Recruit_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd,
 
   return(Results)
 
-}
-
-#' Deterministic plot of equilibrium yield vs F from extended age-based per recruit analysis
-#' with a stock-recruitment relationship
-#'
-#' This function provides a deterministic plot of equilibrium yield vs F from extended age-based per recruit analysis
-#' with a stock-recruitment relationship
-#'
-#' @param MaxModelAge maximum age considered in model
-#' @param TimeStep model timestep (e.g. 1 = annual, 1/12 = monthly)
-#' @param Linf asymptotic length (von Bertalanffy growth parameter, set to NA if inputting lengths at ages directly from any growth model)
-#' @param vbK growth coefficient (von Bertalanffy growth parameter, set to NA if inputting lengths at ages directly from any growth model)
-#' @param tzero hypothetical age at zero length (von Bertalanffy growth parameter, set to NA if inputting lengths at ages directly from any growth model)
-#' @param EstLenAtAge vector or estimated lengths at ages from any growth model, set to NA if von Bertalanffy growth parameters specified
-#' @param lenwt_a weight-length parameter (power relationship)
-#' @param ln_lenwt_a weight-length parameter (log-log relationship)
-#' @param lenwt_b weight-length parameter (power or log-log relationship)
-#' @param WLrel_Type 1=power, 2=log-log relationship (set to NA if inputting weights at ages directly)
-#' @param EstWtAtAge vector of weights at ages (set to NA if weight-length growth parameters specified)
-#' @param ReprodScale <- 1 # 1=default (standard calculations for spawning biomass), 2=hyperallometric reproductive scaling with female mass (i.e. BOFFF effects)
-#' @param ReprodPattern reproductive pattern, 1=gonochoristic, 2=protogynous (female to male sex change) hermaphroditism,
-#' 3=protandrous hermaphroditism (male to female sex change)
-#' @param InitRatioFem proportion of fish that are females at hatching
-#' @param FinalSex_Pmax logistic sex change parameter for hermaphroditic species (set to NA for gonochoristic species)
-#' @param FinalSex_A50 logistic sex change parameter for hermaphroditic species (set to NA for gonochoristic species)
-#' @param FinalSex_A95 logistic sex change parameter for hermaphroditic species (set to NA for gonochoristic species)
-#' @param mat_A50 logistic length at maturity parameter (set to NA if directly inputting proportion mature at age)
-#' @param mat_A95 logistic length at maturity parameter (set to NA if directly inputting proportion mature at age)
-#' @param EstMatAtAge vector of proportion mature at age (set to NA if using age at maturity parameters)
-#' @param Gear_sel_A50 logistic parameter for gear selectivity curve
-#' @param Gear_sel_A95 logistic parameter for gear selectivity curve
-#' @param EstGearSelAtAge vector for gear selectivity at age (set to NA if using age at gear selectivity parameters)
-#' @param Land_sel_A50 logistic parameter for selectivity of landings curve
-#' @param Land_sel_A95 logistic parameter for selectivity of landings curve
-#' @param ret_Pmax logistic parameter for fish retention curve
-#' @param ret_A50 logistic parameter for fish retention curve
-#' @param ret_A95 logistic parameter for fish retention curve
-#' @param EstRetenAtAge vector of fish retention at age (set to NA if using age at fish retention parameters)
-#' @param DiscMort proportion of fish that die following capture and release
-#' @param Steepness steepness parameter of Beverton-Holt or Ricker stock-recruitment relationship
-#' @param SRrel_Type 1 = Beverton-Holt, 2=Ricker stock-recruitment relationship
-#' @param NatMort natural mortality
-#' @param Current_F estimate of current fishing mortality
-#' @param xaxis_lab y axis label
-#' @param yaxis_lab x axis label
-#' @param xmax maximum x axis value
-#' @param xint x axis interval
-#' @param ymax maximum y axis value
-#' @param yint y axis interval
-#'
-#' @return
-#' deterministic plot of yield vs F from per recruit analysis and extended analysis
-#' with a stock-recruitment relationship.
-#' @examples
-#' # Example 1. Non-hermaphroditic species
-#' InitRecruit <- 1 # Initial recruitment
-#' MaxModelAge <- 20 # maximum age considered by model, years
-#' TimeStep <- 1 # Model time step (y) (for shorter-lived species, might be appropriate to use a smaller time step)
-#' Linf <- c(550, 500) # mm - von Bertalanffy growth model parameters - Females, males
-#' vbK <- c(0.5, 0.5) # year-1 - von Bertalanffy growth model parameters - Females, males
-#' tzero <- c(0, 0) # years - von Bertalanffy growth model parameters - Females, males
-#' EstLenAtAge <- data.frame(EstMalLenAtAge=NA, EstMalLenAtAge=NA) # length at age (from age 0), inputted as values in data frame
-#' lenwt_a <- 0.000005 # combined sexes - weight (g) vs length (mm, TL) relationship parameters
-#' ln_lenwt_a <- NA # for log-log relationship
-#' lenwt_b <- 3 # combined sexes - weight (g) vs length (mm, TL) relationship parameters
-#' WLrel_Type <- 1 # 1=power, 2=log-log relationship
-#' EstWtAtAge <- data.frame(EstFemWtAtAge=NA, EstMalWtAtAge=NA) # weight at age (from age 0), inputted as values in data frame
-#' ReprodScale <- 1 # 1=default (standard calculations for spawning biomass), 2=hyperallometric reproductive scaling with female mass (i.e. BOFFF effects)
-#' ReprodPattern <- 1 # 1 = gonochoristic (separate sexes), 2 = protogynous (female to male sex change), 3 = protandrous (male to female sex change)
-#' InitRatioFem <- 0.5 # Ratio of females to males at age zero
-#' FinalSex_Pmax <- NA # Logistic sex change relationship parameters (max probability of final sex)
-#' FinalSex_A50 <- NA # Logistic sex change relationship parameters (inflection point)
-#' FinalSex_A95 <- NA # Logistic sex change relationship parameters (95% of max probability)
-#' mat_A50 <- c(2.5, 2.5) # females, males - Logistic length (mm) at maturity relationship parameters
-#' mat_A95 <- c(3.5, 3.5) # females, males - Logistic length (mm) at maturity relationship parameters
-#' EstMatAtAge <- data.frame(EstFemMatAtAge=NA, EstMalMatAtAge=NA) # maturity at age (from age 0), inputted as values in data frame
-#' Gear_sel_A50 <- c(2.5, 2.5) # females, males - Logistic age selectivity relationship parameters
-#' Gear_sel_A95 <- c(3.5, 3.5) # females, males - Logistic age selectivity relationship parameters
-#' EstGearSelAtAge <- data.frame(FemGearSelAtAge=NA, MalGearSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
-#' Land_sel_A50 <- c(2.5, 2.5) # females, males - Logistic age selectivity relationship parameters
-#' Land_sel_A95 <- c(3.5, 3.5) # females, males - Logistic age selectivity relationship parameters
-#' EstLandSelAtAge <- data.frame(FemSelLandAtAge=NA, MalSelLandAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
-#' ret_Pmax <- NA  # maximum retention, values lower than 1 imply discarding of fish above MLL
-#' ret_A50 <- NA  # females, males - Logistic age fish retention at age parameters
-#' ret_A95 <- NA  # females, males - Logistic age fish retention at age parameters
-#' EstRetenAtAge <- data.frame(EstFemRetenAtAge=rep(1,MaxModelAge+1), EstMalRetenAtAge=rep(1,MaxModelAge+1)) # fish retention at age (from age 0), inputted as values in data frame
-#' DiscMort <- 0.0 # discard mortality (e.g. 50% released fish die = 0.5)
-#' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
-#' SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
-#' NatMort = 0.2 # natural mortality  (year-1)
-#' Current_F <- 0.07 # estimate of fishing mortality, e.g. from catch curve analysis
-#' PlotPerRecruit_EqYield_no_err_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
-#'                      lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale,
-#'                      ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95,
-#'                      mat_A50, mat_A95, EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge,
-#'                      Land_sel_A50, Land_sel_A95, EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95,
-#'                      EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, Current_F,
-#'                      MainLabel=NA, xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA, ymax=NA, yint=NA)
-#' # # Example 2: hermaphroditic species
-#' # InitRecruit <- 1 # Initial recruitment
-#' # MaxModelAge <- 100 # maximum age considered by model, years
-#' # TimeStep <- 1 # Model time step (y) (for shorter-lived species, might be approprriate to use a smaller time step)
-#' # Linf <- c(1000, 1000) # mm - von Bertalanffy growth model parameters - Females, males
-#' # vbK <- c(0.1, 0.1) # year-1 - von Bertalanffy growth model parameters - Females, males
-#' # tzero <- c(0, 0) # years - von Bertalanffy growth model parameters - Females, males
-#' # EstLenAtAge <- data.frame(EstMalLenAtAge=NA, EstMalLenAtAge=NA) # length at age (from age 0), inputted as values in data frame
-#' # lenwt_a <- NA # combined sexes - weight (g) vs length (mm, TL) relationship parameters
-#' # ln_lenwt_a <- -11.0 # for log-log relationship
-#' # lenwt_b <- 3.0 # combined sexes - weight (g) vs length (mm, TL) relationship parameters
-#' # WLrel_Type <- 2 # 1=power, 2=log-log relationship
-#' # EstWtAtAge <- data.frame(EstFemWtAtAge=NA, EstMalWtAtAge=NA) # weight at age (from age 0), inputted as values in data frame
-#' # ReprodScale <- 1 # 1=default (standard calculations for spawning biomass), 2=hyperallometric reproductive scaling with female mass (i.e. BOFFF effects)
-#' # ReprodPattern <- 2 # 1 = gonochoristic (separate sexes), 2 = protogynous (female to male sex change), 3 = protandrous (male to female sex change)
-#' # InitRatioFem <- 1 # Ratio of females to males at age zero
-#' # FinalSex_Pmax <- 1 # Logistic sex change relationship parameters (max probability of final sex)
-#' # FinalSex_A50 <- 35 # Logistic sex change relationship parameters (inflection point)
-#' # FinalSex_A95 <- 60 # Logistic sex change relationship parameters (95% of max probability)
-#' # mat_A50 <- c(20, 20) # females, males - Logistic length (mm) at maturity relationship parameters
-#' # mat_A95 <- c(30, 30) # females, males - Logistic length (mm) at maturity relationship parameters
-#' # EstMatAtAge <- data.frame(EstFemMatAtAge=NA, EstMalMatAtAge=NA) # maturity at age (from age 0), inputted as values in data frame
-#' # Gear_sel_A50 <- c(20, 20) # females, males - Logistic age selectivity relationship parameters
-#' # Gear_sel_A95 <- c(30, 30) # females, males - Logistic age selectivity relationship parameters
-#' # EstGearSelAtAge <- data.frame(FemGearSelAtAge=NA, MalGearSelAtAge=NA) # fish retention at age (from age 0), inputted as values in data frame
-#' # Land_sel_A50 <- c(25, 25) # females, males - Logistic age selectivity relationship parameters
-#' # Land_sel_A95 <- c(35, 35) # females, males - Logistic age selectivity relationship parameters
-#' # EstLandSelAtAge <- data.frame(FemSelLandAtAge=NA, MalSelLandAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
-#' # ret_Pmax <- NA  # maximum retention, values lower than 1 imply discarding of fish above MLL
-#' # ret_A50 <- NA  # females, males - Logistic age fish retention at age parameters
-#' # ret_A95 <- NA  # females, males - Logistic age fish retention at age parameters
-#' # EstRetenAtAge <- data.frame(EstFemRetenAtAge=rep(1,MaxModelAge+1), EstMalRetenAtAge=rep(1,MaxModelAge+1)) # fish retention at age (from age 0), inputted as values in data frame
-#' # DiscMort <- 0.0 # discard mortality (e.g. 50% released fish die = 0.5)
-#' # Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
-#' # SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
-#' # NatMort = 0.07 # natural mortality  (year-1)
-#' # Current_F <- 0.07 # estimate of fishing mortality, e.g. from catch curve analysis
-#' # PlotPerRecruit_EqYield_no_err_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
-#' #                       lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale,
-#' #                       ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95,
-#' #                       mat_A50, mat_A95, EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge,
-#' #                       Land_sel_A50, Land_sel_A95, EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95,
-#' #                       EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, Current_F,
-#' #                       MainLabel=NA, xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA, ymax=NA, yint=NA)
-#' @export
-PlotPerRecruit_EqYield_no_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
-                                             lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale,
-                                             ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95,
-                                             mat_A50, mat_A95, EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge,
-                                             Land_sel_A50, Land_sel_A95, EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95,
-                                             EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, Current_F,
-                                             MainLabel, xaxis_lab, yaxis_lab, xmax, xint, ymax, yint) {
-
-  Res = GetPerRecruitResults_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
-                                lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale,
-                                ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95,
-                                mat_A50, mat_A95, EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge,
-                                Land_sel_A50, Land_sel_A95, EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95,
-                                EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, Current_F)
-
-  if (is.na(yaxis_lab)) yaxis_lab = "Catch (kg)"
-  if (is.na(xaxis_lab)) xaxis_lab = expression(paste(italic("F") ~ (year^{-1})))
-  if (is.na(xmax)) xmax = max(Res$FishMort)
-  if (is.na(xint)) xint = 0.5
-  if (is.na(ymax)) {
-    ylims = Get_yaxis_scale(Res$YPRResults)
-    ymax = ylims$ymax; yint = ylims$yint
-    if (max(Res$YPRResults) < 0.2 * ymax) {
-      ymax = ymax/5
-      yint = yint/5
-    }
-  }
-
-  # F vs YPR and equil catch
-  plot(Res$FishMort, Res$Eq_CatchResults, "l", frame.plot=F, ylim=c(0, ymax), xlim=c(0, xmax),
-       col="black", yaxt="n", xaxt="n", ylab="", xlab="")
-  lines(Res$FishMort, Res$YPRResults, lty="dotted")
-  points(Current_F, Res$Eq_Catch, cex=1.2, col="black", pch=16)
-  points(Current_F, Res$YPR, cex=1.2, col="black", pch=1)
-  axis(1, at=seq(0, xmax, xint), cex.axis=1, lwd=1.75, lab=F, line=-0.3)
-  axis(2, at=seq(0, ymax, yint), cex.axis=1, lwd=1.75, lab=F, line=-0.3)
-  axis(1, at=seq(0, xmax, xint), labels=seq(0, xmax, xint),
-       cex.axis=1, line=-0.5, las=1, lwd=1.5, tick=F)
-  axis(2, at=seq(0, ymax, yint), cex.axis=1, line=-0.5, las=1, lwd=1.5, tick=F)
-  mtext(yaxis_lab, las=3, side=2, line=3, cex=1.2, lwd=1.75)
-  mtext(xaxis_lab, las=1, side=1, line=3, cex=1.2, lwd=1.75)
-  legend("topright", col=c("black", "black"), lty=c("solid", "dotted"), legend=c("Eq. catch","YPR"),
-         bty="n", cex=0.8, lwd=1.75, inset = 0.05)
-  legend("topleft", col="black", pch = c(16,1), lty=0, legend=c("Est_EqYield","Est_YPR"),
-         bty="n", cex=0.8, inset = 0.05)
-}
-
-
-#' Deterministic plot of equilibrium yield vs F from extended age-based per recruit analysis
-#' with a stock-recruitment relationship
-#'
-#' This function provides a deterministic plot of equilibrium yield vs F from extended age-based per recruit analysis
-#' with a stock-recruitment relationship
-#'
-#' Get outputs from length-based per recruit analysis across a range of fishing mortality values
-#'
-#' This function provides outputs associated with per recruit analysis, and an
-#' extended form of this analysis with a Beverton-Holt stock recruitment relationship to account
-#' for potential impacts of fishing on recruitment. Outputs are provided for a range of
-#' fishing mortality values, including the current, estimated value.
-#'
-#' @param MaxModelAge maximum age considered by model
-#' @param TimeStep model time step (in y)
-#' @param lbnd lower bounds of length classes
-#' @param ubnd upper bounds of length classes
-#' @param midpt mid points bounds of length classes
-#' @param nLenCl number of length classes
-#' @param GrowthCurveType 1=von Bertalanffy, 2=Schnute
-#' @param GrowthParams growth parameters of either von Bertalanffy or Schnute model
-#' @param RefnceAges reference ages for Schnute model, set to NA if using von Bertalanffy model
-#' @param CVSizeAtAge coefficient of variation for size at age
-#' @param lenwt_a weight-length parameter
-#' @param ln_lenwt_a weight-length parameter
-#' @param lenwt_b weight-length parameter
-#' @param WLrel_Type 1=power, 2=log-log
-#' @param EstWtAtLen user-specified weights at lengths
-#' @param ReprodScale <- 1 # 1=default (standard calculations for spawning biomass), 2=hyperallometric reproductive scaling with female mass (i.e. BOFFF effects)
-#' @param ReprodPattern reproductive pattern, 1=gonochoristic, 2=protogynous (female to male sex change) hermaphroditism,
-#' 3=protandrous hermaphroditism (male to female sex change)
-#' @param InitRatioFem proportion of fish that are females at hatching
-#' @param FinalSex_Pmax logistic sex change parameter for hermaphroditic species (set to NA for gonochoristic species)
-#' @param FinalSex_L50 logistic sex change parameter for hermaphroditic species (set to NA for gonochoristic species)
-#' @param FinalSex_L95 logistic sex change parameter for hermaphroditic species (set to NA for gonochoristic species)
-#' @param mat_L50 logistic length at maturity parameter (set to NA if directly inputting proportion mature at length)
-#' @param mat_L95 logistic length at maturity parameter (set to NA if directly inputting proportion mature at length)
-#' @param EstMatAtLen vector of proportion mature at length (set to NA if using length at maturity parameters)
-#' @param sel_L50 logistic parameter for gear selectivity curve
-#' @param sel_L95 logistic parameter for gear selectivity curve
-#' @param Land_sel_A50 logistic parameter for selectivity of landings curve
-#' @param Land_sel_A95 logistic parameter for selectivity of landings curve
-#' @param EstLandSelAtAge vector for for selectivity of landings at age (set to NA if using age at selectivity of landings parameters)
-#' @param ret_Pmax logistic parameter for fish retention curve
-#' @param ret_L50 logistic parameter for fish retention curve
-#' @param ret_L95 logistic parameter for fish retention curve
-#' @param DiscMort proportion of fish that die following capture and release
-#' @param Steepness steepness parameter of Beverton-Holt or Ricker stock-recruitment relationship
-#' @param SRrel_Type 1 = Beverton-Holt, 2=Ricker stock-recruitment relationship
-#' @param NatMort natural mortality
-#' @param RefPointPlotOpt plotting option for reference points, 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
-#' @param Current_F estimated current fishing mortality
-#' @param xaxis_lab y axis label
-#' @param yaxis_lab x axis label
-#' @param xmax maximum x axis value
-#' @param xint x axis interval
-#' @param ymax maximum y axis value
-#' @param yint y axis interval
-#'
-#' @examples
-#' MaxModelAge <- 20 # maximum age considered by model, years
-#' TimeStep <- 1 # Model time step (y) (for shorter-lived species, might be appropriate to use a smaller time step)
-#' MaxLen = 800
-#' LenInc = 20
-#' lbnd = seq(0,MaxLen - LenInc, LenInc)
-#' ubnd = lbnd + LenInc
-#' midpt = lbnd + (LenInc/2)
-#' nLenCl = length(midpt)
-#' GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute
-#' Linf <- c(550, 500) # mm - von Bertalanffy growth model parameters - Females, males
-#' vbK <- c(0.2, 0.2) # year-1 - von Bertalanffy growth model parameters - Females, males
-#' tzero <- c(0, 0) # years - von Bertalanffy growth model parameters - Females, males
-#' GrowthParams = data.frame(Linf=Linf, vbK=vbK, tzero=tzero)
-#' RefnceAges = NA
-#' # GrowthParams c(Linf, vbK, tzero) single sex von Bertalanffy, or data.frame(Linf=Linf, vbK=vbK, tzero=tzero),
-#' #' both sexes von Bertalanffy, or c(y1, y2, a, b) single sex Schnute, or data.frame(y1=y1, y2=y2, a=a, b=b), both sexes Schnute
-#' CVSizeAtAge = c(0.05,0.05)
-#' lenwt_a <- 0.000005 # combined sexes - weight (g) vs length (mm, TL) relationship parameters
-#' ln_lenwt_a <- NA # for log-log relationship
-#' lenwt_b <- 3 # combined sexes - weight (g) vs length (mm, TL) relationship parameters
-#' WLrel_Type <- 1 # 1=power, 2=log-log relationship
-#' EstWtAtLen <- data.frame(EstFemWtAtLen=NA,
-#'                          EstMalWtAtLen=NA) # weight at length, inputted as values in data frame
-#' ReprodScale <- 1 # 1=default (standard calculations for spawning biomass), 2=hyperallometric reproductive scaling with female mass (i.e. BOFFF effects)
-#' ReprodPattern <- 1 # 1 = gonochoristic (separate sexes), 2 = protogynous (female to male sex change), 3 = protandrous (male to female sex change)
-#' InitRatioFem <- 0.5 # Ratio of females to males at recruitment age/length
-#' FinalSex_Pmax <- NA # Logistic sex change relationship parameters (max probability of final sex)
-#' FinalSex_L50 <- NA # Logistic sex change relationship parameters (inflection point)
-#' FinalSex_L95 <- NA # Logistic sex change relationship parameters (95% of max probability)
-#' mat_L50 <- c(250, 250) # females, males - Logistic length (mm) at maturity relationship parameters
-#' mat_L95 <- c(300, 300) # females, males - Logistic length (mm) at maturity relationship parameters
-#' EstMatAtLen <- data.frame(EstFemMatAtLen=NA,
-#'                           EstMalMatAtLen=NA) # maturity at length, inputted as values in data frame
-#' sel_L50 <- c(250, 250) # females, males - Logistic length selectivity relationship parameters
-#' sel_L95 <- c(300, 300) # females, males - Logistic length selectivity relationship parameters
-#' ret_Pmax <- c(1.0, 1.0) # maximum retention, values lower than 1 imply discarding of fish above MLL
-#' ret_L50 <- c(250, 250) # females, males - Logistic fish retention at length parameters
-#' ret_L95 <- c(300, 300) # females, males - Logistic fish retention at length parameters
-#' DiscMort <- 0.25 # discard mortality (e.g. 50% released fish die = 0.5)
-#' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
-#' SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
-#' NatMort = 4.22 / MaxModelAge # natural mortality  (year-1)
-#' RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
-#' Current_F = 0.2
-#' PlotPerRecruit_EqYield_no_err_LB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
-#'                                              lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale,
-#'                                              ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95,
-#'                                              mat_A50, mat_A95, EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, ret_Pmax, ret_A50, ret_A95,
-#'                                              EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, RefPointPlotOpt, Current_F,
-#'                                              MainLabel=NA, xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA, ymax=NA, yint=NA)
-#' @export
-PlotPerRecruit_EqYield_no_err_LB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
-                                             lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale,
-                                             ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95,
-                                             mat_A50, mat_A95, EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, ret_Pmax, ret_A50, ret_A95,
-                                             EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, RefPointPlotOpt, Current_F,
-                                             MainLabel, xaxis_lab, yaxis_lab, xmax, xint, ymax, yint) {
-
-Output_Opt = 1 # 1=standard output, 2=with added length and weight outputs (slower)
-Res=GetPerRecruitResults_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
-                            RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
-                            EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
-                            FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-                            ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, Output_Opt)
-
-if (is.na(yaxis_lab)) yaxis_lab = "Catch (kg)"
-if (is.na(xaxis_lab)) xaxis_lab = expression(paste(italic("F") ~ (year^{-1})))
-if (is.na(xmax)) xmax = max(Res$FishMort)
-if (is.na(xint)) xint = 0.5
-if (is.na(ymax)) {
-  ylims = Get_yaxis_scale(Res$YPRResults)
-  ymax = ylims$ymax; yint = ylims$yint
-  if (max(Res$YPRResults) < 0.2 * ymax) {
-    ymax = ymax/5
-    yint = yint/5
-  }
-}
-
-# F vs YPR and equil catch
-plot(Res$FishMort, Res$Eq_CatchResults, "l", frame.plot=F, ylim=c(0, ymax), xlim=c(0, xmax),
-     col="black", yaxt="n", xaxt="n", ylab="", xlab="")
-lines(Res$FishMort, Res$YPRResults, lty="dotted")
-points(Current_F, Res$Eq_Catch, cex=1.2, col="black", pch=16)
-points(Current_F, Res$YPR, cex=1.2, col="black", pch=1)
-axis(1, at=seq(0, xmax, xint), cex.axis=1, lwd=1.75, lab=F, line = -0.3)
-axis(2, at=seq(0, ymax, yint), cex.axis=1, lwd=1.75, lab=F, line = -0.3)
-axis(1, at=seq(0, xmax, xint), labels=seq(0, xmax, xint),
-     cex.axis=1, line=-0.5, las=1, lwd=1.5, tick=F)
-axis(2, at=seq(0, ymax, yint), cex.axis=1, line=-0.5, las=1, lwd=1.5, tick=F)
-mtext(yaxis_lab, las=3, side=2, line=3, cex=1.2, lwd=1.75)
-mtext(yaxis_lab, las=1, side=1, line=3, cex=1.2, lwd=1.75)
-legend("topright", col=c("black", "black"), lty=c("solid", "dotted"), legend=c("Eq. catch","YPR"),
-       bty="n", cex=0.8, lwd=1.75, inset = 0.05)
-legend("topleft", col="black", pch = c(16,1), lty=0, legend=c("Est_EqYield","Est_YPR"),
-       bty="n", cex=0.8, inset = 0.05)
 }
 
 #' Deterministic plot of SPR and relative equilibrium biomass vs F from age-based per recruit analysis and extended analysis
@@ -12728,9 +12433,11 @@ PlotPerRecruit_Biom_no_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzer
 #' @param EstMatAtLen vector of proportion mature at length (set to NA if using length at maturity parameters)
 #' @param sel_L50 logistic parameter for gear selectivity curve
 #' @param sel_L95 logistic parameter for gear selectivity curve
+#' @param EstGearSelAtLen gear selectivity curve inputted as vector
 #' @param ret_Pmax logistic parameter for fish retention curve
 #' @param ret_L50 logistic parameter for fish retention curve
 #' @param ret_L95 logistic parameter for fish retention curve
+#' @param EstRetenAtLen retention curve inputted as vector
 #' @param DiscMort proportion of fish that die following capture and release
 #' @param Steepness steepness parameter of Beverton-Holt or Ricker stock-recruitment relationship
 #' @param SRrel_Type 1 = Beverton-Holt, 2=Ricker stock-recruitment relationship
@@ -12775,9 +12482,13 @@ PlotPerRecruit_Biom_no_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzer
 #'                           EstMalMatAtLen=NA) # maturity at length, inputted as values in data frame
 #' sel_L50 <- c(250, 250) # females, males - Logistic length selectivity relationship parameters
 #' sel_L95 <- c(300, 300) # females, males - Logistic length selectivity relationship parameters
+#' EstGearSelAtLen <- data.frame(EstFemGearSelAtLen=NA,
+#'                               EstMalGearSelAtLen=NA)
 #' ret_Pmax <- c(1.0, 1.0) # maximum retention, values lower than 1 imply discarding of fish above MLL
 #' ret_L50 <- c(250, 250) # females, males - Logistic fish retention at length parameters
 #' ret_L95 <- c(300, 300) # females, males - Logistic fish retention at length parameters
+#' EstRetenAtLen <- data.frame(EsFemtRetenAtLen=NA,
+#'                             EstMalRetenAtLen=NA)
 #' DiscMort <- 0.25 # discard mortality (e.g. 50% released fish die = 0.5)
 #' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
 #' SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
@@ -12788,21 +12499,21 @@ PlotPerRecruit_Biom_no_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzer
 #' PlotPerRecruit_Biom_no_err_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
 #'                                           RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
 #'                                           EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
-#'                                           FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-#'                                           ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, PlotOpt, RefPointPlotOpt, Current_F)
+#'                                           FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+#'                                           ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, PlotOpt, RefPointPlotOpt, Current_F)
 #' @export
 PlotPerRecruit_Biom_no_err_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                           RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                                           EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
-                                          FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-                                          ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, PlotOpt, RefPointPlotOpt, Current_F) {
+                                          FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+                                          ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, PlotOpt, RefPointPlotOpt, Current_F) {
 
   Output_Opt = 1 # 1=standard output, 2=with added length and weight outputs (slower)
   Res = GetPerRecruitResults_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                 RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                                 EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
-                                FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-                                ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, Output_Opt)
+                                FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+                                ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, Output_Opt)
 
   # F vs SPR and Brel
   xmax = max(Res$FishMort)
@@ -13143,9 +12854,11 @@ GetPerRecruitResults_AB_with_err <- function(MaxModelAge, TimeStep, Linf, vbK, t
 #' @param EstMatAtLen vector of proportion mature at length (set to NA if using age at maturity parameters)
 #' @param sel_L50 logistic parameter for gear selectivity curve
 #' @param sel_L95 logistic parameter for gear selectivity curve
+#' @param EstGearSelAtLen gear selectivity curve inputted as vector
 #' @param ret_Pmax logistic parameter for fish retention curve
 #' @param ret_L50 logistic parameter for fish retention curve
 #' @param ret_L95 logistic parameter for fish retention curve
+#' @param EstRetenAtLen retention curve inputted as vector
 #' @param DiscMort proportion of fish that die following capture and release
 #' @param Steepness steepness parameter of Beverton-Holt or Ricker stock-recruitment relationship
 #' @param Steepness_sd standard deviation for steepness parameter
@@ -13200,9 +12913,13 @@ GetPerRecruitResults_AB_with_err <- function(MaxModelAge, TimeStep, Linf, vbK, t
 #'                           EstMalMatAtLen=NA) # maturity at length, inputted as values in data frame
 #' sel_L50 <- c(250, 250) # females, males - Logistic length selectivity relationship parameters
 #' sel_L95 <- c(300, 300) # females, males - Logistic length selectivity relationship parameters
+#' EstGearSelAtLen <- data.frame(EstFemGearSelAtLen=NA,
+#'                               EstMalGearSelAtLen=NA)
 #' ret_Pmax <- c(1.0, 1.0) # maximum retention, values lower than 1 imply discarding of fish above MLL
 #' ret_L50 <- c(250, 250) # females, males - Logistic fish retention at length parameters
 #' ret_L95 <- c(300, 300) # females, males - Logistic fish retention at length parameters
+#' EstRetenAtLen <- data.frame(EsFemtRetenAtLen=NA,
+#'                             EstMalRetenAtLen=NA)
 #' DiscMort <- 0.25 # discard mortality (e.g. 50% released fish die = 0.5)
 #' SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
 #' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
@@ -13215,15 +12932,15 @@ GetPerRecruitResults_AB_with_err <- function(MaxModelAge, TimeStep, Linf, vbK, t
 #' GetPerRecruitResults_LB_with_err(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
 #'                                  RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
 #'                                  EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
-#'                                  FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-#'                                  ret_L50, ret_L95, DiscMort, Steepness, Steepness_sd, SRrel_Type, NatMort, NatMort_sd,
+#'                                  FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+#'                                  ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, Steepness_sd, SRrel_Type, NatMort, NatMort_sd,
 #'                                  Current_F, Current_F_sd, nReps)
 #' @export
 GetPerRecruitResults_LB_with_err <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                              RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                                              EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
-                                             FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-                                             ret_L50, ret_L95, DiscMort, Steepness, Steepness_sd, SRrel_Type, NatMort, NatMort_sd,
+                                             FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+                                             ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, Steepness_sd, SRrel_Type, NatMort, NatMort_sd,
                                              Current_F, Current_F_sd, nReps) {
 
 
@@ -13240,8 +12957,8 @@ GetPerRecruitResults_LB_with_err <- function(MaxModelAge, TimeStep, lbnd, ubnd, 
     PREst = GetPerRecruitResults_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                     RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                                     EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
-                                    FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-                                    ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, Output_Opt)
+                                    FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+                                    ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, Output_Opt)
 
     if (i == 1) {
       Fem_SPR_Vals = rep(0, nReps)
@@ -13684,9 +13401,11 @@ PlotPerRecruit_Biom_with_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
 #' @param EstMatAtLen vector of proportion mature at length (set to NA if using length at maturity parameters)
 #' @param sel_L50 logistic parameter for gear selectivity curve
 #' @param sel_L95 logistic parameter for gear selectivity curve
+#' @param EstGearSelAtLen gear selectivity curve inputted as vector
 #' @param ret_Pmax logistic parameter for fish retention curve
 #' @param ret_L50 logistic parameter for fish retention curve
 #' @param ret_L95 logistic parameter for fish retention curve
+#' @param EstRetenAtLen retention curve inputted as vector
 #' @param DiscMort proportion of fish that die following capture and release
 #' @param Steepness steepness parameter of Beverton-Holt or Ricker stock-recruitment relationship
 #' @param Steepness_sd standard deviation for steepness parameter
@@ -13743,9 +13462,13 @@ PlotPerRecruit_Biom_with_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
 #'                           EstMalMatAtLen=NA) # maturity at length, inputted as values in data frame
 #' sel_L50 <- c(250, 250) # females, males - Logistic length selectivity relationship parameters
 #' sel_L95 <- c(300, 300) # females, males - Logistic length selectivity relationship parameters
+#' EstGearSelAtLen <- data.frame(EstFemGearSelAtLen=NA,
+#'                               EstMalGearSelAtLen=NA)
 #' ret_Pmax <- c(1.0, 1.0) # maximum retention, values lower than 1 imply discarding of fish above MLL
 #' ret_L50 <- c(250, 250) # females, males - Logistic fish retention at length parameters
 #' ret_L95 <- c(300, 300) # females, males - Logistic fish retention at length parameters
+#' EstRetenAtLen <- data.frame(EsFemtRetenAtLen=NA,
+#'                             EstMalRetenAtLen=NA)
 #' DiscMort <- 0.25 # discard mortality (e.g. 50% released fish die = 0.5)
 #' SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
 #' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
@@ -13758,11 +13481,11 @@ PlotPerRecruit_Biom_with_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
 #' RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 #' nReps = 10 # number of resampling trials. Set to low number to test, then much higher for final analysis.
 #' FittedRes=GetPerRecruitResults_LB_with_err(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
-#'                                      RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
-#'                                      EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
-#'                                      FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-#'                                       ret_L50, ret_L95, DiscMort, Steepness, Steepness_sd, SRrel_Type, NatMort, NatMort_sd,
-#'                                       Current_F, Current_F_sd, nReps)
+#'                                  RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
+#'                                  EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
+#'                                  FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+#'                                  ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, Steepness_sd, SRrel_Type, NatMort, NatMort_sd,
+#'                                  Current_F, Current_F_sd, nReps)
 #' # Plot. Note, can skip above step and set FittedRes=NA (plot function will be slower
 #' PlotPerRecruit_Biom_with_err_LB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
 #'                                             lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern,
@@ -13786,8 +13509,8 @@ PlotPerRecruit_Biom_with_err_LB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
   res=GetPerRecruitResults_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                               RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                               EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
-                              FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-                              ret_L50, ret_L95, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, Output_Opt)
+                              FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+                              ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, Output_Opt)
 
 
   # if model already fitted, can input results rather than refit
@@ -13796,9 +13519,9 @@ PlotPerRecruit_Biom_with_err_LB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
   } else {
     Res=GetPerRecruitResults_LB_with_err(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                          RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
-                                         EstWtAtLen, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
-                                         FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, ret_Pmax,
-                                         ret_L50, ret_L95, DiscMort, Steepness, Steepness_sd, SRrel_Type, NatMort, NatMort_sd,
+                                         EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
+                                         FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+                                         ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, Steepness_sd, SRrel_Type, NatMort, NatMort_sd,
                                          Current_F, Current_F_sd, nReps)
   }
 

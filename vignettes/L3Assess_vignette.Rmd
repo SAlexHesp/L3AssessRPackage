@@ -23,7 +23,7 @@ Fig_Path = "C:/~/L3AssessPackage/vignettes/"
 ```
 
 # Introduction
-#### Last updated November 2023 (Alex Hesp - DPIRD)
+#### Last updated January 2024 (Alex Hesp - DPIRD)
 
 This package is intended as a toolbox of methods with analyses for conducting "level 3" assessments in Western Australia. These methods are typically "equilibrium" approaches, used when size and/or age data are available, together with information on various biological attributes of species, such as estimates of natural mortality, growth and maturity.  
 
@@ -92,10 +92,12 @@ Refer to help files and example code, showing function inputs and outputs.
 ### Catch curve analysis with logistic selectivity
 
 Applying this catch curve approach, selectivity at age, $S_a$, is calculated as
+
 $$
-S_a = 1/(1+\exp(-s(a-a_{50})))
+S_a = 1/(1+\exp(-\log_e(19)(a-A_{50,s})/(A_{95}-A_{50})))
 $$
-where $a_{50}$ age at which 50% of fish are selected into the fishery and $s$ is the slope of the logistic equation. Fishing mortality at age, $F_a$, is calculated as 
+  
+where $A_{50}$ and $A_{95}$ are the ages at which 50 and 95% of fish are selected into the fishery. Fishing mortality at age, $F_a$, is calculated as 
 $$
 F_a = S_aF
 $$
@@ -116,22 +118,33 @@ $$
 \end{align}
 $$
 
-$C_a$, the catch at age $a$, may be calculated using the Baranov catch equation, i.e.
+where $Z$ is the value of total mortality for fully selected fish. $C_a$, the catch at age $a$, may be calculated using the Baranov catch equation, i.e.
 $$
 C_a = N_a\biggl(\frac{F_a}{Z_a}\biggr)(1-\exp(-Z_a))
 $$
-The expected catch proportion at age, $\hat{P_a}$, is thus
+The expected catch proportion at age, $\tilde{\pi}_a$, is thus
 $$
-\hat{P}{_a} = \frac{C_a}{\sum_{a=0}^{A}C_a}
+\tilde{\pi}_a = \frac{C_a}{\sum_{a=0}^{A}C_a}
 $$
-The multinomial log-likelihood associated with the catch curve is calculated as
+The catch curve may be fitted employing the traditional multinomial log-likelihood or Dirichlet-multinomial log-likelihood. Following similar notation to Thorson et al. (2017) for these likelihood functions, the former may be calculated as
 $$
-{\lambda} = \sum_{a=0}^{A}f_a\ln\hat{P}{_a}
+\lambda = \sum_{a=0}^{A}f_a\log_e(\tilde{\pi}_a)
 $$
-where $f$ is the observed frequency at age $a$. The model is fitted by minimising the negative log-likelihood, $\lambda$, using nlminb in R, by estimating the fully-selected fishing mortality $F$, and selectivity parameters, $a_{50}$ and $s$. Estimates of asymptotic standard errors, $\sigma$, for each of the model parameters, are derived from the variance-covariance matrix (i.e. from the inverted Hessian matrix produced by nlminb). Approximate 95% confidence intervals for the estimated parameters are calculated as $1.96\sigma$. For visualisation, model estimates of the frequency of fish at each age, with associated 95% confidence intervals, are calculated using a parametric resampling approach, assuming the estimated model parameters conform to a multivariate normal distribution. The mvrnorm function within the MASS package is used together with the values of the estimated model parameters and associated variance-covariance matrix to generate 500 random values of each of the model parameters. These, in turn, are used to produce 500 sets of model estimates for the frequency of fish at each age, $\hat{f_a}$, calculated as
+where $f$ is the observed frequency at age $a$. The Dirichlet multinomial likelihood is implemented according to the 'linear effective sample size' parameterisation, as recommended in Thorson et al. (2017), whereby an effective sample size, $f_{eff}$, is calculated as
 
 $$
-\hat{f_a}=\hat{P}{_a}n
+n_{eff}=n\frac{\theta}{1+\theta}
+$$
+Above, $\theta$ is the variance inflation parameter, estimated when fitting the model. Following Thorson et al. (2017), the Dirichlet-multinomial log-likelihood, intended to be used to account for over-dispersion in the data (due to lack of statistical independence of sampled fish) and provide more realistic estimates of error, is calculated as
+
+$$
+\lambda =\frac{\Gamma(n+1)}{\prod_{a=1}^{A}\Gamma(n|\tilde{\pi}+1)}\frac{\Gamma({\theta}n)}{\Gamma({n+\theta}n)}  \prod_{a=1}^{A}\frac{\Gamma(n|\tilde{\pi}_a+\theta{n\pi_a})}{(\theta{n}\pi_a)}
+$$
+
+The model is fitted by minimising the negative log-likelihood using nlminb in R, by estimating the fully-selected fishing mortality $F$, and selectivity parameters, $a_{50}$ and $s$. Estimates of asymptotic standard errors, $\sigma$, for each of the model parameters, are derived from the variance-covariance matrix (i.e. from the inverted Hessian matrix produced by nlminb). Approximate 95% confidence intervals for the estimated parameters are calculated as $1.96\sigma$. For visualisation, model estimates of the frequency of fish at each age, with associated 95% confidence intervals, are calculated using a parametric resampling approach, assuming the estimated model parameters conform to a multivariate normal distribution. The mvrnorm function within the MASS package is used together with the values of the estimated model parameters and associated variance-covariance matrix to generate 500 random values of each of the model parameters. These, in turn, are used to produce 500 sets of model estimates for the frequency of fish at each age, $\tilde{f_a}$, calculated as
+
+$$
+\tilde{f_a}=\tilde{\pi}_an
 $$
 
 where $n$ is the observed sample size. The lower and upper 95 confidence limits for $\hat{f_a}$ are taken as the 2.5 and 97.5 percentiles of the 500 estimates for $\hat{f_a}$, respectively. 
@@ -354,41 +367,32 @@ $$
 
 #### Objective function calculations - length-based catch curve
 
-The observed length composition for fish that are caught and retained is assumed to conform to a multinomial distribution. The expected proportions of fish in each length class, $\hat{P}_l^R$, for combined sexes, is
+The observed length composition for fish that are caught and retained is assumed to conform to either a multinomial distribution or Dirichlet-multinomial distribution. The expected proportions of fish in each length class among such fish, $\hat{P}_l^R$, for combined sexes, is
 
 $$
-\hat{P}_l^R = \sum_s\sum_a\Bigg(\frac{\hat{C}_{s,a}^R}{\sum_{l}\hat{C}_{s,a}^R}\Bigg)
-$$
-Similarly, the expected proportion of fish which are caught and released (which may subsequently survive or die), is
-
-$$
-\hat{P}^{D*}_l = \sum_s\sum_a\Bigg(\frac{\hat{C}^{D*}_{s,a}}{\sum_{l}\hat{C}^{D*}_{s,a}}\Bigg)
+\hat{P}_l^R = \sum_s\sum_l\Bigg(\frac{\hat{C}_{s,l}^R}{\sum_{l}\hat{C}_{s,l}^R}\Bigg)
 $$
 
-The (multinomial) negative log-likelihood associated with the observed length composition data for retained fish, $\lambda_1$, is
+The multinomial negative log-likelihood associated with the observed length composition data for retained fish, $\lambda_1$, is
 
 $$
-\lambda_1 = -\Big(C_l^R\log_e(\hat{P}_l^R)\Big)
+\lambda_1 = \sum_lC_l^R\log_e(\hat{P}_l^R)
 $$
-where $C_l^R$ is the observed retained catch frequency in length class $l$. Likewise, the negative log likelihood associated with fish that are caught and released is
-$$
-\lambda_2 = -\Big(C^{D*}_l\log_e(\hat{P}^{D*}_l)\Big)
-$$
-If an observed length composition is not available for fish that are released, but an estimate exists for the proportion of fish that are released in catches ($\rho$), fitting the model to these auxillary data may assist in estimating the logistic parameters for the vulnerability curve (i.e. gear selectivity). The negative log-likelihood associated with a model estimate for $\hat{\rho}$, assumed to be normally distributed, is
+where $C_l^R$ is the observed retained catch frequency in length class $l$. 
 
-$$
-\lambda_3 = -\log_e\Bigg(\frac{1}{\sigma_\rho\sqrt{2{\pi}}}\exp\bigg[\frac{(\hat{\rho}-\rho)^2}{2\sigma_\rho^2}\bigg]\Bigg)
-$$
-where $\rho$ and $\sigma_{\rho}$ are the observed proportion and associated standard deviation inputted by the user, if available. Whether this option remains is currently under review.
+If data for fish which are caught and released are included, the expected proportions of fish are calculated as described above for retained fish, replacing $\hat{C}_{s,a}^R$ with $\hat{C}_{s,a}^D*$. Likewise, the negative log likelihood, $\lambda_2$, associated with fish that are caught and released is calculated in the same way as for retained fish, replacing $C_l^R$ with $C^{D*}_l$ and $\hat{P}_l^R$ with $\hat{P}^{D*}$.
 
 The model is fitted by minimsing the negative log-likelihood using nlminb in R, by estimating the fully-selected fishing mortality $F^*$, and selectivity parameters, $L_{50}^{\mathrm{sel}}$ and $L_{95}^{\mathrm{sel}}$. Estimates of asymptotic standard errors, $\sigma$ are derived from the variance-covariance matrix (i.e. from the inverted Hessian matrix produced by nlminb). Approximate 95% confidence intervals for the estimated parameters are calculated as $1.96\sigma$. 
 
 The overall negative log-likelihood, $\lambda$, is calculated as
 
 $$
-\lambda = \lambda_1 + \lambda_2 + \lambda_3
+\lambda = \lambda_1 + \lambda_2
 $$
-with $\lambda_2$ and $\lambda_3$ set to zero if the associated model options are not selected by the user.
+with $\lambda_2$ set to zero if the associated model options are not selected by the user.
+
+The Dirichlet-multinomial has been implemented in the same way for this method, i.e. 'linear effective sample size' parameterisation, as recommended in Thorson et al. (2017), as described for the age-based logistic catch curve.
+
 
 ### Estimating uncertainty for model outputs
 
@@ -795,13 +799,13 @@ where $n$ donotes the number of length classes considered by the model. The reta
 $$
 C_{s,l} = N_{s,l}\biggl(\frac{F_{s,l}^R}{Z_{s,l}}\biggr)(1-\exp(-Z_{s,l}))
 $$
-For a model with an annual timestep, tn the above equation, $N_s,l$, i.e. the numbers of fish of sex $s$ at age $a$, for the fished population are calculated as
+For a model with an annual timestep, $N_s,a,l$, i.e. the numbers of fish of sex $s$ at age $a$ and length $l$, for the fished population are calculated as
 $$
 \begin{align}
-    N_{s,a} = \phi && \text{if s=1 and a=1}\\
-    N_{s,a} = 1-\phi && \text{if s=2 and a=1}\\
-    N_{s,a} = N_{s,a-1}\exp(-Z_{s,a-1}) && \text{if 1<a<A}\\
-    N_{s,a} = N_{s,a-1}\exp(-Z_{s,a-1})/(1-\exp(-Z_{s,a-1})) && \text{if a=A}\\
+    N_{s,a,l} = \phi && \text{if s=1 and a=1}\\
+    N_{s,a,l} = 1-\phi && \text{if s=2 and a=1}\\
+    N_{s,a,l} = N_{s,a-1,l}\exp(-Z_{s,a-1,l}) && \text{if 1<a<A}\\
+    N_{s,a,l} = N_{s,a-1,l}\exp(-Z_{s,a-1,l})/(1-\exp(-Z_{s,a-1,l})) && \text{if a=A}\\
 \end{align}
 $$
 where $\phi$ is the ratio of females to males at age 1 yr, and $A$, is the maximum age considered by the model. Note that, for this length-based per recruit analysis, a juvenile is recruited at age one rather than at age zero (to avoid calculations of negative values of fish lengths). The numbers of sex $s$ at the midpoint of lengthl class $l$ for the unfished population, $\acute{N}_{s,l}$ are calculated as above for $N_{s,l}$, but replacing all values for total mortality with natural mortality, $M$. 
@@ -815,13 +819,13 @@ where $P_{max}^{s=2}$ is the maximum proportion for the terminal sex (males) and
 $$
 \rho_{l} = P_{max}^{s=1}/(1+\exp(-\log_e(19)(l-L_{50}^{\rho})/(L_{95}^{\rho}-L_{50}^{\rho})))
 $$
-where $P_{max}^{s=1}$, the terminal sex, is females. For hermaphroditic species, the values of $N_{s,a}$ become modified, prior calculation of survival at the next age step, to reflect the assumed stable sex ratio. The modified values for female, $N'_{s=1,l}$ are calculated as
+where $P_{max}^{s=1}$, the terminal sex, is females. For hermaphroditic species, the values of $N_{s,a,l}$ become modified, prior calculation of survival at the next age step, to reflect the assumed stable sex ratio. The modified values for female, $N'_{s=1,l}$ are calculated as
 $$
-N'_{s=1,l}=\rho_{l}(N_{s=1,l}+N_{s=2,l})
+N'_{s=1,a,l}=\rho_{l}(N_{s=1,a,l}+N_{s=2,a,l})
 $$
 and those for males as
 $$
-N'_{s=1,l}=(1-\rho_{l})(N_{s=1,l}+N_{s=2,l})
+N'_{s=1,a,l}=(1-\rho_{l})(N_{s=1,a,l}+N_{s=2,a,l})
 $$
 
 
@@ -888,13 +892,15 @@ This implementation of per recruit analysis allows for incorporation uncertainty
 
 Note, it is also possible to incorporate other sources of uncertainty, such as for growth and maturity curves, if estimates are available for the both parameters of each curve and associated variance-covariance matrix (such as are outputted by the WAFishBiolgy R package. 'Wrapper' code, involving use of the CalcYPRAndSPRForFMort() function for each set of input parameters, and storing and analysing the outputs to produce confidence limits, has not yet been implemented.     
 
-### Risk calculations and associated plots for relative biomass estimates from per recruit analysis
+### Risk calculations and associated table for relative biomass estimates from per recruit analysis
 
+The function PlotPerRecruit_RiskMatrix_RelBiom()) is available to calculate and plot risk assessment scores associated with estimates relative biomass derived from incorporation of an estimate for fishing mortality in per recruit analysis. The risk methodolgy (ISO 310000) follows the consequence x likelihood approach used for Western Australian fisheries, as described by Fletcher (2015). Outputs are plotted as a risk table, with a risk level (negligible, low, medium, high or severe) assigned to each consequence level (minor; B>Targ; moderate, Thresh<B<Targ; high, Lim<B<Thresh; or major, B<Lim), depending on the likelihood of that risk level (remote, <5%; unlikely, 5-20%; possible, 20-50%, likely, >50%).  
 
-### Calculation of prediction intervals for growth curves used in length-based per recruit analysis
+### Calculation of prediction intervals displayed for growth curves used in length-based per recruit analysis
 
+The function PlotPerRecruitResults_LB() outputs diagnostic plots of growth curves with calculated prediction intervals for lengths-at age, derived using the value for the coefficient of variation (cv) inputted by the user (assumed in the analysis to be constant across lengths) for the specified growth curve. The prediction intervals are calcualted using a resampling approach. Specifically, for each of 10,000 females and 10,000 males, a random length class is drawn, assuming a multinomial distribution (i.e. using the rmultinom function in R), for the proportions of fish of sex $s$ and length $l$ surviving to age $a$ in the fished population. The expected values for $N_{s,a,l}$ are those calculated in the length-based per recruit analysis. For each fish with a randomly-assigned length class, a random value of length from, from the range of possible lengths of fish within that length class is then drawn, i.e. assuming the lengths of the fish within each length class have a uniform distribution. The upper and lower prediction intervals, as shown on the growth curve plots associated with the expected lengths at each age, are taken as the 97.5 and 2.5 percentiles, respectively.
 
-### Calculation of expected size sizes and prediction intervals at different levels of fishing
+### Calculation of expected size sizes of fish at different levels of fishing mortality
 
 
 ### Value per recruit calculations
@@ -924,8 +930,9 @@ Beverton, R. J. H. & Holt, S. J. (1957). On the Dynamics of Exploited Fish Popul
 
 Chapman, D. G., and D. S. Robson. (1960). The analysis of a catch curve. Biometrics 16, 354-368.
 
-Fairclough, D.V., Hesp, S.A., Denham, A., Fisher, E.A., Marks, R., Ryan, K.L., Lek, E., Allen, R., Crisafulli, B.M. 2021. 2021 assessment of the status of the West Coast Demersal Scalefish Resource. Fisheries Research Report No. 316 Department of
-Primary Industries and Regional Development, Western Australia. 158 pp.
+Fairclough, D.V., Hesp, S.A., Denham, A., Fisher, E.A., Marks, R., Ryan, K.L., Lek, E., Allen, R., Crisafulli, B.M. 2021. 2021 assessment of the status of the West Coast Demersal Scalefish Resource. Fisheries Research Report No. 316 Department of Primary Industries and Regional Development, Western Australia. 158 pp.
+
+Fletcher, W. J. (2015). Review and refinement of an existing qualitative risk assessment method for application within an ecosystem-based management framework. ICES Journal of Marine Science (2015), 72(3), 1043–1056. doi:10.1093/icesjms/fsu142.
 
 Hoenig, J. M. (1983). Empirical use of longevity data to estimate mortality rates. Fishery Bulletin 82, 898–903.
 
@@ -942,6 +949,8 @@ Piner, K. R., Lee, H.-H., Maunder, M. N. (2016). Evaluation of using random-at-l
 Shertzer, K.W., Williams, E.H. & Sagarese, S.R. (2022). Modeling discards in stock assessments: red grouper Epinephelus morio in the U.S. Gulf of Mexico. Fishes 2022, 7(1), 7. Doi.org/10.3390/fishes7010007.
 
 Smith, M. W., Then, A. Y., Wor, C., Ralph, G., Pollock, K. H. & Hoenig, J/. M. (2012) Recommendations for Catch-Curve Analysis, North American Journal of Fisheries Management, 32(5), 956-967.
+
+Thorson, J. T., Johnson, K. F., Methot, R. D. & Taylor, I. G. Model=based estimates of effective sample size in stock assessment models using the Dirichlet-multinomial distribution. Fisheries Research 192, 84-93. http://dx.doi.org/10.1016/j.fishres.2016.06.005.
 
 Wakefield, C. B., Williams, A. J., Fisher, E. A., Hall, N. G., Hesp, S. A., Halafihi, T., Kaltavara, J., Vourey, E., Taylor, B. M., O’Malley, J. M., Nicol, S. J., Wise, B. W. & Newman, S. J. (2020). Variations in life history characteristics of the deep-water giant ruby snapper (Etelis sp.) between the Indian and Pacific Oceans and application of a data-poor assessment. Fisheries Research 230.  Art. 105651. 
 
