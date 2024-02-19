@@ -852,10 +852,10 @@ Per recruit analysis may be extended to incorporate a stock-recruitment relation
 $$
 R = \frac{S}{Sb+a}
 $$
-where $R$ is recruitment, $S$ is female spawning biomass and $a$ and $b$ are parameters of the stock-recruitment relationship. This equation may be reparametrised into an alternative form that employs a steepness parameter $h$, i.e., the proportion of the unexploited equilibrium recruitment expected to recruit when spawning biomass is reduced to 20% of its unfished equilibrium level (Mace and Doonan, 1988). For gonochoristic species, the equilibrium level of recruitment for the fished population, relative to that for the unfished population may be calculated as
+where $R$ is recruitment, $S$ is female spawning biomass and $a$ and $b$ are parameters of the stock-recruitment relationship. This equation may be reparametrised into an alternative form that employs a steepness parameter $h$, i.e., the proportion of the unexploited equilibrium recruitment expected to recruit when spawning biomass is reduced to 20% of its unfished equilibrium level (Mace and Doonan, 1988). For gonochoristic species, the equilibrium level of recruitment for the fished population, relative to that for the unfished population, $R_{eq}$, may be calculated as
 
 $$
-\frac{R}{R0} = \frac{4h\theta_{s=1}-(1-h)\theta_{0,s=1}}{5(h-0.2)\theta_{s=1}}
+R_{eq} = \frac{4h\theta_{s=1}-(1-h)\theta_{0,s=1}}{5(h-0.2)\theta_{s=1}}
 $$
 For hermaphroditic species, recruitment is calculated on the combined mature biomass for both sexes, $SPR_{s=1:2}$, rather than just females. 
 
@@ -867,17 +867,17 @@ $$
 Using the Ricker model for a gonochoristic species, the equilibrium level of recruitment of the fished population, relative to that for the unfished population may be calculated as
 
 $$
-\frac{\theta_{0,s=1}\bigg(1-\frac{4\log_e(\theta_{s=1,0}/\theta_{s=1})}{5\log_e(5h)}\bigg)}{\theta_{s=1}}
+R_{eq}=\frac{\theta_{0,s=1}\bigg(1-\frac{4\log_e(\theta_{s=1,0}/\theta_{s=1})}{5\log_e(5h)}\bigg)}{\theta_{s=1}}
 $$
 For hermaphrodtic species, equilbribium recruitment is calculated based on the combined mature biomass for both sexes. The equilibrium level of catch, for the fished population may be calculated as
 
 $$
-C_{eq}=\frac{R}{R0}YPR
+C_{eq}=R_{eq}YPR
 $$
 The equilibrium level of spawning biomass for sex $s$, for the fished population may be calculated as
 
 $$
-S_{eq,s}=\frac{R}{R0}\theta_s
+S_{eq,s}=R_{eq}\theta_s
 $$
 The equilibrium ratio of spawning biomass of sex $s$, relative to the unfished level, is
 
@@ -898,13 +898,32 @@ The function PlotPerRecruit_RiskMatrix_RelBiom()) is available to calculate and 
 
 ### Calculation of prediction intervals displayed for growth curves used in length-based per recruit analysis
 
-The function PlotPerRecruitResults_LB() outputs diagnostic plots of growth curves with calculated prediction intervals for lengths-at age, derived using the value for the coefficient of variation (cv) inputted by the user (assumed in the analysis to be constant across lengths) for the specified growth curve. The prediction intervals are calcualted using a resampling approach. Specifically, for each of 10,000 females and 10,000 males, a random length class is drawn, assuming a multinomial distribution (i.e. using the rmultinom function in R), for the proportions of fish of sex $s$ and length $l$ surviving to age $a$ in the fished population. The expected values for $N_{s,a,l}$ are those calculated in the length-based per recruit analysis. For each fish with a randomly-assigned length class, a random value of length from, from the range of possible lengths of fish within that length class is then drawn, i.e. assuming the lengths of the fish within each length class have a uniform distribution. The upper and lower prediction intervals, as shown on the growth curve plots associated with the expected lengths at each age, are taken as the 97.5 and 2.5 percentiles, respectively.
+The function PlotPerRecruitResults_LB() outputs diagnostic plots of growth curves with calculated prediction intervals for lengths-at age, derived using the value for the coefficient of variation (cv) inputted by the user (assumed in the analysis to be constant across lengths) for the specified growth curve. The prediction intervals are calculated using a resampling approach. Specifically, for each of 10,000 females and 10,000 males, a random length class is drawn, assuming a multinomial distribution (i.e. using the rmultinom function() in R), based on the expected proportions of fish in the fished population of sex $s$ and length $l$ at age $a$, calculated using $N_{s,a,l}$, the expected numbers of fish of sex $s$ and length $l$ surviving to age $a$. For each fish with a randomly-assigned length class, a random value of length from, from the range of possible lengths of fish within that length class is then drawn, i.e. assuming the lengths of the fish within each length class have a uniform distribution. The upper and lower prediction intervals for length for sex $s$, as shown on the growth curve plots associated with the expected lengths at each age, are taken as the 97.5 and 2.5 percentiles, respectively, of the 10,000 length values for that sex.
 
-### Calculation of expected size sizes of fish at different levels of fishing mortality
+### Calculation of expected sizes and weights of fish at different levels of fishing mortality
 
+The function() PlotPerRecruit_ExpCatchSizeDistns_LB provides plots of expected mean sizes and weights of fish in catches, for females, males and combined sexes, over a wide range of fishing mortality levels, with associated 60 and 95 percent prediction intervals. The mean sizes and weights of fish in catches at the value of fishing mortality inputted by the user are also shown. Similar to above (previous heading), at each value of fishing mortality, a resampling approach, using the rmultinom function() in R, is used firstly to generate random length classes for each of 10,000 females and 10,000 males, based on the expected proportions of fish in expected retained catches of sex $s$ and length $l$. These are calculated using $C_{s,l}$, the expected numbers of fish sex $s$ and length $l$ in retained catches. For each fish with a randomly-assigned length class, a random value of length from the range of possible lengths of fish within that length class is then drawn, assuming the lengths of the fish within each length class have a uniform distribution. The upper and lower prediction intervals associated with the expected lengths of fish, are taken as the 97.5 and 2.5 percentiles, respectively, of the 10,000 values of length for each sex.
+
+For each fish of sex $s$ with a randomly generated length, its expected weight is calculated using the specified weight-length relationship, given its sex. Upper and lower prediction intervals for weight are calculated using the same approach as for fish length. 
 
 ### Value per recruit calculations
 
+Two routines, Get_Relative_Value_Per_Recruit_LB() and PlotValuePerRecruitResults_LB() to extend calculations of the above-described length-based per recruit methods, to undertake 'value'- (or 'utility'-) per-recruit analysis (e.g. see Die et al., 1988; Zhai & Pauly, 2019). Value-per-recruit analysis considers that the value of a fish to a fisher may differ according to fish size, e.g. commercial fishers may receive a greater price per kg for fish of larger size, or recreational fishers may place high value on 'trophy-sized' fish). This analysis in L3Assess considers that the value of a fish (to a fisher) varies in accordance with fish length and that i) there may be a minimum size below which a fish has no value to a fisher (e.g. as it is below the minimum legal length and is therefore discarded if caught) and ii) above that length, value scales according fish length according to the following relationship:
+
+$$
+\Phi_l = \bigg(L_{\min}+((L-L_{min})^{\gamma}\bigg)/L
+$$
+where, $\Phi_l$, is a measure of the value of a fish in length class $l$, relative to the value accorded to a fish of length $L_{\min}$, which is the minimum length of a fish to be considered to be of any value to a fisher. $\gamma$ is a parameter specified by the user, for scaling the 'value' of fish according to their length. The value of $L_{\min}$ is calculated according to $W_{min}$, a user specified value representing the minimum weight for a fish to be considered of value (i.e. noting that fishers may be more familiar with comparisons of fish of different weights). Specifically, $L_{\min}$ is calculated as
+
+$$
+L_{\min}=(W_{\min}/{a})^{1/b}
+$$
+where $a$ and $b$ are parameters of a weight-length relationship. For a given level of fishing mortality, the value of all fish (of both sexes) in retained catches is calculated as 
+
+$$
+X = \sum_lC_{l}W_{l}\Phi_lR_{eq}
+$$
+Values of $X$ are calculated for a wide range of fishing mortalities, and a search is undertaken to identify the value of fishing mortality that maximises $X$. Unless the value of a fish scales in proportion to fish weight (i.e. $\gamma$ is set to one), the optimum value of fishing mortality from a value-per-recruit analysis is expected to be less than from a yield-per-recruit analysis. Note also that the calculations allow for potential fishing impacts on catch, i.e. through impacting recruitment.
 
 ### Apply length-based per recruit analysis
 
@@ -921,6 +940,7 @@ PlotPerRecruit_RiskMatrix_RelBiom()
 GetPerRecruitGrowthPredIntervals_LB()  
 PlotPerRecruit_ExpCatchSizeDistns_LB()  
 Get_Relative_Value_Per_Recruit_LB()  
+PlotValuePerRecruitResults_LB()  
 Refer to help files and example code, showing function inputs and outputs.
 
 
@@ -929,6 +949,8 @@ Refer to help files and example code, showing function inputs and outputs.
 Beverton, R. J. H. & Holt, S. J. (1957). On the Dynamics of Exploited Fish Populations. Chapman and Hall, London.
 
 Chapman, D. G., and D. S. Robson. (1960). The analysis of a catch curve. Biometrics 16, 354-368.
+
+Die, D. J., Restrepo, V. R. & Hoenig, J. M. (1988). Utility-per-recruit modeling: a neglected concept. Transactions of the American Fisheries Society 117, 274-281.
 
 Fairclough, D.V., Hesp, S.A., Denham, A., Fisher, E.A., Marks, R., Ryan, K.L., Lek, E., Allen, R., Crisafulli, B.M. 2021. 2021 assessment of the status of the West Coast Demersal Scalefish Resource. Fisheries Research Report No. 316 Department of Primary Industries and Regional Development, Western Australia. 158 pp.
 
@@ -953,6 +975,8 @@ Smith, M. W., Then, A. Y., Wor, C., Ralph, G., Pollock, K. H. & Hoenig, J/. M. (
 Thorson, J. T., Johnson, K. F., Methot, R. D. & Taylor, I. G. Model=based estimates of effective sample size in stock assessment models using the Dirichlet-multinomial distribution. Fisheries Research 192, 84-93. http://dx.doi.org/10.1016/j.fishres.2016.06.005.
 
 Wakefield, C. B., Williams, A. J., Fisher, E. A., Hall, N. G., Hesp, S. A., Halafihi, T., Kaltavara, J., Vourey, E., Taylor, B. M., O’Malley, J. M., Nicol, S. J., Wise, B. W. & Newman, S. J. (2020). Variations in life history characteristics of the deep-water giant ruby snapper (Etelis sp.) between the Indian and Pacific Oceans and application of a data-poor assessment. Fisheries Research 230.  Art. 105651. 
+
+Zhai, L. & Pauly, D. (2019). Yield-per-Recruit, Utility-per-Recruit, and Relative Biomass of 21 Exploited Fish Species in China's Coastal Seas. Frontiers of Marine Science,  6. Art. 724. https://doi.org/10.3389/fmars.2019.00724.
 
 
 
