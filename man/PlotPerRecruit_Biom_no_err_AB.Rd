@@ -75,8 +75,6 @@ PlotPerRecruit_Biom_no_err_AB(
 
 \item{InitRatioFem}{proportion of fish that are females at hatching}
 
-\item{FinalSex_Pmax}{logistic sex change parameter for hermaphroditic species (set to NA for gonochoristic species)}
-
 \item{FinalSex_A50}{logistic sex change parameter for hermaphroditic species (set to NA for gonochoristic species)}
 
 \item{FinalSex_A95}{logistic sex change parameter for hermaphroditic species (set to NA for gonochoristic species)}
@@ -118,6 +116,10 @@ PlotPerRecruit_Biom_no_err_AB(
 \item{RefPointPlotOpt}{plotting option for reference points, 0=don't plot, 1=plot defaults, 2=plot BMSY ref points}
 
 \item{Current_F}{estimate of current fishing mortality}
+
+\item{EstSexRatioAtAge}{NA  # sex ratio at age (from age 0) inputted as vector}
+
+\item{EggFertParam}{<- NA # (NA or from ~0.2-1) NA = no effect, 0.2 = direct effect of popn. sex ratio changes on egg fertilisation rates, 1 = no effects}
 }
 \value{
 deterministic plot of SPR and relative equilibrium biomass  vs F from per recruit analysis and extended analysis
@@ -144,9 +146,10 @@ EstWtAtAge <- data.frame(EstFemWtAtAge=NA, EstMalWtAtAge=NA) # weight at age (fr
 ReprodScale <- 1 # 1=default (standard calculations for spawning biomass), 2=hyperallometric reproductive scaling with female mass (i.e. BOFFF effects)
 ReprodPattern <- 1 # 1 = gonochoristic (separate sexes), 2 = protogynous (female to male sex change), 3 = protandrous (male to female sex change)
 InitRatioFem <- 0.5 # Ratio of females to males at age zero
-FinalSex_Pmax <- NA # Logistic sex change relationship parameters (max probability of final sex)
 FinalSex_A50 <- NA # Logistic sex change relationship parameters (inflection point)
 FinalSex_A95 <- NA # Logistic sex change relationship parameters (95\% of max probability)
+EstSexRatioAtAge <- NA  # sex ratio at age (from age 0) inputted as vector
+EggFertParam <- NA # (NA or from ~0.2-1) NA = no effect, 0.2 = direct effect of popn. sex ratio changes on egg fertilisation rates, 1 = no effects
 mat_A50 <- c(2.5, 2.5) # females, males - Logistic length (mm) at maturity relationship parameters
 mat_A95 <- c(3.5, 3.5) # females, males - Logistic length (mm) at maturity relationship parameters
 EstMatAtAge <- data.frame(EstFemMatAtAge=NA, EstMalMatAtAge=NA) # maturity at age (from age 0), inputted as values in data frame
@@ -189,9 +192,10 @@ EstWtAtAge <- data.frame(EstFemWtAtAge=NA, EstMalWtAtAge=NA) # weight at age (fr
 ReprodScale <- 1 # 1=default (standard calculations for spawning biomass), 2=hyperallometric reproductive scaling with female mass (i.e. BOFFF effects)
 ReprodPattern <- 2 # 1 = gonochoristic (separate sexes), 2 = protogynous (female to male sex change), 3 = protandrous (male to female sex change)
 InitRatioFem <- 1 # Ratio of females to males at age zero
-FinalSex_Pmax <- 1 # Logistic sex change relationship parameters (max probability of final sex)
 FinalSex_A50 <- 35 # Logistic sex change relationship parameters (inflection point)
 FinalSex_A95 <- 60 # Logistic sex change relationship parameters (95\% of max probability)
+EstSexRatioAtAge <- NA  # sex ratio at age (from age 0) inputted as vector
+EggFertParam <- NA # (NA or from ~0.2-1) NA = no effect, 0.2 = direct effect of popn. sex ratio changes on egg fertilisation rates, 1 = no effects
 mat_A50 <- c(20, 20) # females, males - Logistic length (mm) at maturity relationship parameters
 mat_A95 <- c(30, 30) # females, males - Logistic length (mm) at maturity relationship parameters
 EstMatAtAge <- data.frame(EstFemMatAtAge=NA, EstMalMatAtAge=NA) # maturity at age (from age 0), inputted as values in data frame

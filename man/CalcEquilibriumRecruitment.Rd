@@ -4,7 +4,13 @@
 \alias{CalcEquilibriumRecruitment}
 \title{Calculate relative equilibrium recruitment}
 \usage{
-CalcEquilibriumRecruitment(SRrel_Type, Steepness, FishSpBiom, UnfishSpBiom)
+CalcEquilibriumRecruitment(
+  SRrel_Type,
+  Steepness,
+  FishSpBiom,
+  UnfishSpBiom,
+  Eq_FertRate
+)
 }
 \arguments{
 \item{SRrel_Type}{stock recruitment relationship 1=Beverton-Holt, 2=Ricker}
@@ -14,6 +20,8 @@ CalcEquilibriumRecruitment(SRrel_Type, Steepness, FishSpBiom, UnfishSpBiom)
 \item{FishSpBiom}{fished spawning biomass per recruit (females for gonochoristic species, combined sex for hermaphroditic species)}
 
 \item{UnfishSpBiom}{fished spawning biomass per recruit (females for gonochoristic species, combined sex for hermaphroditic species)}
+
+\item{Eq_FertRate}{(NA or from 0.2-1) NA = no effect, 0.2 = direct effect of popn. sex ratio changes on egg fertilisation rates, 1 = no effects}
 }
 \value{
 Eq_Rec

@@ -315,27 +315,33 @@ selectivity, retention and discard mortality - length-based per recruit
 analysis</a></li>
 <li><a href="#fishing-mortality---length-based-per-recruit-analysis" id="toc-fishing-mortality---length-based-per-recruit-analysis">Fishing
 mortality - length-based per recruit analysis</a></li>
-<li><a href="#yield-per-recruit---age-based-per-recruit-analysis-1" id="toc-yield-per-recruit---age-based-per-recruit-analysis-1">Yield per
-recruit - age-based per recruit analysis</a></li>
-<li><a href="#spawning-potential-ratio" id="toc-spawning-potential-ratio">Spawning potential ratio</a></li>
-</ul></li>
-<li><a href="#extended-per-recruit-analysis-allowing-for-stock-recruitment-dynamics-in-age-and-length-based-per-recruit-models" id="toc-extended-per-recruit-analysis-allowing-for-stock-recruitment-dynamics-in-age-and-length-based-per-recruit-models">Extended
-per recruit analysis (allowing for stock-recruitment dynamics in age and
-length-based per recruit models)</a>
-<ul>
-<li><a href="#allowing-for-error-in-per-recruit-calculations" id="toc-allowing-for-error-in-per-recruit-calculations">Allowing for
-error in per recruit calculations</a></li>
-<li><a href="#risk-calculations-and-associated-table-for-relative-biomass-estimates-from-per-recruit-analysis" id="toc-risk-calculations-and-associated-table-for-relative-biomass-estimates-from-per-recruit-analysis">Risk
-calculations and associated table for relative biomass estimates from
-per recruit analysis</a></li>
-<li><a href="#calculation-of-prediction-intervals-displayed-for-growth-curves-used-in-length-based-per-recruit-analysis" id="toc-calculation-of-prediction-intervals-displayed-for-growth-curves-used-in-length-based-per-recruit-analysis">Calculation
-of prediction intervals displayed for growth curves used in length-based
-per recruit analysis</a></li>
-<li><a href="#calculation-of-expected-sizes-and-weights-of-fish-at-different-levels-of-fishing-mortality" id="toc-calculation-of-expected-sizes-and-weights-of-fish-at-different-levels-of-fishing-mortality">Calculation
+<li><a href="#yield-per-recruit---length-based-per-recruit-analysis" id="toc-yield-per-recruit---length-based-per-recruit-analysis">Yield per
+recruit - length-based per recruit analysis</a></li>
+<li><a href="#spawning-potential-ratio---length-based-per-recruit-analysis" id="toc-spawning-potential-ratio---length-based-per-recruit-analysis">Spawning
+potential ratio - length-based per recruit analysis</a></li>
+<li><a href="#calculating-equilibrium-recruitment---age-and-length-based-per-recruit-models" id="toc-calculating-equilibrium-recruitment---age-and-length-based-per-recruit-models">Calculating
+equilibrium recruitment - age and length-based per recruit
+models</a></li>
+<li><a href="#calculating-equilbrium-catch-and-relative-spawning-biomass---age-and-length-based-per-recruit-models" id="toc-calculating-equilbrium-catch-and-relative-spawning-biomass---age-and-length-based-per-recruit-models">Calculating
+equilbrium catch and relative spawning biomass - age and length-based
+per recruit models</a></li>
+<li><a href="#calculation-of-biological-reference-points---age-and-length-based-per-recruit-models" id="toc-calculation-of-biological-reference-points---age-and-length-based-per-recruit-models">Calculation
+of biological reference points - age and length-based per recruit
+models</a></li>
+<li><a href="#allowing-for-error-in-per-recruit-calculations---age-and-length-based-per-recruit-models" id="toc-allowing-for-error-in-per-recruit-calculations---age-and-length-based-per-recruit-models">Allowing
+for error in per recruit calculations - age and length-based per recruit
+models</a></li>
+<li><a href="#risk-calculations-and-associated-table-for-relative-biomass-estimates---age-and-length-based-per-recruit-models" id="toc-risk-calculations-and-associated-table-for-relative-biomass-estimates---age-and-length-based-per-recruit-models">Risk
+calculations and associated table for relative biomass estimates - age
+and length-based per recruit models</a></li>
+<li><a href="#calculation-of-prediction-intervals-displayed-for-growth-curves---length-based-per-recruit-analysis" id="toc-calculation-of-prediction-intervals-displayed-for-growth-curves---length-based-per-recruit-analysis">Calculation
+of prediction intervals displayed for growth curves - length-based per
+recruit analysis</a></li>
+<li><a href="#calculation-of-expected-sizes-and-weights-of-fish-at-different-levels-of-fishing-mortality---length-based-per-recruit-analysis" id="toc-calculation-of-expected-sizes-and-weights-of-fish-at-different-levels-of-fishing-mortality---length-based-per-recruit-analysis">Calculation
 of expected sizes and weights of fish at different levels of fishing
-mortality</a></li>
-<li><a href="#value-per-recruit-calculations" id="toc-value-per-recruit-calculations">Value per recruit
-calculations</a></li>
+mortality - length-based per recruit analysis</a></li>
+<li><a href="#value-per-recruit-calculations---length-based-per-recruit-analysis" id="toc-value-per-recruit-calculations---length-based-per-recruit-analysis">Value
+per recruit calculations - length-based per recruit analysis</a></li>
 <li><a href="#apply-length-based-per-recruit-analysis" id="toc-apply-length-based-per-recruit-analysis">Apply length-based per
 recruit analysis</a></li>
 </ul></li>
@@ -1378,8 +1384,8 @@ Z_{s,l} = F_{s,l}+M
 \]</span> where <span class="math inline">\(M\)</span> is the
 instantaneous rate of natural mortality (<span class="math inline">\(y^-1\)</span>).</p>
 </div>
-<div id="yield-per-recruit---age-based-per-recruit-analysis-1" class="section level3">
-<h3>Yield per recruit - age-based per recruit analysis</h3>
+<div id="yield-per-recruit---length-based-per-recruit-analysis" class="section level3">
+<h3>Yield per recruit - length-based per recruit analysis</h3>
 <p>Yield per recruit, <span class="math inline">\(YPR\)</span>, is
 calculated as <span class="math display">\[
 YPR = \sum_{s=1}^{2}\sum_{l=1}^{n}C_{s,l}W_{s,l}
@@ -1430,28 +1436,22 @@ N&#39;_{s=1,a,l}=\rho_{l}(N_{s=1,a,l}+N_{s=2,a,l})
 N&#39;_{s=1,a,l}=(1-\rho_{l})(N_{s=1,a,l}+N_{s=2,a,l})
 \]</span></p>
 </div>
-<div id="spawning-potential-ratio" class="section level3">
-<h3>Spawning potential ratio</h3>
+<div id="spawning-potential-ratio---length-based-per-recruit-analysis" class="section level3">
+<h3>Spawning potential ratio - length-based per recruit analysis</h3>
 <p>As with age-based per recruit analysis, spawning potential ratio,
 <span class="math inline">\(SPR\)</span>, for sex <span class="math inline">\(s\)</span>, is calculated as <span class="math display">\[
 SPR_s = \frac{\theta_s}{\theta_{0,s}}
 \]</span> where <span class="math inline">\(\theta_s\)</span> and <span class="math inline">\(\theta_{0,s}\)</span> is the spawning biomass per
 recruit for sex <span class="math inline">\(s\)</span>, for the fished
-and unfished population, respectively. For gonochoristic species, <span class="math inline">\(SPR\)</span> is calculated based on females. For
-hermaphroditic species, <span class="math inline">\(SPR\)</span> is
-calculated for combined sexes combined, i.e. <span class="math display">\[
-SPR_{s=1:2} =
-\frac{\theta_{s=1}+\theta_{s=2}}{\theta_{0,{s=1}}+\theta_{0,{s=2}}}
-\]</span> In the above equation, <span class="math inline">\(\theta_s\)</span> is calculated as <span class="math display">\[
+and unfished population, respectively. In the above equation, <span class="math inline">\(\theta_s\)</span> is calculated as <span class="math display">\[
 \theta_s = \sum_{l=1}^{n}N_{l,s}W_{l,s}P_{l,s}
 \]</span> where <span class="math inline">\(N_{l,s}\)</span>, <span class="math inline">\(W_{l,s}\)</span> and <span class="math inline">\(P_{l,s}\)</span>, respectively, are the number,
 weight and proportion of mature fish, that are of sex <span class="math inline">\(s\)</span> and at the midpoint of length class
 <span class="math inline">\(l\)</span>.</p>
 </div>
-</div>
-<div id="extended-per-recruit-analysis-allowing-for-stock-recruitment-dynamics-in-age-and-length-based-per-recruit-models" class="section level2">
-<h2>Extended per recruit analysis (allowing for stock-recruitment
-dynamics in age and length-based per recruit models)</h2>
+<div id="calculating-equilibrium-recruitment---age-and-length-based-per-recruit-models" class="section level3">
+<h3>Calculating equilibrium recruitment - age and length-based per
+recruit models</h3>
 <p>Per recruit analysis may be extended to incorporate a
 stock-recruitment relationship, such as Beverton &amp; Holt and Ricker
 models, to account for impacts of fishing mortality on recruitment. The
@@ -1459,10 +1459,11 @@ Beverton &amp; Holt stock-recruitment relationship may be described as
 <span class="math display">\[
 R = \frac{S}{Sb+a}
 \]</span> where <span class="math inline">\(R\)</span> is recruitment,
-<span class="math inline">\(S\)</span> is female spawning biomass and
-<span class="math inline">\(a\)</span> and <span class="math inline">\(b\)</span> are parameters of the stock-recruitment
-relationship. This equation may be reparametrised into an alternative
-form that employs a steepness parameter <span class="math inline">\(h\)</span>, i.e., the proportion of the
+<span class="math inline">\(S\)</span> is (in most cases, see below)
+female spawning biomass and <span class="math inline">\(a\)</span> and
+<span class="math inline">\(b\)</span> are parameters of the
+stock-recruitment relationship. This equation may be reparametrised into
+an alternative form that employs a steepness parameter <span class="math inline">\(h\)</span>, i.e., the proportion of the
 unexploited equilibrium recruitment expected to recruit when spawning
 biomass is reduced to 20% of its unfished equilibrium level (Mace and
 Doonan, 1988). For gonochoristic species, the equilibrium level of
@@ -1482,10 +1483,48 @@ equilibrium level of recruitment of the fished population, relative to
 that for the unfished population may be calculated as</p>
 <p><span class="math display">\[
 R_{eq}=\frac{\theta_{0,s=1}\bigg(1-\frac{4\log_e(\theta_{s=1,0}/\theta_{s=1})}{5\log_e(5h)}\bigg)}{\theta_{s=1}}
-\]</span> For hermaphrodtic species, equilbribium recruitment is
-calculated based on the combined mature biomass for both sexes. The
-equilibrium level of catch, for the fished population may be calculated
-as</p>
+\]</span> ### Calculating equilibrium recruitment for hermaphroditc
+species - age and length-based per recruit models</p>
+<p>As fishing tends to be focused towards capturing larger individuals,
+for protogynous (female to male sex change) in particular, exploitation
+can potentially result in reduced egg fertilisation rates due to limited
+sperm availability associated with depletion of males. To account for
+these effects in hermaphroditic species, equilibrium recruitment is
+calculated either based on i) mature biomass for combined sexes rather
+than on female biomass ii) or female biomass (as a proxy for egg
+production), modified to account the expected egg fertilisation rate at
+the current estimated level of fishing pressure.</p>
+<p>Following Brooks et al. (2008), fertilisation rate at the current
+level of fishing pressure, <span class="math inline">\(\zeta\)</span> is
+modelled as a function of sex ratio,</p>
+<p><span class="math display">\[
+\zeta=\frac{4\kappa x}{(1-\kappa)+(5\kappa-1)x}
+\]</span> where <span class="math inline">\(x\)</span> represents the
+ratio of (i) the proportion of males to mature females in the fish
+population (measured in terms of numbers) at the current estimated level
+of fishing mortality to (ii) the proportion of males to mature females
+in the unfished population. The value of <span class="math inline">\(x\)</span> thus represents a measure of male
+depletion, which can range from 0 (fully depleted) to 1 (no depletion).
+Note that the above relationship is similar to a Beverton-Holt stock
+recruitment relationship and the effect of male depletion on
+fertilisation rate is affected by a parameter <span class="math inline">\(\kappa\)</span>, analogous to the steepness
+parameter this type of relationship (which can range from 0.2 to 1.0). A
+high value for <span class="math inline">\(\kappa\)</span> means that
+the stock is assumed to be able to be able to maintain high
+fertilisation rates even when males are scarce. It is likely that group
+spawning species will have a higher value of <span class="math inline">\(\kappa\)</span> than for pair spawning species
+(Brooks et al., 2008).</p>
+<p>In the extended per recruit model, equilibrium recruitment is taken
+as the value for <span class="math inline">\(R_{eq}\)</span>, determined
+from the relevant stock-recruitment relationship, multiplied by <span class="math inline">\(\zeta\)</span>. If a value for <span class="math inline">\(\kappa\)</span> is not specified, then <span class="math inline">\(R_{eq}\)</span> is determined from the mature
+biomass for combined sexes, otherwise it is calculated based on mature
+female biomass.</p>
+</div>
+<div id="calculating-equilbrium-catch-and-relative-spawning-biomass---age-and-length-based-per-recruit-models" class="section level3">
+<h3>Calculating equilbrium catch and relative spawning biomass - age and
+length-based per recruit models</h3>
+<p>The equilibrium level of catch, for the fished population may be
+calculated as</p>
 <p><span class="math display">\[
 C_{eq}=R_{eq}YPR
 \]</span> The equilibrium level of spawning biomass for sex <span class="math inline">\(s\)</span>, for the fished population may be
@@ -1495,16 +1534,33 @@ S_{eq,s}=R_{eq}\theta_s
 \]</span> The equilibrium ratio of spawning biomass of sex <span class="math inline">\(s\)</span>, relative to the unfished level, is</p>
 <p><span class="math display">\[
 B_{rel,s} =S_{eq,s}/\theta_{0,s}
-\]</span> The value of <span class="math inline">\(B_{rel}\)</span>
-corresponding to <span class="math inline">\(B_{MSY}\)</span> is
-calculated as the level at which <span class="math inline">\(C_{eq}\)</span> is maximised, with <span class="math inline">\(F_{MSY}\)</span> equal to the level of
-fully-selected fishing mortality resulting in this maximum equilibrium
-catch level. Applying reference points commonly adopted by DPIRD, WA,
-the threshold levels for biomass corresponds to the level of <span class="math inline">\(B{rel}\)</span> at <span class="math inline">\(B_{MSY}\)</span>, with the limit set to half this
-level, and the target at 1.2 times this level or higher. Alternatively,
-proxy levels for biomass are often used, with the limit set to <span class="math inline">\(B_{rel}=0.2\)</span>, the threshold at <span class="math inline">\(B_{rel}=0.3\)</span> and target at <span class="math inline">\(B_{rel}=0.4\)</span>.</p>
-<div id="allowing-for-error-in-per-recruit-calculations" class="section level3">
-<h3>Allowing for error in per recruit calculations</h3>
+\]</span></p>
+</div>
+<div id="calculation-of-biological-reference-points---age-and-length-based-per-recruit-models" class="section level3">
+<h3>Calculation of biological reference points - age and length-based
+per recruit models</h3>
+<p>The expected value of relative biomass <span class="math inline">\(B_{rel}\)</span> at <span class="math inline">\(B_{MSY}\)</span> is calculated as the level at
+which <span class="math inline">\(C_{eq}\)</span> is maximised. The
+(equilibrium) level of fishing mortality expected to result in stock
+biomass being at <span class="math inline">\(B_{MSY}\)</span>,
+i.e. <span class="math inline">\(F_{MSY}\)</span>, is determined as the
+level of fully-selected fishing mortality resulting in the maximum
+equilibrium catch level being achieved. Applying reference points
+commonly adopted by DPIRD, WA, the threshold level for biomass
+corresponds to the level of <span class="math inline">\(B{rel}\)</span>
+at <span class="math inline">\(B_{MSY}\)</span>, with the limit set to
+half this level, and the target at 1.2 times this level (or higher).
+Reference points for fishing mortality (i.e. <span class="math inline">\(F_{targ}\)</span>, <span class="math inline">\(F_{thresh}\)</span> and <span class="math inline">\(F_{lim}\)</span>) correspond to the values of
+<span class="math inline">\(F\)</span> resulting in relative biomass
+being at the target, threshold and limit level, respectively.
+Alternatively, for biomass, proxy levels may be specified for plotting,
+with the limit set to <span class="math inline">\(B_{rel}=0.2\)</span>,
+the threshold at <span class="math inline">\(B_{rel}=0.3\)</span> and
+target at <span class="math inline">\(B_{rel}=0.4\)</span>.</p>
+</div>
+<div id="allowing-for-error-in-per-recruit-calculations---age-and-length-based-per-recruit-models" class="section level3">
+<h3>Allowing for error in per recruit calculations - age and
+length-based per recruit models</h3>
 <p>This implementation of per recruit analysis allows for incorporation
 uncertainty in estimates of fishing mortality, natural mortality and
 steepness, assuming independent normal distributions for each of these
@@ -1524,9 +1580,9 @@ package. ‘Wrapper’ code, involving use of the CalcYPRAndSPRForFMort()
 function for each set of input parameters, and storing and analysing the
 outputs to produce confidence limits, has not yet been implemented.</p>
 </div>
-<div id="risk-calculations-and-associated-table-for-relative-biomass-estimates-from-per-recruit-analysis" class="section level3">
+<div id="risk-calculations-and-associated-table-for-relative-biomass-estimates---age-and-length-based-per-recruit-models" class="section level3">
 <h3>Risk calculations and associated table for relative biomass
-estimates from per recruit analysis</h3>
+estimates - age and length-based per recruit models</h3>
 <p>The function PlotPerRecruit_RiskMatrix_RelBiom()) is available to
 calculate and plot risk assessment scores associated with estimates
 relative biomass derived from incorporation of an estimate for fishing
@@ -1539,9 +1595,9 @@ moderate, Thresh&lt;B&lt;Targ; high, Lim&lt;B&lt;Thresh; or major,
 B&lt;Lim), depending on the likelihood of that risk level (remote,
 &lt;5%; unlikely, 5-20%; possible, 20-50%, likely, &gt;50%).</p>
 </div>
-<div id="calculation-of-prediction-intervals-displayed-for-growth-curves-used-in-length-based-per-recruit-analysis" class="section level3">
-<h3>Calculation of prediction intervals displayed for growth curves used
-in length-based per recruit analysis</h3>
+<div id="calculation-of-prediction-intervals-displayed-for-growth-curves---length-based-per-recruit-analysis" class="section level3">
+<h3>Calculation of prediction intervals displayed for growth curves -
+length-based per recruit analysis</h3>
 <p>The function PlotPerRecruitResults_LB() outputs diagnostic plots of
 growth curves with calculated prediction intervals for lengths-at age,
 derived using the value for the coefficient of variation (cv) inputted
@@ -1561,9 +1617,9 @@ plots associated with the expected lengths at each age, are taken as the
 97.5 and 2.5 percentiles, respectively, of the 10,000 length values for
 that sex.</p>
 </div>
-<div id="calculation-of-expected-sizes-and-weights-of-fish-at-different-levels-of-fishing-mortality" class="section level3">
+<div id="calculation-of-expected-sizes-and-weights-of-fish-at-different-levels-of-fishing-mortality---length-based-per-recruit-analysis" class="section level3">
 <h3>Calculation of expected sizes and weights of fish at different
-levels of fishing mortality</h3>
+levels of fishing mortality - length-based per recruit analysis</h3>
 <p>The function() PlotPerRecruit_ExpCatchSizeDistns_LB provides plots of
 expected mean sizes and weights of fish in catches, for females, males
 and combined sexes, over a wide range of fishing mortality levels, with
@@ -1588,8 +1644,9 @@ specified weight-length relationship, given its sex. Upper and lower
 prediction intervals for weight are calculated using the same approach
 as for fish length.</p>
 </div>
-<div id="value-per-recruit-calculations" class="section level3">
-<h3>Value per recruit calculations</h3>
+<div id="value-per-recruit-calculations---length-based-per-recruit-analysis" class="section level3">
+<h3>Value per recruit calculations - length-based per recruit
+analysis</h3>
 <p>Two routines, Get_Relative_Value_Per_Recruit_LB() and
 PlotValuePerRecruitResults_LB() to extend calculations of the
 above-described length-based per recruit methods, to undertake ‘value’-
@@ -1658,11 +1715,19 @@ outputs.</p>
 <h2>References:</h2>
 <p>Beverton, R. J. H. &amp; Holt, S. J. (1957). On the Dynamics of
 Exploited Fish Populations. Chapman and Hall, London.</p>
+<p>Brooks, E. N., Shertzer, K. W., Gedamke, T. &amp; Vaughan, D. S.
+(2008). Stock assessment of protogynous fish: evaluating measures of
+spawning biomass used to estimate biological reference points. Fisheries
+Bulletin 106, 12-23.</p>
 <p>Chapman, D. G., and D. S. Robson. (1960). The analysis of a catch
 curve. Biometrics 16, 354-368.</p>
 <p>Die, D. J., Restrepo, V. R. &amp; Hoenig, J. M. (1988).
 Utility-per-recruit modeling: a neglected concept. Transactions of the
 American Fisheries Society 117, 274-281.</p>
+<p>Evans-Powell, R. T., Hesp, S. A., Denham, A., &amp; Beckley, L. E.
+(2024). Implications of big, old, fat, fecund, female fish (BOFFFFs) for
+the reproductive potential of a demersal teleost stock. Fisheries
+Research 272. Art. 106934.</p>
 <p>Fairclough, D.V., Hesp, S.A., Denham, A., Fisher, E.A., Marks, R.,
 Ryan, K.L., Lek, E., Allen, R., Crisafulli, B.M. 2021. 2021 assessment
 of the status of the West Coast Demersal Scalefish Resource. Fisheries
@@ -1687,9 +1752,11 @@ growth curve of fishes. Fishbyte 8(3), 24-29.</p>
 age-stuctured and length-converted catch curves of brown trout Salmo
 trutta in two French rivers. Fisheries Research 22, 197-204.</p>
 <p>Piner, K. R., Lee, H.-H., Maunder, M. N. (2016). Evaluation of using
-random-at-length observations and an equilbrium approximation of the
+random-at-length observations and an equilibrium approximation of the
 population age structure in fitting the von Bertalanffy growth function.
 Fisheries Research 180, 128-137.</p>
+<p>Ricker,W. E. 1954. Stock and recruitment. Journal of the Fisheries
+Research Board of Canada 11, 559–623.</p>
 <p>Shertzer, K.W., Williams, E.H. &amp; Sagarese, S.R. (2022). Modeling
 discards in stock assessments: red grouper Epinephelus morio in the U.S.
 Gulf of Mexico. Fishes 2022, 7(1), 7. Doi.org/10.3390/fishes7010007.</p>
@@ -1697,7 +1764,7 @@ Gulf of Mexico. Fishes 2022, 7(1), 7. Doi.org/10.3390/fishes7010007.</p>
 Hoenig, J/. M. (2012) Recommendations for Catch-Curve Analysis, North
 American Journal of Fisheries Management, 32(5), 956-967.</p>
 <p>Thorson, J. T., Johnson, K. F., Methot, R. D. &amp; Taylor, I. G.
-Model=based estimates of effective sample size in stock assessment
+Model-based estimates of effective sample size in stock assessment
 models using the Dirichlet-multinomial distribution. Fisheries Research
 192, 84-93. <a href="http://dx.doi.org/10.1016/j.fishres.2016.06.005" class="uri">http://dx.doi.org/10.1016/j.fishres.2016.06.005</a>.</p>
 <p>Wakefield, C. B., Williams, A. J., Fisher, E. A., Hall, N. G., Hesp,
