@@ -23,9 +23,10 @@ CalcYPRAndSPRForFMort_LB(
   ReprodScale,
   ReprodPattern,
   InitRatioFem,
-  FinalSex_Pmax,
   FinalSex_L50,
   FinalSex_L95,
+  EstSexRatioAtLen,
+  EggFertParam,
   mat_L50,
   mat_L95,
   EstMatAtLen,
@@ -81,11 +82,13 @@ CalcYPRAndSPRForFMort_LB(
 
 \item{InitRatioFem}{proportion of fish that are females at hatching}
 
-\item{FinalSex_Pmax}{logistic sex change parameter for hermaphroditic species (set to NA for gonochoristic species)}
-
 \item{FinalSex_L50}{logistic sex change parameter for hermaphroditic species (set to NA for gonochoristic species)}
 
 \item{FinalSex_L95}{logistic sex change parameter for hermaphroditic species (set to NA for gonochoristic species)}
+
+\item{EstSexRatioAtLen}{NA  # sex ratio at length, inputted as vector}
+
+\item{EggFertParam}{<- NA # (NA or from ~0.2-1) NA = no effect, 0.2 = direct effect of popn. sex ratio changes on egg fertilisation rates, 1 = no effects}
 
 \item{mat_L50}{logistic length at maturity parameter (set to NA if directly inputting proportion mature at age)}
 
@@ -142,6 +145,7 @@ extended form of this analysis with a stock recruitment relationship to account
 for potential impacts of fishing on recruitment
 }
 \examples{
+# non-hermaphroditic species
 MaxModelAge <- 20 # maximum age considered by model, years
 TimeStep <- 1 # Model time step (y) (for shorter-lived species, might be appropriate to use a smaller time step)
 MaxLen = 800
@@ -168,9 +172,10 @@ EstWtAtLen <- data.frame(EstFemWtAtLen=NA,
 ReprodScale <- 1 # 1=default (standard calculations for spawning biomass), 2=hyperallometric reproductive scaling with female mass (i.e. BOFFF effects)
 ReprodPattern <- 1 # 1 = gonochoristic (separate sexes), 2 = protogynous (female to male sex change), 3 = protandrous (male to female sex change)
 InitRatioFem <- 0.5 # Ratio of females to males at recruitment age/length
-FinalSex_Pmax <- NA # Logistic sex change relationship parameters (max probability of final sex)
 FinalSex_L50 <- NA # Logistic sex change relationship parameters (inflection point)
 FinalSex_L95 <- NA # Logistic sex change relationship parameters (95\% of max probability)
+EstSexRatioAtLen <- NA  # sex ratio at length inputted as vector
+EggFertParam <- NA # (NA or from ~0.2-1) NA = no effect, ~0.2 = direct effect of popn. sex ratio changes on egg fertilisation rates, 1 = no effects
 mat_L50 <- c(250, 250) # females, males - Logistic length (mm) at maturity relationship parameters
 mat_L95 <- c(300, 300) # females, males - Logistic length (mm) at maturity relationship parameters
 EstMatAtLen <- data.frame(EstFemMatAtLen=NA,
@@ -190,8 +195,68 @@ SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
 NatMort = 4.22 / MaxModelAge # natural mortality  (year-1)
 FMort = 0.2
 Res=CalcYPRAndSPRForFMort_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
-                             RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
-                             EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
-                             FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+                             RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtLen,
+                             ReprodScale, ReprodPattern, InitRatioFem, FinalSex_L50, FinalSex_L95, EstSexRatioAtLen,
+                             EggFertParam, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+                             ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, FMort)
+
+# Hermaphroditic species
+MaxModelAge <- 100 # maximum age considered by model, years
+TimeStep <- 1 # Model time step (y) (for shorter-lived species, might be appropriate to use a smaller time step)
+MaxLen = 1400
+LenInc = 20
+lbnd = seq(0,MaxLen - LenInc, LenInc)
+ubnd = lbnd + LenInc
+midpt = lbnd + (LenInc/2)
+nLenCl = length(midpt)
+GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute
+Linf <- c(682, 982) # mm - von Bertalanffy growth model parameters - Females, males
+vbK <- c(0.14, 0.08) # year-1 - von Bertalanffy growth model parameters - Females, males
+tzero <- c(0.06, -0.48) # years - von Bertalanffy growth model parameters - Females, males
+GrowthParams = data.frame(Linf=Linf, vbK=vbK, tzero=tzero)
+RefnceAges = NA
+# GrowthParams c(Linf, vbK, tzero) single sex von Bertalanffy, or data.frame(Linf=Linf, vbK=vbK, tzero=tzero),
+#' both sexes von Bertalanffy, or c(y1, y2, a, b) single sex Schnute, or data.frame(y1=y1, y2=y2, a=a, b=b), both sexes Schnute
+CVSizeAtAge = c(0.05,0.05)
+lenwt_a <- NA # combined sexes - weight (g) vs length (mm, TL) relationship parameters
+ln_lenwt_a <- -11.017 # for log-log relationship
+lenwt_b <- 3.041 # combined sexes - weight (g) vs length (mm, TL) relationship parameters
+WLrel_Type <- 2 # 1=power, 2=log-log relationship
+EstWtAtLen <- data.frame(EstFemWtAtLen=NA,
+                         EstMalWtAtLen=NA) # weight at length, inputted as values in data frame
+ReprodScale <- 1 # 1=default (standard calculations for spawning biomass), 2=hyperallometric reproductive scaling with female mass (i.e. BOFFF effects)
+ReprodPattern <- 2 # 1 = gonochoristic (separate sexes), 2 = protogynous (female to male sex change), 3 = protandrous (male to female sex change)
+InitRatioFem <- 1.0 # Ratio of females to males at recruitment age
+FinalSex_L50 <- 821 # Logistic sex change relationship parameters (inflection point)
+FinalSex_L95 <- 930 # Logistic sex change relationship parameters (95\% of max probability)
+EstSexRatioAtLen <- NA  # sex ratio at length inputted as vector
+EggFertParam <- 0.5 # (NA or from ~0.2-1) NA = no effect, ~0.2 = direct effect of popn. sex ratio changes on egg fertilisation rates, 1 = no effects
+mat_L50 <- c(653, 0) # females, males - Logistic length (mm) at maturity relationship parameters
+mat_L95 <- c(950, 1) # females, males - Logistic length (mm) at maturity relationship parameters
+EstMatAtLen <- data.frame(EstFemMatAtLen=NA,
+                          EstMalMatAtLen=NA) # maturity at length, inputted as values in data frame
+sel_L50 <- c(500, 500) # females, males - Logistic length selectivity relationship parameters
+sel_L95 <- c(600, 600) # females, males - Logistic length selectivity relationship parameters
+EstGearSelAtLen <- data.frame(EstFemGearSelAtLen=NA,
+                              EstMalGearSelAtLen=NA)
+ret_Pmax <- c(1.0, 1.0) # maximum retention, values lower than 1 imply discarding of fish above MLL
+ret_L50 <- c(499, 499) # females, males - Logistic fish retention at length parameters
+ret_L95 <- c(500, 500) # females, males - Logistic fish retention at length parameters
+EstRetenAtLen <- data.frame(EsFemtRetenAtLen=NA,
+                            EstMalRetenAtLen=NA)
+DiscMort <- 0.25 # discard mortality (e.g. 50\% released fish die = 0.5)
+Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
+SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
+NatMort <- 4.22 / 70 # natural mortality  (year-1)
+RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
+PlotOpt <- 0 # 0=all plots, 1=len at-age, 2=wt at length, 3=fem mat/sel/ret at length, 4=mal mat/sel/ret at length,
+# 5=fem F at length, 6=mal F at length, 7=fem rel surv, 8=mal rel surv, 9=fem biom at age, 10=fem biom at age,
+# 11=ypr/eq catch, 12=fem SPR/Brel, 13=mal SPR/Brel, 14=eq recruit
+Current_F = 0.05
+FMort = 0.05
+Res=CalcYPRAndSPRForFMort_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
+                             RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtLen,
+                             ReprodScale, ReprodPattern, InitRatioFem, FinalSex_L50, FinalSex_L95, EstSexRatioAtLen,
+                             EggFertParam, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
                              ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, FMort)
 }

@@ -17,11 +17,11 @@ CalcPropFemAtAge(
 
 \item{FinalSex_A95}{logistic sex change parameter}
 
+\item{EstSexRatioAtAge}{input vecto sex change at length}
+
 \item{ReprodPattern}{1=gonochoristic, 2=protogynous, 3=protandrous}
 
 \item{Ages}{specified ages}
-
-\item{FinalSex_Pmax}{logistic sex change parameter}
 }
 \value{
 PropFemAtAge

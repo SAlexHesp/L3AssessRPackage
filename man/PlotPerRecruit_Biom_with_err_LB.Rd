@@ -20,9 +20,10 @@ PlotPerRecruit_Biom_with_err_LB(
   ReprodScale,
   ReprodPattern,
   InitRatioFem,
-  FinalSex_Pmax,
-  FinalSex_A50,
-  FinalSex_A95,
+  FinalSex_L50,
+  FinalSex_L95,
+  EstSexRatioAtLen,
+  EggFertParam,
   mat_A50,
   mat_A95,
   EstMatAtAge,
@@ -74,7 +75,13 @@ PlotPerRecruit_Biom_with_err_LB(
 
 \item{InitRatioFem}{proportion of fish that are females at hatching}
 
-\item{FinalSex_Pmax}{logistic sex change parameter for hermaphroditic species (set to NA for gonochoristic species)}
+\item{FinalSex_L50}{logistic sex change parameter for hermaphroditic species (set to NA for gonochoristic species)}
+
+\item{FinalSex_L95}{logistic sex change parameter for hermaphroditic species (set to NA for gonochoristic species)}
+
+\item{EstSexRatioAtLen}{NA  # sex ratio at length, inputted as vector}
+
+\item{EggFertParam}{<- NA # (NA or from ~0.2-1) NA = no effect, 0.2 = direct effect of popn. sex ratio changes on egg fertilisation rates, 1 = no effects}
 
 \item{ret_Pmax}{logistic parameter for fish retention curve}
 
@@ -134,10 +141,6 @@ PlotPerRecruit_Biom_with_err_LB(
 
 \item{EstWtAtLen}{user-specified weights at lengths}
 
-\item{FinalSex_L50}{logistic sex change parameter for hermaphroditic species (set to NA for gonochoristic species)}
-
-\item{FinalSex_L95}{logistic sex change parameter for hermaphroditic species (set to NA for gonochoristic species)}
-
 \item{mat_L50}{logistic length at maturity parameter (set to NA if directly inputting proportion mature at length)}
 
 \item{mat_L95}{logistic length at maturity parameter (set to NA if directly inputting proportion mature at length)}
@@ -187,9 +190,10 @@ EstWtAtLen <- data.frame(EstFemWtAtLen=NA,
 ReprodScale <- 1 # 1=default (standard calculations for spawning biomass), 2=hyperallometric reproductive scaling with female mass (i.e. BOFFF effects)
 ReprodPattern <- 1 # 1 = gonochoristic (separate sexes), 2 = protogynous (female to male sex change), 3 = protandrous (male to female sex change)
 InitRatioFem <- 0.5 # Ratio of females to males at recruitment age/length
-FinalSex_Pmax <- NA # Logistic sex change relationship parameters (max probability of final sex)
 FinalSex_L50 <- NA # Logistic sex change relationship parameters (inflection point)
 FinalSex_L95 <- NA # Logistic sex change relationship parameters (95\% of max probability)
+EstSexRatioAtLen <- NA  # sex ratio at length inputted as vector
+EggFertParam <- NA # (NA or from ~0.2-1) NA = no effect, ~0.2 = direct effect of popn. sex ratio changes on egg fertilisation rates, 1 = no effects
 mat_L50 <- c(250, 250) # females, males - Logistic length (mm) at maturity relationship parameters
 mat_L95 <- c(300, 300) # females, males - Logistic length (mm) at maturity relationship parameters
 EstMatAtLen <- data.frame(EstFemMatAtLen=NA,
@@ -215,15 +219,15 @@ PlotOpt <- 1 # 1=females, 2=males, 3=combined sex
 RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 nReps = 10 # number of resampling trials. Set to low number to test, then much higher for final analysis.
 FittedRes=GetPerRecruitResults_LB_with_err(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
-                                 RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
-                                 EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
-                                 FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
-                                 ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, Steepness_sd, SRrel_Type, NatMort, NatMort_sd,
-                                 Current_F, Current_F_sd, nReps)
+                                           RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtLen,
+                                           ReprodScale, ReprodPattern, InitRatioFem, FinalSex_L50, FinalSex_L95, EstSexRatioAtLen,
+                                           EggFertParam, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+                                           ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, Steepness_sd, SRrel_Type, NatMort, NatMort_sd,
+                                           Current_F, Current_F_sd, nReps)
 # Plot. Note, can skip above step and set FittedRes=NA (plot function will be slower
 PlotPerRecruit_Biom_with_err_LB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
                                             lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern,
-                                            InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95, mat_A50, mat_A95,
+                                            InitRatioFem, FinalSex_L50, FinalSex_L95, EstSexRatioAtLen, EggFertParam, mat_A50, mat_A95,
                                             EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, ret_Pmax, ret_A50, ret_A95,
                                             EstRetenAtAge, DiscMort, Steepness, Steepness_sd, SRrel_Type, NatMort, NatMort_sd,
                                             Current_F, Current_F_sd, PlotOpt, RefPointPlotOpt, FittedRes, nReps, MainLabel=NA,

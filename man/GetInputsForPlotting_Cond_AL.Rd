@@ -65,3 +65,4 @@ ObsCatchPropAgeAtLength_Mal, ExpRetCatchPropIntAgeGivenLength_Fem, ExpRetCatchPr
 This function outputs several observed and expected quantities associated with conditional age-length plots,
 including observed vs expected age distribution at length plots, and pearson residual plots
 }
+\keyword{internal}

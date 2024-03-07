@@ -23,9 +23,10 @@ Get_Relative_Value_Per_Recruit_LB(
   ReprodScale,
   ReprodPattern,
   InitRatioFem,
-  FinalSex_Pmax,
   FinalSex_L50,
   FinalSex_L95,
+  EstSexRatioAtLen,
+  EggFertParam,
   mat_L50,
   mat_L95,
   EstMatAtLen,
@@ -83,11 +84,13 @@ Get_Relative_Value_Per_Recruit_LB(
 
 \item{InitRatioFem}{proportion of fish that are females at hatching}
 
-\item{FinalSex_Pmax}{logistic sex change parameter for hermaphroditic species (set to NA for gonochoristic species)}
-
 \item{FinalSex_L50}{logistic sex change parameter for hermaphroditic species (set to NA for gonochoristic species)}
 
 \item{FinalSex_L95}{logistic sex change parameter for hermaphroditic species (set to NA for gonochoristic species)}
+
+\item{EstSexRatioAtLen}{NA  # sex ratio at length, inputted as vector}
+
+\item{EggFertParam}{<- NA # (NA or from ~0.2-1) NA = no effect, 0.2 = direct effect of popn. sex ratio changes on egg fertilisation rates, 1 = no effects}
 
 \item{mat_L50}{logistic length at maturity parameter (set to NA if directly inputting proportion mature at age)}
 
@@ -157,9 +160,10 @@ EstWtAtLen <- data.frame(EstFemWtAtLen=NA,
 ReprodScale <- 1 # 1=default (standard calculations for spawning biomass), 2=hyperallometric reproductive scaling with female mass (i.e. BOFFF effects)
 ReprodPattern <- 1 # 1 = gonochoristic (separate sexes), 2 = protogynous (female to male sex change), 3 = protandrous (male to female sex change)
 InitRatioFem <- 0.5 # Ratio of females to males at age zero
-FinalSex_Pmax <- NA # Logistic sex change relationship parameters (max probability of final sex)
 FinalSex_L50 <- NA # Logistic sex change relationship parameters (inflection point)
 FinalSex_L95 <- NA # Logistic sex change relationship parameters (95\% of max probability)
+EstSexRatioAtLen <- NA  # sex ratio at length inputted as vector
+EggFertParam <- NA # (NA or from ~0.2-1) NA = no effect, ~0.2 = direct effect of popn. sex ratio changes on egg fertilisation rates, 1 = no effects
 mat_L50 <- c(250, 250) # females, males - Logistic length (mm) at maturity relationship parameters
 mat_L95 <- c(300, 300) # females, males - Logistic length (mm) at maturity relationship parameters
 EstMatAtLen <- data.frame(EstFemMatAtLen=NA,
@@ -180,9 +184,9 @@ NatMort = 4.22 / MaxModelAge # natural mortality  (year-1)
 Current_F <- 0.2
 MinFishWtOfVal = 100 # size of fish below which fish has no value
 ValScaleFact = 1.2 # amount by which value scales according to size, above mininum size of value
-FittedRes = Get_Relative_Value_Per_Recruit_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
-                                              RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
-                                              EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
-                                              FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
-                                              ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, MinFishWtOfVal, ValScaleFact)
+FittedRes = Get_Relative_Value_Per_Recruit_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams, RefnceAges,
+                                              CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtLen, ReprodScale, ReprodPattern,
+                                              InitRatioFem, FinalSex_L50, FinalSex_L95, EstSexRatioAtLen, EggFertParam, mat_L50, mat_L95,
+                                              EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax, ret_L50, ret_L95, EstRetenAtLen,
+                                              DiscMort, Steepness, SRrel_Type, NatMort, Current_F, MinFishWtOfVal, ValScaleFact)
 }

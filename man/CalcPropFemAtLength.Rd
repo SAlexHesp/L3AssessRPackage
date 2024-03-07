@@ -7,7 +7,7 @@
 CalcPropFemAtLength(
   FinalSex_L50,
   FinalSex_L95,
-  FinalSex_Pmax,
+  EstSexRatioAtLen,
   ReprodPattern,
   midpt
 )
@@ -17,7 +17,7 @@ CalcPropFemAtLength(
 
 \item{FinalSex_L95}{logistic sex change parameter}
 
-\item{FinalSex_Pmax}{logistic sex change parameter}
+\item{EstSexRatioAtLen}{input vector sex change at length}
 
 \item{ReprodPattern}{1=gonochoristic, 2=protogynous, 3=protandrous}
 

@@ -22,3 +22,4 @@ GetPerRecruitGrowthPredIntervals_LB(nTimeSteps, nLenCl, midpt, lbnd, ubnd, Res)
 \description{
 This function outputs 95 percent prediction intervals for growth curves used in length-based per recruit analysis
 }
+\keyword{internal}
