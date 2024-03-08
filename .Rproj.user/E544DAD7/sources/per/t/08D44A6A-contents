@@ -948,6 +948,8 @@ GetLengthBasedCatchCurveResults <- function (params, DistnType, GrowthCurveType,
                         ObsPropRetFish_sd = ObsPropRetFish_sd)
 
   Results = list(ParamEst = ParamEst,
+                 EstFMort = EstFMort[1],
+                 EstFMort_se = ((EstFMort[3]-EstFMort[2])/2)/1.96,
                  params = nlmb$par,
                  convergence = nlmb$convergence,
                  vcov.Params = vcov.Params,
@@ -2211,6 +2213,7 @@ GetAgeAndLengthBasedCatchCurveResults <- function (params, RefnceAges, MLL, Grow
   temp = diag(1/sqrt(diag(vcov.Params)))
   cor.Params=temp %*% vcov.Params %*% temp
 
+
   # Get estimates of parameters and their 95 percent confidence limits
   ParamEst = GetParamRes_AgeAndLengthBasedCatchCurve(GrowthCurveType, SelectivityType, params, nlmb, ses)
 
@@ -2220,6 +2223,7 @@ GetAgeAndLengthBasedCatchCurveResults <- function (params, RefnceAges, MLL, Grow
   GrowthParams = NA
   CVSizeAtAge = NA
   params=nlmb$par
+
   res = AgeAndLengthBasedCatchCurvesCalcs(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge, CatchCurveType,
                                           MLL, SelectivityType, lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep)
 
@@ -2258,6 +2262,8 @@ GetAgeAndLengthBasedCatchCurveResults <- function (params, RefnceAges, MLL, Grow
                    MalCV_LenAtMaxAge=CV_LenAtMaxAge_Results$MalCV_LenAtMaxAge)
 
   Results = list(ParamEst = ParamEst,
+                 EstFMort = ParamEst[1,1],
+                 EstFMort_se = ((ParamEst[1,3]-ParamEst[1,2])/2)/1.96,
                  convergence = nlmb$convergence,
                  nll = nlmb$objective,
                  SampleSize = sum(ObsRetCatchFreqAtLen),
@@ -7252,6 +7258,8 @@ GetLenConvCatchCurveResults <- function(ModelType, GrowthParams, RefnceAges, Obs
 
   results = list(SampleSize = SampleSize,
                  ParamEst = ParamEst,
+                 EstZMort = ZMort,
+                 EstZMort_se = ZMort_se,
                  PeakLencl = PeakLencl,
                  LastLenCl = LastLenCl,
                  ObsCatchFreqAtLen2 = ObsCatchFreqAtLen2,
@@ -7608,8 +7616,8 @@ GetLinearCatchCurveResults <- function(RecAssump, SpecRecAge, MinFreq, Ages, Obs
 
   results = list(yint = round(Est_yint,3),
                  yint_se = round(yint_se,3),
-                 ZMort = round(Est_ZMort,3),
-                 ZMort_se = round(ZMort_se,3),
+                 EstZMort = round(Est_ZMort,3),
+                 EstZMort_se = round(ZMort_se,3),
                  RecAge = RecAge,
                  LastAgeForLinearCC = LastAgeForLinearCC,
                  AgeClassesForLinearCC = AgeClassesForLinearCC,
@@ -8040,6 +8048,8 @@ GetLogisticCatchCurveResults <- function (params, NatMort, Ages, ObsAgeFreq)
                  convergence = convergence,
                  SampleSize = SampleSize,
                  ParamEst = ParamEst,
+                 EstFMort = EstFMort,
+                 EstFMort_se = ses[1],
                  vcov.Params = vcov.Params,
                  cor.Params = cor.Params,
                  ModelDiag = ModelDiag)
@@ -8158,7 +8168,7 @@ PlotAgeBasedCatchCurveResults_NormalSpace <- function(RecAssump, SpecRecAge, Min
   }
   # Linear
   if (CatchCurveModel == 2) {
-    Z_value = round(Res$ZMort[1],digits=3)
+    Z_value = round(Res$EstZMort[1],digits=3)
     x=which(Ages==Res$RecAge) # RecAge position
     xx=which(Ages==Res$LastAgeForLinearCC) # position of last age
     xxx=which(Ages==Res$LastAgeForLinearCC) #  # position of last age
@@ -8324,7 +8334,7 @@ PlotAgeBasedCatchCurveResults_LogSpace <- function(RecAssump, SpecRecAge, MinFre
   }
   # Linear
   if (CatchCurveModel == 2) {
-    Z_value = round(Res$ZMort[1],digits=3)
+    Z_value = round(Res$EstZMort[1],digits=3)
     x=which(Ages==Res$RecAge) # RecAge position
     xx=which(Ages==Res$LastAgeForLinearCC) # position of last age
     xxx=which(Ages==Res$LastAgeForLinearCC) #  # position of last age
@@ -14620,82 +14630,38 @@ PlotPerRecruit_Param_Err_Distns <- function(NatMort,NatMort_sd,Current_F,Current
 #' Produces WA risk matrix for relative biomass estimates from per recruit analysis, and probabilities
 #'
 #' This function outputs a risk matrix plot Produces WA risk matrix for relative biomass estimates from
-#' age or length based per recruit analysis (allowing for error in h, M and F), and associated
-#' likelihoods and risk levels (for each consequence level and overall)
+#' age or length based per recruit analysis and associated likelihoods and risk levels (for each consequence
+#' level and overall)
 #'
-#' @param RefPointOpt 1=proxy, 2=BMSY ratio reference points
-#' @param FittedRes save results from age or length based per recruit analysis with err (get functions)
-#' @param nReps number of estimates of relative biomass from resampling
+#' @param EstBrel relative biomass point estimate
+#' @param EstBrel_se standard error for relative biomass estimate
+#' @param Sim_BrelVals Simulated relative biomass values (set to NA, or input as vector, which will override EstBrel, EstBrel_se)
+#' @param B_targ target reference value for relative biomass
+#' @param B_thresh threshold reference value for relative biomass
+#' @param B_lim limit reference value for relative biomass
 #' @return plot of risk matrix for relative biomass, likelihoods for consequence levels, and risks for consequence
 #' levels and overall
 #' @examples
-#' InitRecruit <- 1 # Initial recruitment
-#' MaxModelAge <- 20 # maximum age considered by model, years
-#' TimeStep <- 1 # Model time step (y) (for shorter-lived species, might be appropriate to use a smaller time step)
-#' Linf <- c(550, 500) # mm - von Bertalanffy growth model parameters - Females, males
-#' vbK <- c(0.5, 0.5) # year-1 - von Bertalanffy growth model parameters - Females, males
-#' tzero <- c(0, 0) # years - von Bertalanffy growth model parameters - Females, males
-#' EstLenAtAge <- data.frame(EstFemLenAtAge=NA, EstMalLenAtAge=NA) # length at age (from age 0), inputted as values in data frame
-#' lenwt_a <- 0.000005 # combined sexes - weight (g) vs length (mm, TL) relationship parameters
-#' ln_lenwt_a <- NA # for log-log relationship
-#' lenwt_b <- 3 # combined sexes - weight (g) vs length (mm, TL) relationship parameters
-#' WLrel_Type <- 1 # 1=power, 2=log-log relationship
-#' EstWtAtAge <- data.frame(EstFemWtAtAge=NA, EstMalWtAtAge=NA) # weight at age (from age 0), inputted as values in data frame
-#' ReprodScale <- 1 # 1=default (standard calculations for spawning biomass), 2=hyperallometric reproductive scaling with female mass (i.e. BOFFF effects)
-#' ReprodPattern <- 1 # 1 = gonochoristic (separate sexes), 2 = protogynous (female to male sex change), 3 = protandrous (male to female sex change)
-#' InitRatioFem <- 0.5 # Ratio of females to males at age zero
-#' FinalSex_A50 <- NA # Logistic sex change relationship parameters (inflection point)
-#' FinalSex_A95 <- NA # Logistic sex change relationship parameters (95% of max probability)
-#' EstSexRatioAtAge <- NA  # sex ratio at age (from age 0) inputted as vector
-#' EggFertParam <- NA # (NA or from ~0.2-1) NA = no effect, 0.2 = direct effect of popn. sex ratio changes on egg fertilisation rates, 1 = no effects
-#' mat_A50 <- c(2.5, 2.5) # females, males - Logistic length (mm) at maturity relationship parameters
-#' mat_A95 <- c(3.5, 3.5) # females, males - Logistic length (mm) at maturity relationship parameters
-#' EstMatAtAge <- data.frame(EstFemMatAtAge=NA, EstMalMatAtAge=NA) # maturity at age (from age 0), inputted as values in data frame
-#' Gear_sel_A50 <- c(2.5, 2.5) # females, males - Logistic age selectivity relationship parameters
-#' Gear_sel_A95 <- c(3.5, 3.5) # females, males - Logistic age selectivity relationship parameters
-#' EstGearSelAtAge <- data.frame(FemGearSelAtAge=NA, MalGearSelAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
-#' Land_sel_A50 <- c(2.5, 2.5) # females, males - Logistic age selectivity relationship parameters
-#' Land_sel_A95 <- c(3.5, 3.5) # females, males - Logistic age selectivity relationship parameters
-#' EstLandSelAtAge <- data.frame(FemSelLandAtAge=NA, MalSelLandAtAge=NA) # gear selectivity at age (from age 0), inputted as values in data frame
-#' ret_Pmax <- NA  # maximum retention, values lower than 1 imply discarding of fish above MLL
-#' ret_A50 <- NA  # females, males - Logistic age fish retention at age parameters
-#' ret_A95 <- NA  # females, males - Logistic age fish retention at age parameters
-#' EstRetenAtAge <- data.frame(EstFemRetenAtAge=rep(1,MaxModelAge+1), EstMalRetenAtAge=rep(1,MaxModelAge+1)) # fish retention at age (from age 0), inputted as values in data frame
-#' DiscMort <- 0.0 # discard mortality (e.g. 50% released fish die = 0.5)
-#' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
-#' Steepness_sd <- 0.025
-#' SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
-#' NatMort <- 0.2 # natural mortality  (year-1)
-#' NatMort_sd <- 0.025
-#' Current_F <- 0.3 # estimate of fishing mortality, e.g. from catch curve analysis
-#' Current_F_sd <- 0.005
-#' PlotOpt <- 1 # 1=females, 2=males, 3=combined sex
-#' RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
-#' nReps=25
-#' FittedRes=GetPerRecruitResults_AB_with_err(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge, lenwt_a, ln_lenwt_a,
-#'                                  lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern, InitRatioFem,
-#'                                  FinalSex_A50, FinalSex_A95, EstSexRatioAtAge, EggFertParam, mat_A50, mat_A95,
-#'                                  EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95,
-#'                                  EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness,
-#'                                  Steepness_sd, SRrel_Type, NatMort, NatMort_sd, Current_F, Current_F_sd, nReps)
-#' PlotPerRecruit_RiskMatrix_RelBiom(RefPointOpt, FittedRes, nReps)
+#' EstBrel = 0.32
+#' EstBrel_se = 0.05
+#' Sim_BrelVals = NA
+#' B_targ = 0.4
+#' B_thresh = 0.3
+#' B_lim = 0.2
+#' PlotRiskMatrix_PerRecruit_RelBiom(EstBrel, EstBrel_se, Sim_BrelVals,
+#'                                   B_targ, B_thresh, B_lim)
 #' @export
-PlotPerRecruit_RiskMatrix_RelBiom <- function(RefPointOpt, FittedRes, nReps) {
+PlotRiskMatrix_PerRecruit_RelBiom <- function(EstBrel, EstBrel_se, Sim_BrelVals,
+                                              B_targ, B_thresh, B_lim) {
 
-
-  RefPointOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
-
-  # use proxy reference points for biomass
-  if (RefPointOpt==1) {
-    Targ = 0.4; Thresh = 0.3; Lim = 0.2
+  # get simulated values for Brel, if they are not inputted
+  if (is.na(Sim_BrelVals[1])) {
+    if (is.na(EstBrel_se)) {
+      cat("Problem: need to specify value for EstBrel_se")
+    }
+    Sim_BrelVals = rnorm(500,EstBrel,EstBrel_se)
   }
-  # use BMSY ratio reference points for biomass
-  if (RefPointOpt==2) {
-    Targ = 1.2 * FittedRes$EstMedBMSYratio
-    Thresh = FittedRes$EstMedBMSYratio
-    Lim = 0.5 * FittedRes$EstMedBMSYratio
-  }
-
+  nReps = length(Sim_BrelVals)
 
   plot(1:6,1:6,cex=0,ylab=NA,xlab=NA,xaxt='n',yaxt='n',bty='n', xlim=c(1,6), ylim=c(1,6))
   for (i in 1:5) {
@@ -14725,12 +14691,12 @@ PlotPerRecruit_RiskMatrix_RelBiom <- function(RefPointOpt, FittedRes, nReps) {
   mtext("Likelihood",las=1,side=3,line=0,cex=1.2)
 
   # calculate likelihoods for each consequence level
-  Prob_Minor = round(length(which(FittedRes$Eq_RelFemSpBiom_Vals > Targ)) / nReps,2) # B>targ
-  Prob_Moderate = round(length(which(FittedRes$Eq_RelFemSpBiom_Vals < Targ &
-                                       FittedRes$Eq_RelFemSpBiom_Vals > Thresh)) / nReps,2) #thresh<B<targ
-  Prob_High = round(length(which(FittedRes$Eq_RelFemSpBiom_Vals < Thresh &
-                                   FittedRes$Eq_RelFemSpBiom_Vals > Lim)) / nReps,2) #lim<B<thresh
-  Prob_Major = round(length(which(FittedRes$Eq_RelFemSpBiom_Vals < Lim)) / nReps,1) #B<lim
+  Prob_Minor = round(length(which(Sim_BrelVals > B_targ)) / nReps,2) # B>targ
+  Prob_Moderate = round(length(which(Sim_BrelVals < B_targ &
+                                       Sim_BrelVals > B_thresh)) / nReps,2) #thresh<B<targ
+  Prob_High = round(length(which(Sim_BrelVals < B_thresh &
+                                   Sim_BrelVals > B_lim)) / nReps,2) #lim<B<thresh
+  Prob_Major = round(length(which(Sim_BrelVals < B_lim)) / nReps,2) #B<lim
 
   Brel_likelihoods <- data.frame(Prob_Minor=Prob_Minor,
                                  Prob_Moderate=Prob_Moderate,
@@ -14863,3 +14829,209 @@ PlotPerRecruit_RiskMatrix_RelBiom <- function(RefPointOpt, FittedRes, nReps) {
   return(Results)
 
 }
+
+#' Produces WA risk matrix for fishing mortality from catch curve analysis, and probabilities
+#'
+#' This function outputs a risk matrix plot Produces WA risk matrix for fishing mortality estimates from age-based,
+#' length-based or age and length-based catch curve analysis analysis, and associated
+#' likelihoods and risk levels (for each consequence level and overall)
+#'
+#' @param EstFMort Fishing mortality point estimate
+#' @param EstFMort_se standard error for fishing mortality estimate
+#' @param Sim_FVals Simulated fishing mortality values (set to NA, or input as vector, which will override EstFMort, EstFMort_se)
+#' @param F_targ target reference value for fishing mortality
+#' @param F_thresh threshold reference value for fishing mortality
+#' @param F_lim limit reference value for fishing mortality
+#' @return plot of risk matrix for fishing mortality, likelihoods for consequence levels, and risks for consequence
+#' levels and overall
+#' @examples
+#' NatMort = 0.15
+#' EstFMort = 0.15
+#' EstFMort_se = 0.025
+#' Sim_FVals = NA
+#' F_targ = 2/3*NatMort
+#' F_thresh = NatMort
+#' F_lim = 3/2*NatMort
+#' PlotRiskMatrix_CatchCurve_FishMort(EstFMort, EstFMort_se, Sim_FVals,
+#'                                    F_targ, F_thresh, F_lim)
+#' @export
+PlotRiskMatrix_CatchCurve_FishMort <- function(EstFMort, EstFMort_se, Sim_FVals,
+                                               F_targ, F_thresh, F_lim) {
+
+  # get simulated values for F, if they are not inputted
+  if (is.na(Sim_FVals[1])) {
+    if (is.na(EstFMort_se)) {
+      cat("Problem: need to specify value for EstFMort_se")
+    }
+    Sim_FVals = rnorm(500,EstFMort,EstFMort_se)
+  }
+  nReps = length(Sim_FVals)
+
+  # calculate likelihoods for each consequence level
+  Prob_Minor = round(length(which(Sim_FVals < F_targ)) / nReps,2) # B>targ
+  Prob_Moderate = round(length(which(Sim_FVals > F_targ &
+                                       Sim_FVals < F_thresh)) / nReps,2) #thresh<B<targ
+  Prob_High = round(length(which(Sim_FVals > F_thresh &
+                                   Sim_FVals < F_lim)) / nReps,2) #lim<B<thresh
+  Prob_Major = round(length(which(Sim_FVals > F_lim)) / nReps,2) #B<lim
+
+  F_likelihoods <- data.frame(Prob_Minor=Prob_Minor,
+                                 Prob_Moderate=Prob_Moderate,
+                                 Prob_High=Prob_High,
+                                 Prob_Major=Prob_Major,
+                                 nReps=nReps)
+
+  plot(1:6,1:6,cex=0,ylab=NA,xlab=NA,xaxt='n',yaxt='n',bty='n', xlim=c(1,6), ylim=c(1,6))
+  for (i in 1:5) {
+    for (j in 1:5) {
+      xval=c(i,i,6,6); yval=c(j,6,6,j)
+      polygon(x=xval,y=yval, col="white",border=T)
+    }
+  }
+
+  text(1.5,1.7,"Major", cex=0.8)
+  text(1.5,1.3,"F>Lim", cex=0.8)
+  text(1.5,2.7,"High", cex=0.8)
+  text(1.5,2.3,"Lim<F<Thresh", cex=0.8)
+  text(1.5,3.7,"Moderate", cex=0.8)
+  text(1.5,3.3,"Thresh<F<Targ", cex=0.8)
+  text(1.5,4.7,"Minor", cex=0.8)
+  text(1.5,4.3,"F<Targ", cex=0.8)
+  text(2.5,5.7,"Remote", cex=0.8)
+  text(2.5,5.3,"<5%", cex=0.8)
+  text(3.5,5.7,"Unlikely", cex=0.8)
+  text(3.5,5.3,"5- <20%", cex=0.8)
+  text(4.5,5.7,"Possible", cex=0.8)
+  text(4.5,5.3,"20- <50%", cex=0.8)
+  text(5.5,5.7,"Likely", cex=0.8)
+  text(5.5,5.3,">= 50%", cex=0.8)
+  mtext("Consequence",las=3,side=2,line=0,cex=1.2)
+  mtext("Likelihood",las=1,side=3,line=0,cex=1.2)
+
+  # calculate risk scores for each consequence level
+  if (Prob_Minor*100 < 5) {
+    Risk_Minor = "Negligble"
+    xval=c(2,2,3,3); yval=c(4,5,5,4)
+    polygon(x=xval,y=yval, col="lightblue",border=T)
+    text(2.5,4.5,"Negligble", cex=0.8)
+  }
+  if (Prob_Minor*100 >= 5 & Prob_Minor*100 < 20) {
+    Risk_Minor = "Negligble"
+    xval=c(3,3,4,4); yval=c(4,5,5,4)
+    polygon(x=xval,y=yval, col="lightblue",border=T)
+    text(3.5,4.5,"Negligble", cex=0.8)
+  }
+  if (Prob_Minor*100 >= 20 & Prob_Minor*100 < 50) {
+    Risk_Minor = "Low"
+    xval=c(4,4,5,5); yval=c(4,5,5,4)
+    polygon(x=xval,y=yval, col="lightgreen",border=T)
+    text(4.5,4.5,"Low", cex=0.8)
+  }
+  if (Prob_Minor*100 >= 50) {
+    Risk_Minor = "Low"
+    xval=c(5,5,6,6); yval=c(4,5,5,4)
+    polygon(x=xval,y=yval, col="lightgreen",border=T)
+    text(5.5,4.5,"Low", cex=0.8)
+  }
+
+  if (Prob_Moderate*100 < 5)  {
+    Risk_Moderate = "Negligble"
+    xval=c(2,2,3,3); yval=c(3,4,4,3)
+    polygon(x=xval,y=yval, col="lightblue",border=T)
+    text(2.5,3.5,"Negligble", cex=0.8)
+  }
+  if (Prob_Moderate*100 >= 5 & Prob_Moderate*100 < 20) {
+    Risk_Moderate = "Low"
+    xval=c(3,3,4,4); yval=c(3,4,4,3)
+    polygon(x=xval,y=yval, col="lightgreen",border=T)
+    text(3.5,3.5,"Low", cex=0.8)
+  }
+  if (Prob_Moderate*100 >= 20 & Prob_Moderate*100 < 50) {
+    Risk_Moderate = "Medium"
+    xval=c(4,4,5,5); yval=c(3,4,4,3)
+    polygon(x=xval,y=yval, col="yellow",border=T)
+    text(4.5,3.5,"Medium", cex=0.8)
+  }
+  if (Prob_Moderate*100 >= 50) {
+    Risk_Moderate = "Medium"
+    xval=c(5,5,6,6); yval=c(3,4,4,3)
+    polygon(x=xval,y=yval, col="yellow",border=T)
+    text(5.5,3.5,"Medium", cex=0.8)
+  }
+
+  if (Prob_High*100 < 5) {
+    Risk_High = "Low"
+    xval=c(2,2,3,3); yval=c(2,3,3,2)
+    polygon(x=xval,y=yval, col="lightgreen",border=T)
+    text(2.5,2.5,"Low", cex=0.8)
+  }
+  if (Prob_High*100 >= 5 & Prob_High*100 < 20) {
+    Risk_High = "Medium"
+    xval=c(3,3,4,4); yval=c(2,3,3,2)
+    polygon(x=xval,y=yval, col="yellow",border=T)
+    text(3.5,2.5,"Medium", cex=0.8)
+  }
+  if (Prob_High*100 >= 20 & Prob_High*100 < 50) {
+    Risk_High = "High"
+    xval=c(4,4,5,5); yval=c(2,3,3,2)
+    polygon(x=xval,y=yval, col="orange",border=T)
+    text(4.5,2.5,"High", cex=0.8)
+  }
+  if (Prob_High*100 >= 50) {
+    Risk_High = "High"
+    xval=c(5,5,6,6); yval=c(2,3,3,2)
+    polygon(x=xval,y=yval, col="orange",border=T)
+    text(5.5,2.5,"High", cex=0.8)
+  }
+
+  if (Prob_Major*100 < 5) {
+    Risk_Major = "Low"
+    xval=c(2,2,3,3); yval=c(1,2,2,1)
+    polygon(x=xval,y=yval, col="lightgreen",border=T)
+    text(2.5,1.5,"Low", cex=0.8)
+  }
+  if (Prob_Major*100 >= 5 & Prob_Major*100 < 20) {
+    Risk_Major = "Medium"
+    xval=c(3,3,4,4); yval=c(1,2,2,1)
+    polygon(x=xval,y=yval, col="yellow",border=T)
+    text(3.5,1.5,"Medium", cex=0.8)
+  }
+  if (Prob_Major*100 >= 20 & Prob_Major*100 < 50) {
+    Risk_Major = "Severe"
+    xval=c(4,4,5,5); yval=c(1,2,2,1)
+    polygon(x=xval,y=yval, col="red",border=T)
+    text(4.5,1.5,"Severe", cex=0.8)
+  }
+  if (Prob_Major*100 >= 50) {
+    Risk_Major = "Severe"
+    xval=c(5,5,6,6); yval=c(1,2,2,1)
+    polygon(x=xval,y=yval, col="red",border=T)
+    text(5.5,1.5,"Severe", cex=0.8)
+  }
+
+  F_risks <- data.frame(Risk_Minor=Risk_Minor,
+                           Risk_Moderate=Risk_Moderate,
+                           Risk_High=Risk_High,
+                           Risk_Major=Risk_Major)
+
+  if (length(which(F_risks=="Severe")>0)) {
+    RiskOverall = "Severe"
+  } else if (length(which(F_risks=="High")>0)) {
+    RiskOverall = "High"
+  } else if (length(which(F_risks=="Medium")>0)) {
+    RiskOverall = "Medium"
+  } else if (length(which(F_risks=="Low")>0)) {
+    RiskOverall = "Low"
+  } else {
+    RiskOverall = "Negligible"
+  }
+  F_risks$RiskOverall=RiskOverall
+
+  Results = list(F_risks=F_risks,
+                 F_likelihoods=F_likelihoods)
+
+  return(Results)
+
+}
+
+
