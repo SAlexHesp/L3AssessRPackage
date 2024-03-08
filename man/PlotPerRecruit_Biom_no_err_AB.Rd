@@ -20,9 +20,10 @@ PlotPerRecruit_Biom_no_err_AB(
   ReprodScale,
   ReprodPattern,
   InitRatioFem,
-  FinalSex_Pmax,
   FinalSex_A50,
   FinalSex_A95,
+  EstSexRatioAtAge,
+  EggFertParam,
   mat_A50,
   mat_A95,
   EstMatAtAge,
@@ -79,6 +80,10 @@ PlotPerRecruit_Biom_no_err_AB(
 
 \item{FinalSex_A95}{logistic sex change parameter for hermaphroditic species (set to NA for gonochoristic species)}
 
+\item{EstSexRatioAtAge}{NA  # sex ratio at age (from age 0) inputted as vector}
+
+\item{EggFertParam}{<- NA # (NA or from ~0.2-1) NA = no effect, 0.2 = direct effect of popn. sex ratio changes on egg fertilisation rates, 1 = no effects}
+
 \item{mat_A50}{logistic length at maturity parameter (set to NA if directly inputting proportion mature at age)}
 
 \item{mat_A95}{logistic length at maturity parameter (set to NA if directly inputting proportion mature at age)}
@@ -116,10 +121,6 @@ PlotPerRecruit_Biom_no_err_AB(
 \item{RefPointPlotOpt}{plotting option for reference points, 0=don't plot, 1=plot defaults, 2=plot BMSY ref points}
 
 \item{Current_F}{estimate of current fishing mortality}
-
-\item{EstSexRatioAtAge}{NA  # sex ratio at age (from age 0) inputted as vector}
-
-\item{EggFertParam}{<- NA # (NA or from ~0.2-1) NA = no effect, 0.2 = direct effect of popn. sex ratio changes on egg fertilisation rates, 1 = no effects}
 }
 \value{
 deterministic plot of SPR and relative equilibrium biomass  vs F from per recruit analysis and extended analysis
@@ -170,12 +171,12 @@ NatMort <- 0.2 # natural mortality  (year-1)
 Current_F <- 0.2 # estimate of fishing mortality, e.g. from catch curve analysis
 PlotOpt <- 1 # 1=females, 2=males, 3=combined sex
 RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
-PlotPerRecruit_Biom_no_err_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
-                      lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale,
-                      ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95,
-                      mat_A50, mat_A95, EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge,
-                      Land_sel_A50, Land_sel_A95, EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95,
-                      EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, PlotOpt, RefPointPlotOpt, Current_F)
+PlotPerRecruit_Biom_no_err_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge, lenwt_a, ln_lenwt_a,
+                              lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern, InitRatioFem,
+                              FinalSex_A50, FinalSex_A95, EstSexRatioAtAge, EggFertParam, mat_A50, mat_A95,
+                              EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95,
+                              EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness,
+                              SRrel_Type, NatMort, PlotOpt, RefPointPlotOpt, Current_F)
 # Example 2: hermaphroditic species
 InitRecruit <- 1 # Initial recruitment
 MaxModelAge <- 100 # maximum age considered by model, years
@@ -216,10 +217,10 @@ NatMort <- 0.07 # natural mortality  (year-1)
 Current_F <- 0.1 # estimate of fishing mortality, e.g. from catch curve analysis
 PlotOpt <- 1 # 1=females, 2=males, 3=combined sex
 RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
-PlotPerRecruit_Biom_no_err_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
-                              lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale,
-                              ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95,
-                              mat_A50, mat_A95, EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge,
-                              Land_sel_A50, Land_sel_A95, EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95,
-                              EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, PlotOpt, RefPointPlotOpt, Current_F)
+PlotPerRecruit_Biom_no_err_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge, lenwt_a, ln_lenwt_a,
+                              lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern, InitRatioFem,
+                              FinalSex_A50, FinalSex_A95, EstSexRatioAtAge, EggFertParam, mat_A50, mat_A95,
+                              EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95,
+                              EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness,
+                              SRrel_Type, NatMort, PlotOpt, RefPointPlotOpt, Current_F)
 }

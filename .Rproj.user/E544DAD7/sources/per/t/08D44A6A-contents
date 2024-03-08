@@ -12737,17 +12737,18 @@ PlotPerRecruit_ExpCatchSizeDistns_LB <- function(MaxModelAge, TimeStep, lbnd, ub
 #'             EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax, ret_L50, ret_L95, EstRetenAtLen,
 #'             DiscMort, Steepness, SRrel_Type, NatMort, Current_F, MinFishWtOfVal, ValScaleFact)
 #' PlotValuePerRecruitResults_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
-#'                               RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
-#'                               EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
-#'                               FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
-#'                               ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, MinFishWtOfVal, ValScaleFact, FittedRes, PlotOpt)
+#'                               RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtLen,
+#'                               ReprodScale, ReprodPattern, InitRatioFem, FinalSex_A50, FinalSex_A95, EstSexRatioAtAge,
+#'                               EggFertParam,mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+#'                               ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, Current_F,
+#'                               MinFishWtOfVal, ValScaleFact, FittedRes, PlotOpt)
 #' @export
 PlotValuePerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
-                                          RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
-                                          EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
-                                          FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
-                                          ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, MinFishWtOfVal, ValScaleFact,
-                                          FittedRes, PlotOpt) {
+                                          RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtLen,
+                                          ReprodScale, ReprodPattern, InitRatioFem, FinalSex_A50, FinalSex_A95, EstSexRatioAtAge,
+                                          EggFertParam,mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+                                          ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, Current_F,
+                                          MinFishWtOfVal, ValScaleFact, FittedRes, PlotOpt) {
 
 
   if (is.list(FittedRes)) {
@@ -13147,12 +13148,12 @@ Get_Relative_Value_Per_Recruit_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd,
 #' Current_F <- 0.2 # estimate of fishing mortality, e.g. from catch curve analysis
 #' PlotOpt <- 1 # 1=females, 2=males, 3=combined sex
 #' RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
-#' PlotPerRecruit_Biom_no_err_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
-#'                       lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale,
-#'                       ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95,
-#'                       mat_A50, mat_A95, EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge,
-#'                       Land_sel_A50, Land_sel_A95, EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95,
-#'                       EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, PlotOpt, RefPointPlotOpt, Current_F)
+#' PlotPerRecruit_Biom_no_err_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge, lenwt_a, ln_lenwt_a,
+#'                               lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern, InitRatioFem,
+#'                               FinalSex_A50, FinalSex_A95, EstSexRatioAtAge, EggFertParam, mat_A50, mat_A95,
+#'                               EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95,
+#'                               EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness,
+#'                               SRrel_Type, NatMort, PlotOpt, RefPointPlotOpt, Current_F)
 #' # Example 2: hermaphroditic species
 #' InitRecruit <- 1 # Initial recruitment
 #' MaxModelAge <- 100 # maximum age considered by model, years
@@ -13193,19 +13194,19 @@ Get_Relative_Value_Per_Recruit_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd,
 #' Current_F <- 0.1 # estimate of fishing mortality, e.g. from catch curve analysis
 #' PlotOpt <- 1 # 1=females, 2=males, 3=combined sex
 #' RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
-#' PlotPerRecruit_Biom_no_err_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
-#'                               lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale,
-#'                               ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95,
-#'                               mat_A50, mat_A95, EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge,
-#'                               Land_sel_A50, Land_sel_A95, EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95,
-#'                               EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, PlotOpt, RefPointPlotOpt, Current_F)
+#' PlotPerRecruit_Biom_no_err_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge, lenwt_a, ln_lenwt_a,
+#'                               lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern, InitRatioFem,
+#'                               FinalSex_A50, FinalSex_A95, EstSexRatioAtAge, EggFertParam, mat_A50, mat_A95,
+#'                               EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95,
+#'                               EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness,
+#'                               SRrel_Type, NatMort, PlotOpt, RefPointPlotOpt, Current_F)
 #' @export
-PlotPerRecruit_Biom_no_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
-                                       lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale,
-                                       ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95,
-                                       mat_A50, mat_A95, EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge,
-                                       Land_sel_A50, Land_sel_A95, EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95,
-                                       EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, PlotOpt, RefPointPlotOpt, Current_F) {
+PlotPerRecruit_Biom_no_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge, lenwt_a, ln_lenwt_a,
+                                          lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern, InitRatioFem,
+                                          FinalSex_A50, FinalSex_A95, EstSexRatioAtAge, EggFertParam, mat_A50, mat_A95,
+                                          EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95,
+                                          EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness,
+                                          SRrel_Type, NatMort, PlotOpt, RefPointPlotOpt, Current_F) {
 
   Res = GetPerRecruitResults_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge, lenwt_a, ln_lenwt_a,
                                 lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern, InitRatioFem,
@@ -13537,19 +13538,19 @@ PlotPerRecruit_Biom_no_err_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, mid
 #' Current_F_sd <- 0.005
 #' RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 #' nReps = 50
-#' GetPerRecruitResults_AB_with_err(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
-#'                               lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern,
-#'                               InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95, mat_A50, mat_A95,
-#'                               EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95,
-#'                               EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness, Steepness_sd,
-#'                               SRrel_Type, NatMort, NatMort_sd, Current_F, Current_F_sd, nReps)
+#' GetPerRecruitResults_AB_with_err(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge, lenwt_a, ln_lenwt_a,
+#'                                  lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern, InitRatioFem,
+#'                                  FinalSex_A50, FinalSex_A95, EstSexRatioAtAge, EggFertParam, mat_A50, mat_A95,
+#'                                  EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95,
+#'                                  EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness,
+#'                                  Steepness_sd, SRrel_Type, NatMort, NatMort_sd, Current_F, Current_F_sd, nReps)
 #' @export
-GetPerRecruitResults_AB_with_err <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
-                                          lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern,
-                                          InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95, mat_A50, mat_A95,
-                                          EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95,
-                                          EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness, Steepness_sd,
-                                          SRrel_Type, NatMort, NatMort_sd, Current_F, Current_F_sd, nReps) {
+GetPerRecruitResults_AB_with_err <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge, lenwt_a, ln_lenwt_a,
+                                             lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern, InitRatioFem,
+                                             FinalSex_A50, FinalSex_A95, EstSexRatioAtAge, EggFertParam, mat_A50, mat_A95,
+                                             EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95,
+                                             EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness,
+                                             Steepness_sd, SRrel_Type, NatMort, NatMort_sd, Current_F, Current_F_sd, nReps) {
 
 
 
@@ -14056,20 +14057,20 @@ GetPerRecruitResults_LB_with_err <- function(MaxModelAge, TimeStep, lbnd, ubnd, 
 #' PlotOpt <- 1 # 1=females, 2=males, 3=combined sex
 #' RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 #' nReps = 50
-#' FittedRes=GetPerRecruitResults_AB_with_err(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
-#'                                              lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern,
-#'                                              InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95, mat_A50, mat_A95,
-#'                                              EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95,
-#'                                              EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness, Steepness_sd,
-#'                                              SRrel_Type, NatMort, NatMort_sd, Current_F, Current_F_sd, nReps)
+#' FittedRes=GetPerRecruitResults_AB_with_err(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge, lenwt_a, ln_lenwt_a,
+#'                                  lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern, InitRatioFem,
+#'                                  FinalSex_A50, FinalSex_A95, EstSexRatioAtAge, EggFertParam, mat_A50, mat_A95,
+#'                                  EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95,
+#'                                  EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness,
+#'                                  Steepness_sd, SRrel_Type, NatMort, NatMort_sd, Current_F, Current_F_sd, nReps)
 #' # Plot. Note, can skip above step and set FittedRes=NA (plot function will be slower
-#' PlotPerRecruit_Biom_with_err_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
-#'                                             lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern,
-#'                                             InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95, mat_A50, mat_A95,
-#'                                             EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95,
-#'                                             EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness,
-#'                                             Steepness_sd, SRrel_Type, NatMort, NatMort_sd, Current_F, Current_F_sd, PlotOpt,
-#'                                             RefPointPlotOpt, FittedRes, nReps, MainLabel=NA, xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA, ymax=NA, yint=NA)
+#' PlotPerRecruit_Biom_with_err_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge, lenwt_a, ln_lenwt_a, lenwt_b,
+#'                                 WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_A50,
+#'                                 FinalSex_A95, EstSexRatioAtAge, EggFertParam, mat_A50, mat_A95, EstMatAtAge,
+#'                                 Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95, EstLandSelAtAge,
+#'                                 ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness, Steepness_sd, SRrel_Type,
+#'                                 NatMort, NatMort_sd, Current_F, Current_F_sd, PlotOpt, RefPointPlotOpt, FittedRes, nReps,
+#'                                 MainLabel=NA, xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA, ymax=NA, yint=NA)
 #' # Example 2: hermaphroditic species
 #' InitRecruit <- 1 # Initial recruitment
 #' MaxModelAge <- 100 # maximum age considered by model, years
@@ -14114,28 +14115,28 @@ GetPerRecruitResults_LB_with_err <- function(MaxModelAge, TimeStep, lbnd, ubnd, 
 #' PlotOpt <- 1 # 1=females, 2=males, 3=combined sex
 #' RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 #' nReps = 10
-#' FittedRes=GetPerRecruitResults_AB_with_err(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
-#'                                            lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern,
-#'                                            InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95, mat_A50, mat_A95,
-#'                                            EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95,
-#'                                            EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness,
-#'                                            Steepness_sd, SRrel_Type, NatMort, NatMort_sd, Current_F, Current_F_sd, nReps)
+#' FittedRes=GetPerRecruitResults_AB_with_err(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge, lenwt_a, ln_lenwt_a,
+#'                                  lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern, InitRatioFem,
+#'                                  FinalSex_A50, FinalSex_A95, EstSexRatioAtAge, EggFertParam, mat_A50, mat_A95,
+#'                                  EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95,
+#'                                  EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness,
+#'                                  Steepness_sd, SRrel_Type, NatMort, NatMort_sd, Current_F, Current_F_sd, nReps)
 #' # Plot. Note, can skip above step and set FittedRes=NA (plot function will be slower
-#' PlotPerRecruit_Biom_with_err_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
-#'                                 lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern,
-#'                                 InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95, mat_A50, mat_A95,
-#'                                 EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95,
-#'                                 EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness,
-#'                                 Steepness_sd, SRrel_Type, NatMort, NatMort_sd, Current_F, Current_F_sd, PlotOpt,
-#'                                 RefPointPlotOpt, FittedRes, nReps, MainLabel=NA, xaxis_lab=NA, yaxis_lab=NA, xmax=0.5, xint=0.1, ymax=NA, yint=NA)
+#' PlotPerRecruit_Biom_with_err_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge, lenwt_a, ln_lenwt_a, lenwt_b,
+#'                                 WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_A50,
+#'                                 FinalSex_A95, EstSexRatioAtAge, EggFertParam, mat_A50, mat_A95, EstMatAtAge,
+#'                                 Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95, EstLandSelAtAge,
+#'                                 ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness, Steepness_sd, SRrel_Type,
+#'                                 NatMort, NatMort_sd, Current_F, Current_F_sd, PlotOpt, RefPointPlotOpt, FittedRes, nReps,
+#'                                 MainLabel=NA, xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA, ymax=NA, yint=NA)
 #' @export
-PlotPerRecruit_Biom_with_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
-                                            lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern,
-                                            InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95, mat_A50, mat_A95,
-                                            EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95,
-                                            EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness,
-                                            Steepness_sd, SRrel_Type, NatMort, NatMort_sd, Current_F, Current_F_sd, PlotOpt,
-                                            RefPointPlotOpt, FittedRes, nReps, MainLabel, xaxis_lab, yaxis_lab, xmax, xint, ymax, yint) {
+PlotPerRecruit_Biom_with_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge, lenwt_a, ln_lenwt_a, lenwt_b,
+                                            WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_A50,
+                                            FinalSex_A95, EstSexRatioAtAge, EggFertParam, mat_A50, mat_A95, EstMatAtAge,
+                                            Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95, EstLandSelAtAge,
+                                            ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness, Steepness_sd, SRrel_Type,
+                                            NatMort, NatMort_sd, Current_F, Current_F_sd, PlotOpt, RefPointPlotOpt, FittedRes, nReps,
+                                            MainLabel, xaxis_lab, yaxis_lab, xmax, xint, ymax, yint) {
 
   # get BMSY reference points
   res = GetPerRecruitResults_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge, lenwt_a, ln_lenwt_a,
@@ -14149,9 +14150,9 @@ PlotPerRecruit_Biom_with_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
   if (is.list(FittedRes)) {
     Res =  FittedRes
   } else {
-    Res=GetPerRecruitResults_AB_with_err(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
-                                         lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern,
-                                         InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95, mat_A50, mat_A95,
+    Res=GetPerRecruitResults_AB_with_err(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge, lenwt_a, ln_lenwt_a,
+                                         lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern, InitRatioFem,
+                                         FinalSex_A50, FinalSex_A95, EstSexRatioAtAge, EggFertParam, mat_A50, mat_A95,
                                          EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95,
                                          EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness,
                                          Steepness_sd, SRrel_Type, NatMort, NatMort_sd, Current_F, Current_F_sd, nReps)
@@ -14671,12 +14672,12 @@ PlotPerRecruit_Param_Err_Distns <- function(NatMort,NatMort_sd,Current_F,Current
 #' PlotOpt <- 1 # 1=females, 2=males, 3=combined sex
 #' RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 #' nReps=25
-#' FittedRes=GetPerRecruitResults_AB_with_err(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
-#'                                            lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern,
-#'                                            InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95, mat_A50, mat_A95,
-#'                                            EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95,
-#'                                            EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness, Steepness_sd,
-#'                                            SRrel_Type, NatMort, NatMort_sd, Current_F, Current_F_sd, nReps)
+#' FittedRes=GetPerRecruitResults_AB_with_err(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge, lenwt_a, ln_lenwt_a,
+#'                                  lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern, InitRatioFem,
+#'                                  FinalSex_A50, FinalSex_A95, EstSexRatioAtAge, EggFertParam, mat_A50, mat_A95,
+#'                                  EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95,
+#'                                  EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness,
+#'                                  Steepness_sd, SRrel_Type, NatMort, NatMort_sd, Current_F, Current_F_sd, nReps)
 #' PlotPerRecruit_RiskMatrix_RelBiom(RefPointOpt, FittedRes, nReps)
 #' @export
 PlotPerRecruit_RiskMatrix_RelBiom <- function(RefPointOpt, FittedRes, nReps) {

@@ -20,9 +20,10 @@ PlotPerRecruit_Biom_with_err_AB(
   ReprodScale,
   ReprodPattern,
   InitRatioFem,
-  FinalSex_Pmax,
   FinalSex_A50,
   FinalSex_A95,
+  EstSexRatioAtAge,
+  EggFertParam,
   mat_A50,
   mat_A95,
   EstMatAtAge,
@@ -91,6 +92,10 @@ PlotPerRecruit_Biom_with_err_AB(
 
 \item{FinalSex_A95}{logistic sex change parameter for hermaphroditic species (set to NA for gonochoristic species)}
 
+\item{EstSexRatioAtAge}{NA  # sex ratio at age (from age 0) inputted as vector}
+
+\item{EggFertParam}{<- NA # (NA or from ~0.2-1) NA = no effect, 0.2 = direct effect of popn. sex ratio changes on egg fertilisation rates, 1 = no effects}
+
 \item{mat_A50}{logistic length at maturity parameter (set to NA if directly inputting proportion mature at age)}
 
 \item{mat_A95}{logistic length at maturity parameter (set to NA if directly inputting proportion mature at age)}
@@ -152,10 +157,6 @@ PlotPerRecruit_Biom_with_err_AB(
 \item{ymax}{maximum y axis value}
 
 \item{yint}{y axis interval}
-
-\item{EstSexRatioAtAge}{NA  # sex ratio at age (from age 0) inputted as vector}
-
-\item{EggFertParam}{<- NA # (NA or from ~0.2-1) NA = no effect, 0.2 = direct effect of popn. sex ratio changes on egg fertilisation rates, 1 = no effects}
 }
 \value{
 plot of SPR and relative equilibrium biomass vs F from per recruit analysis
@@ -210,20 +211,20 @@ Current_F_sd <- 0.005
 PlotOpt <- 1 # 1=females, 2=males, 3=combined sex
 RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 nReps = 50
-FittedRes=GetPerRecruitResults_AB_with_err(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
-                                             lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern,
-                                             InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95, mat_A50, mat_A95,
-                                             EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95,
-                                             EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness, Steepness_sd,
-                                             SRrel_Type, NatMort, NatMort_sd, Current_F, Current_F_sd, nReps)
+FittedRes=GetPerRecruitResults_AB_with_err(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge, lenwt_a, ln_lenwt_a,
+                                 lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern, InitRatioFem,
+                                 FinalSex_A50, FinalSex_A95, EstSexRatioAtAge, EggFertParam, mat_A50, mat_A95,
+                                 EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95,
+                                 EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness,
+                                 Steepness_sd, SRrel_Type, NatMort, NatMort_sd, Current_F, Current_F_sd, nReps)
 # Plot. Note, can skip above step and set FittedRes=NA (plot function will be slower
-PlotPerRecruit_Biom_with_err_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
-                                            lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern,
-                                            InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95, mat_A50, mat_A95,
-                                            EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95,
-                                            EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness,
-                                            Steepness_sd, SRrel_Type, NatMort, NatMort_sd, Current_F, Current_F_sd, PlotOpt,
-                                            RefPointPlotOpt, FittedRes, nReps, MainLabel=NA, xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA, ymax=NA, yint=NA)
+PlotPerRecruit_Biom_with_err_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge, lenwt_a, ln_lenwt_a, lenwt_b,
+                                WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_A50,
+                                FinalSex_A95, EstSexRatioAtAge, EggFertParam, mat_A50, mat_A95, EstMatAtAge,
+                                Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95, EstLandSelAtAge,
+                                ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness, Steepness_sd, SRrel_Type,
+                                NatMort, NatMort_sd, Current_F, Current_F_sd, PlotOpt, RefPointPlotOpt, FittedRes, nReps,
+                                MainLabel=NA, xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA, ymax=NA, yint=NA)
 # Example 2: hermaphroditic species
 InitRecruit <- 1 # Initial recruitment
 MaxModelAge <- 100 # maximum age considered by model, years
@@ -268,18 +269,18 @@ Current_F_sd <- 0.005
 PlotOpt <- 1 # 1=females, 2=males, 3=combined sex
 RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 nReps = 10
-FittedRes=GetPerRecruitResults_AB_with_err(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
-                                           lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern,
-                                           InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95, mat_A50, mat_A95,
-                                           EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95,
-                                           EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness,
-                                           Steepness_sd, SRrel_Type, NatMort, NatMort_sd, Current_F, Current_F_sd, nReps)
+FittedRes=GetPerRecruitResults_AB_with_err(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge, lenwt_a, ln_lenwt_a,
+                                 lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern, InitRatioFem,
+                                 FinalSex_A50, FinalSex_A95, EstSexRatioAtAge, EggFertParam, mat_A50, mat_A95,
+                                 EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95,
+                                 EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness,
+                                 Steepness_sd, SRrel_Type, NatMort, NatMort_sd, Current_F, Current_F_sd, nReps)
 # Plot. Note, can skip above step and set FittedRes=NA (plot function will be slower
-PlotPerRecruit_Biom_with_err_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
-                                lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern,
-                                InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95, mat_A50, mat_A95,
-                                EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95,
-                                EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness,
-                                Steepness_sd, SRrel_Type, NatMort, NatMort_sd, Current_F, Current_F_sd, PlotOpt,
-                                RefPointPlotOpt, FittedRes, nReps, MainLabel=NA, xaxis_lab=NA, yaxis_lab=NA, xmax=0.5, xint=0.1, ymax=NA, yint=NA)
+PlotPerRecruit_Biom_with_err_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge, lenwt_a, ln_lenwt_a, lenwt_b,
+                                WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_A50,
+                                FinalSex_A95, EstSexRatioAtAge, EggFertParam, mat_A50, mat_A95, EstMatAtAge,
+                                Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95, EstLandSelAtAge,
+                                ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness, Steepness_sd, SRrel_Type,
+                                NatMort, NatMort_sd, Current_F, Current_F_sd, PlotOpt, RefPointPlotOpt, FittedRes, nReps,
+                                MainLabel=NA, xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA, ymax=NA, yint=NA)
 }

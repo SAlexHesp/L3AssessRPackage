@@ -20,9 +20,10 @@ GetPerRecruitResults_AB_with_err(
   ReprodScale,
   ReprodPattern,
   InitRatioFem,
-  FinalSex_Pmax,
   FinalSex_A50,
   FinalSex_A95,
+  EstSexRatioAtAge,
+  EggFertParam,
   mat_A50,
   mat_A95,
   EstMatAtAge,
@@ -81,6 +82,10 @@ GetPerRecruitResults_AB_with_err(
 
 \item{FinalSex_A95}{logistic sex change parameter for hermaphroditic species (set to NA for gonochoristic species)}
 
+\item{EstSexRatioAtAge}{NA  # sex ratio at age (from age 0) inputted as vector}
+
+\item{EggFertParam}{<- NA # (NA or from ~0.2-1) NA = no effect, 0.2 = direct effect of popn. sex ratio changes on egg fertilisation rates, 1 = no effects}
+
 \item{mat_A50}{logistic length at maturity parameter (set to NA if directly inputting proportion mature at age)}
 
 \item{mat_A95}{logistic length at maturity parameter (set to NA if directly inputting proportion mature at age)}
@@ -124,10 +129,6 @@ GetPerRecruitResults_AB_with_err(
 \item{Current_F_sd}{error for estimate of current fishing mortality}
 
 \item{nReps}{number of random parameter sets from parametric resampling to generate per recruit outputs with error}
-
-\item{EstSexRatioAtAge}{NA  # sex ratio at age (from age 0) inputted as vector}
-
-\item{EggFertParam}{<- NA # (NA or from ~0.2-1) NA = no effect, 0.2 = direct effect of popn. sex ratio changes on egg fertilisation rates, 1 = no effects}
 
 \item{RefPointPlotOpt}{plotting option for reference points, 0=don't plot, 1=plot defaults, 2=plot BMSY ref points}
 }
@@ -189,10 +190,10 @@ Current_F <- 0.1 # estimate of fishing mortality, e.g. from catch curve analysis
 Current_F_sd <- 0.005
 RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 nReps = 50
-GetPerRecruitResults_AB_with_err(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
-                              lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern,
-                              InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95, mat_A50, mat_A95,
-                              EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95,
-                              EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness, Steepness_sd,
-                              SRrel_Type, NatMort, NatMort_sd, Current_F, Current_F_sd, nReps)
+GetPerRecruitResults_AB_with_err(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge, lenwt_a, ln_lenwt_a,
+                                 lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern, InitRatioFem,
+                                 FinalSex_A50, FinalSex_A95, EstSexRatioAtAge, EggFertParam, mat_A50, mat_A95,
+                                 EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95,
+                                 EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness,
+                                 Steepness_sd, SRrel_Type, NatMort, NatMort_sd, Current_F, Current_F_sd, nReps)
 }

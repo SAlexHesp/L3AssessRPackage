@@ -66,11 +66,11 @@ Current_F_sd <- 0.005
 PlotOpt <- 1 # 1=females, 2=males, 3=combined sex
 RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 nReps=25
-FittedRes=GetPerRecruitResults_AB_with_err(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
-                                           lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern,
-                                           InitRatioFem, FinalSex_Pmax, FinalSex_A50, FinalSex_A95, mat_A50, mat_A95,
-                                           EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95,
-                                           EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness, Steepness_sd,
-                                           SRrel_Type, NatMort, NatMort_sd, Current_F, Current_F_sd, nReps)
+FittedRes=GetPerRecruitResults_AB_with_err(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge, lenwt_a, ln_lenwt_a,
+                                 lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern, InitRatioFem,
+                                 FinalSex_A50, FinalSex_A95, EstSexRatioAtAge, EggFertParam, mat_A50, mat_A95,
+                                 EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95,
+                                 EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness,
+                                 Steepness_sd, SRrel_Type, NatMort, NatMort_sd, Current_F, Current_F_sd, nReps)
 PlotPerRecruit_RiskMatrix_RelBiom(RefPointOpt, FittedRes, nReps)
 }

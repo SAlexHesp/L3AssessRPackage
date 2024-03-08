@@ -23,9 +23,10 @@ PlotValuePerRecruitResults_LB(
   ReprodScale,
   ReprodPattern,
   InitRatioFem,
-  FinalSex_Pmax,
-  FinalSex_L50,
-  FinalSex_L95,
+  FinalSex_A50,
+  FinalSex_A95,
+  EstSexRatioAtAge,
+  EggFertParam,
   mat_L50,
   mat_L95,
   EstMatAtLen,
@@ -85,9 +86,7 @@ PlotValuePerRecruitResults_LB(
 
 \item{InitRatioFem}{proportion of fish that are females at hatching}
 
-\item{FinalSex_L50}{logistic sex change parameter for hermaphroditic species (set to NA for gonochoristic species)}
-
-\item{FinalSex_L95}{logistic sex change parameter for hermaphroditic species (set to NA for gonochoristic species)}
+\item{EggFertParam}{<- NA # (NA or from ~0.2-1) NA = no effect, 0.2 = direct effect of popn. sex ratio changes on egg fertilisation rates, 1 = no effects}
 
 \item{mat_L50}{logistic length at maturity parameter (set to NA if directly inputting proportion mature at age)}
 
@@ -123,9 +122,11 @@ PlotValuePerRecruitResults_LB(
 
 \item{PlotOpt}{= 0 # 0=all plots, 1=rel value vs length, 2=rel value vs weight, 3=eq catch and ypr, 4=rel value per recruit}
 
-\item{EstSexRatioAtLen}{NA  # sex ratio at length, inputted as vector}
+\item{FinalSex_L50}{logistic sex change parameter for hermaphroditic species (set to NA for gonochoristic species)}
 
-\item{EggFertParam}{<- NA # (NA or from ~0.2-1) NA = no effect, 0.2 = direct effect of popn. sex ratio changes on egg fertilisation rates, 1 = no effects}
+\item{FinalSex_L95}{logistic sex change parameter for hermaphroditic species (set to NA for gonochoristic species)}
+
+\item{EstSexRatioAtLen}{NA  # sex ratio at length, inputted as vector}
 }
 \description{
 This function provides several plots associated with outputs from length-based 'value per recruit' analysis.
@@ -190,8 +191,9 @@ FittedRes = Get_Relative_Value_Per_Recruit_LB(MaxModelAge, TimeStep, lbnd, ubnd,
             EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax, ret_L50, ret_L95, EstRetenAtLen,
             DiscMort, Steepness, SRrel_Type, NatMort, Current_F, MinFishWtOfVal, ValScaleFact)
 PlotValuePerRecruitResults_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
-                              RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
-                              EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_Pmax, FinalSex_L50,
-                              FinalSex_L95, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
-                              ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, Current_F, MinFishWtOfVal, ValScaleFact, FittedRes, PlotOpt)
+                              RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtLen,
+                              ReprodScale, ReprodPattern, InitRatioFem, FinalSex_A50, FinalSex_A95, EstSexRatioAtAge,
+                              EggFertParam,mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+                              ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, Current_F,
+                              MinFishWtOfVal, ValScaleFact, FittedRes, PlotOpt)
 }
