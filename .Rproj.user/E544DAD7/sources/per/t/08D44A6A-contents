@@ -265,9 +265,11 @@
    if (is.nan(Linf)) {
      Age = MaxAge
    } else if (FishLen >= Linf-1) {
-     Age = MaxAge
+     tempLen = Linf-1
+     Age=log(1-(tempLen^b-y1^b)/(y2^b-y1^b)*(1-exp(-a*(t2-t1))))/-a+t1
+     # Age = MaxAge - 1
    } else {
-      Age=log(1-(FishLen^b-y1^b)/(y2^b-y1^b)*(1-exp(-a*(t2-t1))))/-a+t1
+     Age=log(1-(FishLen^b-y1^b)/(y2^b-y1^b)*(1-exp(-a*(t2-t1))))/-a+t1
    }
    #cat("Linf",Linf,"MaxAge",MaxAge,"FishLen",FishLen,"Age",Age,'\n')
 
@@ -10443,19 +10445,32 @@ GetPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Est
   Fmax <- FishMort[which(YPRResults==YPRmax)] # fishing mortality at ypr maximum
   FmaxeqCatch <- FishMort[which(Eq_CatchResults==maxeqCatch)] # fishing mortality at maxeqCatch
 
-  # calc FMSY
-  F_MSY=FmaxeqCatch
-  x=which(FishMort==F_MSY)
+  # Calculate biological reference points
+  # assuming B_thresh=BMSY, B_lim=0.5BMSY and B_targ=1.2BMSY
+  # and F_thresh, F_lim and F_targ are values of F resulting in B_thresh, B_lim and B_targ, respectively
 
-  # calc fem biomass ratio, at BMSY, 0.5BMSY and 1.2BMSY
-  if (ReprodPattern == 1) { # gonochoristic species
+  # gonochoristic species or considering sex ratio effect on egg fertilisation rate
+  if (ReprodPattern == 1 | !is.na(EggFertParam)) {
+    F_MSY=FmaxeqCatch
+    x=which(FishMort==F_MSY)
     BMSY_Thresh=Eq_FemRelSpBiomResults[x]
-  }
-  if (ReprodPattern > 1) { # hermaphroditic species
+    BMSY_Lim=0.5*BMSY_Thresh
+    x=which.min(abs(Eq_FemRelSpBiomResults - BMSY_Lim))
+    F_Lim = FishMort[x]
+    BMSY_Targ=1.2*BMSY_Thresh
+    x=which.min(abs(Eq_FemRelSpBiomResults - BMSY_Targ))
+    F_Targ = FishMort[x]
+  } else { # hermaphroditic species and not considering sex ratio effect on egg fertilisation rate
+    F_MSY=FmaxeqCatch
+    x=which(FishMort==F_MSY)
     BMSY_Thresh=Eq_CombSexRelSpBiomResults[x]
+    BMSY_Lim=0.5*BMSY_Thresh
+    x=which.min(abs(Eq_CombSexRelSpBiomResults - BMSY_Lim))
+    F_Lim = FishMort[x]
+    BMSY_Targ=1.2*BMSY_Thresh
+    x=which.min(abs(Eq_CombSexRelSpBiomResults - BMSY_Targ))
+    F_Targ = FishMort[x]
   }
-  BMSY_Lim=0.5*BMSY_Thresh
-  BMSY_Targ=1.2*BMSY_Thresh
 
   # get results for current F
   FMort = Current_F
@@ -10524,9 +10539,13 @@ GetPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Est
                  FmaxeqCatch = FmaxeqCatch,
                  Fmax = Fmax,
                  F_MSY = F_MSY,
-                 BMSY_Targ=BMSY_Targ,
-                 BMSY_Thresh=BMSY_Thresh,
-                 BMSY_Lim=BMSY_Lim,
+                 BMSY = BMSY_Thresh,
+                 F_Targ = F_Targ,
+                 F_Thresh = F_MSY,
+                 F_Lim = F_Lim,
+                 BMSY_Targ = BMSY_Targ,
+                 BMSY_Thresh = BMSY_Thresh,
+                 BMSY_Lim = BMSY_Lim,
                  FishMort = FishMort,
                  YPRResults = YPRResults,
                  Eq_CatchResults = Eq_CatchResults,
@@ -10946,19 +10965,32 @@ GetPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
   Fmax <- FishMort[which(YPRResults==YPRmax)] # fishing mortality at ypr maximum
   FmaxeqCatch <- FishMort[which(Eq_CatchResults==maxeqCatch)] # fishing mortality at maxeqCatch
 
-  # calc FMSY
-  F_MSY=FmaxeqCatch
-  x=which(FishMort==F_MSY)
-  # calc fem biomass ratio, at BMSY, 0.5BMSY and 1.2BMSY
+  # Calculate biological reference points
+  # assuming B_thresh=BMSY, B_lim=0.5BMSY and B_targ=1.2BMSY
+  # and F_thresh, F_lim and F_targ are values of F resulting in B_thresh, B_lim and B_targ, respectively
 
-  if (ReprodPattern == 1) { # gonochoristic species
+  # gonochoristic species or considering sex ratio effect on egg fertilisation rate
+  if (ReprodPattern == 1 | !is.na(EggFertParam)) {
+    F_MSY=FmaxeqCatch
+    x=which(FishMort==F_MSY)
     BMSY_Thresh=Eq_FemRelSpBiomResults[x]
-  }
-  if (ReprodPattern > 1) { # hermaphroditic species
+    BMSY_Lim=0.5*BMSY_Thresh
+    x=which.min(abs(Eq_FemRelSpBiomResults - BMSY_Lim))
+    F_Lim = FishMort[x]
+    BMSY_Targ=1.2*BMSY_Thresh
+    x=which.min(abs(Eq_FemRelSpBiomResults - BMSY_Targ))
+    F_Targ = FishMort[x]
+  } else { # hermaphroditic species and not considering sex ratio effect on egg fertilisation rate
+    F_MSY=FmaxeqCatch
+    x=which(FishMort==F_MSY)
     BMSY_Thresh=Eq_CombSexRelSpBiomResults[x]
+    BMSY_Lim=0.5*BMSY_Thresh
+    x=which.min(abs(Eq_CombSexRelSpBiomResults - BMSY_Lim))
+    F_Lim = FishMort[x]
+    BMSY_Targ=1.2*BMSY_Thresh
+    x=which.min(abs(Eq_CombSexRelSpBiomResults - BMSY_Targ))
+    F_Targ = FishMort[x]
   }
-  BMSY_Lim=0.5*BMSY_Thresh
-  BMSY_Targ=1.2*BMSY_Thresh
 
   # get results for current F
   FMort = Current_F
@@ -11011,9 +11043,13 @@ GetPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
                  Eq_MalRelSpBiom = Res2$Eq_MalRelSpBiom,
                  Eq_CombSexRelSpBiom = Res2$Eq_CombSexRelSpBiom,
                  F_MSY = F_MSY,
-                 BMSY_Targ=BMSY_Targ,
-                 BMSY_Thresh=BMSY_Thresh,
-                 BMSY_Lim=BMSY_Lim,
+                 BMSY = BMSY_Thresh,
+                 F_Targ = F_Targ,
+                 F_Thresh = F_MSY,
+                 F_Lim = F_Lim,
+                 BMSY_Targ = BMSY_Targ,
+                 BMSY_Thresh = BMSY_Thresh,
+                 BMSY_Lim = BMSY_Lim,
                  maxeqCatch = maxeqCatch,
                  FmaxeqCatch = FmaxeqCatch,
                  FishMort = FishMort,
