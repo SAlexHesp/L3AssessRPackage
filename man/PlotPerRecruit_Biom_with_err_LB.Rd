@@ -205,7 +205,7 @@ EstGearSelAtLen <- data.frame(EstFemGearSelAtLen=NA,
 ret_Pmax <- c(1.0, 1.0) # maximum retention, values lower than 1 imply discarding of fish above MLL
 ret_L50 <- c(250, 250) # females, males - Logistic fish retention at length parameters
 ret_L95 <- c(300, 300) # females, males - Logistic fish retention at length parameters
-EstRetenAtLen <- data.frame(EsFemtRetenAtLen=NA,
+EstRetenAtLen <- data.frame(EstFemRetenAtLen=NA,
                             EstMalRetenAtLen=NA)
 DiscMort <- 0.25 # discard mortality (e.g. 50\% released fish die = 0.5)
 SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker

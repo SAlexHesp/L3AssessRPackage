@@ -37,16 +37,18 @@ This function provides an estimate of total mortality, applying the Chapman & Ro
 estimator, with associated 95 percent confidence limits. Additional variables are returned for plotting
 }
 \examples{
+# simulate data
 set.seed(123)
 MinAge = 1
 MaxAge = 40
+Ages = MinAge:MaxAge
 NatMort <- exp(1.46 - (1.01 * (log(MaxAge)))) # i.e. Hoenig's (1983) eqn for fish
 FMort = 0.1
 ZMort = FMort + NatMort
 SelA50 = 6
 SelA95 = 8
-SampleSize = 1000 # required number of fish for age sample
+SampleSize = 1000 # required sample size. For 2 sex model, same sample size generated for each sex.
 Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
-ObsAgeFreq = unlist(as.vector(Res$CatchSample))
-res=GetChapmanRobsonMortalityResults(RecAssump=0, SpecRecAge=NA, MinAge, MaxAge, ObsAgeFreq)
+ObsAgeFreq = Res$CatchSample
+res=GetChapmanRobsonMortalityResults(RecAssump=1, SpecRecAge=NA, MinAge, MaxAge, ObsAgeFreq)
 }

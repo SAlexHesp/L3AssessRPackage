@@ -3,7 +3,7 @@
     "path": "~/L3AssessRPackage/R/L3Analyses.R",
     "project_path": "R/L3Analyses.R",
     "type": "r_source",
-    "hash": "3302367377",
+    "hash": "3833377102",
     "contents": "",
     "dirty": false,
     "created": 1687587607495.0,
@@ -12,15 +12,15 @@
     "properties": {
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "12617,0",
-        "scrollLine": "12590"
+        "cursorPosition": "2573,39",
+        "scrollLine": "2547"
     },
     "folds": "",
-    "lastKnownWriteTime": 1710922681,
+    "lastKnownWriteTime": 1712373950,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1710922681,
+    "last_content_update": 1712373950,
     "read_only": false,
     "read_only_alternatives": []
 }

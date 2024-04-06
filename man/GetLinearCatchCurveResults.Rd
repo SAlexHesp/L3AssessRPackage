@@ -37,6 +37,7 @@ the linear catch curve analysis, is calculated given a specified minimum frequen
 data using the lm function
 }
 \examples{
+# simulate data
 set.seed(123)
 MinAge = 1
 MaxAge = 40
@@ -46,8 +47,8 @@ FMort = 0.1
 ZMort = FMort + NatMort
 SelA50 = 6
 SelA95 = 8
-SampleSize = 1000 # required number of fish for age sample
+SampleSize = 1000 # required sample size. For 2 sex model, same sample size generated for each sex.
 Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
-ObsAgeFreq = unlist(as.vector(Res$CatchSample))
+ObsAgeFreq = Res$CatchSample
 res=GetLinearCatchCurveResults(RecAssump=0, SpecRecAge=NA, MinFreq=1, Ages, ObsAgeFreq)
 }

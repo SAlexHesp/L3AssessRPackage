@@ -189,11 +189,11 @@
        } # y < 0
      } else {          #(b == 0)
        # Eqn(17)
-       # First, let's work out tzero
 
-       tzero = t1 - (y1 ^ b) * (t2 - t1) / (y2 ^ b - y1 ^ b)
-       # cat("SchnuteGrowthfunction: 1 Age",Age,"tzero",tzero,'\n')
-       if (Age < tzero) {
+       # First, let's work out tzero
+       # tzero = t1 - (y1 ^ b) * (t2 - t1) / (y2 ^ b - y1 ^ b)
+       # if (Age < tzero) {
+       if (Age < 0) {
          y = 0
        } else {
          v = (y1 ^ b + (y2 ^ b - y1 ^ b) * (Age - t1) / (t2 - t1))
@@ -212,20 +212,17 @@
        # Eqn(15)
 
        # First. let's work out tzero
-       if (t1 == 0 & y1 == 0) { # i.e. if t1 is set to zero, and y1 also set to zero
-         tzero = 0
-       } else {
-         if (1 + (y1 ^ b) * (1 - exp(-a * (t2 - t1))) / (y2 ^ b - y1 ^ b) <= 0) {
-           tzero = t1 - log(1E-4) / a
-         } else {
-           tzero = t1 - log(1 + (y1 ^ b) * (1 - exp(-a * (t2 - t1))) / (y2 ^ b - y1 ^ b)) / a
-         }
-         if (is.nan(tzero)) {
-           cat("SchnuteGrowthfunction: Problem calculating tzero",'\n')
-         }
-       }
-       # cat("SchnuteGrowthfunction: 2 Age",Age,"tzero",tzero,'\n')
-       if (Age < tzero) {
+       # if (t1 == 0 & y1 == 0) { # i.e. if t1 is set to zero, and y1 also set to zero
+       #   tzero = 0
+       # } else {
+       #   if (1 + (y1 ^ b) * (1 - exp(-a * (t2 - t1))) / (y2 ^ b - y1 ^ b) <= 0) {
+       #     tzero = t1 - log(1E-4) / a
+       #   } else {
+       #     tzero = t1 - log(1 + (y1 ^ b) * (1 - exp(-a * (t2 - t1))) / (y2 ^ b - y1 ^ b)) / a
+       #   }
+       # }
+       # if (Age < tzero) {
+       if (Age < 0) {
          y = 0
        } else {
          v = (y1 ^ b + (y2 ^ b - y1 ^ b)
@@ -234,7 +231,6 @@
        } # else
      } # b == 0
    }  # a != 0
-   # cat("SchnuteGrowthfunction: 3",'\n')
    return(y)
  } # end function
 
@@ -2543,6 +2539,7 @@ CalcExpRetCatchPropLengthGivenIntAge <- function(MinAge, MaxAge, midpt, RetCatch
 #' catch frequency at age (CatchSample)
 #'
 #' @examples
+#' # simulate data
 #' set.seed(123)
 #' MinAge = 1
 #' MaxAge = 40
@@ -2550,33 +2547,71 @@ CalcExpRetCatchPropLengthGivenIntAge <- function(MinAge, MaxAge, midpt, RetCatch
 #' NatMort <- exp(1.46 - (1.01 * (log(MaxAge)))) # i.e. Hoenig's (1983) eqn for fish
 #' FMort = 0.1
 #' ZMort = FMort + NatMort
+#' # single sex
 #' SelA50 = 6
 #' SelA95 = 8
-#' SampleSize = 1000 # required number of fish for age sample
+#' # # two sexes
+#' # # (i.e. assuming same natural and fishing mortality,
+#' # # but potentially different age-based selectivity due to different growth)
+#' # SelA50 = c(6,5.5)
+#' # SelA95 = c(8,7.5)
+#' SampleSize = 1000 # required sample size. For 2 sex model, same sample size generated for each sex.
 #' Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
-#' ObsAgeFreq = unlist(as.vector(Res$CatchSample))
+#' ObsAgeFreq = Res$CatchSample
 #' @export
 SimAgeFreqData <- function(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort) {
 
   Ages = MinAge:MaxAge
-  SelAtAge = 1 / (1 + exp(-log(19) * (Ages - SelA50) / (SelA95 - SelA50)))
-  FAtAge = SelAtAge * FMort
-  ZAtAge = NatMort + FAtAge
-  N = numeric(length(Ages))
 
-  k=1
-  N[k] = 1
-  for (i in seq(MinAge+1,MaxAge,1)) {
-    k=k+1
-    if (i < MaxAge) {
-      N[k] = N[k-1] * exp(-ZAtAge[k-1])
-    } else {
-      N[k] = N[k-1] * exp(-ZAtAge[k-1] / (1 - exp(-ZAtAge[k])))
+  if (length(SelA50)==1) { # single sex
+
+    SelAtAge = 1 / (1 + exp(-log(19) * (Ages - SelA50) / (SelA95 - SelA50)))
+    FAtAge = SelAtAge * FMort
+    ZAtAge = NatMort + FAtAge
+    k=1
+    N <- rep(0,length(Ages))
+    N[k] = 1
+    for (i in seq(MinAge+1,MaxAge,1)) {
+      k=k+1
+      if (i < MaxAge) {
+        N[k] = N[k-1] * exp(-ZAtAge[k-1])
+      } else {
+        N[k] = N[k-1] * exp(-ZAtAge[k-1] / (1 - exp(-ZAtAge[k])))
+      }
     }
+    CatchAtAge = N * (FAtAge / ZAtAge) * (1 - exp(-ZAtAge)) # catch at age
+    PropAtAge = CatchAtAge / sum(CatchAtAge)
+    CatchSample = unlist(as.vector(rmultinom(n=1, size=SampleSize, prob=PropAtAge)))
+
+  } else { # separate sex
+    EmptyFrame <- data.frame(matrix(nrow = 2, ncol = length(Ages)))
+    colnames(EmptyFrame) <- Ages;
+    SelAtAge <- EmptyFrame; N <- EmptyFrame
+    SelAtAge[1,] = 1 / (1 + exp(-log(19) * (Ages - SelA50[1]) / (SelA95[1] - SelA50[1])))
+    SelAtAge[2,] = 1 / (1 + exp(-log(19) * (Ages - SelA50[2]) / (SelA95[2] - SelA50[2])))
+    FAtAge = SelAtAge * FMort
+    ZAtAge = NatMort + FAtAge
+    N[1,1] = 1; N[2,1] = 1
+    for (s in 1:2) {
+      k=1
+      for (i in seq(MinAge+1,MaxAge,1)) {
+        k=k+1
+        if (i < MaxAge) {
+          N[s,k] = N[s,k-1] * exp(-ZAtAge[s,k-1])
+        } else {
+          N[s,k] = N[s,k-1] * exp(-ZAtAge[s,k-1] / (1 - exp(-ZAtAge[s,k])))
+        }
+      }
+    }
+    CatchAtAge = N * (FAtAge / ZAtAge) * (1 - exp(-ZAtAge)) # catch at age
+    PropAtAge = CatchAtAge / sum(CatchAtAge)
+    CatchSample_Fem = unlist(as.vector(rmultinom(n=1, size=SampleSize, prob=PropAtAge[1,])))
+    CatchSample_Mal = unlist(as.vector(rmultinom(n=1, size=SampleSize, prob=PropAtAge[2,])))
+    CatchSample <- data.frame(CatchSample_Fem = CatchSample_Fem,
+                              CatchSample_Mal = CatchSample_Mal)
   }
-  CatchAtAge = N * (FAtAge / ZAtAge) * (1 - exp(-ZAtAge)) # catch at age
-  PropAtAge = CatchAtAge / sum(CatchAtAge)
-  CatchSample = rmultinom(n=1, size=SampleSize, prob=PropAtAge)
+
+
 
   results = list(Ages=Ages,
                  SelAtAge=SelAtAge,
@@ -7433,6 +7468,7 @@ PlotLenConvCatchCurveResults <- function(MaxAge, ModelType, GrowthParams, Refnce
 #' @return age at full recruitment into the fishery (RecAge)
 #'
 #' @examples
+#' # simulate data
 #' set.seed(123)
 #' MinAge = 1
 #' MaxAge = 40
@@ -7442,9 +7478,9 @@ PlotLenConvCatchCurveResults <- function(MaxAge, ModelType, GrowthParams, Refnce
 #' ZMort = FMort + NatMort
 #' SelA50 = 6
 #' SelA95 = 8
-#' SampleSize = 500 # required number of fish for age sample
+#' SampleSize = 1000 # required sample size. For 2 sex model, same sample size generated for each sex.
 #' Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
-#' ObsAgeFreq = unlist(as.vector(Res$CatchSample))
+#' ObsAgeFreq = Res$CatchSample
 #' CalcRecruitmentAge(RecAssump=0, Ages, ObsAgeFreq)
 CalcRecruitmentAge <- function(RecAssump, Ages, ObsAgeFreq) {
 
@@ -7483,6 +7519,7 @@ CalcRecruitmentAge <- function(RecAssump, Ages, ObsAgeFreq) {
 #' @return oldest age to be included for linear catch curve analysis (LastAgeForLinearCC)
 #'
 #' @examples
+#' # simulate data
 #' set.seed(123)
 #' MinAge = 1
 #' MaxAge = 40
@@ -7492,9 +7529,9 @@ CalcRecruitmentAge <- function(RecAssump, Ages, ObsAgeFreq) {
 #' ZMort = FMort + NatMort
 #' SelA50 = 6
 #' SelA95 = 8
-#' SampleSize = 500 # required number of fish for age sample
+#' SampleSize = 1000 # required sample size. For 2 sex model, same sample size generated for each sex.
 #' Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
-#' ObsAgeFreq = unlist(as.vector(Res$CatchSample))
+#' ObsAgeFreq = Res$CatchSample
 #' RecAge = CalcRecruitmentAge(RecAssump=0, Ages, ObsAgeFreq)
 #' CalcLastAgeForLinearCatchCurve(MinFreq=1, RecAge, Ages, ObsAgeFreq)
 CalcLastAgeForLinearCatchCurve <- function (MinFreq, RecAge, Ages, ObsAgeFreq)
@@ -7539,6 +7576,7 @@ CalcLastAgeForLinearCatchCurve <- function (MinFreq, RecAge, Ages, ObsAgeFreq)
 #' confidence limits (EstFreq, EstFreq_Zlow, EstFreq_Zup)
 #'
 #' @examples
+#' # simulate data
 #' set.seed(123)
 #' MinAge = 1
 #' MaxAge = 40
@@ -7548,9 +7586,9 @@ CalcLastAgeForLinearCatchCurve <- function (MinFreq, RecAge, Ages, ObsAgeFreq)
 #' ZMort = FMort + NatMort
 #' SelA50 = 6
 #' SelA95 = 8
-#' SampleSize = 1000 # required number of fish for age sample
+#' SampleSize = 1000 # required sample size. For 2 sex model, same sample size generated for each sex.
 #' Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
-#' ObsAgeFreq = unlist(as.vector(Res$CatchSample))
+#' ObsAgeFreq = Res$CatchSample
 #' res=GetLinearCatchCurveResults(RecAssump=0, SpecRecAge=NA, MinFreq=1, Ages, ObsAgeFreq)
 #' @export
 GetLinearCatchCurveResults <- function(RecAssump, SpecRecAge, MinFreq, Ages, ObsAgeFreq) {
@@ -7655,18 +7693,20 @@ GetLinearCatchCurveResults <- function(RecAssump, SpecRecAge, MinFreq, Ages, Obs
 #' calculated in analysis (CR_T)
 #'
 #' @examples
+#' # simulate data
 #' set.seed(123)
 #' MinAge = 1
 #' MaxAge = 40
+#' Ages = MinAge:MaxAge
 #' NatMort <- exp(1.46 - (1.01 * (log(MaxAge)))) # i.e. Hoenig's (1983) eqn for fish
 #' FMort = 0.1
 #' ZMort = FMort + NatMort
 #' SelA50 = 6
 #' SelA95 = 8
-#' SampleSize = 1000 # required number of fish for age sample
+#' SampleSize = 1000 # required sample size. For 2 sex model, same sample size generated for each sex.
 #' Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
-#' ObsAgeFreq = unlist(as.vector(Res$CatchSample))
-#' res=GetChapmanRobsonMortalityResults(RecAssump=0, SpecRecAge=NA, MinAge, MaxAge, ObsAgeFreq)
+#' ObsAgeFreq = Res$CatchSample
+#' res=GetChapmanRobsonMortalityResults(RecAssump=1, SpecRecAge=NA, MinAge, MaxAge, ObsAgeFreq)
 #' @export
 GetChapmanRobsonMortalityResults <- function(RecAssump, SpecRecAge, MinAge, MaxAge, ObsAgeFreq)
 {
@@ -7774,11 +7814,6 @@ Calculate_NLL_LogisticCatchCurve <- function(params) {
   SelA50 = exp(params[2])
   SelDelta = exp(params[3])
   SelA95 = SelA50 + SelDelta
-  # inverse logit transformed value
-  if (length(params)==4) {
-    temp = params[4]
-    DM_theta = 1/(1+exp(-temp));
-  }
 
   SelAtAge = rep(0,length(Ages))
   SelAtAge = 1 / (1 + exp(-log(19) * (Ages - SelA50) / (SelA95 - SelA50)))
@@ -7814,6 +7849,10 @@ Calculate_NLL_LogisticCatchCurve <- function(params) {
 
   # calculate Dirichlet multinomial negative log-likelihood
   if (length(params)==4) {
+    # inverse logit transformed value
+    temp = params[4]
+    DM_theta = 1/(1+exp(-temp));
+
     SampleSize = sum(ObsAgeFreq)
     nAges = length(ObsAgeFreq)
     ObsPropAtAge = ObsAgeFreq/SampleSize
@@ -7866,7 +7905,6 @@ Calculate_NLL_LogisticCatchCurve <- function(params) {
 #' object (Estparams), Dirichlet multinomial effective sample size estimate (EffSampSize), if using this
 #' objective function
 #' @examples
-#' # fit logistic catch cuve model using multinomial likelihood
 #' # simulate data
 #' set.seed(123)
 #' MinAge = 1
@@ -7877,9 +7915,9 @@ Calculate_NLL_LogisticCatchCurve <- function(params) {
 #' ZMort = FMort + NatMort
 #' SelA50 = 6
 #' SelA95 = 8
-#' SampleSize = 1000 # required number of fish for age sample
+#' SampleSize = 1000 # required sample size. For 2 sex model, same sample size generated for each sex.
 #' Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
-#' ObsAgeFreq = unlist(as.vector(Res$CatchSample))
+#' ObsAgeFreq = Res$CatchSample
 #' # fit model
 #' Init_FMort = 0.2
 #' Init_SelA50 = 3
@@ -7953,12 +7991,6 @@ GetLogisticCatchCurveResults <- function (params, NatMort, Ages, ObsAgeFreq)
   EstSelDelta = c(exp(nlmb$par[3]), exp(nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
   EstSelA95 = EstSelA50[1] + EstSelDelta[1]
 
-  # inverse logit transformed value for Dirichlet multinomial theta parameter
-  if (length(params)==4) {
-    temp = c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4])
-    EstTheta = 1/(1+exp(-temp));
-  }
-
   SelAtAge = rep(0, length(Ages))
   SelAtAge = 1/(1 + exp(-log(19) * (Ages - EstSelA50[1])/(EstSelA95[1] - EstSelA50[1])))
   FAtAge = SelAtAge * EstFMort[1]
@@ -7969,6 +8001,11 @@ GetLogisticCatchCurveResults <- function (params, NatMort, Ages, ObsAgeFreq)
                             EstSelDelta = round(EstSelDelta, 3)))
   }
   if (length(params)==4) {
+
+    # inverse logit transformed value for Dirichlet multinomial theta parameter
+    temp = c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4])
+    EstTheta = 1/(1+exp(-temp));
+
     ParamEst = t(data.frame(FMort = round(EstFMort, 3), SelA50 = round(EstSelA50,3),
                             EstSelDelta = round(EstSelDelta, 3), Theta = round(EstTheta, 3)))
   }
@@ -8092,7 +8129,7 @@ GetLogisticCatchCurveResults <- function (params, NatMort, Ages, ObsAgeFreq)
 #' @return plot of expected vs observed proportions at age
 #'
 #' @examples
-#' # Simulate data
+#' # simulate data
 #' set.seed(123)
 #' MinAge = 1
 #' MaxAge = 40
@@ -8102,10 +8139,9 @@ GetLogisticCatchCurveResults <- function (params, NatMort, Ages, ObsAgeFreq)
 #' ZMort = FMort + NatMort
 #' SelA50 = 6
 #' SelA95 = 8
-#' SampleSize = 1000 # required number of fish for age sample
+#' SampleSize = 1000 # required sample size. For 2 sex model, same sample size generated for each sex.
 #' Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
-#' ObsAgeFreq = unlist(as.vector(Res$CatchSample))
-#' # Specify catch curve model and required inputs for that model
+#' ObsAgeFreq = Res$CatchSample#' # Specify catch curve model and required inputs for that model
 #' # CatchCurveModel = 1 # Chapman Robson
 #' # NatMort = NA # Chapman Robson
 #' # RecAssump = 1 # Chapman Robson
@@ -8121,7 +8157,7 @@ GetLogisticCatchCurveResults <- function (params, NatMort, Ages, ObsAgeFreq)
 #' Init_FMort = 0.2
 #' Init_SelA50 = 5
 #' Init_SelA95 = 7
-#' ln_params = log(c(Init_FMort, Init_SelA50, SelA95))
+#' params = log(c(Init_FMort, Init_SelA50, SelA95))
 #' PlotAgeBasedCatchCurveResults_NormalSpace(RecAssump, SpecRecAge=NA, MinFreq, MinAge, MaxAge, NatMort,
 #'                                           ObsAgeFreq, CatchCurveModel, MainLabel=NA,
 #'                                           xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA,
@@ -8156,7 +8192,7 @@ PlotAgeBasedCatchCurveResults_NormalSpace <- function(RecAssump, SpecRecAge, Min
   }
   # logistic age-based selectivity
   if (CatchCurveModel == 3) {
-    Res = GetLogisticCatchCurveResults(ln_params, NatMort, Ages, ObsAgeFreq)
+    Res = GetLogisticCatchCurveResults(params, NatMort, Ages, ObsAgeFreq)
     if (is.na(MainLabel)) MainLabel = "Logistic selectivity"
   }
 
@@ -8249,7 +8285,7 @@ PlotAgeBasedCatchCurveResults_NormalSpace <- function(RecAssump, SpecRecAge, Min
 #' @return plot of expected vs observed proportions at age
 #'
 #' @examples
-#' # Simulate data
+#' # simulate data
 #' set.seed(123)
 #' MinAge = 1
 #' MaxAge = 40
@@ -8259,9 +8295,9 @@ PlotAgeBasedCatchCurveResults_NormalSpace <- function(RecAssump, SpecRecAge, Min
 #' ZMort = FMort + NatMort
 #' SelA50 = 6
 #' SelA95 = 8
-#' SampleSize = 1000 # required number of fish for age sample
+#' SampleSize = 1000 # required sample size. For 2 sex model, same sample size generated for each sex.
 #' Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
-#' ObsAgeFreq = unlist(as.vector(Res$CatchSample))
+#' ObsAgeFreq = Res$CatchSample
 #' # Specify catch curve model and required inputs for that model
 #' # CatchCurveModel = 1 # Chapman Robson
 #' # NatMort = NA # Chapman Robson
@@ -8278,7 +8314,7 @@ PlotAgeBasedCatchCurveResults_NormalSpace <- function(RecAssump, SpecRecAge, Min
 #' Init_FMort = 0.2
 #' Init_SelA50 = 5
 #' Init_SelA95 = 7
-#' ln_params = log(c(Init_FMort, Init_SelA50, SelA95))
+#' params = log(c(Init_FMort, Init_SelA50, SelA95))
 #' PlotAgeBasedCatchCurveResults_LogSpace(RecAssump, SpecRecAge=NA, MinFreq, MinAge, MaxAge, NatMort,
 #'                                        ObsAgeFreq, CatchCurveModel, MainLabel=NA,
 #'                                        xaxis_lab=NA, yaxis_lab=NA, ymin=NA, xmax=NA, xint=NA,
@@ -8314,7 +8350,7 @@ PlotAgeBasedCatchCurveResults_LogSpace <- function(RecAssump, SpecRecAge, MinFre
   }
   # logistic age-based selectivity
   if (CatchCurveModel == 3) {
-    Res = GetLogisticCatchCurveResults(ln_params, NatMort, Ages, ObsAgeFreq)
+    Res = GetLogisticCatchCurveResults(params, NatMort, Ages, ObsAgeFreq)
     if (is.na(MainLabel)) MainLabel = "Logistic selectivity"
   }
 
@@ -9938,7 +9974,7 @@ CalcFishingMortalityAtLen <- function(FMort, DiscMort, FemSelDiscAtLen, MalSelDi
 #' ret_Pmax <- c(1.0, 1.0) # maximum retention, values lower than 1 imply discarding of fish above MLL
 #' ret_L50 <- c(250, 250) # females, males - Logistic fish retention at length parameters
 #' ret_L95 <- c(300, 300) # females, males - Logistic fish retention at length parameters
-#' EstRetenAtLen <- data.frame(EsFemtRetenAtLen=NA,
+#' EstRetenAtLen <- data.frame(EstFemRetenAtLen=NA,
 #'                             EstMalRetenAtLen=NA)
 #' DiscMort <- 0.25 # discard mortality (e.g. 50% released fish die = 0.5)
 #' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
@@ -9993,7 +10029,7 @@ CalcFishingMortalityAtLen <- function(FMort, DiscMort, FemSelDiscAtLen, MalSelDi
 #' ret_Pmax <- c(1.0, 1.0) # maximum retention, values lower than 1 imply discarding of fish above MLL
 #' ret_L50 <- c(499, 499) # females, males - Logistic fish retention at length parameters
 #' ret_L95 <- c(500, 500) # females, males - Logistic fish retention at length parameters
-#' EstRetenAtLen <- data.frame(EsFemtRetenAtLen=NA,
+#' EstRetenAtLen <- data.frame(EstFemRetenAtLen=NA,
 #'                             EstMalRetenAtLen=NA)
 #' DiscMort <- 0.25 # discard mortality (e.g. 50% released fish die = 0.5)
 #' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
@@ -10683,7 +10719,7 @@ GetPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Est
 #' ret_Pmax <- c(1.0, 1.0) # maximum retention, values lower than 1 imply discarding of fish above MLL
 #' ret_L50 <- c(250, 250) # females, males - Logistic fish retention at length parameters
 #' ret_L95 <- c(300, 300) # females, males - Logistic fish retention at length parameters
-#' EstRetenAtLen <- data.frame(EsFemtRetenAtLen=NA,
+#' EstRetenAtLen <- data.frame(EstFemRetenAtLen=NA,
 #'                             EstMalRetenAtLen=NA)
 #' DiscMort <- 0.25 # discard mortality (e.g. 50% released fish die = 0.5)
 #' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
@@ -10738,7 +10774,7 @@ GetPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Est
 #' ret_Pmax <- c(1.0, 1.0) # maximum retention, values lower than 1 imply discarding of fish above MLL
 #' ret_L50 <- c(499, 499) # females, males - Logistic fish retention at length parameters
 #' ret_L95 <- c(500, 500) # females, males - Logistic fish retention at length parameters
-#' EstRetenAtLen <- data.frame(EsFemtRetenAtLen=NA,
+#' EstRetenAtLen <- data.frame(EstFemRetenAtLen=NA,
 #'                             EstMalRetenAtLen=NA)
 #' DiscMort <- 0.25 # discard mortality (e.g. 50% released fish die = 0.5)
 #' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
@@ -11795,7 +11831,7 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
 #' ret_Pmax <- c(1.0, 1.0) # maximum retention, values lower than 1 imply discarding of fish above MLL
 #' ret_L50 <- c(250, 250) # females, males - Logistic fish retention at length parameters
 #' ret_L95 <- c(300, 300) # females, males - Logistic fish retention at length parameters
-#' EstRetenAtLen <- data.frame(EsFemtRetenAtLen=NA,
+#' EstRetenAtLen <- data.frame(EstFemRetenAtLen=NA,
 #'                             EstMalRetenAtLen=NA)
 #' DiscMort <- 0.25 # discard mortality (e.g. 50% released fish die = 0.5)
 #' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
@@ -11856,7 +11892,7 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
 #' ret_Pmax <- c(1.0, 1.0) # maximum retention, values lower than 1 imply discarding of fish above MLL
 #' ret_L50 <- c(499, 499) # females, males - Logistic fish retention at length parameters
 #' ret_L95 <- c(500, 500) # females, males - Logistic fish retention at length parameters
-#' EstRetenAtLen <- data.frame(EsFemtRetenAtLen=NA,
+#' EstRetenAtLen <- data.frame(EstFemRetenAtLen=NA,
 #'                             EstMalRetenAtLen=NA)
 #' DiscMort <- 0.25 # discard mortality (e.g. 50% released fish die = 0.5)
 #' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
@@ -12465,7 +12501,7 @@ PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
 #' ret_Pmax <- c(1.0, 1.0) # maximum retention, values lower than 1 imply discarding of fish above MLL
 #' ret_L50 <- c(250, 250) # females, males - Logistic fish retention at length parameters
 #' ret_L95 <- c(300, 300) # females, males - Logistic fish retention at length parameters
-#' EstRetenAtLen <- data.frame(EsFemtRetenAtLen=NA,
+#' EstRetenAtLen <- data.frame(EstFemRetenAtLen=NA,
 #'                             EstMalRetenAtLen=NA)
 #' DiscMort <- 0.25 # discard mortality (e.g. 50% released fish die = 0.5)
 #' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
@@ -12767,7 +12803,7 @@ PlotPerRecruit_ExpCatchSizeDistns_LB <- function(MaxModelAge, TimeStep, lbnd, ub
 #' ret_Pmax <- c(1.0, 1.0) # maximum retention, values lower than 1 imply discarding of fish above MLL
 #' ret_L50 <- c(250, 250) # females, males - Logistic age fish retention at age parameters
 #' ret_L95 <- c(300, 300) # females, males - Logistic age fish retention at age parameters
-#' EstRetenAtLen <- data.frame(EsFemtRetenAtLen=NA,
+#' EstRetenAtLen <- data.frame(EstFemRetenAtLen=NA,
 #'                             EstMalRetenAtLen=NA)
 #' DiscMort <- 0.25 # discard mortality (e.g. 50% released fish die = 0.5)
 #' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
@@ -13000,7 +13036,7 @@ PlotValuePerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, mid
 #' ret_Pmax <- c(1.0, 1.0) # maximum retention, values lower than 1 imply discarding of fish above MLL
 #' ret_L50 <- c(250, 250) # females, males - Logistic age fish retention at age parameters
 #' ret_L95 <- c(300, 300) # females, males - Logistic age fish retention at age parameters
-#' EstRetenAtLen <- data.frame(EsFemtRetenAtLen=NA,
+#' EstRetenAtLen <- data.frame(EstFemRetenAtLen=NA,
 #'                             EstMalRetenAtLen=NA)
 #' DiscMort <- 0.25 # discard mortality (e.g. 50% released fish die = 0.5)
 #' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
@@ -13402,7 +13438,7 @@ PlotPerRecruit_Biom_no_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzer
 #' ret_Pmax <- c(1.0, 1.0) # maximum retention, values lower than 1 imply discarding of fish above MLL
 #' ret_L50 <- c(250, 250) # females, males - Logistic fish retention at length parameters
 #' ret_L95 <- c(300, 300) # females, males - Logistic fish retention at length parameters
-#' EstRetenAtLen <- data.frame(EsFemtRetenAtLen=NA,
+#' EstRetenAtLen <- data.frame(EstFemRetenAtLen=NA,
 #'                             EstMalRetenAtLen=NA)
 #' DiscMort <- 0.25 # discard mortality (e.g. 50% released fish die = 0.5)
 #' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
@@ -13837,7 +13873,7 @@ GetPerRecruitResults_AB_with_err <- function(MaxModelAge, TimeStep, Linf, vbK, t
 #' ret_Pmax <- c(1.0, 1.0) # maximum retention, values lower than 1 imply discarding of fish above MLL
 #' ret_L50 <- c(250, 250) # females, males - Logistic fish retention at length parameters
 #' ret_L95 <- c(300, 300) # females, males - Logistic fish retention at length parameters
-#' EstRetenAtLen <- data.frame(EsFemtRetenAtLen=NA,
+#' EstRetenAtLen <- data.frame(EstFemRetenAtLen=NA,
 #'                             EstMalRetenAtLen=NA)
 #' DiscMort <- 0.25 # discard mortality (e.g. 50% released fish die = 0.5)
 #' SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
@@ -14391,7 +14427,7 @@ PlotPerRecruit_Biom_with_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
 #' ret_Pmax <- c(1.0, 1.0) # maximum retention, values lower than 1 imply discarding of fish above MLL
 #' ret_L50 <- c(250, 250) # females, males - Logistic fish retention at length parameters
 #' ret_L95 <- c(300, 300) # females, males - Logistic fish retention at length parameters
-#' EstRetenAtLen <- data.frame(EsFemtRetenAtLen=NA,
+#' EstRetenAtLen <- data.frame(EstFemRetenAtLen=NA,
 #'                             EstMalRetenAtLen=NA)
 #' DiscMort <- 0.25 # discard mortality (e.g. 50% released fish die = 0.5)
 #' SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker

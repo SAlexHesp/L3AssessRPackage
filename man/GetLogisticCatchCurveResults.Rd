@@ -39,7 +39,6 @@ and associated 95 percent confidence limits and associated variance-covariance m
 using the MASS package
 }
 \examples{
-# fit logistic catch cuve model using multinomial likelihood
 # simulate data
 set.seed(123)
 MinAge = 1
@@ -50,9 +49,9 @@ FMort = 0.1
 ZMort = FMort + NatMort
 SelA50 = 6
 SelA95 = 8
-SampleSize = 1000 # required number of fish for age sample
+SampleSize = 1000 # required sample size. For 2 sex model, same sample size generated for each sex.
 Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
-ObsAgeFreq = unlist(as.vector(Res$CatchSample))
+ObsAgeFreq = Res$CatchSample
 # fit model
 Init_FMort = 0.2
 Init_SelA50 = 3

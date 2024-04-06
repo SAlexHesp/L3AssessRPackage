@@ -23,6 +23,7 @@ This function calculates the oldest age to be included in data for a linear catc
 according to a specified minimum frequency
 }
 \examples{
+# simulate data
 set.seed(123)
 MinAge = 1
 MaxAge = 40
@@ -32,9 +33,9 @@ FMort = 0.1
 ZMort = FMort + NatMort
 SelA50 = 6
 SelA95 = 8
-SampleSize = 500 # required number of fish for age sample
+SampleSize = 1000 # required sample size. For 2 sex model, same sample size generated for each sex.
 Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
-ObsAgeFreq = unlist(as.vector(Res$CatchSample))
+ObsAgeFreq = Res$CatchSample
 RecAge = CalcRecruitmentAge(RecAssump=0, Ages, ObsAgeFreq)
 CalcLastAgeForLinearCatchCurve(MinFreq=1, RecAge, Ages, ObsAgeFreq)
 }

@@ -63,7 +63,7 @@ plot of expected vs observed proportions at age
 This function produces plots of outputs of age-based catch curve analyses in normal space
 }
 \examples{
-# Simulate data
+# simulate data
 set.seed(123)
 MinAge = 1
 MaxAge = 40
@@ -73,10 +73,9 @@ FMort = 0.1
 ZMort = FMort + NatMort
 SelA50 = 6
 SelA95 = 8
-SampleSize = 1000 # required number of fish for age sample
+SampleSize = 1000 # required sample size. For 2 sex model, same sample size generated for each sex.
 Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
-ObsAgeFreq = unlist(as.vector(Res$CatchSample))
-# Specify catch curve model and required inputs for that model
+ObsAgeFreq = Res$CatchSample#' # Specify catch curve model and required inputs for that model
 # CatchCurveModel = 1 # Chapman Robson
 # NatMort = NA # Chapman Robson
 # RecAssump = 1 # Chapman Robson
@@ -92,7 +91,7 @@ MinFreq = NA # # Logistic selectivity
 Init_FMort = 0.2
 Init_SelA50 = 5
 Init_SelA95 = 7
-ln_params = log(c(Init_FMort, Init_SelA50, SelA95))
+params = log(c(Init_FMort, Init_SelA50, SelA95))
 PlotAgeBasedCatchCurveResults_NormalSpace(RecAssump, SpecRecAge=NA, MinFreq, MinAge, MaxAge, NatMort,
                                           ObsAgeFreq, CatchCurveModel, MainLabel=NA,
                                           xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA,

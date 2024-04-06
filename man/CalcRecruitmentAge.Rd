@@ -23,6 +23,7 @@ peak frequency, but if RecAssump=1, RecAge is set to one year above the age at
 peak frequency
 }
 \examples{
+# simulate data
 set.seed(123)
 MinAge = 1
 MaxAge = 40
@@ -32,9 +33,9 @@ FMort = 0.1
 ZMort = FMort + NatMort
 SelA50 = 6
 SelA95 = 8
-SampleSize = 500 # required number of fish for age sample
+SampleSize = 1000 # required sample size. For 2 sex model, same sample size generated for each sex.
 Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
-ObsAgeFreq = unlist(as.vector(Res$CatchSample))
+ObsAgeFreq = Res$CatchSample
 CalcRecruitmentAge(RecAssump=0, Ages, ObsAgeFreq)
 }
 \keyword{internal}
