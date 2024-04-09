@@ -11687,7 +11687,7 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
       ylims = Get_yaxis_scale(Res$FishMalToFemPropResults)
       ymax = ylims$ymax; yint = ylims$yint
       xmax = max(Res$FishMort)
-      x=which(Res$FishMort==Current_F)
+      x=which.min(abs(Res$FishMort - Current_F))
       plot(Res$FishMort,Res$FishMalToFemPropResults,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),
            col="blue",yaxt="n",xaxt="n",ylab="",xlab="")
       points(Current_F, Res$FishMalToFemPropResults[x], col="blue", pch=16)
@@ -12359,7 +12359,7 @@ PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
       ylims = Get_yaxis_scale(Res$FishMalToFemPropResults)
       ymax = ylims$ymax; yint = ylims$yint
       xmax = max(Res$FishMort)
-      x=which(Res$FishMort==Current_F)
+      x=which.min(abs(Res$FishMort - Current_F))
       plot(Res$FishMort,Res$FishMalToFemPropResults,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),
            col="blue",yaxt="n",xaxt="n",ylab="",xlab="")
       points(Current_F, Res$FishMalToFemPropResults[x], col="blue", pch=16)
