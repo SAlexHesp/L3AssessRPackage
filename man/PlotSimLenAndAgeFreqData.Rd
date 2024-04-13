@@ -48,7 +48,9 @@ RefnceAges = NA
 SimRes=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
                             SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 # plot data
-PlotOpt=0 # 0=all plots, 1=retained lengths at age, 2=retained plus discarded lengths at age, 3=length frequency, 6
+PlotOpt=0 # 0=all plots, 1=retained lengths at age and growth curves, 2=retained plus discard lengths at age
+# and growth curves, 3=retained plus discard length frequency, 4=retained plus discard age frequency,
+# 5=sex specific retained lengths at age and growth curves, 6=retained plus discard lengths at age and growth curves,
 # 7=female length frequency, 8=male length frequency, 9=female age frequency, 10=male age frequency,
 # 11=selectivity/retention, 12=F-at-age reten + disc, 13=F-at-age reten, 14=F-at-age disc
 PlotSimLenAndAgeFreqData(MaxAge, MaxLen, SimRes, PlotOpt)

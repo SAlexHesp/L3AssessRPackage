@@ -3999,7 +3999,9 @@ SimLenAndAgeFreqData <- function(SampleSize, MaxAge, TimeStep, NatMort, FishMort
 #' SimRes=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
 #'                             SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' # plot data
-#' PlotOpt=0 # 0=all plots, 1=retained lengths at age, 2=retained plus discarded lengths at age, 3=length frequency, 6
+#' PlotOpt=0 # 0=all plots, 1=retained lengths at age and growth curves, 2=retained plus discard lengths at age
+#' # and growth curves, 3=retained plus discard length frequency, 4=retained plus discard age frequency,
+#' # 5=sex specific retained lengths at age and growth curves, 6=retained plus discard lengths at age and growth curves,
 #' # 7=female length frequency, 8=male length frequency, 9=female age frequency, 10=male age frequency,
 #' # 11=selectivity/retention, 12=F-at-age reten + disc, 13=F-at-age reten, 14=F-at-age disc
 #' PlotSimLenAndAgeFreqData(MaxAge, MaxLen, SimRes, PlotOpt)
@@ -6937,7 +6939,7 @@ PlotAgeLengthCatchCurve_Pears_Resid <- function(params, RefnceAges, MLL, GrowthC
         }
       }
     }
-    mtext(yaxis_lab,side=2,cex=1.2,line=2.5)
+    mtext(yaxis_lab,side=2,cex=1.2,line=2.5, las=3)
     mtext(xaxis_lab,side=1,cex=1.2,line=2.5)
     AddAxesAndTickLabelsToPlot(xmin=0, xmax, xint, ymin=0, ymax, yint,
                                cexval=NA, cexaxisval=NA, lwdval=NA, lineval=NA, lasval=NA)
@@ -6965,7 +6967,7 @@ PlotAgeLengthCatchCurve_Pears_Resid <- function(params, RefnceAges, MLL, GrowthC
         }
       }
     }
-    mtext(yaxis_lab,side=2,cex=1.2,line=2.5)
+    mtext(yaxis_lab,side=2,cex=1.2,line=2.5, las=3)
     mtext(xaxis_lab,side=1,cex=1.2,line=2.5)
     AddAxesAndTickLabelsToPlot(xmin=0, xmax, xint, ymin=0, ymax, yint,
                                cexval=NA, cexaxisval=NA, lwdval=NA, lineval=NA, lasval=NA)
@@ -6990,7 +6992,7 @@ PlotAgeLengthCatchCurve_Pears_Resid <- function(params, RefnceAges, MLL, GrowthC
         }
       }
     }
-    mtext(yaxis_lab,side=2,cex=1.2,line=2.5)
+    mtext(yaxis_lab,side=2,cex=1.2,line=2.5, las=3)
     mtext(xaxis_lab,side=1,cex=1.2,line=2.5)
     AddAxesAndTickLabelsToPlot(xmin=0, xmax, xint, ymin=0, ymax, yint,
                                cexval=NA, cexaxisval=NA, lwdval=NA, lineval=NA, lasval=NA)
@@ -13878,11 +13880,11 @@ GetPerRecruitResults_AB_with_err <- function(MaxModelAge, TimeStep, Linf, vbK, t
 #' DiscMort <- 0.25 # discard mortality (e.g. 50% released fish die = 0.5)
 #' SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
 #' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
-#' Steepness_sd <- 0.025
+#' Steepness_sd <- c(0.025, 1) # sd, distribution type, 1=normal, 2=lognormal
 #' NatMort <- 0.2 # natural mortality  (year-1)
-#' NatMort_sd <- 0.025
+#' NatMort_sd <- c(0.31, 2) # sd, distribution type, 1=normal, 2=lognormal
 #' Current_F <- 0.1 # estimate of fishing mortality, e.g. from catch curve analysis
-#' Current_F_sd <- 0.005
+#' Current_F_sd <- c(0.005,1) # sd, distribution type, 1=normal, 2=lognormal
 #' nReps = 10 # number of resampling trials. Set to low number to test, then much higher for final analysis.
 #' GetPerRecruitResults_LB_with_err(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
 #'                                  RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtLen,
@@ -13899,10 +13901,22 @@ GetPerRecruitResults_LB_with_err <- function(MaxModelAge, TimeStep, lbnd, ubnd, 
                                              Current_F, Current_F_sd, nReps) {
 
 
+  if (Current_F_sd[2]==1) { # normal
+    FValues = rnorm(nReps, Current_F, Current_F_sd[1])
+  } else { # lognormal
+    FValues = exp(rnorm(nReps, log(Current_F), Current_F_sd[1]))
+  }
+  if (Steepness_sd[2]==1) {
+    hValues = rnorm(nReps, Steepness, Steepness_sd[1])
+  } else {
+    hValues = exp(rnorm(nReps, log(Steepness), Steepness_sd[1]))
+  }
+  if (NatMort_sd[2]==1) {
+    MValues = rnorm(nReps, NatMort, NatMort_sd[1])
+  } else {
+    MValues = exp(rnorm(nReps, log(NatMort), NatMort_sd[1]))
+  }
 
-  FValues = rnorm(nReps, Current_F, Current_F_sd)
-  hValues = rnorm(nReps, Steepness, Steepness_sd)
-  MValues = rnorm(nReps, NatMort, NatMort_sd)
   Output_Opt = 1 # 1=standard output, 2=with added length and weight outputs (slower)
 
   for (i in 1:nReps) {
@@ -14432,11 +14446,11 @@ PlotPerRecruit_Biom_with_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
 #' DiscMort <- 0.25 # discard mortality (e.g. 50% released fish die = 0.5)
 #' SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
 #' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
-#' Steepness_sd <- 0.025
+#' Steepness_sd <- c(0.025, 1) # sd, distribution type, 1=normal, 2=lognormal
 #' NatMort <- 0.2 # natural mortality  (year-1)
-#' NatMort_sd <- 0.025
+#' NatMort_sd <- c(0.31, 2) # sd, distribution type, 1=normal, 2=lognormal
 #' Current_F <- 0.1 # estimate of fishing mortality, e.g. from catch curve analysis
-#' Current_F_sd <- 0.005
+#' Current_F_sd <- c(0.005,1) # sd, distribution type, 1=normal, 2=lognormal
 #' PlotOpt <- 1 # 1=females, 2=males, 3=combined sex
 #' RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 #' nReps = 10 # number of resampling trials. Set to low number to test, then much higher for final analysis.
@@ -14499,13 +14513,16 @@ PlotPerRecruit_Biom_with_err_LB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
     x=which(Res$PerRec_FValues==xmax)
     plot(Res$PerRec_FValues[1:x], EqB_med[1:x], "l", frame.plot=F, ylim=c(0,ymax), xlim=c(0,xmax),
          col="red", yaxt="n", xaxt="n", ylab="", xlab="", main=MainLabel)
-
     polygon(c(Res$PerRec_FValues[1:x],rev(Res$PerRec_FValues[1:x])),c(EqB_lw[1:x],rev(EqB_hi[1:x])),
-            col="lightpink", border="lightpink")
+            col="lightgrey", border="lightgrey")
+    EqB_lw60 = apply(Res$Sim_Eq_RelFemSpBiom,2,quantile, probs=c(0.2))
+    EqB_hi60 = apply(Res$Sim_Eq_RelFemSpBiom,2,quantile, probs=c(0.8))
+    polygon(c(Res$PerRec_FValues[1:x],rev(Res$PerRec_FValues[1:x])),c(EqB_lw60[1:x],rev(EqB_hi60[1:x])),
+            col="pink", border="pink")
     lines(Res$PerRec_FValues[1:x], EqB_med[1:x],col="red")
     points(Current_F, Res$EstEquilRelFemSpBiom[1], cex=1.2, col="red", pch=16)
     lw=as.numeric(Res$EstEquilRelFemSpBiom[2]); up=as.numeric(Res$EstEquilRelFemSpBiom[3])
-    arrows(Current_F, lw, Current_F, up,length=0.05, angle=90, code=3,col="red")
+    arrows(Current_F, lw, Current_F, up,length=0.001, angle=90, code=3,col="red")
     legend("topleft", col="red", pch = 16, legend="Estimate - females",
            bty="n", cex=1,0, lty=0, inset = 0.05)
 
@@ -14519,10 +14536,14 @@ PlotPerRecruit_Biom_with_err_LB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
     plot(Res$PerRec_FValues[1:x], EqB_med[1:x], "l", frame.plot=F, ylim=c(0,ymax), xlim=c(0,xmax),
          col="blue", yaxt="n", xaxt="n", ylab="", xlab="", main=MainLabel)
     polygon(c(Res$PerRec_FValues[1:x],rev(Res$PerRec_FValues[1:x])),c(EqB_lw[1:x],rev(EqB_hi[1:x])),
+            col="lightgrey", border="lightgrey")
+    EqB_lw60 = apply(Res$Sim_Eq_RelMalSpBiom,2,quantile, probs=c(0.2))
+    EqB_hi60 = apply(Res$Sim_Eq_RelMalSpBiom,2,quantile, probs=c(0.8))
+    polygon(c(Res$PerRec_FValues[1:x],rev(Res$PerRec_FValues[1:x])),c(EqB_lw60[1:x],rev(EqB_hi60[1:x])),
             col="lightblue", border="lightblue")
     lines(Res$PerRec_FValues[1:x], EqB_med[1:x],col="blue")
     lw=as.numeric(Res$EstEquilRelMalSpBiom[2]); up=as.numeric(Res$EstEquilRelMalSpBiom[3])
-    arrows(Current_F, lw, Current_F, up,length=0.05, angle=90, code=3,col="blue")
+    arrows(Current_F, lw, Current_F, up,length=0.001, angle=90, code=3,col="blue")
     points(Current_F, Res$EstEquilRelMalSpBiom[1], cex=1.2, col="blue", pch=16)
     legend("topleft", col="blue", pch = 16, legend="Estimate - males",
            bty="n", cex=1,0, lty=0, inset = 0.05)
@@ -14537,9 +14558,13 @@ PlotPerRecruit_Biom_with_err_LB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
          col="black", yaxt="n", xaxt="n", ylab="", xlab="", main=MainLabel)
     polygon(c(Res$PerRec_FValues[1:x],rev(Res$PerRec_FValues[1:x])),c(EqB_lw[1:x],rev(EqB_hi[1:x])),
             col="lightgrey", border="lightgrey")
+    EqB_lw50 = apply(Res$Sim_Eq_RelCombSexSpBiom,2,quantile, probs=c(0.2))
+    EqB_hi60 = apply(Res$Sim_Eq_RelCombSexSpBiom,2,quantile, probs=c(0.8))
+    polygon(c(Res$PerRec_FValues[1:x],rev(Res$PerRec_FValues[1:x])),c(EqB_lw60[1:x],rev(EqB_hi60[1:x])),
+            col="lightgreen", border="lightgreen")
     lines(Res$PerRec_FValues[1:x], EqB_med[1:x],col="black")
     lw=as.numeric(Res$EstEquilRelCombSexSpBiom[2]); up=as.numeric(Res$EstEquilRelCombSexSpBiom[3])
-    arrows(Current_F, lw, Current_F, up,length=0.05, angle=90, code=3,col="black")
+    arrows(Current_F, lw, Current_F, up,length=0.001, angle=90, code=3,col="black")
     points(Current_F, Res$EstEquilRelCombSexSpBiom[1], cex=1.2, col="black", pch=16)
     legend("topleft", col="black", pch = 16, legend="Estimate - comb. sex",
            bty="n", cex=1,0, lty=0, inset = 0.05)
@@ -14648,51 +14673,67 @@ PlotPerRecruit_Param_Err_Distns <- function(NatMort,NatMort_sd,Current_F,Current
   set.seed(123)
   nReps = 100000
 
+  if (Current_F_sd[2]==1) { # normal
+    FValues = rnorm(nReps, Current_F, Current_F_sd[1])
+  } else { # lognormal
+    FValues = exp(rnorm(nReps, log(Current_F), Current_F_sd[1]))
+  }
+  if (Steepness_sd[2]==1) {
+    hValues = rnorm(nReps, Steepness, Steepness_sd[1])
+  } else {
+    hValues = exp(rnorm(nReps, log(Steepness), Steepness_sd[1]))
+  }
+  if (NatMort_sd[2]==1) {
+    MValues = rnorm(nReps, NatMort, NatMort_sd[1])
+  } else {
+    MValues = exp(rnorm(nReps, log(NatMort), NatMort_sd[1]))
+  }
+
   # Assumed distribution for natural mortality
   par(mfrow=c(2,2), mar=c(5,4,1,1), oma=c(1,1,1,1))
   xaxis_lab = expression(paste(italic("M ") ~ y^{-1}))
   yaxis_lab = "Frequency"
-  M_FreqDat = hist(rnorm(nReps,NatMort,NatMort_sd),plot=F)
+  M_FreqDat = hist(MValues,plot=F)
   xlims = Get_xaxis_scale(M_FreqDat$breaks)
   xmax = xlims$xmax
   xmin = xlims$xmin
   ylims = Get_yaxis_scale(M_FreqDat$counts)
   ymax = ylims$ymax
-  hist(rnorm(nReps,NatMort,NatMort_sd),xlab=xaxis_lab, ylab=yaxis_lab,
+  hist(MValues,xlab=xaxis_lab, ylab=yaxis_lab,
        xlim=c(xmin,xmax), ylim=c(0,ymax), main="")
   abline(v=NatMort,lwd=2)
-  legend("topright", legend=c(paste("mean =",NatMort),paste("sd =",NatMort_sd)), inset=c(0.13,0),
+  legend("topright", legend=c(paste("mean =",NatMort),paste("sd =",round(NatMort_sd[1],3))), inset=c(0.13,0),
          lty=1, cex = 0.8, bty="n", lwd=-1, col="black")
 
 
   # Assumed distribution for fishing mortality (e.g. as estimated from catch curve)
   xaxis_lab = expression(paste(italic("F ") ~ y^{-1}))
   yaxis_lab = "Frequency"
-  F_FreqDat = hist(rnorm(nReps,Current_F,Current_F_sd),plot=F)
+  F_FreqDat = hist(FValues,plot=F)
   xlims = Get_xaxis_scale(F_FreqDat$breaks)
   xmax = xlims$xmax
   xmin = xlims$xmin
   ylims = Get_yaxis_scale(F_FreqDat$counts)
   ymax = ylims$ymax
-  hist(rnorm(nReps,Current_F,Current_F_sd),xlab=xaxis_lab, ylab=yaxis_lab,
+  hist(FValues,xlab=xaxis_lab, ylab=yaxis_lab,
        xlim=c(xmin,xmax), ylim=c(0,ymax), main="")
   abline(v=Current_F,lwd=2)
-  legend("topright", legend=c(paste("mean =",Current_F),paste("sd =",Current_F_sd)), inset=c(0.13,0),
+  legend("topright", legend=c(paste("mean =",Current_F),paste("sd =",round(Current_F_sd[1],3))), inset=c(0.13,0),
          lty=1, cex = 0.8, bty="n", lwd=-1, col="black")
 
   # Assumed distribution for steepness
   xaxis_lab = "h"
   yaxis_lab = "Frequency"
-  h_FreqDat = hist(rnorm(nReps,Steepness,Steepness_sd),plot=F)
+  h_FreqDat = hist(hValues,plot=F)
   xlims = Get_xaxis_scale(h_FreqDat$breaks)
   xmax = xlims$xmax
   xmin = xlims$xmin
   ylims = Get_yaxis_scale(h_FreqDat$counts)
   ymax = ylims$ymax
-  hist(rnorm(nReps,Steepness,Steepness_sd),xlab=xaxis_lab, ylab=yaxis_lab,
+  hist(hValues,xlab=xaxis_lab, ylab=yaxis_lab,
        xlim=c(xmin,xmax), ylim=c(0,ymax), main="")
   abline(v=Steepness,lwd=2)
-  legend("topright", legend=c(paste("mean =",Steepness),paste("sd =",Steepness_sd)), inset=c(0.13,0),
+  legend("topright", legend=c(paste("mean =",Steepness),paste("sd =",round(Steepness_sd[1],3))), inset=c(0.13,0),
          lty=1, cex = 0.8, bty="n", lwd=-1, col="black")
 
   par(.pardefault)
