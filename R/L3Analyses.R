@@ -14772,7 +14772,7 @@ PlotRiskMatrix_PerRecruit_RelBiom <- function(EstBrel, EstBrel_se, Sim_BrelVals,
     if (is.na(EstBrel_se)) {
       cat("Problem: need to specify value for EstBrel_se")
     }
-    Sim_BrelVals = rnorm(500,EstBrel,EstBrel_se)
+    Sim_BrelVals = rnorm(500,unlist(EstBrel),unlist(EstBrel_se))
   }
   nReps = length(Sim_BrelVals)
 
@@ -14976,7 +14976,7 @@ PlotRiskMatrix_CatchCurve_FishMort <- function(EstFMort, EstFMort_se, Sim_FVals,
     if (is.na(EstFMort_se)) {
       cat("Problem: need to specify value for EstFMort_se")
     }
-    Sim_FVals = rnorm(500,EstFMort,EstFMort_se)
+    Sim_FVals = rnorm(500,unlist(EstFMort),unlist(EstFMort_se))
   }
   nReps = length(Sim_FVals)
 
