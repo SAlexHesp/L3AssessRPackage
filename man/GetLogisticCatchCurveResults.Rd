@@ -39,7 +39,7 @@ and associated 95 percent confidence limits and associated variance-covariance m
 using the MASS package
 }
 \examples{
-# simulate data
+# Simulate data from Multinomial distribution (single sex)
 set.seed(123)
 MinAge = 1
 MaxAge = 40
@@ -51,60 +51,82 @@ SelA50 = 6
 SelA95 = 8
 SampleSize = 1000 # required sample size. For 2 sex model, same sample size generated for each sex.
 Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
-ObsAgeFreq = Res$CatchSample
-# fit model
+ObsAgeFreq = unlist(as.vector(Res$CatchSample)) # input as vector for single sex model
+# Specify catch curve model and required inputs for that model
+NatMort = 0.104 # Logistic selectivity
+MinFreq = NA # # Logistic selectivity
 Init_FMort = 0.2
-Init_SelA50 = 3
-Init_SelDelta = 2
-params = log(c(Init_FMort, Init_SelA50, Init_SelDelta))
+Init_SelA50 = 5
+Init_SelA95 = 7
+params = log(c(Init_FMort, Init_SelA50, SelA95))
 res=GetLogisticCatchCurveResults(params, NatMort, Ages, ObsAgeFreq)
-# fit logistic catch curve model using Dirichlet multinomial likelihood
-# get expected catch proportions at age, for simulating data
-MinAge = 1
-MaxAge = 40
-Ages = MinAge:MaxAge
-NatMort <- exp(1.46 - (1.01 * (log(MaxAge)))) # i.e. Hoenig's (1983) eqn for fish
-FMort = 0.1
-SelA50 = 5
-SelA95 = 7
-SelAtAge = rep(0, length(Ages))
-N = rep(0, length(Ages))
-SelAtAge = 1/(1 + exp(-log(19) * (Ages - SelA50)/(SelA95 - SelA50)))
-FAtAge = SelAtAge * FMort
-ZAtAge = NatMort + FAtAge
-k = 1
-N[1] = 1
-for (i in seq(MinAge + 1, MaxAge, 1)) {
-  k = k + 1
-  if (i < MaxAge) {
-    N[k] = N[k-1] * exp(-ZAtAge[k-1])
-  }
-  else {
-    N[k] = N[k-1] * exp(-ZAtAge[k-1])/(1 - exp(-ZAtAge[k]))
-  }
-}
-CatchAtAge = N * (FAtAge/ZAtAge) * (1 - exp(-ZAtAge))
-PropAtAge = CatchAtAge/sum(CatchAtAge)
-library(dirmult)
-# Simulate data from a Dirichlet multinomial distribution
+res$ParamEst
+# Simulate data from Dirichlet multinomial distribution (single sex)
 # J = number of fish sampling events
 # K = number of age classes
 # n = number of fish sampled from each sampling event
 # pi = expected proportion at age
 # theta = amount of autocorrelation between ages of fish within sampling events
+# Fit catch curve with Dirichlet multinomial distribution objective function (single sex)
 set.seed(123)
 theta_val = 0.3
-simDat = simPop(J=50, K=nAges, n=10, pi=PropAtAge, theta=theta_val)
+simDat = simPop(J=50, K=nAges, n=10, pi=as.vector(unlist(Res$PropAtAge[1,])), theta=theta_val)
 simAges = data.frame(simDat$data)
 colnames(simAges)=Ages
-simAgeFreq = colSums(simAges)
-ObsAgeFreq = as.vector(simAgeFreq)
-# fit catch curve
-Init_FMort = 0.2
-Init_SelA50 = 3
+ObsAgeFreq = as.vector(colSums(simAges))
+Init_FMort = 0.1
+Init_SelA50 = 5
 Init_SelDelta = 2
-Init_theta = 0.5
+Init_theta = 0.35
 Init_theta_logit = log(Init_theta/(1-Init_theta)) # logit transform (so theta is always between 0 and 1)
 params = c(log(Init_FMort), log(Init_SelA50), log(Init_SelDelta), Init_theta_logit)
 res=GetLogisticCatchCurveResults(params, NatMort, Ages, ObsAgeFreq)
+res$ParamEst
+res$EffSampSize
+# Simulate data from Multinomial distribution (two sexes)
+set.seed(123)
+MinAge = 1
+MaxAge = 40
+Ages = MinAge:MaxAge
+NatMort <- exp(1.46 - (1.01 * (log(MaxAge)))) # i.e. Hoenig's (1983) eqn for fish
+FMort = 0.1
+ZMort = FMort + NatMort
+SelA50 = c(6,6.5)
+SelA95 = c(8,8.5)
+SampleSize = 1000 # required sample size. For 2 sex model, same sample size generated for each sex.
+Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
+ObsAgeFreq = Res$CatchSample
+# fit model (multinomial distribution - two sexes)
+Init_FMort = 0.2
+Init_SelA50 = c(5,5)
+Init_SelDelta = c(2,2.5)
+params = log(c(Init_FMort, Init_SelA50, Init_SelDelta))
+res=GetLogisticCatchCurveResults(params, NatMort, Ages, ObsAgeFreq)
+res$ParamEst
+# Simulate data from Dirichlet multinomial distribution (two sexes)
+# two sexes
+set.seed(123)
+theta_val = 0.3
+# Females
+simDat_Fem = simPop(J=50, K=nAges, n=10, pi=as.vector(unlist(Res$PropAtAge[1,])), theta=theta_val)
+simAges_Fem = data.frame(simDat_Fem$data)
+colnames(simAges_Fem)=Ages
+ObsAgeFreq_Fem = as.vector(colSums(simAges_Fem))
+# Males
+simDat_Mal = simPop(J=50, K=nAges, n=10, pi=as.vector(unlist(Res$PropAtAge[2,])), theta=theta_val)
+simAges_Mal = data.frame(simDat_Mal$data)
+colnames(simAges_Mal)=Ages
+ObsAgeFreq_Mal = as.vector(colSums(simAges_Mal))
+ObsAgeFreq = t(data.frame(ObsAgeFreq_Fem,ObsAgeFreq_Mal))
+colnames(ObsAgeFreq)=Ages
+# fit model (Dirichlet multinomial distribution - two sexes)
+Init_FMort = 0.1
+Init_SelA50 = c(5,5)
+Init_SelDelta = c(2.5,2.5)
+Init_theta = 0.3
+Init_theta_logit = log(Init_theta/(1-Init_theta)) # logit transform (so theta is always between 0 and 1)
+params = c(log(Init_FMort), log(Init_SelA50), log(Init_SelDelta), Init_theta_logit)
+res=GetLogisticCatchCurveResults(params, NatMort, Ages, ObsAgeFreq)
+res$ParamEst
+res$EffSampSize
 }

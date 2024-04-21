@@ -40,9 +40,9 @@ ZMort = FMort + NatMort
 # single sex
 SelA50 = 6
 SelA95 = 8
-# # two sexes
-# # (i.e. assuming same natural and fishing mortality,
-# # but potentially different age-based selectivity due to different growth)
+# two sexes
+# assuming same natural and fishing mortality,
+# but potentially different age-based selectivity, e.g. due to different growth
 # SelA50 = c(6,5.5)
 # SelA95 = c(8,7.5)
 SampleSize = 1000 # required sample size. For 2 sex model, same sample size generated for each sex.

@@ -63,7 +63,7 @@ plot of expected vs observed proportions at age
 This function produces plots of outputs of age-based catch curve analyses in normal space
 }
 \examples{
-# simulate data
+# Simulate data from Multinomial distribution (single sex)
 set.seed(123)
 MinAge = 1
 MaxAge = 40
@@ -75,7 +75,8 @@ SelA50 = 6
 SelA95 = 8
 SampleSize = 1000 # required sample size. For 2 sex model, same sample size generated for each sex.
 Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
-ObsAgeFreq = Res$CatchSample#' # Specify catch curve model and required inputs for that model
+ObsAgeFreq = unlist(as.vector(Res$CatchSample)) # input as vector for single sex model
+# Specify catch curve model and required inputs for that model
 # CatchCurveModel = 1 # Chapman Robson
 # NatMort = NA # Chapman Robson
 # RecAssump = 1 # Chapman Robson
@@ -92,8 +93,92 @@ Init_FMort = 0.2
 Init_SelA50 = 5
 Init_SelA95 = 7
 params = log(c(Init_FMort, Init_SelA50, SelA95))
+res=GetLogisticCatchCurveResults(params, NatMort, Ages, ObsAgeFreq)
+res$ParamEst
 PlotAgeBasedCatchCurveResults_NormalSpace(RecAssump, SpecRecAge=NA, MinFreq, MinAge, MaxAge, NatMort,
                                           ObsAgeFreq, CatchCurveModel, MainLabel=NA,
                                           xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA,
-                                         ymax=NA, yint=NA, PlotCLs=T)
+                                          ymax=NA, yint=NA, PlotCLs=T)
+# Simulate data from Dirichlet multinomial distribution (single sex)
+# J = number of fish sampling events
+# K = number of age classes
+# n = number of fish sampled from each sampling event
+# pi = expected proportion at age
+# theta = amount of autocorrelation between ages of fish within sampling events
+# Fit catch curve with Dirichlet multinomial distribution objective function (single sex)
+CatchCurveModel = 3 # Logistic selectivity
+set.seed(123)
+theta_val = 0.3
+simDat = simPop(J=50, K=nAges, n=10, pi=as.vector(unlist(Res$PropAtAge[1,])), theta=theta_val)
+simAges = data.frame(simDat$data)
+colnames(simAges)=Ages
+ObsAgeFreq = as.vector(colSums(simAges))
+Init_FMort = 0.1
+Init_SelA50 = 5
+Init_SelDelta = 2
+Init_theta = 0.35
+Init_theta_logit = log(Init_theta/(1-Init_theta)) # logit transform (so theta is always between 0 and 1)
+params = c(log(Init_FMort), log(Init_SelA50), log(Init_SelDelta), Init_theta_logit)
+res=GetLogisticCatchCurveResults(params, NatMort, Ages, ObsAgeFreq)
+res$ParamEst
+res$EffSampSize
+PlotAgeBasedCatchCurveResults_NormalSpace(RecAssump, SpecRecAge=NA, MinFreq, MinAge, MaxAge, NatMort,
+                                          ObsAgeFreq, CatchCurveModel, MainLabel=NA,
+                                          xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA,
+                                          ymax=NA, yint=NA, PlotCLs=T)
+# Simulate data from Multinomial distribution (two sexes)
+set.seed(123)
+CatchCurveModel = 3 # Logistic selectivity
+MinAge = 1
+MaxAge = 40
+Ages = MinAge:MaxAge
+NatMort <- exp(1.46 - (1.01 * (log(MaxAge)))) # i.e. Hoenig's (1983) eqn for fish
+FMort = 0.1
+ZMort = FMort + NatMort
+SelA50 = c(6,6.5)
+SelA95 = c(8,8.5)
+SampleSize = 1000 # required sample size. For 2 sex model, same sample size generated for each sex.
+Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
+ObsAgeFreq = Res$CatchSample
+# fit model (multinomial distribution - two sexes)
+Init_FMort = 0.2
+Init_SelA50 = c(5,5)
+Init_SelDelta = c(2,2.5)
+params = log(c(Init_FMort, Init_SelA50, Init_SelDelta))
+res=GetLogisticCatchCurveResults(params, NatMort, Ages, ObsAgeFreq)
+res$ParamEst
+PlotAgeBasedCatchCurveResults_NormalSpace(RecAssump, SpecRecAge=NA, MinFreq, MinAge, MaxAge, NatMort,
+                                          ObsAgeFreq, CatchCurveModel, MainLabel=NA,
+                                          xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA,
+                                          ymax=NA, yint=NA, PlotCLs=T)
+# Simulate data from Dirichlet multinomial distribution (two sexes)
+# two sexes
+set.seed(123)
+theta_val = 0.3
+# Females
+simDat_Fem = simPop(J=50, K=nAges, n=10, pi=as.vector(unlist(Res$PropAtAge[1,])), theta=theta_val)
+simAges_Fem = data.frame(simDat_Fem$data)
+colnames(simAges_Fem)=Ages
+ObsAgeFreq_Fem = as.vector(colSums(simAges_Fem))
+# Males
+simDat_Mal = simPop(J=50, K=nAges, n=10, pi=as.vector(unlist(Res$PropAtAge[2,])), theta=theta_val)
+simAges_Mal = data.frame(simDat_Mal$data)
+colnames(simAges_Mal)=Ages
+ObsAgeFreq_Mal = as.vector(colSums(simAges_Mal))
+ObsAgeFreq = t(data.frame(ObsAgeFreq_Fem,ObsAgeFreq_Mal))
+colnames(ObsAgeFreq)=Ages
+# fit model (Dirichlet multinomial distribution - two sexes)
+Init_FMort = 0.1
+Init_SelA50 = c(5,5)
+Init_SelDelta = c(2.5,2.5)
+Init_theta = 0.3
+Init_theta_logit = log(Init_theta/(1-Init_theta)) # logit transform (so theta is always between 0 and 1)
+params = c(log(Init_FMort), log(Init_SelA50), log(Init_SelDelta), Init_theta_logit)
+res=GetLogisticCatchCurveResults(params, NatMort, Ages, ObsAgeFreq)
+res$ParamEst
+res$EffSampSize
+PlotAgeBasedCatchCurveResults_NormalSpace(RecAssump, SpecRecAge=NA, MinFreq, MinAge, MaxAge, NatMort,
+                                          ObsAgeFreq, CatchCurveModel, MainLabel=NA,
+                                          xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA,
+                                          ymax=NA, yint=NA, PlotCLs=T)
 }

@@ -2550,9 +2550,9 @@ CalcExpRetCatchPropLengthGivenIntAge <- function(MinAge, MaxAge, midpt, RetCatch
 #' # single sex
 #' SelA50 = 6
 #' SelA95 = 8
-#' # # two sexes
-#' # # (i.e. assuming same natural and fishing mortality,
-#' # # but potentially different age-based selectivity due to different growth)
+#' # two sexes
+#' # assuming same natural and fishing mortality,
+#' # but potentially different age-based selectivity, e.g. due to different growth
 #' # SelA50 = c(6,5.5)
 #' # SelA95 = c(8,7.5)
 #' SampleSize = 1000 # required sample size. For 2 sex model, same sample size generated for each sex.
@@ -2563,55 +2563,42 @@ SimAgeFreqData <- function(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, 
 
   Ages = MinAge:MaxAge
 
-  if (length(SelA50)==1) { # single sex
+  if (length(SelA50)==1) nSexes = 1
+  if (length(SelA50)==2) nSexes = 2
 
-    SelAtAge = 1 / (1 + exp(-log(19) * (Ages - SelA50) / (SelA95 - SelA50)))
-    FAtAge = SelAtAge * FMort
-    ZAtAge = NatMort + FAtAge
+  EmptyFrame <- data.frame(matrix(nrow = nSexes, ncol = length(Ages)))
+  colnames(EmptyFrame) <- Ages;
+  SelAtAge <- EmptyFrame; FAtAge <- EmptyFrame; ZAtAge <- EmptyFrame; N <- EmptyFrame;
+  CatchAtAge <- EmptyFrame; CatchSample <- EmptyFrame
+
+  for (s in 1:nSexes) {
     k=1
-    N <- rep(0,length(Ages))
-    N[k] = 1
+    N[s,1] = 1;
+
+    SelAtAge[s,] = 1 / (1 + exp(-log(19) * (Ages - SelA50[s]) / (SelA95[s] - SelA50[s])))
+    FAtAge[s,] = SelAtAge[s,] * FMort
+    ZAtAge[s,] = NatMort + FAtAge[s,]
+    CatchAtAge[s,k] = N[s,k] * (FAtAge[s,k] / ZAtAge[s,k]) * (1 - exp(-ZAtAge[s,k])) # catch at age
+
+    i=MinAge+1
     for (i in seq(MinAge+1,MaxAge,1)) {
       k=k+1
-      if (i < MaxAge) {
-        N[k] = N[k-1] * exp(-ZAtAge[k-1])
-      } else {
-        N[k] = N[k-1] * exp(-ZAtAge[k-1] / (1 - exp(-ZAtAge[k])))
-      }
-    }
-    CatchAtAge = N * (FAtAge / ZAtAge) * (1 - exp(-ZAtAge)) # catch at age
-    PropAtAge = CatchAtAge / sum(CatchAtAge)
-    CatchSample = unlist(as.vector(rmultinom(n=1, size=SampleSize, prob=PropAtAge)))
 
-  } else { # separate sex
-    EmptyFrame <- data.frame(matrix(nrow = 2, ncol = length(Ages)))
-    colnames(EmptyFrame) <- Ages;
-    SelAtAge <- EmptyFrame; N <- EmptyFrame
-    SelAtAge[1,] = 1 / (1 + exp(-log(19) * (Ages - SelA50[1]) / (SelA95[1] - SelA50[1])))
-    SelAtAge[2,] = 1 / (1 + exp(-log(19) * (Ages - SelA50[2]) / (SelA95[2] - SelA50[2])))
-    FAtAge = SelAtAge * FMort
-    ZAtAge = NatMort + FAtAge
-    N[1,1] = 1; N[2,1] = 1
-    for (s in 1:2) {
-      k=1
-      for (i in seq(MinAge+1,MaxAge,1)) {
-        k=k+1
-        if (i < MaxAge) {
-          N[s,k] = N[s,k-1] * exp(-ZAtAge[s,k-1])
-        } else {
-          N[s,k] = N[s,k-1] * exp(-ZAtAge[s,k-1] / (1 - exp(-ZAtAge[s,k])))
-        }
+      if (i < MaxAge) {
+        N[s,k] = N[s,k-1] * exp(-ZAtAge[s,k-1])
+      } else {
+        N[s,k] = N[s,k-1] * exp(-ZAtAge[s,k-1] / (1 - exp(-ZAtAge[s,k])))
       }
+
+      CatchAtAge[s,k] = N[s,k] * (FAtAge[s,k] / ZAtAge[s,k]) * (1 - exp(-ZAtAge[s,k])) # catch at age
+
     }
-    CatchAtAge = N * (FAtAge / ZAtAge) * (1 - exp(-ZAtAge)) # catch at age
-    PropAtAge = CatchAtAge / sum(CatchAtAge)
-    CatchSample_Fem = unlist(as.vector(rmultinom(n=1, size=SampleSize, prob=PropAtAge[1,])))
-    CatchSample_Mal = unlist(as.vector(rmultinom(n=1, size=SampleSize, prob=PropAtAge[2,])))
-    CatchSample <- data.frame(CatchSample_Fem = CatchSample_Fem,
-                              CatchSample_Mal = CatchSample_Mal)
   }
 
-
+  PropAtAge = CatchAtAge / sum(CatchAtAge)
+  for (s in 1:nSexes) {
+    CatchSample[s,] = unlist(as.vector(rmultinom(n=1, size=SampleSize, prob=PropAtAge[s,])))
+  }
 
   results = list(Ages=Ages,
                  SelAtAge=SelAtAge,
@@ -7812,30 +7799,52 @@ GetChapmanRobsonMortalityResults <- function(RecAssump, SpecRecAge, MinAge, MaxA
 #' @return negative log-likelihood (NLL)
 Calculate_NLL_LogisticCatchCurve <- function(params) {
 
+  # calculate survival and catches
   FMort = exp(params[1])
-  SelA50 = exp(params[2])
-  SelDelta = exp(params[3])
-  SelA95 = SelA50 + SelDelta
+  if (length(params)<5) {
+    SelA50 = exp(params[2]) # single sex
+    SelDelta = exp(params[3])
+    SelA95 = SelA50 + SelDelta # single sex
+  } else {
+    SelA50 = exp(params[2:3]) # two sexes
+    SelDelta = exp(params[4:5])
+    SelA95 = SelA50 + SelDelta
+  }
 
-  SelAtAge = rep(0,length(Ages))
-  SelAtAge = 1 / (1 + exp(-log(19) * (Ages - SelA50) / (SelA95 - SelA50)))
-  FAtAge = SelAtAge * FMort
-  ZAtAge = NatMort + FAtAge
+  Ages = MinAge:MaxAge
 
-  N = numeric(length(Ages))
-  N[1] = 1
-  k=1
-  MinAge = min(Ages)
-  MaxAge = max(Ages)
-  for (i in seq(MinAge+1,MaxAge,1)) {
-    k=k+1
-    if (i < MaxAge) {
-      N[k] = N[k-1] * exp(-ZAtAge[k-1])
-    } else {
-      N[k] = N[k-1] * exp(-ZAtAge[k-1]) / (1 - exp(-ZAtAge[k]))
+  if (length(SelA50)==1) nSexes = 1
+  if (length(SelA50)==2) nSexes = 2
+
+  EmptyFrame <- data.frame(matrix(nrow = nSexes, ncol = length(Ages)))
+  colnames(EmptyFrame) <- Ages;
+  SelAtAge <- EmptyFrame; FAtAge <- EmptyFrame; ZAtAge <- EmptyFrame; N <- EmptyFrame;
+  CatchAtAge <- EmptyFrame; CatchSample <- EmptyFrame
+
+  for (s in 1:nSexes) {
+    k=1
+    N[s,1] = 1;
+
+    SelAtAge[s,] = 1 / (1 + exp(-log(19) * (Ages - SelA50[s]) / (SelA95[s] - SelA50[s])))
+    FAtAge[s,] = SelAtAge[s,] * FMort
+    ZAtAge[s,] = NatMort + FAtAge[s,]
+    CatchAtAge[s,k] = N[s,k] * (FAtAge[s,k] / ZAtAge[s,k]) * (1 - exp(-ZAtAge[s,k])) # catch at age
+
+    i=MinAge+1
+    for (i in seq(MinAge+1,MaxAge,1)) {
+      k=k+1
+
+      if (i < MaxAge) {
+        N[s,k] = N[s,k-1] * exp(-ZAtAge[s,k-1])
+      } else {
+        N[s,k] = N[s,k-1] * exp(-ZAtAge[s,k-1] / (1 - exp(-ZAtAge[s,k])))
+      }
+
+      CatchAtAge[s,k] = N[s,k] * (FAtAge[s,k] / ZAtAge[s,k]) * (1 - exp(-ZAtAge[s,k])) # catch at age
+
     }
   }
-  CatchAtAge = N * (FAtAge / ZAtAge) * (1 - exp(-ZAtAge))
+
   ExpPropAtAge = CatchAtAge / sum(CatchAtAge)
 
   # calculate F penalty
@@ -7845,39 +7854,59 @@ Calculate_NLL_LogisticCatchCurve <- function(params) {
   }
 
   # calculate multinomial negative log-likelihood
-  if (length(params==3)) {
-    NLL = -sum((ObsAgeFreq * log(ExpPropAtAge + 1E-4))) + F_Pen
+  if (length(params)==3 | length(params)==5) {
+    NLL = -sum(ObsAgeFreq * log(ExpPropAtAge + 1E-4)) + F_Pen
   }
 
   # calculate Dirichlet multinomial negative log-likelihood
-  if (length(params)==4) {
-    # inverse logit transformed value
-    temp = params[4]
-    DM_theta = 1/(1+exp(-temp));
-
-    SampleSize = sum(ObsAgeFreq)
-    nAges = length(ObsAgeFreq)
-    ObsPropAtAge = ObsAgeFreq/SampleSize
-    sum1 = 0; sum2 = 0; NLL = 0
-    for (t in 1:nAges) {
-      sum1 = sum1 + lgamma(SampleSize * ObsPropAtAge[t] + 1)
-      sum2 = sum2 + (lgamma(SampleSize * ObsPropAtAge[t] + DM_theta * SampleSize * ExpPropAtAge[t])
-                     - lgamma(DM_theta * SampleSize * ExpPropAtAge[t]))
-    }
-    NLL = -(lgamma(SampleSize+1) - sum1 + (lgamma(DM_theta * SampleSize) - lgamma(SampleSize + DM_theta * SampleSize)) + sum2)
-    NLL = NLL + F_Pen
-
+  if (is.vector(ObsAgeFreq)) {
+    ObsAgeFreq = t(as.data.frame(ObsAgeFreq))
   }
 
-  if (length(params)==3) {
+  if (length(params)==4 | length(params)==6) {
+    if (length(params)==4)  temp = params[4] # single sex
+    if (length(params)==6)  temp = params[6] # two sexes
+
+    DM_theta = 1/(1+exp(-temp));
+    NLL = 0
+    ObsPropAtAge <- EmptyFrame;
+    nAges = length(ObsAgeFreq[1,])
+
+    nObs_total = 0
+    for (s in 1:nSexes) {
+      nObs = sum(ObsAgeFreq[s,])
+      nObs_total = nObs_total + nObs
+    }
+
+    sum1 = 0; sum2 = 0;
+    for (s in 1:nSexes) {
+      ObsPropAtAge[s,] = ObsAgeFreq[s,] / nObs_total
+      # plot(Ages,ObsPropAtAge[s,])
+      # plot(Ages,ExpPropAtAge[s,])
+
+      for (t in 1:nAges) {
+        sum1 = sum1 + lgamma(nObs_total * ObsPropAtAge[s,t] + 1)
+        sum2 = sum2 + (lgamma(nObs_total * ObsPropAtAge[s,t] + DM_theta * nObs_total * ExpPropAtAge[s,t]) -
+                       lgamma(DM_theta * nObs_total * ExpPropAtAge[s,t]))
+        # cat("s",s,"t",t,"sum1",sum1,"sum2",sum2,'\n')
+      }
+    }
+
+    NLL = -(lgamma(nObs_total+1) - sum1 + (lgamma(DM_theta * nObs_total) -
+                          lgamma(nObs_total + DM_theta * nObs_total)) + sum2) + F_Pen
+  }  # calc Dirichlet
+
+  if (length(params)==3 | length(params)==5) {
     cat("NLL",NLL,"F_Pen",F_Pen,"params",exp(params),'\n')
-  } else {
-    cat("NLL",NLL,"F_Pen",F_Pen,"params",c(FMort, SelA50, SelDelta, DM_theta),'\n')
+  }
+  if (length(params)==4 | length(params)==6) {
+    cat("NLL",NLL,"F_Pen",F_Pen,"params",c(FMort, SelA50, SelA95, DM_theta),'\n')
   }
 
   return(NLL)
 
 }
+
 
 #' Get statistical outputs from a fitted catch curve with age-based, logistic selectivity
 #'
@@ -7907,7 +7936,7 @@ Calculate_NLL_LogisticCatchCurve <- function(params) {
 #' object (Estparams), Dirichlet multinomial effective sample size estimate (EffSampSize), if using this
 #' objective function
 #' @examples
-#' # simulate data
+#' # Simulate data from Multinomial distribution (single sex)
 #' set.seed(123)
 #' MinAge = 1
 #' MaxAge = 40
@@ -7919,62 +7948,84 @@ Calculate_NLL_LogisticCatchCurve <- function(params) {
 #' SelA95 = 8
 #' SampleSize = 1000 # required sample size. For 2 sex model, same sample size generated for each sex.
 #' Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
-#' ObsAgeFreq = Res$CatchSample
-#' # fit model
+#' ObsAgeFreq = unlist(as.vector(Res$CatchSample)) # input as vector for single sex model
+#' # Specify catch curve model and required inputs for that model
+#' NatMort = 0.104 # Logistic selectivity
+#' MinFreq = NA # # Logistic selectivity
 #' Init_FMort = 0.2
-#' Init_SelA50 = 3
-#' Init_SelDelta = 2
-#' params = log(c(Init_FMort, Init_SelA50, Init_SelDelta))
+#' Init_SelA50 = 5
+#' Init_SelA95 = 7
+#' params = log(c(Init_FMort, Init_SelA50, SelA95))
 #' res=GetLogisticCatchCurveResults(params, NatMort, Ages, ObsAgeFreq)
-#' # fit logistic catch curve model using Dirichlet multinomial likelihood
-#' # get expected catch proportions at age, for simulating data
-#' MinAge = 1
-#' MaxAge = 40
-#' Ages = MinAge:MaxAge
-#' NatMort <- exp(1.46 - (1.01 * (log(MaxAge)))) # i.e. Hoenig's (1983) eqn for fish
-#' FMort = 0.1
-#' SelA50 = 5
-#' SelA95 = 7
-#' SelAtAge = rep(0, length(Ages))
-#' N = rep(0, length(Ages))
-#' SelAtAge = 1/(1 + exp(-log(19) * (Ages - SelA50)/(SelA95 - SelA50)))
-#' FAtAge = SelAtAge * FMort
-#' ZAtAge = NatMort + FAtAge
-#' k = 1
-#' N[1] = 1
-#' for (i in seq(MinAge + 1, MaxAge, 1)) {
-#'   k = k + 1
-#'   if (i < MaxAge) {
-#'     N[k] = N[k-1] * exp(-ZAtAge[k-1])
-#'   }
-#'   else {
-#'     N[k] = N[k-1] * exp(-ZAtAge[k-1])/(1 - exp(-ZAtAge[k]))
-#'   }
-#' }
-#' CatchAtAge = N * (FAtAge/ZAtAge) * (1 - exp(-ZAtAge))
-#' PropAtAge = CatchAtAge/sum(CatchAtAge)
-#' library(dirmult)
-#' # Simulate data from a Dirichlet multinomial distribution
+#' res$ParamEst
+#' # Simulate data from Dirichlet multinomial distribution (single sex)
 #' # J = number of fish sampling events
 #' # K = number of age classes
 #' # n = number of fish sampled from each sampling event
 #' # pi = expected proportion at age
 #' # theta = amount of autocorrelation between ages of fish within sampling events
+#' # Fit catch curve with Dirichlet multinomial distribution objective function (single sex)
 #' set.seed(123)
 #' theta_val = 0.3
-#' simDat = simPop(J=50, K=nAges, n=10, pi=PropAtAge, theta=theta_val)
+#' simDat = simPop(J=50, K=nAges, n=10, pi=as.vector(unlist(Res$PropAtAge[1,])), theta=theta_val)
 #' simAges = data.frame(simDat$data)
 #' colnames(simAges)=Ages
-#' simAgeFreq = colSums(simAges)
-#' ObsAgeFreq = as.vector(simAgeFreq)
-#' # fit catch curve
-#' Init_FMort = 0.2
-#' Init_SelA50 = 3
+#' ObsAgeFreq = as.vector(colSums(simAges))
+#' Init_FMort = 0.1
+#' Init_SelA50 = 5
 #' Init_SelDelta = 2
-#' Init_theta = 0.5
+#' Init_theta = 0.35
 #' Init_theta_logit = log(Init_theta/(1-Init_theta)) # logit transform (so theta is always between 0 and 1)
 #' params = c(log(Init_FMort), log(Init_SelA50), log(Init_SelDelta), Init_theta_logit)
 #' res=GetLogisticCatchCurveResults(params, NatMort, Ages, ObsAgeFreq)
+#' res$ParamEst
+#' res$EffSampSize
+#' # Simulate data from Multinomial distribution (two sexes)
+#' set.seed(123)
+#' MinAge = 1
+#' MaxAge = 40
+#' Ages = MinAge:MaxAge
+#' NatMort <- exp(1.46 - (1.01 * (log(MaxAge)))) # i.e. Hoenig's (1983) eqn for fish
+#' FMort = 0.1
+#' ZMort = FMort + NatMort
+#' SelA50 = c(6,6.5)
+#' SelA95 = c(8,8.5)
+#' SampleSize = 1000 # required sample size. For 2 sex model, same sample size generated for each sex.
+#' Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
+#' ObsAgeFreq = Res$CatchSample
+#' # fit model (multinomial distribution - two sexes)
+#' Init_FMort = 0.2
+#' Init_SelA50 = c(5,5)
+#' Init_SelDelta = c(2,2.5)
+#' params = log(c(Init_FMort, Init_SelA50, Init_SelDelta))
+#' res=GetLogisticCatchCurveResults(params, NatMort, Ages, ObsAgeFreq)
+#' res$ParamEst
+#' # Simulate data from Dirichlet multinomial distribution (two sexes)
+#' # two sexes
+#' set.seed(123)
+#' theta_val = 0.3
+#' # Females
+#' simDat_Fem = simPop(J=50, K=nAges, n=10, pi=as.vector(unlist(Res$PropAtAge[1,])), theta=theta_val)
+#' simAges_Fem = data.frame(simDat_Fem$data)
+#' colnames(simAges_Fem)=Ages
+#' ObsAgeFreq_Fem = as.vector(colSums(simAges_Fem))
+#' # Males
+#' simDat_Mal = simPop(J=50, K=nAges, n=10, pi=as.vector(unlist(Res$PropAtAge[2,])), theta=theta_val)
+#' simAges_Mal = data.frame(simDat_Mal$data)
+#' colnames(simAges_Mal)=Ages
+#' ObsAgeFreq_Mal = as.vector(colSums(simAges_Mal))
+#' ObsAgeFreq = t(data.frame(ObsAgeFreq_Fem,ObsAgeFreq_Mal))
+#' colnames(ObsAgeFreq)=Ages
+#' # fit model (Dirichlet multinomial distribution - two sexes)
+#' Init_FMort = 0.1
+#' Init_SelA50 = c(5,5)
+#' Init_SelDelta = c(2.5,2.5)
+#' Init_theta = 0.3
+#' Init_theta_logit = log(Init_theta/(1-Init_theta)) # logit transform (so theta is always between 0 and 1)
+#' params = c(log(Init_FMort), log(Init_SelA50), log(Init_SelDelta), Init_theta_logit)
+#' res=GetLogisticCatchCurveResults(params, NatMort, Ages, ObsAgeFreq)
+#' res$ParamEst
+#' res$EffSampSize
 #' @export
 GetLogisticCatchCurveResults <- function (params, NatMort, Ages, ObsAgeFreq)
 {
@@ -7983,90 +8034,187 @@ GetLogisticCatchCurveResults <- function (params, NatMort, Ages, ObsAgeFreq)
   hess.out = optimHess(nlmb$par, Calculate_NLL_LogisticCatchCurve)
   vcov.Params = solve(hess.out)
   ses = sqrt(diag(vcov.Params))
+  nll = nlmb$objective
+  convergence = nlmb$convergence
+  params = nlmb$par
+  vcov.params = vcov.Params
 
   # compute parameter correlation matrix
   temp = diag(1/sqrt(diag(vcov.Params)))
   cor.Params=temp %*% vcov.Params %*% temp
 
-  EstFMort = c(exp(nlmb$par[1]), exp(nlmb$par[1] + c(-1.96, 1.96) * ses[1]))
-  EstSelA50 = c(exp(nlmb$par[2]), exp(nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
-  EstSelDelta = c(exp(nlmb$par[3]), exp(nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
-  EstSelA95 = EstSelA50[1] + EstSelDelta[1]
-
-  SelAtAge = rep(0, length(Ages))
-  SelAtAge = 1/(1 + exp(-log(19) * (Ages - EstSelA50[1])/(EstSelA95[1] - EstSelA50[1])))
-  FAtAge = SelAtAge * EstFMort[1]
-  ZAtAge = NatMort + FAtAge
-
-  if (length(params)==3) {
+  if (length(params)==3) { # single sex - multinomial
+    EstFMort = c(exp(nlmb$par[1]), exp(nlmb$par[1] + c(-1.96, 1.96) * ses[1]))
+    EstSelA50 = c(exp(nlmb$par[2]), exp(nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
+    EstSelDelta = c(exp(nlmb$par[3]), exp(nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
+    EstSelA95 = EstSelA50[1] + EstSelDelta[1]
     ParamEst = t(data.frame(FMort = round(EstFMort, 3), SelA50 = round(EstSelA50,3),
                             EstSelDelta = round(EstSelDelta, 3)))
-  }
-  if (length(params)==4) {
 
-    # inverse logit transformed value for Dirichlet multinomial theta parameter
+  }
+
+  if (length(params)==4) { # single sex - Dirichlet multinomial
+    EstFMort = c(exp(nlmb$par[1]), exp(nlmb$par[1] + c(-1.96, 1.96) * ses[1]))
+    EstSelA50 = c(exp(nlmb$par[2]), exp(nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
+    EstSelDelta = c(exp(nlmb$par[3]), exp(nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
+    EstSelA95 = EstSelA50[1] + EstSelDelta[1]
     temp = c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4])
     EstTheta = 1/(1+exp(-temp));
 
     ParamEst = t(data.frame(FMort = round(EstFMort, 3), SelA50 = round(EstSelA50,3),
                             EstSelDelta = round(EstSelDelta, 3), Theta = round(EstTheta, 3)))
   }
+
+  if (length(params)==5) { # two sexes - multinomial
+    EstFMort = c(exp(nlmb$par[1]), exp(nlmb$par[1] + c(-1.96, 1.96) * ses[1]))
+    EstSelA50_1 = c(exp(nlmb$par[2]), exp(nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
+    EstSelA50_2 = c(exp(nlmb$par[3]), exp(nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
+    EstSelDelta_1 = c(exp(nlmb$par[4]), exp(nlmb$par[4] + c(-1.96, 1.96) * ses[4]))
+    EstSelDelta_2 = c(exp(nlmb$par[5]), exp(nlmb$par[5] + c(-1.96, 1.96) * ses[5]))
+    EstSelA95_1 = EstSelA50_1 + EstSelDelta_1
+    EstSelA95_2 = EstSelA50_2 + EstSelDelta_2
+    ParamEst = t(data.frame(FMort = round(EstFMort, 3), SelA50_1 = round(EstSelA50_1,3),
+                            SelA50_2 = round(EstSelA50_2,3), EstSelDelta_1 = round(EstSelDelta_1, 3),
+                            EstSelDelta_2 = round(EstSelDelta_2, 3)))
+  }
+
+  if (length(params)==6) { # two sexes - Dirichlet multinomial
+    EstFMort = c(exp(nlmb$par[1]), exp(nlmb$par[1] + c(-1.96, 1.96) * ses[1]))
+    EstSelA50_1 = c(exp(nlmb$par[2]), exp(nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
+    EstSelA50_2 = c(exp(nlmb$par[3]), exp(nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
+    EstSelDelta_1 = c(exp(nlmb$par[4]), exp(nlmb$par[4] + c(-1.96, 1.96) * ses[4]))
+    EstSelDelta_2 = c(exp(nlmb$par[5]), exp(nlmb$par[5] + c(-1.96, 1.96) * ses[5]))
+    EstSelA95_1 = EstSelA50_1 + EstSelDelta_1
+    EstSelA95_2 = EstSelA50_2 + EstSelDelta_2
+    temp = c(nlmb$par[6], nlmb$par[6] + c(-1.96, 1.96) * ses[6])
+    EstTheta = 1/(1+exp(-temp));
+    ParamEst = t(data.frame(FMort = round(EstFMort, 3), SelA50_1 = round(EstSelA50_1,3),
+                            SelA50_2 = round(EstSelA50_2,3), EstSelDelta_1 = round(EstSelDelta_1, 3),
+                            EstSelDelta_2 = round(EstSelDelta_2, 3), EstTheta = round(EstTheta, 3)))
+  }
   colnames(ParamEst) = c("Estimate", "lw_95%CL", "up_95%CL")
 
-  SampleSize = sum(ObsAgeFreq)
-  nll = nlmb$objective
-  convergence = nlmb$convergence
-  set.seed(123)
-  params = nlmb$par
-  vcov.params = vcov.Params
-  sims = data.frame(MASS::mvrnorm(n = 500, params, vcov.params))
-  EstFreq.sim = data.frame(matrix(nrow = 500, ncol = length(Ages)))
-  colnames(EstFreq.sim) <- Ages
-  SelA50.sim = rep(0,500)
-  SelDelta.sim = rep(0,500)
-  SelA95.sim = rep(0,500)
-  FMort.sim = rep(0,500)
-  EstZMort.sim = rep(0,500)
-  if (length(params)==4) EstTheta.sim = rep(0,500)
-
-  for (j in 1:500) {
-    FMort.sim[j] = exp(sims[j, 1])
-    SelA50.sim[j] = exp(sims[j, 2])
-    SelDelta.sim[j] = exp(sims[j, 3])
-    SelA95.sim[j] = SelA50.sim[j] + SelDelta.sim[j]
-
-    if (length(params)==4) {
-      temp = sims[j, 4]
-      EstTheta.sim= 1/(1+exp(-temp))
-    }
-
-    SelAtAge.sim = rep(0, length(Ages))
-    SelAtAge.sim = 1/(1 + exp(-log(19) * (Ages - SelA50.sim[j])/(SelA95.sim[j] -
-                                                                   SelA50.sim[j])))
-    FAtAge.sim = SelAtAge.sim * FMort.sim[j]
-    ZAtAge.sim = NatMort + FAtAge.sim
-    N.sim = numeric(length(Ages))
-    MinAge = min(Ages)
-    MaxAge = max(Ages)
-    N.sim[1] = 1
-    k = 1
-    for (i in seq(MinAge + 1, MaxAge, 1)) {
-      k = k + 1
-      if (i < MaxAge) {
-        N.sim[k] = N.sim[k-1] * exp(-ZAtAge.sim[k-1])
-      }
-      else {
-        N.sim[k] = N.sim[k-1] * exp(-ZAtAge.sim[k-1])/(1 - exp(-ZAtAge.sim[k]))
-      }
-    }
-    CatchAtAge.sim = N.sim * (FAtAge.sim/ZAtAge.sim) * (1 - exp(-ZAtAge.sim))
-    ExpPropAtAge.sim = CatchAtAge.sim/sum(CatchAtAge.sim)
-    EstFreq.sim[j, ] = SampleSize * ExpPropAtAge.sim
-    EstZMort.sim[j] = FMort.sim[j] + NatMort
+  # store selectivity outputs for output
+  if (length(params)==3 | length(params)==4) nSexes = 1
+  if (length(params)==5 | length(params)==6) nSexes = 2
+  EmptyFrame <- data.frame(matrix(nrow = nSexes, ncol = length(Ages)))
+  colnames(EmptyFrame) <- Ages;
+  SelAtAge <- EmptyFrame; FAtAge <- EmptyFrame; ZAtAge <- EmptyFrame;
+  if (nSexes==1) {
+    SelAtAge[1,] = 1/(1 + exp(-log(19) * (Ages - EstSelA50[1])/(EstSelA95[1] - EstSelA50[1])))
   }
-  EstFreq = apply(EstFreq.sim, 2, median)
-  EstFreq_Zlow = apply(EstFreq.sim, 2, quantile, probs = 0.025)
-  EstFreq_Zup = apply(EstFreq.sim, 2, quantile, probs = 0.975)
+  if (nSexes==2) {
+    SelAtAge[1,] = 1/(1 + exp(-log(19) * (Ages - EstSelA50_1[1])/(EstSelA95_1[1] - EstSelA50_1[1])))
+    SelAtAge[2,] = 1/(1 + exp(-log(19) * (Ages - EstSelA50_2[1])/(EstSelA95_2[1] - EstSelA50_2[1])))
+  }
+  FAtAge = SelAtAge * EstFMort[1]
+  ZAtAge = NatMort + FAtAge
+
+
+  set.seed(123)
+  nReps = 500
+  sims = data.frame(MASS::mvrnorm(n = nReps, params, vcov.params))
+
+  # set up storage
+  EmptyFrame = as.matrix(data.frame(matrix(nrow = nReps, ncol = length(Ages))))
+  colnames(EmptyFrame) <- Ages
+  EstFreq.sim_1=EmptyFrame; EstFreq.sim_2=EmptyFrame;
+
+  EmptyFrame = as.matrix(data.frame(matrix(nrow = nSexes, ncol=nReps)))
+  colnames(EmptyFrame) <- 1:nReps
+  SelA50.sim=EmptyFrame; SelDelta.sim=EmptyFrame; SelA95.sim=EmptyFrame
+  FMort.sim=EmptyFrame; EstZMort.sim=EmptyFrame; EstTheta.sim=EmptyFrame
+
+  EmptyFrame = as.matrix(data.frame(matrix(nrow = nSexes, ncol=length(Ages))))
+  colnames(EmptyFrame) <- Ages
+  SelAtAge.sim = EmptyFrame; FAtAge.sim=EmptyFrame; ZAtAge.sim=EmptyFrame
+  N.sim = EmptyFrame; CatchAtAge.sim=EmptyFrame; ExpPropAtAge.sim=EmptyFrame
+  EstZMort.sim = rep(0,nReps)
+
+  FMort.sim = exp(sims[,1])
+
+  if (is.vector(ObsAgeFreq)) {
+    temp <- EmptyFrame
+    temp[1,] = ObsAgeFreq
+    ObsAgeFreq = temp
+  }
+
+  for (s in 1:nSexes) {
+    for (j in 1:nReps) {
+
+      if (nSexes==1) {
+        SelA50.sim[s,j] = exp(sims[j, 2])
+        SelDelta.sim[s,j] = exp(sims[j, 3])
+        SelA95.sim[s,j] = SelA50.sim[s,j] + SelDelta.sim[s,j]
+      }
+      if (nSexes==2) {
+        if (s==1) {
+          SelA50.sim[s,j] = exp(sims[j, 2])
+          SelDelta.sim[s,j] = exp(sims[j, 4])
+          SelA95.sim[s,j] = SelA50.sim[s,j] + SelDelta.sim[s,j]
+        } else {
+          SelA50.sim[s,j] = exp(sims[j, 3])
+          SelDelta.sim[s,j] = exp(sims[j, 5])
+          SelA95.sim[s,j] = SelA50.sim[s,j] + SelDelta.sim[s,j]
+        }
+      }
+
+      if (length(params)==4) {
+        temp = sims[j, 4]
+        EstTheta.sim = 1/(1+exp(-temp))
+      }
+      if (length(params)==6) {
+        temp = sims[j, 6]
+        EstTheta.sim = 1/(1+exp(-temp))
+      }
+
+      SelAtAge.sim[s,] = 1/(1 + exp(-log(19) * (Ages - SelA50.sim[s,j])/(SelA95.sim[s,j] - SelA50.sim[s,j])))
+      FAtAge.sim[s,] = SelAtAge.sim[s,] * FMort.sim[j]
+      ZAtAge.sim[s,] = NatMort + FAtAge.sim[s,]
+
+      k = 1
+      N.sim[s,k] = 1
+      for (i in seq(min(Ages) + 1, max(Ages), 1)) {
+        k = k + 1
+        if (i < MaxAge) {
+          N.sim[s,k] = N.sim[s,k-1] * exp(-ZAtAge.sim[s,k-1])
+        }
+        else {
+          N.sim[s,k] = N.sim[s,k-1] * exp(-ZAtAge.sim[s,k-1])/(1 - exp(-ZAtAge.sim[s,k]))
+        }
+      }
+      CatchAtAge.sim[s,] = N.sim[s,] * (FAtAge.sim[s,] / ZAtAge.sim[s,]) * (1 - exp(-ZAtAge.sim[s,]))
+      ExpPropAtAge.sim[s,] = CatchAtAge.sim[s,] / sum(CatchAtAge.sim[s,])
+      if (s==1) {
+        EstFreq.sim_1[j,] = sum(ObsAgeFreq[1,]) * ExpPropAtAge.sim[s,]
+      } else {
+        EstFreq.sim_2[j,] = sum(ObsAgeFreq[2,]) * ExpPropAtAge.sim[s,]
+      }
+
+      EstZMort.sim[j] = FMort.sim[j] + NatMort
+    } # j
+
+    if (s==1) {
+      EstFreq = apply(EstFreq.sim_1, 2, median)
+      EstFreq_Zlow = apply(EstFreq.sim_1, 2, quantile, probs = 0.025)
+      EstFreq_Zup = apply(EstFreq.sim_1, 2, quantile, probs = 0.975)
+    }
+    if (s==2) {
+      EstFreq_2 = apply(EstFreq.sim_2, 2, median)
+      EstFreq_Zlow_2 = apply(EstFreq.sim_2, 2, quantile, probs = 0.025)
+      EstFreq_Zup_2 = apply(EstFreq.sim_2, 2, quantile, probs = 0.975)
+    }
+  } # s
+
+  if (nSexes==1) {
+    EstFreq_2=NA; EstFreq_Zlow_2=NA; EstFreq_Zup_2=NA
+  }
+
+  if (nrow(ObsAgeFreq)==1) {
+    SampleSize = sum(ObsAgeFreq)
+  } else {
+    SampleSize = c(sum(ObsAgeFreq[1,]),sum(ObsAgeFreq[2,]))
+  }
 
   ModelDiag = list(lnEstFMort.se = ses[1],
                    lnEstSelA50.se = ses[2],
@@ -8076,8 +8224,12 @@ GetLogisticCatchCurveResults <- function (params, NatMort, Ages, ObsAgeFreq)
                    EstFreq = EstFreq,
                    EstFreq_Zlow = EstFreq_Zlow,
                    EstFreq_Zup = EstFreq_Zup,
+                   EstFreq_2 = EstFreq_2,
+                   EstFreq_Zlow_2 = EstFreq_Zlow_2,
+                   EstFreq_Zup_2 = EstFreq_Zup_2,
                    params.sims = sims,
-                   EstFreq.sim = EstFreq.sim,
+                   EstFreq.sim_1 = EstFreq.sim_1,
+                   EstFreq.sim_2 = EstFreq.sim_2,
                    SelA50.sim = SelA50.sim,
                    SelDelta.sim = SelDelta.sim,
                    SelA95.sim = SelA95.sim,
@@ -8096,16 +8248,17 @@ GetLogisticCatchCurveResults <- function (params, NatMort, Ages, ObsAgeFreq)
                  ModelDiag = ModelDiag)
 
   # Dirichlet multinomial effective sample size
-  if (length(params)==4) {
+  if (length(params)==4 | length(params)==6) {
     temp = ((1+ (EstTheta*sum(ObsAgeFreq))) / (1 + EstTheta))
     EffSampSize <- t(data.frame(EffSampSize = temp))
     colnames(EffSampSize) = c("Estimate", "lw_95%CL", "up_95%CL")
     results$EffSampSize = EffSampSize
   }
 
-
   return(results)
+
 }
+
 
 #' Plot age based catch curve results in normal space
 #'
@@ -8131,7 +8284,7 @@ GetLogisticCatchCurveResults <- function (params, NatMort, Ages, ObsAgeFreq)
 #' @return plot of expected vs observed proportions at age
 #'
 #' @examples
-#' # simulate data
+#' # Simulate data from Multinomial distribution (single sex)
 #' set.seed(123)
 #' MinAge = 1
 #' MaxAge = 40
@@ -8143,7 +8296,8 @@ GetLogisticCatchCurveResults <- function (params, NatMort, Ages, ObsAgeFreq)
 #' SelA95 = 8
 #' SampleSize = 1000 # required sample size. For 2 sex model, same sample size generated for each sex.
 #' Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
-#' ObsAgeFreq = Res$CatchSample#' # Specify catch curve model and required inputs for that model
+#' ObsAgeFreq = unlist(as.vector(Res$CatchSample)) # input as vector for single sex model
+#' # Specify catch curve model and required inputs for that model
 #' # CatchCurveModel = 1 # Chapman Robson
 #' # NatMort = NA # Chapman Robson
 #' # RecAssump = 1 # Chapman Robson
@@ -8160,15 +8314,100 @@ GetLogisticCatchCurveResults <- function (params, NatMort, Ages, ObsAgeFreq)
 #' Init_SelA50 = 5
 #' Init_SelA95 = 7
 #' params = log(c(Init_FMort, Init_SelA50, SelA95))
+#' res=GetLogisticCatchCurveResults(params, NatMort, Ages, ObsAgeFreq)
+#' res$ParamEst
 #' PlotAgeBasedCatchCurveResults_NormalSpace(RecAssump, SpecRecAge=NA, MinFreq, MinAge, MaxAge, NatMort,
 #'                                           ObsAgeFreq, CatchCurveModel, MainLabel=NA,
 #'                                           xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA,
-#'                                          ymax=NA, yint=NA, PlotCLs=T)
+#'                                           ymax=NA, yint=NA, PlotCLs=T)
+#' # Simulate data from Dirichlet multinomial distribution (single sex)
+#' # J = number of fish sampling events
+#' # K = number of age classes
+#' # n = number of fish sampled from each sampling event
+#' # pi = expected proportion at age
+#' # theta = amount of autocorrelation between ages of fish within sampling events
+#' # Fit catch curve with Dirichlet multinomial distribution objective function (single sex)
+#' CatchCurveModel = 3 # Logistic selectivity
+#' set.seed(123)
+#' theta_val = 0.3
+#' simDat = simPop(J=50, K=nAges, n=10, pi=as.vector(unlist(Res$PropAtAge[1,])), theta=theta_val)
+#' simAges = data.frame(simDat$data)
+#' colnames(simAges)=Ages
+#' ObsAgeFreq = as.vector(colSums(simAges))
+#' Init_FMort = 0.1
+#' Init_SelA50 = 5
+#' Init_SelDelta = 2
+#' Init_theta = 0.35
+#' Init_theta_logit = log(Init_theta/(1-Init_theta)) # logit transform (so theta is always between 0 and 1)
+#' params = c(log(Init_FMort), log(Init_SelA50), log(Init_SelDelta), Init_theta_logit)
+#' res=GetLogisticCatchCurveResults(params, NatMort, Ages, ObsAgeFreq)
+#' res$ParamEst
+#' res$EffSampSize
+#' PlotAgeBasedCatchCurveResults_NormalSpace(RecAssump, SpecRecAge=NA, MinFreq, MinAge, MaxAge, NatMort,
+#'                                           ObsAgeFreq, CatchCurveModel, MainLabel=NA,
+#'                                           xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA,
+#'                                           ymax=NA, yint=NA, PlotCLs=T)
+#' # Simulate data from Multinomial distribution (two sexes)
+#' set.seed(123)
+#' CatchCurveModel = 3 # Logistic selectivity
+#' MinAge = 1
+#' MaxAge = 40
+#' Ages = MinAge:MaxAge
+#' NatMort <- exp(1.46 - (1.01 * (log(MaxAge)))) # i.e. Hoenig's (1983) eqn for fish
+#' FMort = 0.1
+#' ZMort = FMort + NatMort
+#' SelA50 = c(6,6.5)
+#' SelA95 = c(8,8.5)
+#' SampleSize = 1000 # required sample size. For 2 sex model, same sample size generated for each sex.
+#' Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
+#' ObsAgeFreq = Res$CatchSample
+#' # fit model (multinomial distribution - two sexes)
+#' Init_FMort = 0.2
+#' Init_SelA50 = c(5,5)
+#' Init_SelDelta = c(2,2.5)
+#' params = log(c(Init_FMort, Init_SelA50, Init_SelDelta))
+#' res=GetLogisticCatchCurveResults(params, NatMort, Ages, ObsAgeFreq)
+#' res$ParamEst
+#' PlotAgeBasedCatchCurveResults_NormalSpace(RecAssump, SpecRecAge=NA, MinFreq, MinAge, MaxAge, NatMort,
+#'                                           ObsAgeFreq, CatchCurveModel, MainLabel=NA,
+#'                                           xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA,
+#'                                           ymax=NA, yint=NA, PlotCLs=T)
+#' # Simulate data from Dirichlet multinomial distribution (two sexes)
+#' # two sexes
+#' set.seed(123)
+#' theta_val = 0.3
+#' # Females
+#' simDat_Fem = simPop(J=50, K=nAges, n=10, pi=as.vector(unlist(Res$PropAtAge[1,])), theta=theta_val)
+#' simAges_Fem = data.frame(simDat_Fem$data)
+#' colnames(simAges_Fem)=Ages
+#' ObsAgeFreq_Fem = as.vector(colSums(simAges_Fem))
+#' # Males
+#' simDat_Mal = simPop(J=50, K=nAges, n=10, pi=as.vector(unlist(Res$PropAtAge[2,])), theta=theta_val)
+#' simAges_Mal = data.frame(simDat_Mal$data)
+#' colnames(simAges_Mal)=Ages
+#' ObsAgeFreq_Mal = as.vector(colSums(simAges_Mal))
+#' ObsAgeFreq = t(data.frame(ObsAgeFreq_Fem,ObsAgeFreq_Mal))
+#' colnames(ObsAgeFreq)=Ages
+#' # fit model (Dirichlet multinomial distribution - two sexes)
+#' Init_FMort = 0.1
+#' Init_SelA50 = c(5,5)
+#' Init_SelDelta = c(2.5,2.5)
+#' Init_theta = 0.3
+#' Init_theta_logit = log(Init_theta/(1-Init_theta)) # logit transform (so theta is always between 0 and 1)
+#' params = c(log(Init_FMort), log(Init_SelA50), log(Init_SelDelta), Init_theta_logit)
+#' res=GetLogisticCatchCurveResults(params, NatMort, Ages, ObsAgeFreq)
+#' res$ParamEst
+#' res$EffSampSize
+#' PlotAgeBasedCatchCurveResults_NormalSpace(RecAssump, SpecRecAge=NA, MinFreq, MinAge, MaxAge, NatMort,
+#'                                           ObsAgeFreq, CatchCurveModel, MainLabel=NA,
+#'                                           xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA,
+#'                                           ymax=NA, yint=NA, PlotCLs=T)
 #' @export
 PlotAgeBasedCatchCurveResults_NormalSpace <- function(RecAssump, SpecRecAge, MinFreq, MinAge, MaxAge, NatMort,
                                                       ObsAgeFreq, CatchCurveModel, MainLabel,
                                                       xaxis_lab, yaxis_lab, xmax, xint,
                                                       ymax, yint, PlotCLs) {
+
 
   if (is.na(xaxis_lab)) xaxis_lab = "Age class"
   if (is.na(yaxis_lab)) yaxis_lab = "Frequency"
@@ -8184,16 +8423,30 @@ PlotAgeBasedCatchCurveResults_NormalSpace <- function(RecAssump, SpecRecAge, Min
 
   # Chapman-Robson
   if (CatchCurveModel == 1) {
+    nSexes=1
     Res = GetChapmanRobsonMortalityResults(RecAssump, SpecRecAge, MinAge, MaxAge, ObsAgeFreq)
     if (is.na(MainLabel)) MainLabel = "Chapman & Robson"
   }
   # Linear
   if (CatchCurveModel == 2) {
+    nSexes=1
     Res = GetLinearCatchCurveResults(RecAssump, SpecRecAge, MinFreq, Ages, ObsAgeFreq)
     if (is.na(MainLabel)) MainLabel = "Linear"
   }
   # logistic age-based selectivity
   if (CatchCurveModel == 3) {
+
+    if (is.vector(ObsAgeFreq)) {
+      nSexes=1
+      EmptyFrame = as.matrix(data.frame(matrix(nrow = 1, ncol=length(Ages))))
+      colnames(EmptyFrame) <- Ages
+      temp <- EmptyFrame
+      temp[1,] = ObsAgeFreq
+      ObsAgeFreq = temp
+    } else {
+      nSexes=2
+    }
+
     Res = GetLogisticCatchCurveResults(params, NatMort, Ages, ObsAgeFreq)
     if (is.na(MainLabel)) MainLabel = "Logistic selectivity"
   }
@@ -8226,41 +8479,98 @@ PlotAgeBasedCatchCurveResults_NormalSpace <- function(RecAssump, SpecRecAge, Min
   jj = seq(x,xxx,1) # low
   jjj = seq(x,xxxx,1) # est
 
-  # plot catch curve over age frequency data, in normal space
-  plot(Ages, ObsAgeFreq, "p", main=MainLabel, cex.main=1.2, pch=16, cex=0.8, xaxt = "n", yaxt = "n",
-       xlab=list(xaxis_lab,cex=1.2),ylab=list(yaxis_lab,cex=1.2), frame=F, xlim=c(0,xmax), ylim=c(0,ymax)) # observed data (normal space)
-  axis(1, at = seq(0, xmax, xint), line = 0.2, labels = F)
-  axis(2, at = seq(0, ymax, yint), line = 0.2, labels = F)
-  axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
-  axis(2, at = seq(0, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
-  if (PlotCLs == TRUE) {
-    if (CatchCurveModel == 3) {
+  if (nSexes==2) {
+
+    # Females
+    plot(Ages, ObsAgeFreq[1,], "p", main=c(MainLabel,"Females"), cex.main=1.2, pch=16, cex=0.8, xaxt = "n", yaxt = "n",
+         xlab=list(xaxis_lab,cex=1.2),ylab=list(yaxis_lab,cex=1.2), frame=F, xlim=c(0,xmax), ylim=c(0,ymax)) # observed data (normal space)
+    axis(1, at = seq(0, xmax, xint), line = 0.2, labels = F)
+    axis(2, at = seq(0, ymax, yint), line = 0.2, labels = F)
+    axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
+    axis(2, at = seq(0, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
+    if (PlotCLs == TRUE) {
       sm1 = spline(Ages[j], Res$ModelDiag$EstFreq_Zlow[1:length(jj)], n=100, method="natural")
       sm2 = spline(Ages[j], Res$ModelDiag$EstFreq_Zup[1:length(j)], n=100, method="natural")
-    } else {
-      sm1 = spline(Ages[jj], Res$EstFreq_Zlow[1:length(jj)], n=100, method="natural")
-      sm2 = spline(Ages[j], Res$EstFreq_Zup[1:length(j)], n=100, method="natural")
+      if (length(which(sm1$y<0))>0) sm1$y[1:max(which(sm1$y<0))]=0
+      if (length(which(sm2$y<0))>0) sm2$y[1:max(which(sm2$y<0))]=0
+      x = c(sm1$x, rev(sm2$x)) # using shading for 95% CLs
+      y = c(sm1$y, rev(sm2$y))
+      polygon(x,y, col="pink",border=NA)
     }
-    if (length(which(sm1$y<0))>0) sm1$y[1:max(which(sm1$y<0))]=0
-    if (length(which(sm2$y<0))>0) sm2$y[1:max(which(sm2$y<0))]=0
-    x = c(sm1$x, rev(sm2$x)) # using shading for 95% CLs
-    y = c(sm1$y, rev(sm2$y))
-    polygon(x,y, col="pink",border=NA)
-  }
-  # lines(Ages[jjj], Res$EstFreq[1:length(jjj)], col="black")
-  points(Ages, ObsAgeFreq, pch=16, cex=0.8)
-  if (CatchCurveModel == 3) {
+    points(Ages, ObsAgeFreq[1,], pch=16, cex=0.8)
     points(Ages[j], Res$ModelDiag$EstFreq[1:length(j)], col="red", pch=1, cex=0.8)
+    if (PlotCLs == FALSE) { # if not plotting confidence intervals, can include last age
+      xx=which(Ages==max(Ages)) # position of last age
+      points(Ages[x:xx], Res$ModelDiag$EstFreq[1:length(x:xx)], col="red", pch=1, cex=0.8)
+    }
+    legend("topright", legend=bquote(paste("Z = ", .(Z_value), " ",y^-1)), y.intersp = 1.5, inset=c(0.13,0),
+           lty=1, cex = 1, bty="n",seg.len = 0)
+    # Males
+    plot(Ages, ObsAgeFreq[2,], "p", main=c(MainLabel,"Males"), cex.main=1.2, pch=16, cex=0.8, xaxt = "n", yaxt = "n",
+         xlab=list(xaxis_lab,cex=1.2),ylab=list(yaxis_lab,cex=1.2), frame=F, xlim=c(0,xmax), ylim=c(0,ymax)) # observed data (normal space)
+    axis(1, at = seq(0, xmax, xint), line = 0.2, labels = F)
+    axis(2, at = seq(0, ymax, yint), line = 0.2, labels = F)
+    axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
+    axis(2, at = seq(0, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
+    if (PlotCLs == TRUE) {
+      sm1 = spline(Ages[j], Res$ModelDiag$EstFreq_Zlow_2[1:length(jj)], n=100, method="natural")
+      sm2 = spline(Ages[j], Res$ModelDiag$EstFreq_Zup_2[1:length(j)], n=100, method="natural")
+      if (length(which(sm1$y<0))>0) sm1$y[1:max(which(sm1$y<0))]=0
+      if (length(which(sm2$y<0))>0) sm2$y[1:max(which(sm2$y<0))]=0
+      x = c(sm1$x, rev(sm2$x)) # using shading for 95% CLs
+      y = c(sm1$y, rev(sm2$y))
+      polygon(x,y, col="lightblue",border=NA)
+    }
+    points(Ages, ObsAgeFreq[2,], pch=16, cex=0.8)
+    points(Ages[j], Res$ModelDiag$EstFreq_2[1:length(j)], col="blue", pch=1, cex=0.8)
+    if (PlotCLs == FALSE) { # if not plotting confidence intervals, can include last age
+      xx=which(Ages==max(Ages)) # position of last age
+      points(Ages[x:xx], Res$ModelDiag$EstFreq_2[1:length(x:xx)], col="blue", pch=1, cex=0.8)
+    }
+    legend("topright", legend=bquote(paste("Z = ", .(Z_value), " ",y^-1)), y.intersp = 1.5, inset=c(0.13,0),
+           lty=1, cex = 1, bty="n",seg.len = 0)
   } else {
-    points(Ages[j], Res$EstFreq[1:length(j)], col="red", pch=1, cex=0.8)
-  }
-  if (PlotCLs == FALSE) { # if not plotting confidence intervals, can include last age
-    xx=which(Ages==max(Ages)) # position of last age
-    points(Ages[x:xx], Res$EstFreq[1:length(x:xx)], col="red", pch=1, cex=0.8)
-  }
 
-  legend("topright", legend=bquote(paste("Z = ", .(Z_value), " ",y^-1)), y.intersp = 1.5, inset=c(0.13,0),
-         lty=1, cex = 1, bty="n",seg.len = 0)
+    # plot catch curve over age frequency data, in normal space
+    if (CatchCurveModel==3) ObsAgeFreq = as.vector(ObsAgeFreq[1,])
+    plot(Ages, ObsAgeFreq, "p", main=MainLabel, cex.main=1.2, pch=16, cex=0.8, xaxt = "n", yaxt = "n",
+         xlab=list(xaxis_lab,cex=1.2),ylab=list(yaxis_lab,cex=1.2), frame=F, xlim=c(0,xmax), ylim=c(0,ymax)) # observed data (normal space)
+    axis(1, at = seq(0, xmax, xint), line = 0.2, labels = F)
+    axis(2, at = seq(0, ymax, yint), line = 0.2, labels = F)
+    axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
+    axis(2, at = seq(0, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
+    if (PlotCLs == TRUE) {
+      if (CatchCurveModel == 3) {
+        sm1 = spline(Ages[j], Res$ModelDiag$EstFreq_Zlow[1:length(jj)], n=100, method="natural")
+        sm2 = spline(Ages[j], Res$ModelDiag$EstFreq_Zup[1:length(j)], n=100, method="natural")
+      } else {
+        sm1 = spline(Ages[jj], Res$EstFreq_Zlow[1:length(jj)], n=100, method="natural")
+        sm2 = spline(Ages[j], Res$EstFreq_Zup[1:length(j)], n=100, method="natural")
+      }
+      if (length(which(sm1$y<0))>0) sm1$y[1:max(which(sm1$y<0))]=0
+      if (length(which(sm2$y<0))>0) sm2$y[1:max(which(sm2$y<0))]=0
+      x = c(sm1$x, rev(sm2$x)) # using shading for 95% CLs
+      y = c(sm1$y, rev(sm2$y))
+      polygon(x,y, col="pink",border=NA)
+    }
+    points(Ages, ObsAgeFreq, pch=16, cex=0.8)
+    if (CatchCurveModel==3) {
+      points(Ages[j], Res$ModelDiag$EstFreq[1:length(j)], col="red", pch=1, cex=0.8)
+    } else {
+      points(Ages[j], Res$EstFreq[1:length(j)], col="red", pch=1, cex=0.8)
+    }
+    if (PlotCLs == FALSE) { # if not plotting confidence intervals, can include last age
+      xx=which(Ages==max(Ages)) # position of last age
+      if (CatchCurveModel==3) {
+        points(Ages[x:xx], Res$ModelDiag$EstFreq[1:length(x:xx)], col="red", pch=1, cex=0.8)
+      } else {
+        points(Ages[x:xx], Res$EstFreq[1:length(x:xx)], col="red", pch=1, cex=0.8)
+      }
+    }
+
+    legend("topright", legend=bquote(paste("Z = ", .(Z_value), " ",y^-1)), y.intersp = 1.5, inset=c(0.13,0),
+           lty=1, cex = 1, bty="n",seg.len = 0)
+  }
 }
 
 #' Plot age based catch curve results in log space
@@ -8299,7 +8609,7 @@ PlotAgeBasedCatchCurveResults_NormalSpace <- function(RecAssump, SpecRecAge, Min
 #' SelA95 = 8
 #' SampleSize = 1000 # required sample size. For 2 sex model, same sample size generated for each sex.
 #' Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
-#' ObsAgeFreq = Res$CatchSample
+#' ObsAgeFreq = unlist(as.vector(Res$CatchSample)) # input as vector for single sex model
 #' # Specify catch curve model and required inputs for that model
 #' # CatchCurveModel = 1 # Chapman Robson
 #' # NatMort = NA # Chapman Robson
@@ -14271,14 +14581,19 @@ PlotPerRecruit_Biom_with_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
     plot(Res$PerRec_FValues[1:x], EqB_med[1:x], "l", frame.plot=F, ylim=c(0,ymax), xlim=c(0,xmax),
          col="red", yaxt="n", xaxt="n", ylab="", xlab="", main=MainLabel)
     polygon(c(Res$PerRec_FValues[1:x],rev(Res$PerRec_FValues[1:x])),c(EqB_lw[1:x],rev(EqB_hi[1:x])),
-            col="lightpink", border="lightpink")
+            col="lightgrey", border="lightgrey")
+    EqB_lw60 = apply(Res$Sim_Eq_RelFemSpBiom,2,quantile, probs=c(0.2))
+    EqB_hi60 = apply(Res$Sim_Eq_RelFemSpBiom,2,quantile, probs=c(0.8))
+    polygon(c(Res$PerRec_FValues[1:x],rev(Res$PerRec_FValues[1:x])),c(EqB_lw60[1:x],rev(EqB_hi60[1:x])),
+            col="pink", border="pink")
     lines(Res$PerRec_FValues[1:x], EqB_med[1:x],col="red")
     points(Current_F, Res$EstEquilRelFemSpBiom[1], cex=1.2, col="red", pch=16)
     lw=as.numeric(Res$EstEquilRelFemSpBiom[2]); up=as.numeric(Res$EstEquilRelFemSpBiom[3])
-    arrows(Current_F, lw, Current_F, up,length=0.05, angle=90, code=3,col="red")
-    legend("topleft", col="red", pch = 16, legend="Estimate - females",
-           bty="n", cex=1,0, lty=0, inset = 0.05)
-  }
+    arrows(Current_F, lw, Current_F, up,length=0.001, angle=90, code=3,col="red")
+    legend("topleft", col=c("red","pink","lightgrey"), pch = c(16,-1,-1),
+           legend=c("Estimate - females","60% CLs", "95% CLs"), lty=c("solid","solid","solid"), lwd=c(-1,5,5),
+           bty="n", cex=1,0, inset = 0.05)
+    }
 
   if (PlotOpt==2) { # plot males
     EqB_med = apply(Res$Sim_Eq_RelMalSpBiom,2,quantile, probs=c(0.5))
@@ -14287,15 +14602,19 @@ PlotPerRecruit_Biom_with_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
     x=which(Res$PerRec_FValues==xmax)
     plot(Res$PerRec_FValues[1:x], EqB_med[1:x], "l", frame.plot=F, ylim=c(0,ymax), xlim=c(0,xmax),
          col="blue", yaxt="n", xaxt="n", ylab="", xlab="", main=MainLabel)
-
     polygon(c(Res$PerRec_FValues[1:x],rev(Res$PerRec_FValues[1:x])),c(EqB_lw[1:x],rev(EqB_hi[1:x])),
+            col="lightgrey", border="lightgrey")
+    EqB_lw60 = apply(Res$Sim_Eq_RelMalSpBiom,2,quantile, probs=c(0.2))
+    EqB_hi60 = apply(Res$Sim_Eq_RelMalSpBiom,2,quantile, probs=c(0.8))
+    polygon(c(Res$PerRec_FValues[1:x],rev(Res$PerRec_FValues[1:x])),c(EqB_lw60[1:x],rev(EqB_hi60[1:x])),
             col="lightblue", border="lightblue")
     lines(Res$PerRec_FValues[1:x], EqB_med[1:x],col="blue")
     lw=as.numeric(Res$EstEquilRelMalSpBiom[2]); up=as.numeric(Res$EstEquilRelMalSpBiom[3])
-    arrows(Current_F, lw, Current_F, up,length=0.05, angle=90, code=3,col="blue")
+    arrows(Current_F, lw, Current_F, up,length=0.001, angle=90, code=3,col="blue")
     points(Current_F, Res$EstEquilRelMalSpBiom[1], cex=1.2, col="blue", pch=16)
-    legend("topleft", col="blue", pch = 16, legend="Estimate - males",
-           bty="n", cex=1,0, lty=0, inset = 0.05)
+    legend("topleft", col=c("blue","lightblue","lightgrey"), pch = c(16,-1,-1),
+           legend=c("Estimate - males","60% CLs", "95% CLs"), lty=c("solid","solid","solid"), lwd=c(-1,5,5),
+           bty="n", cex=1,0, inset = 0.05)
   }
 
   if (PlotOpt==3) { # plot combined sex
@@ -14305,15 +14624,19 @@ PlotPerRecruit_Biom_with_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
     x=which(Res$PerRec_FValues==xmax)
     plot(Res$PerRec_FValues[1:x], EqB_med[1:x], "l", frame.plot=F, ylim=c(0,ymax), xlim=c(0,xmax),
          col="black", yaxt="n", xaxt="n", ylab="", xlab="", main=MainLabel)
-
     polygon(c(Res$PerRec_FValues[1:x],rev(Res$PerRec_FValues[1:x])),c(EqB_lw[1:x],rev(EqB_hi[1:x])),
             col="lightgrey", border="lightgrey")
+    EqB_lw50 = apply(Res$Sim_Eq_RelCombSexSpBiom,2,quantile, probs=c(0.2))
+    EqB_hi60 = apply(Res$Sim_Eq_RelCombSexSpBiom,2,quantile, probs=c(0.8))
+    polygon(c(Res$PerRec_FValues[1:x],rev(Res$PerRec_FValues[1:x])),c(EqB_lw60[1:x],rev(EqB_hi60[1:x])),
+            col="lightgreen", border="lightgreen")
     lines(Res$PerRec_FValues[1:x], EqB_med[1:x],col="black")
     lw=as.numeric(Res$EstEquilRelCombSexSpBiom[2]); up=as.numeric(Res$EstEquilRelCombSexSpBiom[3])
-    arrows(Current_F, lw, Current_F, up,length=0.05, angle=90, code=3,col="black")
+    arrows(Current_F, lw, Current_F, up,length=0.001, angle=90, code=3,col="black")
     points(Current_F, Res$EstEquilRelCombSexSpBiom[1], cex=1.2, col="black", pch=16)
-    legend("topleft", col="black", pch = 16, legend="Estimate - comb. sex",
-           bty="n", cex=1,0, lty=0, inset = 0.05)
+    legend("topleft", col=c("black","lightgreen","lightgrey"), pch = c(16,-1,-1),
+           legend=c("Estimate - comb. sex","60% CLs", "95% CLs"), lty=c("solid","solid","solid"), lwd=c(-1,5,5),
+           bty="n", cex=1,0, inset = 0.05)
   }
 
   axis(1, at=seq(0, xmax, xint), cex.axis=1, lwd=1, lab=F, line=-0.3)
@@ -14523,8 +14846,9 @@ PlotPerRecruit_Biom_with_err_LB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
     points(Current_F, Res$EstEquilRelFemSpBiom[1], cex=1.2, col="red", pch=16)
     lw=as.numeric(Res$EstEquilRelFemSpBiom[2]); up=as.numeric(Res$EstEquilRelFemSpBiom[3])
     arrows(Current_F, lw, Current_F, up,length=0.001, angle=90, code=3,col="red")
-    legend("topleft", col="red", pch = 16, legend="Estimate - females",
-           bty="n", cex=1,0, lty=0, inset = 0.05)
+    legend("topleft", col=c("red","pink","lightgrey"), pch = c(16,-1,-1),
+           legend=c("Estimate - females","60% CLs", "95% CLs"), lty=c("solid","solid","solid"), lwd=c(-1,5,5),
+           bty="n", cex=1,0, inset = 0.05)
 
   }
 
@@ -14545,8 +14869,9 @@ PlotPerRecruit_Biom_with_err_LB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
     lw=as.numeric(Res$EstEquilRelMalSpBiom[2]); up=as.numeric(Res$EstEquilRelMalSpBiom[3])
     arrows(Current_F, lw, Current_F, up,length=0.001, angle=90, code=3,col="blue")
     points(Current_F, Res$EstEquilRelMalSpBiom[1], cex=1.2, col="blue", pch=16)
-    legend("topleft", col="blue", pch = 16, legend="Estimate - males",
-           bty="n", cex=1,0, lty=0, inset = 0.05)
+    legend("topleft", col=c("blue","lightblue","lightgrey"), pch = c(16,-1,-1),
+           legend=c("Estimate - males","60% CLs", "95% CLs"), lty=c("solid","solid","solid"), lwd=c(-1,5,5),
+           bty="n", cex=1,0, inset = 0.05)
   }
 
   if (PlotOpt==3) { # plot combined sex
@@ -14566,9 +14891,11 @@ PlotPerRecruit_Biom_with_err_LB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
     lw=as.numeric(Res$EstEquilRelCombSexSpBiom[2]); up=as.numeric(Res$EstEquilRelCombSexSpBiom[3])
     arrows(Current_F, lw, Current_F, up,length=0.001, angle=90, code=3,col="black")
     points(Current_F, Res$EstEquilRelCombSexSpBiom[1], cex=1.2, col="black", pch=16)
-    legend("topleft", col="black", pch = 16, legend="Estimate - comb. sex",
-           bty="n", cex=1,0, lty=0, inset = 0.05)
+    legend("topleft", col=c("black","lightgreen","lightgrey"), pch = c(16,-1,-1),
+           legend=c("Estimate - comb. sex","60% CLs", "95% CLs"), lty=c("solid","solid","solid"), lwd=c(-1,5,5),
+           bty="n", cex=1,0, inset = 0.05)
   }
+
 
   axis(1, at=seq(0, xmax, xint), cex.axis=1, lwd=1, lab=F, line=-0.3)
   axis(2, at=seq(0, ymax, yint), cex.axis=1, lwd=1, lab=F, line=-0.3)

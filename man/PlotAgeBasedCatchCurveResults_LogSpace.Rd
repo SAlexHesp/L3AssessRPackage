@@ -76,7 +76,7 @@ SelA50 = 6
 SelA95 = 8
 SampleSize = 1000 # required sample size. For 2 sex model, same sample size generated for each sex.
 Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
-ObsAgeFreq = Res$CatchSample
+ObsAgeFreq = unlist(as.vector(Res$CatchSample)) # input as vector for single sex model
 # Specify catch curve model and required inputs for that model
 # CatchCurveModel = 1 # Chapman Robson
 # NatMort = NA # Chapman Robson
