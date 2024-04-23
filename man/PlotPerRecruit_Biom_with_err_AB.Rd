@@ -201,13 +201,13 @@ ret_A50 <- NA  # females, males - Logistic age fish retention at age parameters
 ret_A95 <- NA  # females, males - Logistic age fish retention at age parameters
 EstRetenAtAge <- data.frame(EstFemRetenAtAge=rep(1,MaxModelAge+1), EstMalRetenAtAge=rep(1,MaxModelAge+1)) # fish retention at age (from age 0), inputted as values in data frame
 DiscMort <- 0.0 # discard mortality (e.g. 50\% released fish die = 0.5)
-Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
-Steepness_sd <- 0.025
 SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
+Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
+Steepness_sd <- c(0.025, 1) # sd, distribution type, 1=normal, 2=lognormal
 NatMort <- 0.2 # natural mortality  (year-1)
-NatMort_sd <- 0.025
+NatMort_sd <- c(0.31, 2) # sd, distribution type, 1=normal, 2=lognormal
 Current_F <- 0.1 # estimate of fishing mortality, e.g. from catch curve analysis
-Current_F_sd <- 0.005
+Current_F_sd <- c(0.005,1) # sd, distribution type, 1=normal, 2=lognormal
 PlotOpt <- 1 # 1=females, 2=males, 3=combined sex
 RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 nReps = 50
@@ -259,13 +259,13 @@ ret_A50 <- NA  # females, males - Logistic age fish retention at age parameters
 ret_A95 <- NA  # females, males - Logistic age fish retention at age parameters
 EstRetenAtAge <- data.frame(EstFemRetenAtAge=rep(1,MaxModelAge+1), EstMalRetenAtAge=rep(1,MaxModelAge+1)) # fish retention at age (from age 0), inputted as values in data frame
 DiscMort <- 0.0 # discard mortality (e.g. 50\% released fish die = 0.5)
-Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
-Steepness_sd <- 0.025
 SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
-NatMort <- 0.07 # natural mortality  (year-1)
-NatMort_sd <- 0.005
+Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
+Steepness_sd <- c(0.025, 1) # sd, distribution type, 1=normal, 2=lognormal
+NatMort <- 0.2 # natural mortality  (year-1)
+NatMort_sd <- c(0.31, 2) # sd, distribution type, 1=normal, 2=lognormal
 Current_F <- 0.1 # estimate of fishing mortality, e.g. from catch curve analysis
-Current_F_sd <- 0.005
+Current_F_sd <- c(0.005,1) # sd, distribution type, 1=normal, 2=lognormal
 PlotOpt <- 1 # 1=females, 2=males, 3=combined sex
 RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 nReps = 10

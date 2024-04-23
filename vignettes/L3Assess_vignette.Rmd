@@ -91,19 +91,19 @@ Refer to help files and example code, showing function inputs and outputs.
 
 ### Catch curve analysis with logistic selectivity
 
-Applying this catch curve approach, selectivity at age, $S_a$, is calculated as
+This age-based catch curve model assumes estimates multiple parameters, including fully-selected fishing mortality and logistic selectivity parameters. The model can allow for sex-specific differences in age-based selectivity if fitted simultaneously to sex-specific age composition data sets, otherwise selectivity can be assumed to be common to both sexes. Selectivity at age for sex $s$, is calculated as
 
 $$
-S_a = 1/(1+\exp(-\log_e(19)(a-A_{50,s})/(A_{95}-A_{50})))
+V_{a,s} = 1/(1+\exp(-\log_e(19)(a-A_{50,s})/(A_{95,s}-A_{50,s})))
 $$
   
-where $A_{50}$ and $A_{95}$ are the ages at which 50 and 95% of fish are selected into the fishery. Fishing mortality at age, $F_a$, is calculated as 
+where $A_{50,s}$ and $A_{95,s}$ are the ages at which 50 and 95% of fish of sex $s$ are selected into the fishery. Fishing mortality at age for sex $s$, $F_{a,s}$, is calculated as 
 $$
-F_a = S_aF
+F_{a,s} = V_{a,s}F
 $$
-where $F$ is the fully-selected fishing mortality. Total mortality at age, $Z_a$, is
+where $F$ is the fully-selected fishing mortality. Total mortality at age for sex $s$, $Z_{a,s}$, is
 $$
-Z_a = F_a+M
+Z_{a,s} = F_{a,s}+M
 $$
 The instantaneous rate of natural mortality, $M$, may be calculated from an empirical equation such as that of Hoenig's (1983) equation for fish, i.e.
 $$
@@ -141,7 +141,9 @@ $$
 \lambda =\frac{\Gamma(n+1)}{\prod_{a=1}^{A}\Gamma(n|\tilde{\pi}+1)}\frac{\Gamma({\theta}n)}{\Gamma({n+\theta}n)}  \prod_{a=1}^{A}\frac{\Gamma(n|\tilde{\pi}_a+\theta{n\pi_a})}{(\theta{n}\pi_a)}
 $$
 
-The model is fitted by minimising the negative log-likelihood using nlminb in R, by estimating the fully-selected fishing mortality $F$, and selectivity parameters, $a_{50}$ and $s$. Estimates of asymptotic standard errors, $\sigma$, for each of the model parameters, are derived from the variance-covariance matrix (i.e. from the inverted Hessian matrix produced by nlminb). Approximate 95% confidence intervals for the estimated parameters are calculated as $1.96\sigma$. For visualisation, model estimates of the frequency of fish at each age, with associated 95% confidence intervals, are calculated using a parametric resampling approach, assuming the estimated model parameters conform to a multivariate normal distribution. The mvrnorm function within the MASS package is used together with the values of the estimated model parameters and associated variance-covariance matrix to generate 500 random values of each of the model parameters. These, in turn, are used to produce 500 sets of model estimates for the frequency of fish at each age, $\tilde{f_a}$, calculated as
+The model is fitted by minimising the negative log-likelihood using nlminb in R, by estimating the fully-selected fishing mortality $F$, and selectivity parameters, $a_{50}$ and $s$. Estimates of asymptotic standard errors, $\sigma$, for each of the model parameters, are derived from the variance-covariance matrix (i.e. from the inverted Hessian matrix produced by nlminb). Approximate 95% confidence intervals for the estimated parameters are calculated as $1.96\sigma$. 
+
+For visualisation, model estimates of the frequency of fish at each age, with associated 95% confidence intervals, are calculated using a parametric resampling approach, assuming the estimated model parameters conform to a multivariate normal distribution. The mvrnorm function within the MASS package is used together with the values of the estimated model parameters and associated variance-covariance matrix to generate 500 random values of each of the model parameters. These, in turn, are used to produce 500 sets of model estimates for the frequency of fish at each age, $\tilde{f_a}$, calculated as
 
 $$
 \tilde{f_a}=\tilde{\pi}_an

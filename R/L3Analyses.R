@@ -5477,7 +5477,7 @@ PlotLengthBasedCatchCurve_Mortality <- function(params, DistnType, MLL, Selectiv
 #' midpt=Res$midpt
 #' ubnd=Res$ubnd
 #' # get data - 1 sex (or combined sexes)
-#' ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen # 1 sex
+#' ObsRetCatchFreqAtLen = as.vector(Res$ObsRetCatchFreqAtLen) # 1 sex
 #' ObsRetCatchFreqAtLengthAndAge = as.matrix(Res$ObsRetCatchFreqAtLengthAndDecAge) # 1 sex
 #' # # get data - 2 sexes
 #' # ObsRetCatchFreqAtLen <- data.frame(matrix(nrow = 2, ncol = length(midpt))) # 2 sex
@@ -5527,7 +5527,7 @@ PlotLengthBasedCatchCurve_Mortality <- function(params, DistnType, MLL, Selectiv
 #' midpt=Res$midpt
 #' ubnd=Res$ubnd
 #' # get data - 1 sex (or combined sexes)
-#' ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen # 1 sex
+#' ObsRetCatchFreqAtLen = as.vector(Res$ObsRetCatchFreqAtLen) # 1 sex
 #' ObsRetCatchFreqAtLengthAndAge = as.matrix(Res$ObsRetCatchFreqAtLengthAndDecAge) # 1 sex
 #' # get params - 1 sex
 #' InitFishMort = 0.3 # specify starting parameters
@@ -5548,6 +5548,7 @@ PlotAgeLengthCatchCurve_MargLength <- function(params, RefnceAges, MLL, GrowthCu
                                                xaxis_lab, yaxis_lab, xmax, xint,
                                                ymax, yint, PlotCLs, FittedRes, nReps) {
 
+
   # if model already fitted, can input results rather than refit
   if (is.list(FittedRes)) {
     res =  FittedRes
@@ -5557,13 +5558,14 @@ PlotAgeLengthCatchCurve_MargLength <- function(params, RefnceAges, MLL, GrowthCu
                                               lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep)
   }
 
+  names(res$ModelDiag)
   params = res$ModelDiag$params
   vcov.params = res$ModelDiag$vcov.Params
   ExpCatchAtLen = res$ExpCatchAtLen
+
   if (is.vector(ObsRetCatchFreqAtLen)) {
     ObsRelCatchAtLen = ObsRetCatchFreqAtLen/sum(ObsRetCatchFreqAtLen)
-  }
-  if (is.data.frame(ObsRetCatchFreqAtLen)) {
+  } else {
     ObsRelCatchAtLen = data.frame(matrix(nrow = 2, ncol = length(midpt)))
     colnames(ObsRelCatchAtLen) = midpt
     ObsRelCatchAtLen[1,] = ObsRetCatchFreqAtLen[1,]/(sum(ObsRetCatchFreqAtLen[1,])+sum(ObsRetCatchFreqAtLen[2,]))
@@ -5594,9 +5596,7 @@ PlotAgeLengthCatchCurve_MargLength <- function(params, RefnceAges, MLL, GrowthCu
     EstProp.sim = apply(EstPropAtLen.sim, 2, median)
     EstProp.sim_low = apply(EstPropAtLen.sim, 2, quantile, probs = 0.025)
     EstProp.sim_up = apply(EstPropAtLen.sim, 2, quantile, probs = 0.975)
-  }
-  # separate sexes - females
-  if (is.data.frame(ObsRetCatchFreqAtLen)) {
+  } else {
     EstPropF.sim = apply(EstPropAtLen.sim_Fem, 2, median)
     EstPropF.sim_low = apply(EstPropAtLen.sim_Fem, 2, quantile, probs = 0.025)
     EstPropF.sim_up = apply(EstPropAtLen.sim_Fem, 2, quantile, probs = 0.975)
@@ -5630,10 +5630,7 @@ PlotAgeLengthCatchCurve_MargLength <- function(params, RefnceAges, MLL, GrowthCu
     points(midpt, ObsRelCatchAtLen, col="black", pch=16, cex=0.8)
     points(midpt, EstProp.sim, col="red", pch=1, cex=0.8)
     AddAxesAndTickLabelsToPlot(xmin=NA, xmax, xint, ymin=NA, ymax, yint, cexval=NA, cexaxisval=NA, lwdval=NA, lineval=NA, lasval=NA)
-  }
-
-  # separate sexes
-  if (is.data.frame(ObsRetCatchFreqAtLen)) {
+  } else {
     if (is.na(yaxis_lab)) yaxis_lab1 = "Proportion - Females"
     plot(midpt, ObsRelCatchAtLen[1,], "p", main=MainLabel, cex.main=1.2, pch=16, cex=0.8,
          xaxt = "n", yaxt = "n", xlab=list(xaxis_lab,cex=1.2),ylab=list(yaxis_lab1,cex=1.2), frame=F, xlim=c(0,xmax), ylim=c(0,ymax))
@@ -5746,7 +5743,7 @@ PlotAgeLengthCatchCurve_MargLength <- function(params, RefnceAges, MLL, GrowthCu
 #' midpt=Res$midpt
 #' ubnd=Res$ubnd
 #' # get data - 1 sex (or combined sexes)
-#' ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen # 1 sex
+#' ObsRetCatchFreqAtLen = as.vector(Res$ObsRetCatchFreqAtLen) # 1 sex
 #' ObsRetCatchFreqAtLengthAndAge = as.matrix(Res$ObsRetCatchFreqAtLengthAndDecAge) # 1 sex
 #' # # get data - 2 sexes
 #' # ObsRetCatchFreqAtLen <- data.frame(matrix(nrow = 2, ncol = length(midpt))) # 2 sex
@@ -5796,7 +5793,7 @@ PlotAgeLengthCatchCurve_MargLength <- function(params, RefnceAges, MLL, GrowthCu
 #' midpt=Res$midpt
 #' ubnd=Res$ubnd
 #' # get data - 1 sex (or combined sexes)
-#' ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen # 1 sex
+#' ObsRetCatchFreqAtLen = as.vector(Res$ObsRetCatchFreqAtLen) # 1 sex
 #' ObsRetCatchFreqAtLengthAndAge = as.matrix(Res$ObsRetCatchFreqAtLengthAndDecAge) # 1 sex
 #' # get params - 1 sex
 #' InitFishMort = 0.3 # specify starting parameters
@@ -5823,8 +5820,7 @@ PlotAgeLengthCatchCurve_Growth <- function(params, RefnceAges, MLL, GrowthCurveT
     SampleSize = sum(ObsRetCatchFreqAtLen)
     ObsAge = rep(NA, SampleSize)
     ObsLenClRetCatchMidPt = rep(NA, SampleSize)
-  }
-  if (is.data.frame(ObsRetCatchFreqAtLen)) {
+  } else {
     SampleSize_F = sum(ObsRetCatchFreqAtLen[1,])
     SampleSize_M = sum(ObsRetCatchFreqAtLen[2,])
     ObsAge_F = rep(NA, SampleSize_F)
@@ -5852,8 +5848,7 @@ PlotAgeLengthCatchCurve_Growth <- function(params, RefnceAges, MLL, GrowthCurveT
           ObsLenClRetCatchMidPt[strt:fnsh]=midpt[j]
           strt=strt+x
         }
-      }
-      if (is.data.frame(ObsRetCatchFreqAtLen)) { # 2 sexes
+      } else {
         # females
         x=ObsRetCatchFreqAtLengthAndAge[i,j,1] # number of females in current length and age class
         if(x>0) {
@@ -5899,8 +5894,7 @@ PlotAgeLengthCatchCurve_Growth <- function(params, RefnceAges, MLL, GrowthCurveT
         if (SelectivityType == 2) { # estimated
           EstLenAtAge.sim[j,] = ParamVals[4] * (1 - exp(-ParamVals[5]*(DecAges)))
         }
-      }
-      if (is.data.frame(ObsRetCatchFreqAtLen)) { # separate sexes
+      } else {
         if (SelectivityType == 1) { # input vector
           EstLenAtAgeF.sim[j,] = ParamVals[2] * (1 - exp(-ParamVals[4]*(DecAges)))
           EstLenAtAgeM.sim[j,] = ParamVals[3] * (1 - exp(-ParamVals[5]*(DecAges)))
@@ -5934,8 +5928,7 @@ PlotAgeLengthCatchCurve_Growth <- function(params, RefnceAges, MLL, GrowthCurveT
             EstLenAtAge.sim[j,i] = SchnuteGrowthfunction(Age, t1, t2, y1, y2, a, b)
           }
         }
-      }
-      if (is.data.frame(ObsRetCatchFreqAtLen)) { # separate sexes
+      } else {
         if (SelectivityType == 1) { # input vector
           for(i in 1:length(DecAges)) {
             Age=DecAges[i]
@@ -5963,8 +5956,7 @@ PlotAgeLengthCatchCurve_Growth <- function(params, RefnceAges, MLL, GrowthCurveT
     EstProp.sim = as.vector(apply(EstLenAtAge.sim, 2, median))
     EstProp.sim_low = as.vector(apply(EstLenAtAge.sim, 2, quantile, probs = 0.025))
     EstProp.sim_up = as.vector(apply(EstLenAtAge.sim, 2, quantile, probs = 0.975))
-  }
-  if (is.data.frame(ObsRetCatchFreqAtLen)) { # separate sexes
+  } else {
     EstPropF.sim = as.vector(apply(EstLenAtAgeF.sim, 2, median))
     EstPropF.sim_low = as.vector(apply(EstLenAtAgeF.sim, 2, quantile, probs = 0.025))
     EstPropF.sim_up = as.vector(apply(EstLenAtAgeF.sim, 2, quantile, probs = 0.975))
@@ -5996,8 +5988,7 @@ PlotAgeLengthCatchCurve_Growth <- function(params, RefnceAges, MLL, GrowthCurveT
     points(ObsAge, ObsLenClRetCatchMidPt, col="black", cex=0.6)
     points(DecAges, EstProp.sim, col="red", pch=1, cex=0.6)
     AddAxesAndTickLabelsToPlot(xmin=NA, xmax, xint, ymin=NA, ymax, yint, cexval=NA, cexaxisval=NA, lwdval=NA, lineval=NA, lasval=NA)
-  }
-  if (is.data.frame(ObsRetCatchFreqAtLen)) { # females
+  } else {
     # females
     ylims = Get_yaxis_scale(midpt)
     if (is.na(ymax)) ymax = ylims$ymax
@@ -6333,9 +6324,9 @@ GetInputsForPlotting_Cond_AL <- function(params, RefnceAges, MLL, GrowthCurveTyp
     Result = list(ObsRetCatchFreqAtLengthAndIntAge=ObsRetCatchFreqAtLengthAndIntAge,
                   ObsCatchPropAgeAtLength=ObsCatchPropAgeAtLength,
                   ExpRetCatchPropIntAgeGivenLength=ExpRetCatchPropIntAgeGivenLength)
-  }
+  } else {
   # 2 sexes
-  if (is.data.frame(ObsRetCatchFreqAtLen)) {
+
     ExpRetCatchPropAtIntAge_Fem=res$ModelDiag$ExpRetCatchPropAtIntAge_Fem
     ExpRetCatchPropAtIntAge_Mal=res$ModelDiag$ExpRetCatchPropAtIntAge_Mal
     ExpRetCatchPropLengthGivenIntAge_Fem=res$ModelDiag$ExpRetCatchPropLengthGivenIntAge_Fem
@@ -6460,7 +6451,7 @@ GetInputsForPlotting_Cond_AL <- function(params, RefnceAges, MLL, GrowthCurveTyp
 #' midpt=Res$midpt
 #' ubnd=Res$ubnd
 #' # get data - 1 sex (or combined sexes)
-#' ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen # 1 sex
+#' ObsRetCatchFreqAtLen = as.vector(Res$ObsRetCatchFreqAtLen) # 1 sex
 #' ObsRetCatchFreqAtLengthAndAge = as.matrix(Res$ObsRetCatchFreqAtLengthAndDecAge) # 1 sex
 #' # # get data - 2 sexes
 #' # ObsRetCatchFreqAtLen <- data.frame(matrix(nrow = 2, ncol = length(midpt))) # 2 sex
@@ -6510,7 +6501,7 @@ GetInputsForPlotting_Cond_AL <- function(params, RefnceAges, MLL, GrowthCurveTyp
 #' midpt=Res$midpt
 #' ubnd=Res$ubnd
 #' # get data - 1 sex (or combined sexes)
-#' ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen # 1 sex
+#' ObsRetCatchFreqAtLen = as.vector(Res$ObsRetCatchFreqAtLen) # 1 sex
 #' ObsRetCatchFreqAtLengthAndAge = as.matrix(Res$ObsRetCatchFreqAtLengthAndDecAge) # 1 sex
 #' # get params - 1 sex
 #' InitFishMort = 0.3 # specify starting parameters
@@ -6554,9 +6545,7 @@ PlotAgeLengthCatchCurve_Cond_AL <- function(params, RefnceAges, MLL, GrowthCurve
   if (is.vector(ObsRetCatchFreqAtLen)) {
     ObsCatchPropAgeAtLength = Res$ObsCatchPropAgeAtLength
     ExpRetCatchPropIntAgeGivenLength = Res$ExpRetCatchPropIntAgeGivenLength
-  }
-  # 2 sexes
-  if (is.data.frame(ObsRetCatchFreqAtLen)) {
+  } else {
     ObsCatchPropAgeAtLength_Fem = Res$ObsCatchPropAgeAtLength_Fem
     ObsCatchPropAgeAtLength_Mal = Res$ObsCatchPropAgeAtLength_Mal
     ExpRetCatchPropIntAgeGivenLength_Fem = Res$ExpRetCatchPropIntAgeGivenLength_Fem
@@ -6605,9 +6594,7 @@ PlotAgeLengthCatchCurve_Cond_AL <- function(params, RefnceAges, MLL, GrowthCurve
                pch=c(16,-1), col=c("black","red"), bty='n', cex=0.8)
       }
     }
-  }
-
-  if (is.data.frame(ObsRetCatchFreqAtLen)) {
+  } else {
 
     # females
     par(mfcol=c(3,3), mar=c(3.5,3.5,1,1), oma=c(1,1,1,0), tck=-0.03)
@@ -6754,7 +6741,7 @@ PlotAgeLengthCatchCurve_Cond_AL <- function(params, RefnceAges, MLL, GrowthCurve
 #' midpt=Res$midpt
 #' ubnd=Res$ubnd
 #' # get data - 1 sex (or combined sexes)
-#' ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen # 1 sex
+#' ObsRetCatchFreqAtLen = as.vector(Res$ObsRetCatchFreqAtLen) # 1 sex
 #' ObsRetCatchFreqAtLengthAndAge = as.matrix(Res$ObsRetCatchFreqAtLengthAndDecAge) # 1 sex
 #' # # get data - 2 sexes
 #' # ObsRetCatchFreqAtLen <- data.frame(matrix(nrow = 2, ncol = length(midpt))) # 2 sex
@@ -6804,7 +6791,7 @@ PlotAgeLengthCatchCurve_Cond_AL <- function(params, RefnceAges, MLL, GrowthCurve
 #' midpt=Res$midpt
 #' ubnd=Res$ubnd
 #' # get data - 1 sex (or combined sexes)
-#' ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen # 1 sex
+#' ObsRetCatchFreqAtLen = as.vector(Res$ObsRetCatchFreqAtLen) # 1 sex
 #' ObsRetCatchFreqAtLengthAndAge = as.matrix(Res$ObsRetCatchFreqAtLengthAndDecAge) # 1 sex
 #' # get params - 1 sex
 #' InitFishMort = 0.3 # specify starting parameters
@@ -6841,9 +6828,7 @@ PlotAgeLengthCatchCurve_Pears_Resid <- function(params, RefnceAges, MLL, GrowthC
     ObsCatchPropAgeAtLength = Res$ObsCatchPropAgeAtLength
     ObsRetCatchFreqAtLengthAndIntAge = Res$ObsRetCatchFreqAtLengthAndIntAge
     ExpRetCatchPropIntAgeGivenLength = Res$ExpRetCatchPropIntAgeGivenLength
-  }
-  # 2 sexes
-  if (is.data.frame(ObsRetCatchFreqAtLen)) {
+  } else {
     ObsCatchPropAgeAtLength_Fem = Res$ObsCatchPropAgeAtLength_Fem
     ObsCatchPropAgeAtLength_Mal = Res$ObsCatchPropAgeAtLength_Mal
     ObsRetCatchFreqAtLengthAndIntAge_Fem = Res$ObsRetCatchFreqAtLengthAndIntAge_Fem
@@ -6851,7 +6836,6 @@ PlotAgeLengthCatchCurve_Pears_Resid <- function(params, RefnceAges, MLL, GrowthC
     ExpRetCatchPropIntAgeGivenLength_Fem = Res$ExpRetCatchPropIntAgeGivenLength_Fem
     ExpRetCatchPropIntAgeGivenLength_Mal = Res$ExpRetCatchPropIntAgeGivenLength_Mal
   }
-
 
   # calculate the Pearson residuals (for a multinomial distribution)
   # single sex - Pearson residuals
@@ -6870,10 +6854,8 @@ PlotAgeLengthCatchCurve_Pears_Resid <- function(params, RefnceAges, MLL, GrowthC
         PearResid[,i] = Prop_Resid / Prop_Var
       }
     }
-  }
+  } else {
 
-  # 2 sexes - Pearson residuals
-  if (is.data.frame(ObsRetCatchFreqAtLen)) {
     PearResid_Fem <- data.frame(matrix(nrow = nAgeCl, ncol = nLenCl))
     colnames(PearResid_Fem) <- midpt
     PearResid_Mal <- PearResid_Fem
@@ -6932,10 +6914,8 @@ PlotAgeLengthCatchCurve_Pears_Resid <- function(params, RefnceAges, MLL, GrowthC
                                cexval=NA, cexaxisval=NA, lwdval=NA, lineval=NA, lasval=NA)
     legend("bottomright", legend=c("+ve resid.","-ve resid."), inset=c(0.13,0),
            cex=0.8, bty="n", seg.len = 0, pch=16, border=T, col=c("blue","red"))
-  }
+  } else {
 
-  # separate sexes
-  if (is.data.frame(ObsRetCatchFreqAtLen)) {
     # females
     plot(1,1, xlim=c(0,xmax), ylim=c(0,ymax), col=0,
          ylab='',xlab='',xaxt='n',yaxt='n')
@@ -13923,13 +13903,13 @@ PlotPerRecruit_Biom_no_err_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, mid
 #' ret_A95 <- NA  # females, males - Logistic age fish retention at age parameters
 #' EstRetenAtAge <- data.frame(EstFemRetenAtAge=rep(1,MaxModelAge+1), EstMalRetenAtAge=rep(1,MaxModelAge+1)) # fish retention at age (from age 0), inputted as values in data frame
 #' DiscMort <- 0.0 # discard mortality (e.g. 50% released fish die = 0.5)
-#' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
-#' Steepness_sd <- 0.025
 #' SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
+#' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
+#' Steepness_sd <- c(0.025, 1) # sd, distribution type, 1=normal, 2=lognormal
 #' NatMort <- 0.2 # natural mortality  (year-1)
-#' NatMort_sd <- 0.025
+#' NatMort_sd <- c(0.31, 2) # sd, distribution type, 1=normal, 2=lognormal
 #' Current_F <- 0.1 # estimate of fishing mortality, e.g. from catch curve analysis
-#' Current_F_sd <- 0.005
+#' Current_F_sd <- c(0.005,1) # sd, distribution type, 1=normal, 2=lognormal
 #' RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 #' nReps = 50
 #' GetPerRecruitResults_AB_with_err(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge, lenwt_a, ln_lenwt_a,
@@ -13947,10 +13927,21 @@ GetPerRecruitResults_AB_with_err <- function(MaxModelAge, TimeStep, Linf, vbK, t
                                              Steepness_sd, SRrel_Type, NatMort, NatMort_sd, Current_F, Current_F_sd, nReps) {
 
 
-
-  FValues = rnorm(nReps, Current_F, Current_F_sd)
-  hValues = rnorm(nReps, Steepness, Steepness_sd)
-  MValues = rnorm(nReps, NatMort, NatMort_sd)
+  if (Current_F_sd[2]==1) { # normal
+    FValues = rnorm(nReps, Current_F, Current_F_sd[1])
+  } else { # lognormal
+    FValues = exp(rnorm(nReps, log(Current_F), Current_F_sd[1]))
+  }
+  if (Steepness_sd[2]==1) {
+    hValues = rnorm(nReps, Steepness, Steepness_sd[1])
+  } else {
+    hValues = exp(rnorm(nReps, log(Steepness), Steepness_sd[1]))
+  }
+  if (NatMort_sd[2]==1) {
+    MValues = rnorm(nReps, NatMort, NatMort_sd[1])
+  } else {
+    MValues = exp(rnorm(nReps, log(NatMort), NatMort_sd[1]))
+  }
 
 
   for (i in 1:nReps) {
@@ -14453,13 +14444,13 @@ GetPerRecruitResults_LB_with_err <- function(MaxModelAge, TimeStep, lbnd, ubnd, 
 #' ret_A95 <- NA  # females, males - Logistic age fish retention at age parameters
 #' EstRetenAtAge <- data.frame(EstFemRetenAtAge=rep(1,MaxModelAge+1), EstMalRetenAtAge=rep(1,MaxModelAge+1)) # fish retention at age (from age 0), inputted as values in data frame
 #' DiscMort <- 0.0 # discard mortality (e.g. 50% released fish die = 0.5)
-#' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
-#' Steepness_sd <- 0.025
 #' SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
+#' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
+#' Steepness_sd <- c(0.025, 1) # sd, distribution type, 1=normal, 2=lognormal
 #' NatMort <- 0.2 # natural mortality  (year-1)
-#' NatMort_sd <- 0.025
+#' NatMort_sd <- c(0.31, 2) # sd, distribution type, 1=normal, 2=lognormal
 #' Current_F <- 0.1 # estimate of fishing mortality, e.g. from catch curve analysis
-#' Current_F_sd <- 0.005
+#' Current_F_sd <- c(0.005,1) # sd, distribution type, 1=normal, 2=lognormal
 #' PlotOpt <- 1 # 1=females, 2=males, 3=combined sex
 #' RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 #' nReps = 50
@@ -14511,13 +14502,13 @@ GetPerRecruitResults_LB_with_err <- function(MaxModelAge, TimeStep, lbnd, ubnd, 
 #' ret_A95 <- NA  # females, males - Logistic age fish retention at age parameters
 #' EstRetenAtAge <- data.frame(EstFemRetenAtAge=rep(1,MaxModelAge+1), EstMalRetenAtAge=rep(1,MaxModelAge+1)) # fish retention at age (from age 0), inputted as values in data frame
 #' DiscMort <- 0.0 # discard mortality (e.g. 50% released fish die = 0.5)
-#' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
-#' Steepness_sd <- 0.025
 #' SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
-#' NatMort <- 0.07 # natural mortality  (year-1)
-#' NatMort_sd <- 0.005
+#' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
+#' Steepness_sd <- c(0.025, 1) # sd, distribution type, 1=normal, 2=lognormal
+#' NatMort <- 0.2 # natural mortality  (year-1)
+#' NatMort_sd <- c(0.31, 2) # sd, distribution type, 1=normal, 2=lognormal
 #' Current_F <- 0.1 # estimate of fishing mortality, e.g. from catch curve analysis
-#' Current_F_sd <- 0.005
+#' Current_F_sd <- c(0.005,1) # sd, distribution type, 1=normal, 2=lognormal
 #' PlotOpt <- 1 # 1=females, 2=males, 3=combined sex
 #' RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 #' nReps = 10
@@ -14626,7 +14617,7 @@ PlotPerRecruit_Biom_with_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
          col="black", yaxt="n", xaxt="n", ylab="", xlab="", main=MainLabel)
     polygon(c(Res$PerRec_FValues[1:x],rev(Res$PerRec_FValues[1:x])),c(EqB_lw[1:x],rev(EqB_hi[1:x])),
             col="lightgrey", border="lightgrey")
-    EqB_lw50 = apply(Res$Sim_Eq_RelCombSexSpBiom,2,quantile, probs=c(0.2))
+    EqB_lw60 = apply(Res$Sim_Eq_RelCombSexSpBiom,2,quantile, probs=c(0.2))
     EqB_hi60 = apply(Res$Sim_Eq_RelCombSexSpBiom,2,quantile, probs=c(0.8))
     polygon(c(Res$PerRec_FValues[1:x],rev(Res$PerRec_FValues[1:x])),c(EqB_lw60[1:x],rev(EqB_hi60[1:x])),
             col="lightgreen", border="lightgreen")
@@ -14883,7 +14874,7 @@ PlotPerRecruit_Biom_with_err_LB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
          col="black", yaxt="n", xaxt="n", ylab="", xlab="", main=MainLabel)
     polygon(c(Res$PerRec_FValues[1:x],rev(Res$PerRec_FValues[1:x])),c(EqB_lw[1:x],rev(EqB_hi[1:x])),
             col="lightgrey", border="lightgrey")
-    EqB_lw50 = apply(Res$Sim_Eq_RelCombSexSpBiom,2,quantile, probs=c(0.2))
+    EqB_lw60 = apply(Res$Sim_Eq_RelCombSexSpBiom,2,quantile, probs=c(0.2))
     EqB_hi60 = apply(Res$Sim_Eq_RelCombSexSpBiom,2,quantile, probs=c(0.8))
     polygon(c(Res$PerRec_FValues[1:x],rev(Res$PerRec_FValues[1:x])),c(EqB_lw60[1:x],rev(EqB_hi60[1:x])),
             col="lightgreen", border="lightgreen")

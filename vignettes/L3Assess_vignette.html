@@ -485,16 +485,22 @@ outputs.</p>
 </div>
 <div id="catch-curve-analysis-with-logistic-selectivity" class="section level3">
 <h3>Catch curve analysis with logistic selectivity</h3>
-<p>Applying this catch curve approach, selectivity at age, <span class="math inline">\(S_a\)</span>, is calculated as</p>
+<p>This age-based catch curve model assumes estimates multiple
+parameters, including fully-selected fishing mortality and logistic
+selectivity parameters. The model can allow for sex-specific differences
+in age-based selectivity if fitted simultaneously to sex-specific age
+composition data sets, otherwise selectivity can be assumed to be common
+to both sexes. Selectivity at age for sex <span class="math inline">\(s\)</span>, is calculated as</p>
 <p><span class="math display">\[
-S_a = 1/(1+\exp(-\log_e(19)(a-A_{50,s})/(A_{95}-A_{50})))
+V_{a,s} = 1/(1+\exp(-\log_e(19)(a-A_{50,s})/(A_{95,s}-A_{50,s})))
 \]</span></p>
-<p>where <span class="math inline">\(A_{50}\)</span> and <span class="math inline">\(A_{95}\)</span> are the ages at which 50 and 95%
-of fish are selected into the fishery. Fishing mortality at age, <span class="math inline">\(F_a\)</span>, is calculated as <span class="math display">\[
-F_a = S_aF
+<p>where <span class="math inline">\(A_{50,s}\)</span> and <span class="math inline">\(A_{95,s}\)</span> are the ages at which 50 and 95%
+of fish of sex <span class="math inline">\(s\)</span> are selected into
+the fishery. Fishing mortality at age for sex <span class="math inline">\(s\)</span>, <span class="math inline">\(F_{a,s}\)</span>, is calculated as <span class="math display">\[
+F_{a,s} = V_{a,s}F
 \]</span> where <span class="math inline">\(F\)</span> is the
-fully-selected fishing mortality. Total mortality at age, <span class="math inline">\(Z_a\)</span>, is <span class="math display">\[
-Z_a = F_a+M
+fully-selected fishing mortality. Total mortality at age for sex <span class="math inline">\(s\)</span>, <span class="math inline">\(Z_{a,s}\)</span>, is <span class="math display">\[
+Z_{a,s} = F_{a,s}+M
 \]</span> The instantaneous rate of natural mortality, <span class="math inline">\(M\)</span>, may be calculated from an empirical
 equation such as that of Hoenig’s (1983) equation for fish, i.e. <span class="math display">\[
 M = \exp(1.46)-(1.01)\ln(A_{\mathrm{max}})
@@ -540,16 +546,17 @@ errors, <span class="math inline">\(\sigma\)</span>, for each of the
 model parameters, are derived from the variance-covariance matrix
 (i.e. from the inverted Hessian matrix produced by nlminb). Approximate
 95% confidence intervals for the estimated parameters are calculated as
-<span class="math inline">\(1.96\sigma\)</span>. For visualisation,
-model estimates of the frequency of fish at each age, with associated
-95% confidence intervals, are calculated using a parametric resampling
-approach, assuming the estimated model parameters conform to a
-multivariate normal distribution. The mvrnorm function within the MASS
-package is used together with the values of the estimated model
-parameters and associated variance-covariance matrix to generate 500
-random values of each of the model parameters. These, in turn, are used
-to produce 500 sets of model estimates for the frequency of fish at each
-age, <span class="math inline">\(\tilde{f_a}\)</span>, calculated as</p>
+<span class="math inline">\(1.96\sigma\)</span>.</p>
+<p>For visualisation, model estimates of the frequency of fish at each
+age, with associated 95% confidence intervals, are calculated using a
+parametric resampling approach, assuming the estimated model parameters
+conform to a multivariate normal distribution. The mvrnorm function
+within the MASS package is used together with the values of the
+estimated model parameters and associated variance-covariance matrix to
+generate 500 random values of each of the model parameters. These, in
+turn, are used to produce 500 sets of model estimates for the frequency
+of fish at each age, <span class="math inline">\(\tilde{f_a}\)</span>,
+calculated as</p>
 <p><span class="math display">\[
 \tilde{f_a}=\tilde{\pi}_an
 \]</span></p>

@@ -128,7 +128,7 @@ lbnd=Res$lbnd
 midpt=Res$midpt
 ubnd=Res$ubnd
 # get data - 1 sex (or combined sexes)
-ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen # 1 sex
+ObsRetCatchFreqAtLen = as.vector(Res$ObsRetCatchFreqAtLen) # 1 sex
 ObsRetCatchFreqAtLengthAndAge = as.matrix(Res$ObsRetCatchFreqAtLengthAndDecAge) # 1 sex
 # # get data - 2 sexes
 # ObsRetCatchFreqAtLen <- data.frame(matrix(nrow = 2, ncol = length(midpt))) # 2 sex
@@ -178,7 +178,7 @@ lbnd=Res$lbnd
 midpt=Res$midpt
 ubnd=Res$ubnd
 # get data - 1 sex (or combined sexes)
-ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen # 1 sex
+ObsRetCatchFreqAtLen = as.vector(Res$ObsRetCatchFreqAtLen) # 1 sex
 ObsRetCatchFreqAtLengthAndAge = as.matrix(Res$ObsRetCatchFreqAtLengthAndDecAge) # 1 sex
 # get params - 1 sex
 InitFishMort = 0.3 # specify starting parameters
