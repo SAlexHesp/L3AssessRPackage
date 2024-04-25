@@ -426,8 +426,9 @@ CalcSizeDistOfRecruits <- function(MeanSizeAtAge, CVSizeAtAge, lbnd, ubnd, midpt
       pnorm(lbnd, mean=MeanLenRec, sd=SDAgeOneRecruits,lower.tail = T)
 
     RecLenDist = RecLenDist / sum(RecLenDist)
-  }
-  if (is.matrix(MeanSizeAtAge) | is.data.frame(MeanSizeAtAge)) {
+
+  } else {
+
     RecLenDist <- data.frame(matrix(nrow = 2, ncol = nLenCl))
     colnames(RecLenDist) <- midpt
     RecLenDist = as.matrix(RecLenDist)
@@ -702,6 +703,7 @@ VisualiseGrowthApplyingLTM <- function (nFish, TimeStep, MaxAge, Growth_params, 
 #' # params = c(InitFishMort_logit, log(InitL50), log(InitDelta), log(InitL50Ret), log(InitDeltaRet))
 #' FittedRes=GetLengthBasedCatchCurveResults(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
 #'                                     lbnd, ubnd, midpt, SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
+#'
 #' # Example with selectivity specified as a vector
 #' # Simulate data
 #' SampleSize=5000
@@ -739,9 +741,9 @@ VisualiseGrowthApplyingLTM <- function (nFish, TimeStep, MaxAge, Growth_params, 
 #' InitFishMort = 0.25 # specify starting parameters
 #' InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform
 #' params = c(InitFishMort_logit)
-#'
 #' FittedRes=GetLengthBasedCatchCurveResults(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
 #'                                     lbnd, ubnd, midpt, SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
+#'
 #'
 #' # Fit length-based catch curve to length-frequency data generated from Dirchlet multinomial distribution.
 #' # First, use SimLenAndAgeFreqData function to calculate expected proportions at length
@@ -769,7 +771,7 @@ VisualiseGrowthApplyingLTM <- function (nFish, TimeStep, MaxAge, Growth_params, 
 #' Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
 #'                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' # Now simulate length-frequency data from Dirchlet multinomial distribution.
-#' set.seed(122)
+#' set.seed(123)
 #' nSampEvents = 50
 #' nFishPerSampEvent = 20
 #' theta_val = 0.3
@@ -780,7 +782,7 @@ VisualiseGrowthApplyingLTM <- function (nFish, TimeStep, MaxAge, Growth_params, 
 #' # Fit length-based catch curve, assuming Dirichlet multinomial distribution
 #' ObsRetCatchFreqAtLen = res$simLenFreq
 #' ObsDiscCatchFreqAtLen = NA # (or set to Res$ObsDiscCatchFreqAtLen)
-#' PropReleased = NA # proportion of fish released, vector including mean and sd (option probably now obselete)
+#' PropReleased = NA # proportion of fish released, vector including mean and sd (option probably now obsolete)
 #' midpt=Res$midpt
 #' lbnd=Res$lbnd
 #' ubnd=Res$ubnd
@@ -792,6 +794,89 @@ VisualiseGrowthApplyingLTM <- function (nFish, TimeStep, MaxAge, Growth_params, 
 #' InitTheta = 0.3 # specify starting parameters
 #' InitTheta_logit = log(InitTheta/(1-InitTheta)) # logit transform
 #' params = c(InitFishMort_logit, log(InitL50), log(InitDelta),InitTheta_logit)
+#' FittedRes=GetLengthBasedCatchCurveResults(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
+#'                                           lbnd, ubnd, midpt, SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
+#'
+#' # Fit model using growth outputs from an analysis of tag-recapture data
+#' library(WAFishBiology)
+#' # Simulate tag-recapture data for growth analysis
+#' set.seed(123)
+#' nstep = 50 # number of steps for numerical integration
+#' MaxLen = 300
+#' Gaussian_A = 0.094
+#' Gaussian_u = 55.33
+#' Gaussian_sd = 53.17
+#' StandDev = 10
+#' GrowthCrvChoice = 2 # 1 = double logistic, 2 = Gaussian function, 3 = von Bertalanffy growth curve, 4 = Gompertz growth curve
+#' params = log(c(Gaussian_A, Gaussian_u, Gaussian_sd, StandDev))
+#' nobs = 500
+#' res=SimulateTagRecaptureData(GrowthCrvChoice, nstep, nobs, MaxLen, params)
+#' plot(res$Obs_Initlen, res$Obs_Finlen, pch=16, cex=0.6)
+#' lines(res$Initlen_line, res$Exp_Finlen2, col="blue")
+#' lines(res$Initlen_line2, res$Exp_Finlen3, col="blue")
+#' MaxAge = 30 # for model
+#' params = log(c(0.1, 60, 50, 8))
+#' Obs_delta_t=res$Obs_delta_t
+#' Obs_Initlen=res$Obs_Initlen
+#' Obs_Finlen=res$Obs_Finlen
+#' # Fit growth model to simulated tag-recapture data
+#' TagRes=GetTaggingGrowthModelResults(params, nstep, Obs_delta_t, Obs_Initlen, Obs_Finlen, MaxAge, MaxLen, nobs)
+#' # Simulate length composition data using estimated growth parameters from tag-recapture growth model
+#' set.seed(123)
+#' SampleSize=2000 # sample size for retained catches (and same number for released fish, if an MLL is specified)
+#' MaxAge = 30 # for model
+#' TimeStep = 1 # model timestep (e.g. 1 = annual, 1/12 = monthly)
+#' NatMort = 0.15 # following Strain et al. 2017
+#' FishMort = 1.5 * NatMort # 0.225
+#' MaxLen = 250
+#' LenInc = 2
+#' MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified
+#' SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
+#' SelectivityVec = NA # selectivity vector
+#' SelParams = c(60, 20) # L50, L95-L50 for gear selectivity (somewhere around size when abalone emerge from inside caves to being accessible to fishers)
+#' RetenParams = c(150, 10) # L50, L95-L50 for retention
+#' DiscMort = 0 # proportion of fish that die due to natural mortality
+#' # single sex, von Bertalanffy
+#' GrowthCurveType = 3 # 1 = von Bertalanffy, 2 = Schnute, 3 = Growth from length increment data
+#' CVSizeAtAge = 0.05
+#' # get outputs from tag-recapture growth model
+#' InitLen = TagRes$plot_Init_Length
+#' MeanSizeAtAge_TagRes = TagRes$plot_EstLenAtIntAge
+#' AnnualGrowthInc_TagRes = TagRes$plot_Length_Inc
+#' MeanEndingLength = TagRes$plot_Init_Length + TagRes$plot_Length_Inc
+#' # get annual growth increments for midpoints of specified length classes, for use
+#' # in length-based catch curve model, and length-based per recruit model
+#' lbnd = seq(0,MaxLen - LenInc, LenInc)
+#' midpt = lbnd + (LenInc/2)
+#' nLenCl = length(midpt)
+#' TimestepGrowthSizeInc_TagRes=rep(0,nLenCl)
+#' k=0
+#' for (i in 1:nLenCl) {
+#'   k=k+1
+#'   TimestepGrowthSizeInc_TagRes[k]=AnnualGrowthInc_TagRes[which(InitLen==midpt[i])]
+#' }
+#' MeanEndingLength_TagRes = midpt + TimestepGrowthSizeInc_TagRes
+#' plot(midpt,TimestepGrowthSizeInc_TagRes)
+#' plot(midpt,MeanEndingLength_TagRes)
+#' # specify required growth inputs for simulating length data
+#' MeanSizeAtAge = MeanSizeAtAge_TagRes[2:length(MeanSizeAtAge_TagRes)] # removing size at age zero, as model starts at age 1
+#' GrowthParams = list(MeanSizeAtAge=MeanSizeAtAge, TimestepGrowthSizeInc=TimestepGrowthSizeInc_TagRes, MeanEndingLength=MeanEndingLength_TagRes)
+#' RefnceAges = NA
+#' SimRes=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
+#'                             SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#' DistnType = 1 # 1 = Multinomial, 2 = Dirichlet multinomial
+#' GrowthCurveType = 3 # 1 = von Bertalanffy, 2 = Schnute, 3 = any model with annual mean length increment input
+#' ObsRetCatchFreqAtLen = SimRes$ObsRetCatchFreqAtLen
+#' ObsDiscCatchFreqAtLen = NA # (or set to Res$ObsDiscCatchFreqAtLen)
+#' PropReleased = NA # proportion of fish released, vector including mean and sd (option probably now obsolete)
+#' midpt=SimRes$midpt
+#' lbnd=SimRes$lbnd
+#' ubnd=SimRes$ubnd
+#' InitFishMort = 0.25 # specify starting parameters
+#' InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform
+#' InitL50 = 400
+#' InitDelta = 100
+#' params = c(InitFishMort_logit, log(InitL50), log(InitDelta))
 #' FittedRes=GetLengthBasedCatchCurveResults(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
 #'                                           lbnd, ubnd, midpt, SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
 #' @export
@@ -1311,11 +1396,11 @@ GetGrowthParams_AgeAndLengthBasedCatchCurvesCalcs <- function(params, GrowthCurv
 #' @param TimeStep model timestep (e.g. 1 = annual, 1/12 = monthly)
 #' @param nLenCl number of length classes
 #' @param midpt mid points of length classes
-#' @param GrowthCurveType 1=von Bertalanffy, 2=Schnute
+#' @param GrowthCurveType 1=von Bertalanffy, 2=Schnute, 3=any model with annual size increment input
 #' @param GrowthModelType 1=von Bertalanffy - 1 sex, 2=von Bertalanffy - 2 sexes,
-#' Schnute - 1 sex, 2=Schnute - 2 sexes
-#' @param GrowthParams growth parameters (used for GrowthModelType 2 or 4)
-#' @param RefnceAges Schnute reference ages (used for GrowthModelType 4)
+#' 3=Schnute - 1 sex, 4=Schnute - 2 sexes, 5=size increment input - 1 sex, 6=size increment input - 1 sexes
+#' @param GrowthParams growth parameters or list with tag-model growth outputs
+#' @param RefnceAges Schnute reference ages
 #' @param SelectivityType 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
 #'
 #' @return mean size at age from growth curve (MeanSizeAtAge), estimated length after one year for each length class
@@ -1342,7 +1427,6 @@ GetGrowthInputsForLengthTransitionMatrices <- function(MaxAge, TimeStep, nLenCl,
     MeanEndingLength <- data.frame(matrix(nrow = 2, ncol = nLenCl))
     colnames(MeanEndingLength) <- midpt
     TimestepGrowthSizeInc = MeanEndingLength
-    RecLenDist = MeanEndingLength
     for (i in 1:2) {
       MeanSizeAtAge[i,] = Linf[i] * (1 - exp (-vbK[i] * Ages))
       MeanEndingLength[i,] = midpt + (Linf[i] - midpt) * (1 - exp(-vbK[i]*TimeStep))
@@ -1374,7 +1458,6 @@ GetGrowthInputsForLengthTransitionMatrices <- function(MaxAge, TimeStep, nLenCl,
     MeanEndingLength <- data.frame(matrix(nrow = 2, ncol = nLenCl))
     colnames(MeanEndingLength) <- midpt
     TimestepGrowthSizeInc = MeanEndingLength
-    RecLenDist = MeanEndingLength
     for (i in 1:2) {
       t1=RefnceAges[i,1]
       t2=RefnceAges[i,2]
@@ -1391,6 +1474,25 @@ GetGrowthInputsForLengthTransitionMatrices <- function(MaxAge, TimeStep, nLenCl,
       RefnceAgesForSex = c(t1, t2)
       MeanEndingLength[i,] = CalcLengthAfterGrowthForTimetep(GrowthCurveType=2, TimeStep, GrowthParamsForSex, RefnceAgesForSex, midpt, MaxAge)
       TimestepGrowthSizeInc[i,] = MeanEndingLength[i,] - midpt
+    }
+  }
+
+  if (GrowthModelType == 5) { # annual size increment input, single sex
+    MeanSizeAtAge = GrowthParams$MeanSizeAtAge
+    MeanEndingLength = GrowthParams$MeanEndingLength
+    TimestepGrowthSizeInc = GrowthParams$TimestepGrowthSizeInc # amount of annual growth with respect to initial length
+  }
+
+  if (GrowthModelType == 6) { # annual size increment input, single sex
+    MeanSizeAtAge <- data.frame(matrix(nrow = 2, ncol = length(Ages)))
+    colnames(MeanSizeAtAge) <- Ages
+    MeanEndingLength <- data.frame(matrix(nrow = 2, ncol = nLenCl))
+    colnames(MeanEndingLength) <- midpt
+    TimestepGrowthSizeInc = MeanEndingLength
+    for (i in 1:2) {
+    MeanSizeAtAge[i,] = GrowthParams$MeanSizeAtAge[i,]
+    MeanEndingLength[i,] = GrowthParams$MeanEndingLength[i,]
+    TimestepGrowthSizeInc[i,] = GrowthParams$TimestepGrowthSizeInc[i,]
     }
   }
 
@@ -1426,9 +1528,9 @@ GetGrowthModelType <- function (GrowthCurveType, GrowthParams)
   # Allocated a model number, given type of catch curve and growth curve
   if (GrowthCurveType==1) { # von Bertalanffy
     if (is.vector(GrowthParams)) {
-      GrowthModelType =  1
+      GrowthModelType =  1 # one sex
     } else {
-      GrowthModelType = 2
+      GrowthModelType = 2 # two sexes
     }
   }
   if (GrowthCurveType==2) { # Schnute
@@ -1436,6 +1538,13 @@ GetGrowthModelType <- function (GrowthCurveType, GrowthParams)
       GrowthModelType = 3
     } else {
       GrowthModelType = 4
+    }
+  }
+  if (GrowthCurveType==3) { # Any model with mean size increment input
+    if (is.vector(GrowthParams)) {
+      GrowthModelType = 5
+    } else {
+      GrowthModelType = 6
     }
   }
 
@@ -1505,6 +1614,14 @@ CalcSelectivityPenalties <- function (Res, GrowthCurveType, GrowthModelType, Gro
   if (GrowthCurveType==2) { # Schnute
     # calc Linf from Schnute growth curve params
     Linf = CalcAsymptoticLengthFromSchnuteParams(GrowthModelType, Res, GrowthParams, RefnceAges)
+  }
+
+  if (GrowthCurveType==3) { # annual length increment input
+    if (GrowthModelType == 5) { # single sex
+      Linf = max(GrowthParams$MeanSizeAtAge)
+    } else { # 2 sexes, von Bertalanffy
+      Linf = max(c(GrowthParams$MeanSizeAtAge[1,],GrowthParams$MeanSizeAtAge[2,]))
+    }
   }
 
   # ensure L95 < Linf
@@ -1626,7 +1743,7 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, DistnType, GrowthCurveTyp
   # get size distribution for juvenile recruits
   RecLenDist = CalcSizeDistOfRecruits(MeanSizeAtAge, CVSizeAtAge, lbnd, ubnd, midpt, nLenCl) # length distribution of 1+ recruits
 
-  if (GrowthModelType ==  1 | GrowthModelType == 3) { # single sex
+  if (GrowthModelType ==  1 | GrowthModelType == 3 | GrowthModelType == 5) { # single sex
     # Calculate length transition matrix
     LTM = CalcLTM_cpp(TimestepGrowthSizeInc, CVSizeAtAge, lbnd, midpt, ubnd, nLenCl) # length-transition matrix
 
@@ -1700,7 +1817,7 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, DistnType, GrowthCurveTyp
 
   } # single sex (or combined growth) catch curve
 
-  if (GrowthModelType ==  2 | GrowthModelType == 4) { # separate sex
+  if (GrowthModelType ==  2 | GrowthModelType == 4 | GrowthModelType == 6) { # separate sex
 
     TimestepGrowthSizeInc_Fem = as.vector(unlist(TimestepGrowthSizeInc[1,]))
     CVSizeAtAge_Fem = CVSizeAtAge[1]
@@ -2287,12 +2404,12 @@ GetAgeAndLengthBasedCatchCurveResults <- function (params, RefnceAges, MLL, Grow
 GetMaxLenAtAgeCV_AgeAndLengthBasedCatchCurve <- function (TimeStep, res, MaxAge)
 {
 
-  GrowthModelType = res$GrowthModelType # 1=von Bertalaffy, single sex, 2=Schnute
-  # single sex, 3=von Bertalanffy 2 sexes, 4=Schnute 2 sexes
+  GrowthModelType = res$GrowthModelType # 1=vB, single sex, 2=vB
+  # single sex, 3=Schnute 1 sex, 4=Schnute 2 sexes, 5 = ann inc 1 sex, 6 = ann inc 2 sexes
 
   # calculate approximate cv for lengths at max age (growth diagnostic)
   # single / combined sex
-  if (GrowthModelType ==  1 | GrowthModelType == 3) { # single sex
+  if (GrowthModelType ==  1 | GrowthModelType == 3 | GrowthModelType == 5) { # single sex
     if (TimeStep==1) {
       Probs = as.vector(unlist(res$ExpRetCatchPropLengthGivenIntAge[MaxAge,]))
       RandFreq=rep(midpt,(as.vector(rmultinom(1,1000,Probs))))
@@ -2307,7 +2424,7 @@ GetMaxLenAtAgeCV_AgeAndLengthBasedCatchCurve <- function (TimeStep, res, MaxAge)
   }
 
   # females
-  if (GrowthModelType ==  2 | GrowthModelType == 4) { # separate sex
+  if (GrowthModelType ==  2 | GrowthModelType == 4 | GrowthModelType == 6) { # separate sex
     if (TimeStep==1) {
       FemProbs = as.vector(unlist(res$ExpRetCatchPropLengthGivenIntAge_Fem[MaxAge,]))
       FemRandFreq=rep(midpt,(as.vector(rmultinom(1,1000,FemProbs))))
@@ -3449,7 +3566,7 @@ GetReqdSampleSizesForRandData <- function(MLL, RetenParams, SampleSize, RetCatch
 #' Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
 #'                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' # Now simulate length-frequency data from Dirchlet multinomial distribution.
-#' set.seed(122)
+#' set.seed(123)
 #' nSampEvents = 50
 #' nFishPerSampEvent = 20
 #' theta_val = 0.3
@@ -3520,7 +3637,6 @@ SimLenFreqDat_DirMultDistn <- function(nSampEvents, nFishPerSampEvent, theta_val
 #' # Simulate data
 #' set.seed(123)
 #' SampleSize=5000 # sample size for retained catches (and same number for released fish, if an MLL is specified)
-#' set.seed(123)
 #' MaxAge = 30
 #' TimeStep = 1 # model timestep (e.g. 1 = annual, 1/12 = monthly)
 #' NatMort = 4.22/MaxAge
@@ -3635,7 +3751,7 @@ SimLenAndAgeFreqData <- function(SampleSize, MaxAge, TimeStep, NatMort, FishMort
   # get expected size distribution of 1+ recruits
   RecLenDist = CalcSizeDistOfRecruits(MeanSizeAtAge, CVSizeAtAge, lbnd, ubnd, midpt, nLenCl)
 
-  if (GrowthModelType==1 | GrowthModelType==3) { # single sex
+  if (GrowthModelType==1 | GrowthModelType==3 | GrowthModelType==5) { # single sex
     TimestepGrowthSizeInc_Fem = TimestepGrowthSizeInc; TimestepGrowthSizeInc_Mal = TimestepGrowthSizeInc
     CVSizeAtAge_Fem = CVSizeAtAge; CVSizeAtAge_Mal = CVSizeAtAge
     RecLenDist_Fem = RecLenDist; RecLenDist_Mal = RecLenDist
@@ -3963,7 +4079,6 @@ SimLenAndAgeFreqData <- function(SampleSize, MaxAge, TimeStep, NatMort, FishMort
 #' # Simulate data
 #' set.seed(123)
 #' SampleSize=5000 # sample size for retained catches (and same number for released fish, if an MLL is specified)
-#' set.seed(123)
 #' MaxAge = 30
 #' TimeStep = 1 # model timestep (e.g. 1 = annual, 1/12 = monthly)
 #' NatMort = 4.22/MaxAge
@@ -9580,10 +9695,10 @@ CalcYPRAndSPRForFMort_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
 #'
 #' @keywords internal
 #'
-#' @param GrowthCurveType 1=von Bertalanffy, 2=Schnute
+#' @param GrowthCurveType 1=von Bertalanffy, 2=Schnute, 3=annual increment input
 #' @param MaxModelAge maximum age considered by model
 #' @param Ages ages considered by model
-#' @param GrowthParams growth parameters of either von Bertalanffy or Schnute model
+#' @param GrowthParams growth parameters of either von Bertalanffy, Schnute model or inputs from tagging analysis
 #' @param RefnceAges reference ages for Schnute model, set to NA if using von Bertalanffy model
 #'
 #' @return MeanSizeAtAge
@@ -9603,6 +9718,13 @@ CalcMeanSizeAtAge <- function(GrowthCurveType, MaxModelAge, Ages, GrowthParams, 
       FemLenAtAge <- GrowthParams[1,1] * (1 - exp(-GrowthParams[1,2] * (Ages - GrowthParams[1,3])))
       MalLenAtAge <- GrowthParams[2,1] * (1 - exp(-GrowthParams[2,2] * (Ages - GrowthParams[2,3])))
     }
+
+    # set negative lengths to zero
+    FemLenAtAge[which(FemLenAtAge<0)] = 0
+    MalLenAtAge[which(MalLenAtAge<0)] = 0
+    MeanSizeAtAge[1,] <- FemLenAtAge
+    MeanSizeAtAge[2,] <- MalLenAtAge
+
   }
 
   # Schnute growth curve
@@ -9633,13 +9755,20 @@ CalcMeanSizeAtAge <- function(GrowthCurveType, MaxModelAge, Ages, GrowthParams, 
         }
       } # t
     } # i
+
+    # set negative lengths to zero
+    FemLenAtAge[which(FemLenAtAge<0)] = 0
+    MalLenAtAge[which(MalLenAtAge<0)] = 0
+    MeanSizeAtAge[1,] <- FemLenAtAge
+    MeanSizeAtAge[2,] <- MalLenAtAge
+
   } # if
 
-  # set negative lengths to zero
-  FemLenAtAge[which(FemLenAtAge<0)] = 0
-  MalLenAtAge[which(MalLenAtAge<0)] = 0
-  MeanSizeAtAge[1,] <- FemLenAtAge
-  MeanSizeAtAge[2,] <- MalLenAtAge
+  if (GrowthCurveType == 3) {
+    FemLenAtAge=NA; MalLenAtAge=NA
+    MeanSizeAtAge[1,] = GrowthParams$MeanSizeAtAge[1,]
+    MeanSizeAtAge[2,] = GrowthParams$MeanSizeAtAge[2,]
+  }
 
   return(MeanSizeAtAge)
 
@@ -9888,6 +10017,11 @@ GetLTMInputsForPerRecruitAnalysis <- function(GrowthCurveType, TimeStep, MaxAge,
       MeanEndingLength[i,] = CalcLengthAfterGrowthForTimetep(GrowthCurveType=2, TimeStep, GrowthParamsForSex, RefnceAgesForSex, midpt, MaxAge)
       TimestepGrowthSizeInc[i,] = MeanEndingLength[i,] - midpt
     }
+  }
+
+  if (GrowthCurveType == 3) { # annual size increment data inputted, from tagging model
+    MeanEndingLength = GrowthParams$MeanEndingLength
+    TimestepGrowthSizeInc = GrowthParams$TimestepGrowthSizeInc
   }
 
   results = list(MeanEndingLength = MeanEndingLength,
@@ -10333,6 +10467,128 @@ CalcFishingMortalityAtLen <- function(FMort, DiscMort, FemSelDiscAtLen, MalSelDi
 #' # 11=ypr/eq catch, 12=fem SPR/Brel, 13=mal SPR/Brel, 14=eq recruit
 #' Current_F = 0.05
 #' FMort = 0.05
+#' Res=CalcYPRAndSPRForFMort_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
+#'                              RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtLen,
+#'                              ReprodScale, ReprodPattern, InitRatioFem, FinalSex_L50, FinalSex_L95, EstSexRatioAtLen,
+#'                              EggFertParam, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+#'                              ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, FMort)
+#'
+#' # Per recruit analysis using growth inputs from a tag-recapture analysis
+#' library(WAFishBiology)
+#' # Simulate tag-recapture data for growth analysis
+#' set.seed(123)
+#' nstep = 50 # number of steps for numerical integration
+#' MaxLen = 300
+#' Gaussian_A = 0.094
+#' Gaussian_u = 55.33
+#' Gaussian_sd = 53.17
+#' StandDev = 10
+#' GrowthCrvChoice = 2 # 1 = double logistic, 2 = Gaussian function, 3 = von Bertalanffy growth curve, 4 = Gompertz growth curve
+#' params = log(c(Gaussian_A, Gaussian_u, Gaussian_sd, StandDev))
+#' nobs = 500
+#' res=SimulateTagRecaptureData(GrowthCrvChoice, nstep, nobs, MaxLen, params)
+#' plot(res$Obs_Initlen, res$Obs_Finlen, pch=16, cex=0.6)
+#' lines(res$Initlen_line, res$Exp_Finlen2, col="blue")
+#' lines(res$Initlen_line2, res$Exp_Finlen3, col="blue")
+#' MaxAge = 30 # for model
+#' params = log(c(0.1, 60, 50, 8))
+#' Obs_delta_t=res$Obs_delta_t
+#' Obs_Initlen=res$Obs_Initlen
+#' Obs_Finlen=res$Obs_Finlen
+#' # Fit growth model to simulated tag-recapture data
+#' TagRes=GetTaggingGrowthModelResults(params, nstep, Obs_delta_t, Obs_Initlen, Obs_Finlen, MaxAge, MaxLen, nobs)
+#' # Simulate length composition data using estimated growth parameters from tag-recapture growth model
+#' set.seed(123)
+#' SampleSize=2000 # sample size for retained catches (and same number for released fish, if an MLL is specified)
+#' MaxAge = 30 # for model
+#' TimeStep = 1 # model timestep (e.g. 1 = annual, 1/12 = monthly)
+#' NatMort = 0.15 # following Strain et al. 2017
+#' FishMort = 1.5 * NatMort # 0.225
+#' MaxLen = 250
+#' LenInc = 2
+#' MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified
+#' SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
+#' SelectivityVec = NA # selectivity vector
+#' SelParams = c(60, 20) # L50, L95-L50 for gear selectivity (somewhere around size when abalone emerge from inside caves to being accessible to fishers)
+#' RetenParams = c(150, 10) # L50, L95-L50 for retention
+#' DiscMort = 0 # proportion of fish that die due to natural mortality
+#' # single sex, von Bertalanffy
+#' GrowthCurveType = 3 # 1 = von Bertalanffy, 2 = Schnute, 3 = Growth from length increment data
+#' CVSizeAtAge = 0.05
+#' # get outputs from tag-recapture growth model
+#' InitLen = TagRes$plot_Init_Length
+#' MeanSizeAtAge_TagRes = TagRes$plot_EstLenAtIntAge
+#' AnnualGrowthInc_TagRes = TagRes$plot_Length_Inc
+#' MeanEndingLength = TagRes$plot_Init_Length + TagRes$plot_Length_Inc
+#' # get annual growth increments for midpoints of specified length classes, for use
+#' # in length-based catch curve model, and length-based per recruit model
+#' lbnd = seq(0,MaxLen - LenInc, LenInc)
+#' midpt = lbnd + (LenInc/2)
+#' nLenCl = length(midpt)
+#' TimestepGrowthSizeInc_TagRes=rep(0,nLenCl)
+#' k=0
+#' for (i in 1:nLenCl) {
+#'   k=k+1
+#'   TimestepGrowthSizeInc_TagRes[k]=AnnualGrowthInc_TagRes[which(InitLen==midpt[i])]
+#' }
+#' MeanEndingLength_TagRes = midpt + TimestepGrowthSizeInc_TagRes
+#' # Per recruit analysis using growth inputs from tag recapture analysis
+#' MaxModelAge <- 30 # maximum age considered by model, years
+#' TimeStep <- 1 # Model time step (y) (for shorter-lived species, might be appropriate to use a smaller time step)
+#' MaxLen = 250
+#' LenInc = 2
+#' lbnd = seq(0,MaxLen - LenInc, LenInc)
+#' ubnd = lbnd + LenInc
+#' midpt = lbnd + (LenInc/2)
+#' nLenCl = length(midpt)
+#' GrowthCurveType = 3 # 1 = von Bertalanffy, 2 = Schnute, 3 = any model with annual length increment input
+#' Linf <- NA # mm - von Bertalanffy growth model parameters - Females, males
+#' vbK <- NA # year-1 - von Bertalanffy growth model parameters - Females, males
+#' tzero <- NA # years - von Bertalanffy growth model parameters - Females, males
+#' # input age information from tag recapture model
+#' MeanSizeAtAge_Fem=MeanSizeAtAge_TagRes[seq(2,MaxAge+1,1)]; MeanSizeAtAge_Mal=MeanSizeAtAge_TagRes[seq(2,MaxAge+1,1)]
+#' MeanSizeAtAge = t(data.frame(MeanSizeAtAge_Fem=MeanSizeAtAge_Fem,MeanSizeAtAge_Mal=MeanSizeAtAge_Mal))
+#' colnames(MeanSizeAtAge) = 1:MaxAge
+#' TimestepGrowthSizeInc_Fem=TimestepGrowthSizeInc_TagRes; TimestepGrowthSizeInc_Mal=TimestepGrowthSizeInc_TagRes
+#' TimestepGrowthSizeInc = t(data.frame(TimestepGrowthSizeInc_Fem=TimestepGrowthSizeInc_Fem,TimestepGrowthSizeInc_Mal=TimestepGrowthSizeInc_Mal))
+#' colnames(TimestepGrowthSizeInc) = midpt
+#' MeanEndingLength_Fem=MeanEndingLength_TagRes; MeanEndingLength_Mal=MeanEndingLength_TagRes
+#' MeanEndingLength = t(data.frame(MeanEndingLength_Fem=MeanEndingLength_Fem,MeanEndingLength_Mal=MeanEndingLength_Mal))
+#' colnames(MeanEndingLength) = midpt
+#' GrowthParams = list(MeanSizeAtAge=MeanSizeAtAge, TimestepGrowthSizeInc=TimestepGrowthSizeInc, MeanEndingLength=MeanEndingLength)
+#' RefnceAges = NA
+#' CVSizeAtAge = c(0.05, 0.05)
+#' lenwt_a <- 0.00008 # combined sexes - weight (g) vs length (mm, TL) relationship parameters
+#' ln_lenwt_a <- NA # for log-log relationship
+#' lenwt_b <- 2.93 # combined sexes - weight (g) vs length (mm, TL) relationship parameters
+#' WLrel_Type <- 1 # 1=power, 2=log-log relationship
+#' EstWtAtLen <- data.frame(EstFemWtAtLen=NA,
+#'                          EstMalWtAtLen=NA) # weight at age, inputted as values in data frame
+#' ReprodScale <- 1.43 # 1=default (standard calculations for spawning biomass), 2=hyperallometric reproductive scaling with female mass (i.e. BOFFF effects)
+#' ReprodPattern <- 1 # 1 = gonochoristic (separate sexes), 2 = protogynous (female to male sex change), 3 = protandrous (male to female sex change)
+#' InitRatioFem <- 0.5 # Ratio of females to males at recruitment age/length
+#' FinalSex_L50 <- NA # Logistic sex change relationship parameters (inflection point)
+#' FinalSex_L95 <- NA # Logistic sex change relationship parameters (95% of max probability)
+#' EstSexRatioAtLen <- NA  # sex ratio at length inputted as vector
+#' EggFertParam <- NA # (NA or from ~0.2-1) NA = no effect, ~0.2 = direct effect of popn. sex ratio changes on egg fertilisation rates, 1 = no effects
+#' mat_L50 <- c(120, 120) # females, males - Logistic length (mm) at maturity relationship parameters
+#' mat_L95 <- c(130, 130) # females, males - Logistic length (mm) at maturity relationship parameters
+#' EstMatAtLen <- data.frame(EstFemMatAtLen=NA,
+#'                           EstMalMatAtLen=NA) # maturity at length, inputted as values in data frame
+#' sel_L50 <- c(60, 60) # females, males - Logistic length selectivity relationship parameters
+#' sel_L95 <- c(80, 80) # females, males - Logistic length selectivity relationship parameters
+#' EstGearSelAtLen <- data.frame(EstFemGearSelAtLen=NA,
+#'                               EstMalGearSelAtLen=NA)
+#' ret_Pmax <- c(1.0, 1.0) # maximum retention, values lower than 1 imply discarding of fish above MLL
+#' ret_L50 <- c(150, 150) # females, males - Logistic fish retention at length parameters
+#' ret_L95 <- c(160, 160) # females, males - Logistic fish retention at length parameters
+#' EstRetenAtLen <- data.frame(EstFemRetenAtLen=NA,
+#'                             EstMalRetenAtLen=NA)
+#' DiscMort <- 0 # discard mortality (e.g. 50% released fish die = 0.5)
+#' Steepness <- 0.5 # steepness parameter of the Beverton and Holt stock-recruitment relationship
+#' SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
+#' NatMort = 0.15 # Strain et al (2017)
+#' FMort = NatMort
 #' Res=CalcYPRAndSPRForFMort_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
 #'                              RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtLen,
 #'                              ReprodScale, ReprodPattern, InitRatioFem, FinalSex_L50, FinalSex_L95, EstSexRatioAtLen,

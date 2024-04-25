@@ -59,7 +59,7 @@ RefnceAges = NA
 Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 # Now simulate length-frequency data from Dirchlet multinomial distribution.
-set.seed(122)
+set.seed(123)
 nSampEvents = 50
 nFishPerSampEvent = 20
 theta_val = 0.3

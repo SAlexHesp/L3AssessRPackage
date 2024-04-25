@@ -76,7 +76,6 @@ Simulate length and age data, given specified growth, mortality and selectivity
 # Simulate data
 set.seed(123)
 SampleSize=5000 # sample size for retained catches (and same number for released fish, if an MLL is specified)
-set.seed(123)
 MaxAge = 30
 TimeStep = 1 # model timestep (e.g. 1 = annual, 1/12 = monthly)
 NatMort = 4.22/MaxAge

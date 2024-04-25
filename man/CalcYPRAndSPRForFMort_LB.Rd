@@ -259,4 +259,126 @@ Res=CalcYPRAndSPRForFMort_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, G
                              ReprodScale, ReprodPattern, InitRatioFem, FinalSex_L50, FinalSex_L95, EstSexRatioAtLen,
                              EggFertParam, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
                              ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, FMort)
+
+# Per recruit analysis using growth inputs from a tag-recapture analysis
+library(WAFishBiology)
+# Simulate tag-recapture data for growth analysis
+set.seed(123)
+nstep = 50 # number of steps for numerical integration
+MaxLen = 300
+Gaussian_A = 0.094
+Gaussian_u = 55.33
+Gaussian_sd = 53.17
+StandDev = 10
+GrowthCrvChoice = 2 # 1 = double logistic, 2 = Gaussian function, 3 = von Bertalanffy growth curve, 4 = Gompertz growth curve
+params = log(c(Gaussian_A, Gaussian_u, Gaussian_sd, StandDev))
+nobs = 500
+res=SimulateTagRecaptureData(GrowthCrvChoice, nstep, nobs, MaxLen, params)
+plot(res$Obs_Initlen, res$Obs_Finlen, pch=16, cex=0.6)
+lines(res$Initlen_line, res$Exp_Finlen2, col="blue")
+lines(res$Initlen_line2, res$Exp_Finlen3, col="blue")
+MaxAge = 30 # for model
+params = log(c(0.1, 60, 50, 8))
+Obs_delta_t=res$Obs_delta_t
+Obs_Initlen=res$Obs_Initlen
+Obs_Finlen=res$Obs_Finlen
+# Fit growth model to simulated tag-recapture data
+TagRes=GetTaggingGrowthModelResults(params, nstep, Obs_delta_t, Obs_Initlen, Obs_Finlen, MaxAge, MaxLen, nobs)
+# Simulate length composition data using estimated growth parameters from tag-recapture growth model
+set.seed(123)
+SampleSize=2000 # sample size for retained catches (and same number for released fish, if an MLL is specified)
+MaxAge = 30 # for model
+TimeStep = 1 # model timestep (e.g. 1 = annual, 1/12 = monthly)
+NatMort = 0.15 # following Strain et al. 2017
+FishMort = 1.5 * NatMort # 0.225
+MaxLen = 250
+LenInc = 2
+MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified
+SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
+SelectivityVec = NA # selectivity vector
+SelParams = c(60, 20) # L50, L95-L50 for gear selectivity (somewhere around size when abalone emerge from inside caves to being accessible to fishers)
+RetenParams = c(150, 10) # L50, L95-L50 for retention
+DiscMort = 0 # proportion of fish that die due to natural mortality
+# single sex, von Bertalanffy
+GrowthCurveType = 3 # 1 = von Bertalanffy, 2 = Schnute, 3 = Growth from length increment data
+CVSizeAtAge = 0.05
+# get outputs from tag-recapture growth model
+InitLen = TagRes$plot_Init_Length
+MeanSizeAtAge_TagRes = TagRes$plot_EstLenAtIntAge
+AnnualGrowthInc_TagRes = TagRes$plot_Length_Inc
+MeanEndingLength = TagRes$plot_Init_Length + TagRes$plot_Length_Inc
+# get annual growth increments for midpoints of specified length classes, for use
+# in length-based catch curve model, and length-based per recruit model
+lbnd = seq(0,MaxLen - LenInc, LenInc)
+midpt = lbnd + (LenInc/2)
+nLenCl = length(midpt)
+TimestepGrowthSizeInc_TagRes=rep(0,nLenCl)
+k=0
+for (i in 1:nLenCl) {
+  k=k+1
+  TimestepGrowthSizeInc_TagRes[k]=AnnualGrowthInc_TagRes[which(InitLen==midpt[i])]
+}
+MeanEndingLength_TagRes = midpt + TimestepGrowthSizeInc_TagRes
+# Per recruit analysis using growth inputs from tag recapture analysis
+MaxModelAge <- 30 # maximum age considered by model, years
+TimeStep <- 1 # Model time step (y) (for shorter-lived species, might be appropriate to use a smaller time step)
+MaxLen = 250
+LenInc = 2
+lbnd = seq(0,MaxLen - LenInc, LenInc)
+ubnd = lbnd + LenInc
+midpt = lbnd + (LenInc/2)
+nLenCl = length(midpt)
+GrowthCurveType = 3 # 1 = von Bertalanffy, 2 = Schnute, 3 = any model with annual length increment input
+Linf <- NA # mm - von Bertalanffy growth model parameters - Females, males
+vbK <- NA # year-1 - von Bertalanffy growth model parameters - Females, males
+tzero <- NA # years - von Bertalanffy growth model parameters - Females, males
+# input age information from tag recapture model
+MeanSizeAtAge_Fem=MeanSizeAtAge_TagRes[seq(2,MaxAge+1,1)]; MeanSizeAtAge_Mal=MeanSizeAtAge_TagRes[seq(2,MaxAge+1,1)]
+MeanSizeAtAge = t(data.frame(MeanSizeAtAge_Fem=MeanSizeAtAge_Fem,MeanSizeAtAge_Mal=MeanSizeAtAge_Mal))
+colnames(MeanSizeAtAge) = 1:MaxAge
+TimestepGrowthSizeInc_Fem=TimestepGrowthSizeInc_TagRes; TimestepGrowthSizeInc_Mal=TimestepGrowthSizeInc_TagRes
+TimestepGrowthSizeInc = t(data.frame(TimestepGrowthSizeInc_Fem=TimestepGrowthSizeInc_Fem,TimestepGrowthSizeInc_Mal=TimestepGrowthSizeInc_Mal))
+colnames(TimestepGrowthSizeInc) = midpt
+MeanEndingLength_Fem=MeanEndingLength_TagRes; MeanEndingLength_Mal=MeanEndingLength_TagRes
+MeanEndingLength = t(data.frame(MeanEndingLength_Fem=MeanEndingLength_Fem,MeanEndingLength_Mal=MeanEndingLength_Mal))
+colnames(MeanEndingLength) = midpt
+GrowthParams = list(MeanSizeAtAge=MeanSizeAtAge, TimestepGrowthSizeInc=TimestepGrowthSizeInc, MeanEndingLength=MeanEndingLength)
+RefnceAges = NA
+CVSizeAtAge = c(0.05, 0.05)
+lenwt_a <- 0.00008 # combined sexes - weight (g) vs length (mm, TL) relationship parameters
+ln_lenwt_a <- NA # for log-log relationship
+lenwt_b <- 2.93 # combined sexes - weight (g) vs length (mm, TL) relationship parameters
+WLrel_Type <- 1 # 1=power, 2=log-log relationship
+EstWtAtLen <- data.frame(EstFemWtAtLen=NA,
+                         EstMalWtAtLen=NA) # weight at age, inputted as values in data frame
+ReprodScale <- 1.43 # 1=default (standard calculations for spawning biomass), 2=hyperallometric reproductive scaling with female mass (i.e. BOFFF effects)
+ReprodPattern <- 1 # 1 = gonochoristic (separate sexes), 2 = protogynous (female to male sex change), 3 = protandrous (male to female sex change)
+InitRatioFem <- 0.5 # Ratio of females to males at recruitment age/length
+FinalSex_L50 <- NA # Logistic sex change relationship parameters (inflection point)
+FinalSex_L95 <- NA # Logistic sex change relationship parameters (95\% of max probability)
+EstSexRatioAtLen <- NA  # sex ratio at length inputted as vector
+EggFertParam <- NA # (NA or from ~0.2-1) NA = no effect, ~0.2 = direct effect of popn. sex ratio changes on egg fertilisation rates, 1 = no effects
+mat_L50 <- c(120, 120) # females, males - Logistic length (mm) at maturity relationship parameters
+mat_L95 <- c(130, 130) # females, males - Logistic length (mm) at maturity relationship parameters
+EstMatAtLen <- data.frame(EstFemMatAtLen=NA,
+                          EstMalMatAtLen=NA) # maturity at length, inputted as values in data frame
+sel_L50 <- c(60, 60) # females, males - Logistic length selectivity relationship parameters
+sel_L95 <- c(80, 80) # females, males - Logistic length selectivity relationship parameters
+EstGearSelAtLen <- data.frame(EstFemGearSelAtLen=NA,
+                              EstMalGearSelAtLen=NA)
+ret_Pmax <- c(1.0, 1.0) # maximum retention, values lower than 1 imply discarding of fish above MLL
+ret_L50 <- c(150, 150) # females, males - Logistic fish retention at length parameters
+ret_L95 <- c(160, 160) # females, males - Logistic fish retention at length parameters
+EstRetenAtLen <- data.frame(EstFemRetenAtLen=NA,
+                            EstMalRetenAtLen=NA)
+DiscMort <- 0 # discard mortality (e.g. 50\% released fish die = 0.5)
+Steepness <- 0.5 # steepness parameter of the Beverton and Holt stock-recruitment relationship
+SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
+NatMort = 0.15 # Strain et al (2017)
+FMort = NatMort
+Res=CalcYPRAndSPRForFMort_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
+                             RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtLen,
+                             ReprodScale, ReprodPattern, InitRatioFem, FinalSex_L50, FinalSex_L95, EstSexRatioAtLen,
+                             EggFertParam, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+                             ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, FMort)
 }

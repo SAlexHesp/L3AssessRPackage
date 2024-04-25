@@ -7,13 +7,13 @@
 CalcMeanSizeAtAge(GrowthCurveType, MaxModelAge, Ages, GrowthParams, RefnceAges)
 }
 \arguments{
-\item{GrowthCurveType}{1=von Bertalanffy, 2=Schnute}
+\item{GrowthCurveType}{1=von Bertalanffy, 2=Schnute, 3=annual increment input}
 
 \item{MaxModelAge}{maximum age considered by model}
 
 \item{Ages}{ages considered by model}
 
-\item{GrowthParams}{growth parameters of either von Bertalanffy or Schnute model}
+\item{GrowthParams}{growth parameters of either von Bertalanffy, Schnute model or inputs from tagging analysis}
 
 \item{RefnceAges}{reference ages for Schnute model, set to NA if using von Bertalanffy model}
 }

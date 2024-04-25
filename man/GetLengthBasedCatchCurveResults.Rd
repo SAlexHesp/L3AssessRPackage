@@ -176,6 +176,7 @@ params = c(InitFishMort_logit, log(InitL50), log(InitDelta))
 # params = c(InitFishMort_logit, log(InitL50), log(InitDelta), log(InitL50Ret), log(InitDeltaRet))
 FittedRes=GetLengthBasedCatchCurveResults(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
                                     lbnd, ubnd, midpt, SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
+
 # Example with selectivity specified as a vector
 # Simulate data
 SampleSize=5000
@@ -213,9 +214,9 @@ ubnd=Res$ubnd
 InitFishMort = 0.25 # specify starting parameters
 InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform
 params = c(InitFishMort_logit)
-
 FittedRes=GetLengthBasedCatchCurveResults(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
                                     lbnd, ubnd, midpt, SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
+
 
 # Fit length-based catch curve to length-frequency data generated from Dirchlet multinomial distribution.
 # First, use SimLenAndAgeFreqData function to calculate expected proportions at length
@@ -243,7 +244,7 @@ RefnceAges = NA
 Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 # Now simulate length-frequency data from Dirchlet multinomial distribution.
-set.seed(122)
+set.seed(123)
 nSampEvents = 50
 nFishPerSampEvent = 20
 theta_val = 0.3
@@ -254,7 +255,7 @@ plot(res$midpt, res$simLenFreq, "o")
 # Fit length-based catch curve, assuming Dirichlet multinomial distribution
 ObsRetCatchFreqAtLen = res$simLenFreq
 ObsDiscCatchFreqAtLen = NA # (or set to Res$ObsDiscCatchFreqAtLen)
-PropReleased = NA # proportion of fish released, vector including mean and sd (option probably now obselete)
+PropReleased = NA # proportion of fish released, vector including mean and sd (option probably now obsolete)
 midpt=Res$midpt
 lbnd=Res$lbnd
 ubnd=Res$ubnd
@@ -266,6 +267,89 @@ DistnType=2
 InitTheta = 0.3 # specify starting parameters
 InitTheta_logit = log(InitTheta/(1-InitTheta)) # logit transform
 params = c(InitFishMort_logit, log(InitL50), log(InitDelta),InitTheta_logit)
+FittedRes=GetLengthBasedCatchCurveResults(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
+                                          lbnd, ubnd, midpt, SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
+
+# Fit model using growth outputs from an analysis of tag-recapture data
+library(WAFishBiology)
+# Simulate tag-recapture data for growth analysis
+set.seed(123)
+nstep = 50 # number of steps for numerical integration
+MaxLen = 300
+Gaussian_A = 0.094
+Gaussian_u = 55.33
+Gaussian_sd = 53.17
+StandDev = 10
+GrowthCrvChoice = 2 # 1 = double logistic, 2 = Gaussian function, 3 = von Bertalanffy growth curve, 4 = Gompertz growth curve
+params = log(c(Gaussian_A, Gaussian_u, Gaussian_sd, StandDev))
+nobs = 500
+res=SimulateTagRecaptureData(GrowthCrvChoice, nstep, nobs, MaxLen, params)
+plot(res$Obs_Initlen, res$Obs_Finlen, pch=16, cex=0.6)
+lines(res$Initlen_line, res$Exp_Finlen2, col="blue")
+lines(res$Initlen_line2, res$Exp_Finlen3, col="blue")
+MaxAge = 30 # for model
+params = log(c(0.1, 60, 50, 8))
+Obs_delta_t=res$Obs_delta_t
+Obs_Initlen=res$Obs_Initlen
+Obs_Finlen=res$Obs_Finlen
+# Fit growth model to simulated tag-recapture data
+TagRes=GetTaggingGrowthModelResults(params, nstep, Obs_delta_t, Obs_Initlen, Obs_Finlen, MaxAge, MaxLen, nobs)
+# Simulate length composition data using estimated growth parameters from tag-recapture growth model
+set.seed(123)
+SampleSize=2000 # sample size for retained catches (and same number for released fish, if an MLL is specified)
+MaxAge = 30 # for model
+TimeStep = 1 # model timestep (e.g. 1 = annual, 1/12 = monthly)
+NatMort = 0.15 # following Strain et al. 2017
+FishMort = 1.5 * NatMort # 0.225
+MaxLen = 250
+LenInc = 2
+MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified
+SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
+SelectivityVec = NA # selectivity vector
+SelParams = c(60, 20) # L50, L95-L50 for gear selectivity (somewhere around size when abalone emerge from inside caves to being accessible to fishers)
+RetenParams = c(150, 10) # L50, L95-L50 for retention
+DiscMort = 0 # proportion of fish that die due to natural mortality
+# single sex, von Bertalanffy
+GrowthCurveType = 3 # 1 = von Bertalanffy, 2 = Schnute, 3 = Growth from length increment data
+CVSizeAtAge = 0.05
+# get outputs from tag-recapture growth model
+InitLen = TagRes$plot_Init_Length
+MeanSizeAtAge_TagRes = TagRes$plot_EstLenAtIntAge
+AnnualGrowthInc_TagRes = TagRes$plot_Length_Inc
+MeanEndingLength = TagRes$plot_Init_Length + TagRes$plot_Length_Inc
+# get annual growth increments for midpoints of specified length classes, for use
+# in length-based catch curve model, and length-based per recruit model
+lbnd = seq(0,MaxLen - LenInc, LenInc)
+midpt = lbnd + (LenInc/2)
+nLenCl = length(midpt)
+TimestepGrowthSizeInc_TagRes=rep(0,nLenCl)
+k=0
+for (i in 1:nLenCl) {
+  k=k+1
+  TimestepGrowthSizeInc_TagRes[k]=AnnualGrowthInc_TagRes[which(InitLen==midpt[i])]
+}
+MeanEndingLength_TagRes = midpt + TimestepGrowthSizeInc_TagRes
+plot(midpt,TimestepGrowthSizeInc_TagRes)
+plot(midpt,MeanEndingLength_TagRes)
+# specify required growth inputs for simulating length data
+MeanSizeAtAge = MeanSizeAtAge_TagRes[2:length(MeanSizeAtAge_TagRes)] # removing size at age zero, as model starts at age 1
+GrowthParams = list(MeanSizeAtAge=MeanSizeAtAge, TimestepGrowthSizeInc=TimestepGrowthSizeInc_TagRes, MeanEndingLength=MeanEndingLength_TagRes)
+RefnceAges = NA
+SimRes=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
+                            SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+DistnType = 1 # 1 = Multinomial, 2 = Dirichlet multinomial
+GrowthCurveType = 3 # 1 = von Bertalanffy, 2 = Schnute, 3 = any model with annual mean length increment input
+ObsRetCatchFreqAtLen = SimRes$ObsRetCatchFreqAtLen
+ObsDiscCatchFreqAtLen = NA # (or set to Res$ObsDiscCatchFreqAtLen)
+PropReleased = NA # proportion of fish released, vector including mean and sd (option probably now obsolete)
+midpt=SimRes$midpt
+lbnd=SimRes$lbnd
+ubnd=SimRes$ubnd
+InitFishMort = 0.25 # specify starting parameters
+InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform
+InitL50 = 400
+InitDelta = 100
+params = c(InitFishMort_logit, log(InitL50), log(InitDelta))
 FittedRes=GetLengthBasedCatchCurveResults(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
                                           lbnd, ubnd, midpt, SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
 }

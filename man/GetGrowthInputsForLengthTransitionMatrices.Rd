@@ -25,14 +25,14 @@ GetGrowthInputsForLengthTransitionMatrices(
 
 \item{midpt}{mid points of length classes}
 
-\item{GrowthCurveType}{1=von Bertalanffy, 2=Schnute}
+\item{GrowthCurveType}{1=von Bertalanffy, 2=Schnute, 3=any model with annual size increment input}
 
 \item{GrowthModelType}{1=von Bertalanffy - 1 sex, 2=von Bertalanffy - 2 sexes,
-Schnute - 1 sex, 2=Schnute - 2 sexes}
+3=Schnute - 1 sex, 4=Schnute - 2 sexes, 5=size increment input - 1 sex, 6=size increment input - 1 sexes}
 
-\item{GrowthParams}{growth parameters (used for GrowthModelType 2 or 4)}
+\item{GrowthParams}{growth parameters or list with tag-model growth outputs}
 
-\item{RefnceAges}{Schnute reference ages (used for GrowthModelType 4)}
+\item{RefnceAges}{Schnute reference ages}
 
 \item{SelectivityType}{1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve}
 }
