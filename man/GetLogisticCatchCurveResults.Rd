@@ -61,6 +61,7 @@ Init_SelA95 = 7
 params = log(c(Init_FMort, Init_SelA50, SelA95))
 res=GetLogisticCatchCurveResults(params, NatMort, Ages, ObsAgeFreq)
 res$ParamEst
+library(dirmult)
 # Simulate data from Dirichlet multinomial distribution (single sex)
 # J = number of fish sampling events
 # K = number of age classes

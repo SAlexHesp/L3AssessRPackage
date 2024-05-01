@@ -434,7 +434,7 @@ CalcSizeDistOfRecruits <- function(MeanSizeAtAge, CVSizeAtAge, lbnd, ubnd, midpt
     RecLenDist = as.matrix(RecLenDist)
     MeanLenRec = rep(0,2)
     SDAgeOneRecruits = rep(0,2)
-
+i=1
     for (i in 1:2) {
       MeanLenRec[i] <- MeanSizeAtAge[i,1]
       # robustify for positive tzero values
@@ -1363,13 +1363,13 @@ GetGrowthParams_AgeAndLengthBasedCatchCurvesCalcs <- function(params, GrowthCurv
         CVSizeAtAge = exp(params[7])
         GrowthModelType = 3
       }
-      if (length(params)==9) { # 2 sexes, logistic selectivity
+      if (length(params)==10) { # 2 sexes, logistic selectivity
         y1 = c(0,0)
         y2 = exp(params[4:5])
         a = params[6:7]
         b = params[8:9]
         GrowthParams = data.frame(y1=y1,y2=y2,a=a,b=b)
-        CVSizeAtAge = c(exp(params[9]),exp(params[9]))
+        CVSizeAtAge = c(exp(params[10]),exp(params[10]))
         GrowthModelType = 4
       }
     }
@@ -2547,7 +2547,7 @@ GetParamRes_AgeAndLengthBasedCatchCurve <- function (GrowthCurveType, Selectivit
                               a_F = round(Esta_F, 3), a_M = round(Esta_M, 3), b_F = round(Estb_F, 3), b_M = round(Estb_M, 3),
                               CV = round(EstCV, 3)))
     }
-    if (SelectivityType == 2 & length(params)==8) { # selectivity vector input, separate sex input # logistic selectivity, separate sex input
+    if (SelectivityType == 2 & length(params)==10) { # selectivity vector input, separate sex input # logistic selectivity, separate sex input
       EstL50 = exp(c(nlmb$par[2], nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
       EstDelta = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
       Esty2_F = exp(c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4]))
@@ -6023,12 +6023,11 @@ PlotAgeLengthCatchCurve_Growth <- function(params, RefnceAges, MLL, GrowthCurveT
     }
   }
 
-
   if (GrowthCurveType==2) { # Schnute
-    t1=RefnceAges[1]; t2=RefnceAges[2]
     for (j in 1:nReps) {
       ParamVals = unlist(sims[j,])
       if (is.vector(ObsRetCatchFreqAtLen)) { # combined sex
+        t1=RefnceAges[1]; t2=RefnceAges[2]
         if (SelectivityType == 1) { # input vector
           y1=0; y2=exp(ParamVals[2]); a=ParamVals[3]; b=ParamVals[4]
           for(i in 1:length(DecAges)) {
@@ -6037,6 +6036,7 @@ PlotAgeLengthCatchCurve_Growth <- function(params, RefnceAges, MLL, GrowthCurveT
           }
         }
         if (SelectivityType == 2) { # estimated
+          t1=RefnceAges[1]; t2=RefnceAges[2]
           y1=0; y2=exp(ParamVals[4]); a=ParamVals[5]; b=ParamVals[6]
           for(i in 1:length(DecAges)) {
             Age=DecAges[i]
@@ -6048,7 +6048,9 @@ PlotAgeLengthCatchCurve_Growth <- function(params, RefnceAges, MLL, GrowthCurveT
           for(i in 1:length(DecAges)) {
             Age=DecAges[i]
             y1=0; y2=exp(ParamVals[2]); a=ParamVals[4]; b=ParamVals[6]
+            t1=RefnceAges[1,1]; t2=RefnceAges[1,2]
             EstLenAtAgeF.sim[j,] = SchnuteGrowthfunction(Age, t1, t2, y1, y2, a, b)
+            t1=RefnceAges[2,1]; t2=RefnceAges[2,2]
             y1=0; y2=exp(ParamVals[3]); a=ParamVals[5]; b=ParamVals[7]
             EstLenAtAgeM.sim[j,] = SchnuteGrowthfunction(Age, t1, t2, y1, y2, a, b)
           }
@@ -6057,9 +6059,11 @@ PlotAgeLengthCatchCurve_Growth <- function(params, RefnceAges, MLL, GrowthCurveT
           for(i in 1:length(DecAges)) {
             Age=DecAges[i]
             y1=0; y2=exp(ParamVals[4]); a=ParamVals[6]; b=ParamVals[8]
-            EstLenAtAgeF.sim[j,] = SchnuteGrowthfunction(Age, t1, t2, y1, y2, a, b)
+            t1=RefnceAges[1,1]; t2=RefnceAges[1,2]
+            EstLenAtAgeF.sim[j,i] = SchnuteGrowthfunction(Age, t1, t2, y1, y2, a, b)
             y1=0; y2=exp(ParamVals[5]); a=ParamVals[7]; b=ParamVals[9]
-            EstLenAtAgeM.sim[j,] = SchnuteGrowthfunction(Age, t1, t2, y1, y2, a, b)
+            t1=RefnceAges[2,1]; t2=RefnceAges[2,2]
+            EstLenAtAgeM.sim[j,i] = SchnuteGrowthfunction(Age, t1, t2, y1, y2, a, b)
           }
         }
       }
@@ -8053,6 +8057,7 @@ Calculate_NLL_LogisticCatchCurve <- function(params) {
 #' params = log(c(Init_FMort, Init_SelA50, SelA95))
 #' res=GetLogisticCatchCurveResults(params, NatMort, Ages, ObsAgeFreq)
 #' res$ParamEst
+#' library(dirmult)
 #' # Simulate data from Dirichlet multinomial distribution (single sex)
 #' # J = number of fish sampling events
 #' # K = number of age classes
