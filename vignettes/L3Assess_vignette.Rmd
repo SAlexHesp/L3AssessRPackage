@@ -105,43 +105,43 @@ where $F$ is the fully-selected fishing mortality. Total mortality at age for se
 $$
 Z_{a,s} = F_{a,s}+M
 $$
-The instantaneous rate of natural mortality, $M$, may be calculated from an empirical equation such as that of Hoenig's (1983) equation for fish, i.e.
+The instantaneous rate of natural mortality, $M$, may be calculated, for example, from an empirical equation such as that of Hoenig's (1983) equation for fish, i.e.
 $$
-M = \exp(1.46)-(1.01)\ln(A_{\mathrm{max}})
+M = \exp(1.46)-(1.01)\log_e(A_{\mathrm{max}})
 $$
-Setting survival at age zero, $N_{a=0}$, to 1, and treating age $A$ as a 'plus group', the expected number of survivors per recruit for each age is
+where $A_{max}$ is the observed maximum age for the species. Setting survival at age zero, $N_{a=0}$, to 1, and treating age $A$ as a 'plus group', the expected number of survivors per recruit for each age is
 
 $$
 \begin{align}
-    N_a = N_{a-1}\exp(-Z_{a-1}) && \text{if a<A}\\
-    N_a = N_{a-1}\exp(-Z)/(1-\exp(-Z)) && \text{if a=A}\\
+    N_{a,s} = N_{a-1,s}\exp(-Z_{a-1,s}) && \text{if a<A}\\
+    N_{a,s} = N_{a-1,s}\exp(-Z_{a-1,s})/(1-\exp(-Z_{a,s})) && \text{if a=A}\\
 \end{align}
 $$
 
-where $Z$ is the value of total mortality for fully selected fish. $C_a$, the catch at age $a$, may be calculated using the Baranov catch equation, i.e.
+where $Z$ is the value of total mortality for fully selected fish and $A$ is the maximum age considered by the model. $C_a$, the catch at age $a$, may be calculated using the Baranov catch equation, i.e.
 $$
-C_a = N_a\biggl(\frac{F_a}{Z_a}\biggr)(1-\exp(-Z_a))
+C_{a,s} = N_{a,s}\biggl(\frac{F_{a,s}}{Z_{a,s}}\biggr)(1-\exp(-Z_{a,s}))
 $$
-The expected catch proportion at age, $\tilde{\pi}_a$, is thus
+The expected catch proportion at age for sex $s$, $\tilde{\pi}_{a,s}$, is thus
 $$
-\tilde{\pi}_a = \frac{C_a}{\sum_{a=0}^{A}C_a}
+\tilde{\pi}_{a,s} = \frac{C_{a,s}}{\sum_{a=0}^{A}C_{a,s}}
 $$
 The catch curve may be fitted employing the traditional multinomial log-likelihood or Dirichlet-multinomial log-likelihood. Following similar notation to Thorson et al. (2017) for these likelihood functions, the former may be calculated as
 $$
-\lambda = \sum_{a=0}^{A}f_a\log_e(\tilde{\pi}_a)
+\lambda = \sum_{s=1}^{2}\sum_{a=0}^{A}f_{a,s}\log_e(\tilde{\pi}_{a,s})
 $$
 where $f$ is the observed frequency at age $a$. The Dirichlet multinomial likelihood is implemented according to the 'linear effective sample size' parameterisation, as recommended in Thorson et al. (2017), whereby an effective sample size, $f_{eff}$, is calculated as
 
 $$
 n_{eff}=n\frac{\theta}{1+\theta}
 $$
-Above, $\theta$ is the variance inflation parameter, estimated when fitting the model. Following Thorson et al. (2017), the Dirichlet-multinomial log-likelihood, intended to be used to account for over-dispersion in the data (due to lack of statistical independence of sampled fish) and provide more realistic estimates of error, is calculated as
+Above, $\theta$ is the variance inflation parameter, estimated when fitting the model, and $n$ is the total number of observations. Following Thorson et al. (2017), the Dirichlet-multinomial log-likelihood, intended to be used to account for over-dispersion in the data (due to lack of statistical independence of sampled fish) and provide more realistic estimates of error, is calculated as
 
 $$
-\lambda =\frac{\Gamma(n+1)}{\prod_{a=1}^{A}\Gamma(n|\tilde{\pi}+1)}\frac{\Gamma({\theta}n)}{\Gamma({n+\theta}n)}  \prod_{a=1}^{A}\frac{\Gamma(n|\tilde{\pi}_a+\theta{n\pi_a})}{(\theta{n}\pi_a)}
+\lambda =\frac{\Gamma(n+1)}{\prod_{a=1}^{A}\Gamma(n|\tilde{\pi}_{a,s}+1)}\frac{\Gamma({\theta}n)}{\Gamma({n+\theta}n)}  \prod_{a=1}^{A}\frac{\Gamma(n|\tilde{\pi}_{a,s}+\theta{n\pi_{a,s}})}{(\theta{n}\pi_{a,s})}
 $$
 
-The model is fitted by minimising the negative log-likelihood using nlminb in R, by estimating the fully-selected fishing mortality $F$, and selectivity parameters, $a_{50}$ and $s$. Estimates of asymptotic standard errors, $\sigma$, for each of the model parameters, are derived from the variance-covariance matrix (i.e. from the inverted Hessian matrix produced by nlminb). Approximate 95% confidence intervals for the estimated parameters are calculated as $1.96\sigma$. 
+The model is fitted by minimising the negative log-likelihood using nlminb in R, by estimating the fully-selected fishing mortality $F$, and selectivity parameters, $A_{50,s}$ and $A_{95,s}$. Estimates of asymptotic standard errors, $\sigma$, for each of the model parameters, are derived from the variance-covariance matrix (i.e. from the inverted Hessian matrix produced by nlminb). Approximate 95% confidence intervals for the estimated parameters are calculated as $1.96\sigma$. 
 
 For visualisation, model estimates of the frequency of fish at each age, with associated 95% confidence intervals, are calculated using a parametric resampling approach, assuming the estimated model parameters conform to a multivariate normal distribution. The mvrnorm function within the MASS package is used together with the values of the estimated model parameters and associated variance-covariance matrix to generate 500 random values of each of the model parameters. These, in turn, are used to produce 500 sets of model estimates for the frequency of fish at each age, $\tilde{f_a}$, calculated as
 

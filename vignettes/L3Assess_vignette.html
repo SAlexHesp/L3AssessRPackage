@@ -501,28 +501,34 @@ F_{a,s} = V_{a,s}F
 \]</span> where <span class="math inline">\(F\)</span> is the
 fully-selected fishing mortality. Total mortality at age for sex <span class="math inline">\(s\)</span>, <span class="math inline">\(Z_{a,s}\)</span>, is <span class="math display">\[
 Z_{a,s} = F_{a,s}+M
-\]</span> The instantaneous rate of natural mortality, <span class="math inline">\(M\)</span>, may be calculated from an empirical
-equation such as that of Hoenig’s (1983) equation for fish, i.e. <span class="math display">\[
-M = \exp(1.46)-(1.01)\ln(A_{\mathrm{max}})
-\]</span> Setting survival at age zero, <span class="math inline">\(N_{a=0}\)</span>, to 1, and treating age <span class="math inline">\(A\)</span> as a ‘plus group’, the expected number
-of survivors per recruit for each age is</p>
+\]</span> The instantaneous rate of natural mortality, <span class="math inline">\(M\)</span>, may be calculated, for example, from
+an empirical equation such as that of Hoenig’s (1983) equation for fish,
+i.e. <span class="math display">\[
+M = \exp(1.46)-(1.01)\log_e(A_{\mathrm{max}})
+\]</span> where <span class="math inline">\(A_{max}\)</span> is the
+observed maximum age for the species. Setting survival at age zero,
+<span class="math inline">\(N_{a=0}\)</span>, to 1, and treating age
+<span class="math inline">\(A\)</span> as a ‘plus group’, the expected
+number of survivors per recruit for each age is</p>
 <p><span class="math display">\[
 \begin{align}
-    N_a = N_{a-1}\exp(-Z_{a-1}) &amp;&amp; \text{if a&lt;A}\\
-    N_a = N_{a-1}\exp(-Z)/(1-\exp(-Z)) &amp;&amp; \text{if a=A}\\
+    N_{a,s} = N_{a-1,s}\exp(-Z_{a-1,s}) &amp;&amp; \text{if a&lt;A}\\
+    N_{a,s} = N_{a-1,s}\exp(-Z_{a-1,s})/(1-\exp(-Z_{a,s})) &amp;&amp;
+\text{if a=A}\\
 \end{align}
 \]</span></p>
 <p>where <span class="math inline">\(Z\)</span> is the value of total
-mortality for fully selected fish. <span class="math inline">\(C_a\)</span>, the catch at age <span class="math inline">\(a\)</span>, may be calculated using the Baranov
+mortality for fully selected fish and <span class="math inline">\(A\)</span> is the maximum age considered by the
+model. <span class="math inline">\(C_a\)</span>, the catch at age <span class="math inline">\(a\)</span>, may be calculated using the Baranov
 catch equation, i.e. <span class="math display">\[
-C_a = N_a\biggl(\frac{F_a}{Z_a}\biggr)(1-\exp(-Z_a))
-\]</span> The expected catch proportion at age, <span class="math inline">\(\tilde{\pi}_a\)</span>, is thus <span class="math display">\[
-\tilde{\pi}_a = \frac{C_a}{\sum_{a=0}^{A}C_a}
+C_{a,s} = N_{a,s}\biggl(\frac{F_{a,s}}{Z_{a,s}}\biggr)(1-\exp(-Z_{a,s}))
+\]</span> The expected catch proportion at age for sex <span class="math inline">\(s\)</span>, <span class="math inline">\(\tilde{\pi}_{a,s}\)</span>, is thus <span class="math display">\[
+\tilde{\pi}_{a,s} = \frac{C_{a,s}}{\sum_{a=0}^{A}C_{a,s}}
 \]</span> The catch curve may be fitted employing the traditional
 multinomial log-likelihood or Dirichlet-multinomial log-likelihood.
 Following similar notation to Thorson et al. (2017) for these likelihood
 functions, the former may be calculated as <span class="math display">\[
-\lambda = \sum_{a=0}^{A}f_a\log_e(\tilde{\pi}_a)
+\lambda = \sum_{s=1}^{2}\sum_{a=0}^{A}f_{a,s}\log_e(\tilde{\pi}_{a,s})
 \]</span> where <span class="math inline">\(f\)</span> is the observed
 frequency at age <span class="math inline">\(a\)</span>. The Dirichlet
 multinomial likelihood is implemented according to the ‘linear effective
@@ -531,19 +537,20 @@ whereby an effective sample size, <span class="math inline">\(f_{eff}\)</span>, 
 <p><span class="math display">\[
 n_{eff}=n\frac{\theta}{1+\theta}
 \]</span> Above, <span class="math inline">\(\theta\)</span> is the
-variance inflation parameter, estimated when fitting the model.
-Following Thorson et al. (2017), the Dirichlet-multinomial
+variance inflation parameter, estimated when fitting the model, and
+<span class="math inline">\(n\)</span> is the total number of
+observations. Following Thorson et al. (2017), the Dirichlet-multinomial
 log-likelihood, intended to be used to account for over-dispersion in
 the data (due to lack of statistical independence of sampled fish) and
 provide more realistic estimates of error, is calculated as</p>
 <p><span class="math display">\[
 \lambda
-=\frac{\Gamma(n+1)}{\prod_{a=1}^{A}\Gamma(n|\tilde{\pi}+1)}\frac{\Gamma({\theta}n)}{\Gamma({n+\theta}n)}  \prod_{a=1}^{A}\frac{\Gamma(n|\tilde{\pi}_a+\theta{n\pi_a})}{(\theta{n}\pi_a)}
+=\frac{\Gamma(n+1)}{\prod_{a=1}^{A}\Gamma(n|\tilde{\pi}_{a,s}+1)}\frac{\Gamma({\theta}n)}{\Gamma({n+\theta}n)}  \prod_{a=1}^{A}\frac{\Gamma(n|\tilde{\pi}_{a,s}+\theta{n\pi_{a,s}})}{(\theta{n}\pi_{a,s})}
 \]</span></p>
 <p>The model is fitted by minimising the negative log-likelihood using
-nlminb in R, by estimating the fully-selected fishing mortality <span class="math inline">\(F\)</span>, and selectivity parameters, <span class="math inline">\(a_{50}\)</span> and <span class="math inline">\(s\)</span>. Estimates of asymptotic standard
-errors, <span class="math inline">\(\sigma\)</span>, for each of the
-model parameters, are derived from the variance-covariance matrix
+nlminb in R, by estimating the fully-selected fishing mortality <span class="math inline">\(F\)</span>, and selectivity parameters, <span class="math inline">\(A_{50,s}\)</span> and <span class="math inline">\(A_{95,s}\)</span>. Estimates of asymptotic
+standard errors, <span class="math inline">\(\sigma\)</span>, for each
+of the model parameters, are derived from the variance-covariance matrix
 (i.e. from the inverted Hessian matrix produced by nlminb). Approximate
 95% confidence intervals for the estimated parameters are calculated as
 <span class="math inline">\(1.96\sigma\)</span>.</p>

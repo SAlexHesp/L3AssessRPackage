@@ -434,7 +434,7 @@ CalcSizeDistOfRecruits <- function(MeanSizeAtAge, CVSizeAtAge, lbnd, ubnd, midpt
     RecLenDist = as.matrix(RecLenDist)
     MeanLenRec = rep(0,2)
     SDAgeOneRecruits = rep(0,2)
-i=1
+
     for (i in 1:2) {
       MeanLenRec[i] <- MeanSizeAtAge[i,1]
       # robustify for positive tzero values
@@ -594,7 +594,7 @@ VisualiseGrowthApplyingLTM <- function (nFish, TimeStep, MaxAge, Growth_params, 
 #' @param lbnd lower bounds of length classes
 #' @param ubnd upper bounds of length classes
 #' @param midpt mid points of length classes
-#' @param SelectivityVec selectivity at length
+#' @param SelectivityAtLen selectivity at length
 #' @param PropReleased proportion of fish that are released
 #' @param ObsDiscCatchFreqAtLen proportion of fish that are released
 #' @param DiscMort Proportion of fish that die following to capture and release
@@ -635,7 +635,7 @@ VisualiseGrowthApplyingLTM <- function (nFish, TimeStep, MaxAge, Growth_params, 
 #' LenInc = 20
 #' MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified
 #' SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
-#' SelectivityVec = NA # selectivity vector
+#' SelectivityAtLen = NA # selectivity vector
 #' SelParams = c(300, 50) # L50, L95-L50 for gear selectivity
 #' RetenParams = c(NA, NA) # L50, L95-L50 for retention
 #' DiscMort = 0 # proportion of fish that die due to natural mortality
@@ -647,7 +647,7 @@ VisualiseGrowthApplyingLTM <- function (nFish, TimeStep, MaxAge, Growth_params, 
 #' GrowthParams = c(Linf, vbK)
 #' RefnceAges = NA
 #' Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#'                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#'                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' # 2 sexes, von Bertalanffy
 #' DistnType = 1 # 1 = Multinomial, 2 = Dirichlet multinomial
 #' GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute
@@ -657,7 +657,7 @@ VisualiseGrowthApplyingLTM <- function (nFish, TimeStep, MaxAge, Growth_params, 
 #' GrowthParams = data.frame(Linf=Linf, vbK=vbK)
 #' RefnceAges = NA
 #' Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#'                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#'                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' # 1 sex, Schnute
 #' DistnType = 1 # 1 = Multinomial, 2 = Dirichlet multinomial
 #' GrowthCurveType = 2 # 1 = von Bertalanffy, 2 = Schnute
@@ -671,7 +671,7 @@ VisualiseGrowthApplyingLTM <- function (nFish, TimeStep, MaxAge, Growth_params, 
 #' RefnceAges = c(t1,t2)
 #' CVSizeAtAge = 0.05
 #' Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#'                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#'                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' # 2 sexes, Schnute
 #' DistnType = 1 # 1 = Multinomial, 2 = Dirichlet multinomial
 #' GrowthCurveType = 2 # 1 = von Bertalanffy, 2 = Schnute
@@ -685,10 +685,10 @@ VisualiseGrowthApplyingLTM <- function (nFish, TimeStep, MaxAge, Growth_params, 
 #' GrowthParams = data.frame(y1=y1, y2=y2, a=a, b=b)
 #' RefnceAges = data.frame(t1=t1,t2=t2)
 #' Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#'                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#'                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen
 #' ObsDiscCatchFreqAtLen = NA # (or set to Res$ObsDiscCatchFreqAtLen)
-#' PropReleased = NA # proportion of fish released, vector including mean and sd (option probably now obselete)
+#' PropReleased = NA # proportion of fish released, vector including mean and sd (option probably now obsolete)
 #' midpt=Res$midpt
 #' lbnd=Res$lbnd
 #' ubnd=Res$ubnd
@@ -702,11 +702,11 @@ VisualiseGrowthApplyingLTM <- function (nFish, TimeStep, MaxAge, Growth_params, 
 #' # InitDeltaRet = 60
 #' # params = c(InitFishMort_logit, log(InitL50), log(InitDelta), log(InitL50Ret), log(InitDeltaRet))
 #' FittedRes=GetLengthBasedCatchCurveResults(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
-#'                                     lbnd, ubnd, midpt, SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
+#'                                     lbnd, ubnd, midpt, SelectivityAtLen, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
 #'
 #' # Example with selectivity specified as a vector
 #' # Simulate data
-#' SampleSize=5000
+#' SampleSize=1000
 #' set.seed(123)
 #' MaxAge = 30
 #' TimeStep = 1 # model timestep (e.g. 1 = annual, 1/12 = monthly)
@@ -718,32 +718,48 @@ VisualiseGrowthApplyingLTM <- function (nFish, TimeStep, MaxAge, Growth_params, 
 #' SelectivityType=1 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
 #' lbnd = seq(0,MaxLen - LenInc, LenInc)
 #' midpt = lbnd + (LenInc/2)
-#' SelectivityVec = 1 / (1 + exp(-log(19)*(midpt-400)/(500-400)))
-#' PropReleased = NA
+#' # # single sex selectivity input
+#' # SelectivityAtLen = 1 / (1 + exp(-log(19)*(midpt-400)/(500-400)))
+#' # two sex selectivity input
+#' FemSelAtLen = 1 / (1 + exp(-log(19)*(midpt-400)/(500-400)))
+#' MalSelAtLen = 1 / (1 + exp(-log(19)*(midpt-450)/(550-450)))
+#' SelectivityAtLen = t(data.frame(FemSelAtLen=FemSelAtLen,MalSelAtLen=MalSelAtLen))
+#' colnames(SelectivityAtLen) = midpt
 #' SelParams = c(NA, NA) # L50, L95-L50 for gear selectivity
 #' RetenParams = c(NA, NA) # L50, L95-L50 for retention
 #' DiscMort = 0 # proportion of fish that die due to natural mortality
-#' # single sex, von Bertalanffy
-#' DistnType = 1 # 1 = Multinomial, 2 = Dirichlet multinomial
+#' # 2 sexes, von Bertalanffy
 #' GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute
-#' Linf = 800
-#' vbK = 0.2
-#' CVSizeAtAge = 0.05
-#' GrowthParams = c(Linf, vbK)
+#' Linf = c(700,850)
+#' vbK = c(0.3,0.2)
+#' CVSizeAtAge = c(0.06,0.06)
+#' GrowthParams = data.frame(Linf=Linf, vbK=vbK)
 #' RefnceAges = NA
-#' Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#'                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
-#' ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen
-#' ObsDiscCatchFreqAtLen = NA # vector including mean and sd
-#' midpt=Res$midpt
-#' lbnd=Res$lbnd
-#' ubnd=Res$ubnd
+#' SimRes=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
+#'                             SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#' ObsRetCatchFreqAtLen = SimRes$ObsRetCatchFreqAtLen
+#' ObsDiscCatchFreqAtLen = NA # (or set to Res$ObsDiscCatchFreqAtLen)
+#' PropReleased = NA # proportion of fish released, vector including mean and sd (option probably now obselete)
+#' midpt=SimRes$midpt
+#' lbnd=SimRes$lbnd
+#' ubnd=SimRes$ubnd
+#' DistnType = 1
+#' SelectivityType = 1
+#' # # single sex selectivity input
+#' # SelectivityAtLen = 1 / (1 + exp(-log(19)*(midpt-400)/(500-400)))
+#' # two sex selectivity input
+#' FemSelAtLen = 1 / (1 + exp(-log(19)*(midpt-400)/(500-400)))
+#' MalSelAtLen = 1 / (1 + exp(-log(19)*(midpt-450)/(550-450)))
+#' SelectivityAtLen = t(data.frame(FemSelAtLen=FemSelAtLen,MalSelAtLen=MalSelAtLen))
+#' colnames(SelectivityAtLen) = midpt
+#' # InitL50 = 400
+#' # InitDelta = 50
 #' InitFishMort = 0.25 # specify starting parameters
 #' InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform
+#' # params = c(InitFishMort_logit, log(InitL50), log(InitDelta))
 #' params = c(InitFishMort_logit)
 #' FittedRes=GetLengthBasedCatchCurveResults(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
-#'                                     lbnd, ubnd, midpt, SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
-#'
+#'                                           lbnd, ubnd, midpt, SelectivityAtLen, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
 #'
 #' # Fit length-based catch curve to length-frequency data generated from Dirchlet multinomial distribution.
 #' # First, use SimLenAndAgeFreqData function to calculate expected proportions at length
@@ -757,7 +773,7 @@ VisualiseGrowthApplyingLTM <- function (nFish, TimeStep, MaxAge, Growth_params, 
 #' LenInc = 20
 #' MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified
 #' SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
-#' SelectivityVec = NA # selectivity vector
+#' SelectivityAtLen = NA # selectivity vector
 #' SelParams = c(300, 50) # L50, L95-L50 for gear selectivity
 #' RetenParams = c(500, 50) # L50, L95-L50 for retention
 #' DiscMort = 0 # proportion of fish that die due to natural mortality
@@ -769,7 +785,7 @@ VisualiseGrowthApplyingLTM <- function (nFish, TimeStep, MaxAge, Growth_params, 
 #' GrowthParams = c(Linf, vbK)
 #' RefnceAges = NA
 #' Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#'                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#'                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' # Now simulate length-frequency data from Dirchlet multinomial distribution.
 #' set.seed(123)
 #' nSampEvents = 50
@@ -795,7 +811,7 @@ VisualiseGrowthApplyingLTM <- function (nFish, TimeStep, MaxAge, Growth_params, 
 #' InitTheta_logit = log(InitTheta/(1-InitTheta)) # logit transform
 #' params = c(InitFishMort_logit, log(InitL50), log(InitDelta),InitTheta_logit)
 #' FittedRes=GetLengthBasedCatchCurveResults(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
-#'                                           lbnd, ubnd, midpt, SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
+#'                                           lbnd, ubnd, midpt, SelectivityAtLen, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
 #'
 #' # Fit model using growth outputs from an analysis of tag-recapture data
 #' library(WAFishBiology)
@@ -832,7 +848,7 @@ VisualiseGrowthApplyingLTM <- function (nFish, TimeStep, MaxAge, Growth_params, 
 #' LenInc = 2
 #' MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified
 #' SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
-#' SelectivityVec = NA # selectivity vector
+#' SelectivityAtLen = NA # selectivity vector
 #' SelParams = c(60, 20) # L50, L95-L50 for gear selectivity (somewhere around size when abalone emerge from inside caves to being accessible to fishers)
 #' RetenParams = c(150, 10) # L50, L95-L50 for retention
 #' DiscMort = 0 # proportion of fish that die due to natural mortality
@@ -863,7 +879,7 @@ VisualiseGrowthApplyingLTM <- function (nFish, TimeStep, MaxAge, Growth_params, 
 #' GrowthParams = list(MeanSizeAtAge=MeanSizeAtAge, TimestepGrowthSizeInc=TimestepGrowthSizeInc_TagRes, MeanEndingLength=MeanEndingLength_TagRes)
 #' RefnceAges = NA
 #' SimRes=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#'                             SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#'                             SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' DistnType = 1 # 1 = Multinomial, 2 = Dirichlet multinomial
 #' GrowthCurveType = 3 # 1 = von Bertalanffy, 2 = Schnute, 3 = any model with annual mean length increment input
 #' ObsRetCatchFreqAtLen = SimRes$ObsRetCatchFreqAtLen
@@ -878,10 +894,10 @@ VisualiseGrowthApplyingLTM <- function (nFish, TimeStep, MaxAge, Growth_params, 
 #' InitDelta = 100
 #' params = c(InitFishMort_logit, log(InitL50), log(InitDelta))
 #' FittedRes=GetLengthBasedCatchCurveResults(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
-#'                                           lbnd, ubnd, midpt, SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
+#'                                           lbnd, ubnd, midpt, SelectivityAtLen, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
 #' @export
 GetLengthBasedCatchCurveResults <- function (params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
-                                             lbnd, ubnd, midpt, SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
+                                             lbnd, ubnd, midpt, SelectivityAtLen, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
 {
   nlmb <- nlminb(params, CalcObjFunc_LengthBasedCatchCurve,
                  gradient = NULL, hessian = TRUE)
@@ -969,7 +985,7 @@ GetLengthBasedCatchCurveResults <- function (params, DistnType, GrowthCurveType,
   params = nlmb$par
   CatchCurveType=1 #1=length-based, 2=age and length based
   res = AgeAndLengthBasedCatchCurvesCalcs(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge, CatchCurveType,
-                                          MLL, SelectivityType, lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep)
+                                          MLL, SelectivityType, lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep)
 
   # calculate approximate cv for lengths at max age (growth diagnostic), if single timestep
   CV_LenAtMaxAge_Results = GetMaxLenAtAgeCV_AgeAndLengthBasedCatchCurve(TimeStep, res, MaxAge)
@@ -1060,7 +1076,7 @@ CalcObjFunc_LengthBasedCatchCurve <- function(params) {
 
   CatchCurveType=1 #1=length-based, 2=age and length based
   Res = AgeAndLengthBasedCatchCurvesCalcs(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge, CatchCurveType,
-                                          MLL, SelectivityType, lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep)
+                                          MLL, SelectivityType, lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep)
 
   ExpRetCatchPropInLenClass = Res$ExpRetCatchPropInLenClass
   ExpDiscCatchPropInLenClass = Res$ExpDiscCatchPropInLenClass
@@ -1125,7 +1141,7 @@ CalcObjFunc_AgeAndLengthBasedCatchCurve <- function(params) {
   GrowthParams = NA
   CVSizeAtAge = NA
   Res = AgeAndLengthBasedCatchCurvesCalcs(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge, CatchCurveType,
-                                          MLL, SelectivityType, lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep)
+                                          MLL, SelectivityType, lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep)
 
   L50_Pen = Res$L50_Pen
   L95_Pen = Res$L95_Pen
@@ -1669,7 +1685,7 @@ CalcSelectivityPenalties <- function (Res, GrowthCurveType, GrowthModelType, Gro
 #' @param lbnd lower bounds of length classes
 #' @param ubnd upper bounds of length classes
 #' @param midpt mid points of length classes
-#' @param SelectivityVec selectivity at length
+#' @param SelectivityAtLen selectivity at length
 #' @param MaxAge maximum age considered in model
 #' @param NatMort natural mortality
 #' @param TimeStep model timestep (e.g. 1 = annual, 1/12 = monthly)
@@ -1698,7 +1714,7 @@ CalcSelectivityPenalties <- function (Res, GrowthCurveType, GrowthModelType, Gro
 #' length, for sexes combined or separate (FAtLenDisc, FAtLenDisc_Fem, FAtLenDisc_Mal)
 #' @export
 AgeAndLengthBasedCatchCurvesCalcs <- function (params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge, CatchCurveType,
-                                               MLL, SelectivityType, lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep)
+                                               MLL, SelectivityType, lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep)
 {
 
   nTimeSteps = length(seq(TimeStep,MaxAge,TimeStep))
@@ -1737,8 +1753,8 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, DistnType, GrowthCurveTyp
   L95_Pen = ParamPenRes$L95_Pen; L50_Pen = ParamPenRes$L50_Pen; SelParams = ParamPenRes$SelParams
 
   # get selectivity and retention
-  SelRes = GetSelectivityAndRetention(midpt, SelectivityType, SelParams, SelectivityVec, RetenParams, MLL)
-  SelAtLength = SelRes$SelAtLength; RetAtLength = SelRes$RetAtLength
+  SelRes = GetSelectivityAndRetention(midpt, SelectivityType, SelParams, SelectivityAtLen, RetenParams, MLL)
+  SelectivityAtLen = SelRes$SelectivityAtLen; RetAtLength = SelRes$RetAtLength
 
   # get size distribution for juvenile recruits
   RecLenDist = CalcSizeDistOfRecruits(MeanSizeAtAge, CVSizeAtAge, lbnd, ubnd, midpt, nLenCl) # length distribution of 1+ recruits
@@ -1749,6 +1765,7 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, DistnType, GrowthCurveTyp
 
     # calculate catches
     InitRecNumber = 1.0
+    SelAtLength = SelectivityAtLen
     CatchCurveResults = CalcCatches_AgeAndLengthBasedCatchCurves_cpp(params, NatMort, RecLenDist, InitRecNumber, MaxAge, TimeStep, nTimeSteps,
                                                                      nLenCl, midpt, RetAtLength, SelAtLength, DiscMort, LTM)
 
@@ -1829,11 +1846,21 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, DistnType, GrowthCurveTyp
 
     RecLenDist_Fem = as.vector(unlist(RecLenDist[1,]))
     InitRecNumber = 0.5
+    if (is.vector(SelectivityAtLen)) { # single selectivity curve for combined sexes
+      SelAtLength = SelectivityAtLen
+    } else { # separate sex
+      SelAtLength = as.vector(unlist(SelectivityAtLen[1,]))
+    }
     CatchCurveResults_Fem = CalcCatches_AgeAndLengthBasedCatchCurves_cpp(params, NatMort, RecLenDist_Fem, InitRecNumber, MaxAge, TimeStep, nTimeSteps,
                                                                          nLenCl, midpt, RetAtLength, SelAtLength, DiscMort, LTM_Fem)
 
     RecLenDist_Mal = as.vector(unlist(RecLenDist[2,]))
     InitRecNumber = 0.5
+    if (is.vector(SelectivityAtLen)) { # single selectivity curve for combined sexes
+      SelAtLength = SelectivityAtLen
+    } else { # separate sex
+      SelAtLength = as.vector(unlist(SelectivityAtLen[2,]))
+    }
     CatchCurveResults_Mal = CalcCatches_AgeAndLengthBasedCatchCurves_cpp(params, NatMort, RecLenDist_Mal, InitRecNumber, MaxAge, TimeStep, nTimeSteps,
                                                                          nLenCl, midpt, RetAtLength, SelAtLength, DiscMort, LTM_Mal)
 
@@ -1854,8 +1881,9 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, DistnType, GrowthCurveTyp
     FAtLenReten = NA
     FAtLenDisc = NA
 
-    # selectivity of landings (accounting for MLL, if exists)
-    SelLandAtLength = CatchCurveResults_Fem$SelLandAtLength
+    # selectivity of landings at length
+    SelLandings_Fem = CatchCurveResults_Fem$SelLandAtLength; SelLandings_Mal = CatchCurveResults_Mal$SelLandAtLength
+    SelLandAtLength = t(data.frame(SelLandings_Fem=SelLandings_Fem, SelLandings_Mal=SelLandings_Mal))
 
     # catches at length
     TotCatchAtLen_Fem = CatchCurveResults_Fem$TotCatchAtLen # total catches (released + retained)
@@ -1921,7 +1949,7 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, DistnType, GrowthCurveTyp
     ExpRetCatchPropLengthGivenIntAge=NA
   }
 
-  Results = list(SelAtLength = SelAtLength,
+  Results = list(SelectivityAtLen = SelectivityAtLen,
                  RetAtLength = RetAtLength,
                  SelLandAtLength = SelLandAtLength,
                  MeanSizeAtAge = MeanSizeAtAge,
@@ -2009,7 +2037,7 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, DistnType, GrowthCurveTyp
 #' @param lbnd lower bounds of length classes
 #' @param ubnd upper bounds of length classes
 #' @param midpt mid points of length classes
-#' @param SelectivityVec selectivity at length
+#' @param SelectivityAtLen selectivity at length
 #' @param DiscMort proportion of fish that die following capture and release
 #' @param MaxAge maximum age considered in model
 #' @param NatMort natural mortality
@@ -2048,7 +2076,7 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, DistnType, GrowthCurveTyp
 #' LenInc = 20
 #' MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified is knife-edged at MLL
 #' SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
-#' SelectivityVec = NA # selectivity vector
+#' SelectivityAtLen = NA # selectivity vector
 #' SelParams = c(300, 50) # L50, L95-L50 for gear selectivity
 #' RetenParams = c(NA, NA) # L50, L95-L50 for retention
 #' DiscMort = 0
@@ -2060,7 +2088,7 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, DistnType, GrowthCurveTyp
 #' RefnceAges = NA
 #' GrowthParams = c(Linf, vbK, CVSizeAtAge)
 #' Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#'                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#'                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' # 2 sexes, von Bertalanffy
 #' # GrowthCurveType = 1 # 1 = von Bertalanffy
 #' # Linf = c(700,850)
@@ -2069,7 +2097,7 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, DistnType, GrowthCurveTyp
 #' # RefnceAges = NA
 #' # GrowthParams = data.frame(Linf=Linf, vbK=vbK, CVSizeAtAge=CVSizeAtAge)
 #' # Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#' #                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#' #                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' lbnd=Res$lbnd
 #' midpt=Res$midpt
 #' ubnd=Res$ubnd
@@ -2103,11 +2131,11 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, DistnType, GrowthCurveTyp
 #' # InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform (so F is always between 0 and 1)
 #' # params = c(InitFishMort_logit, log(c(InitL50, InitDelta, InitLinf, InitvbK, InitCVSizeAtAge)))
 #' FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
-#'                                                 lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep)
+#'                                                 lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep)
 #' # Example with specified selectivity vector
 #' # Simulate data
 #' SelectivityType=1 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
-#' SelectivityVec = 1 / (1 + exp(-log(19)*(midpt-400)/(500-400)))
+#' SelectivityAtLen = 1 / (1 + exp(-log(19)*(midpt-400)/(500-400)))
 #' SelParams = c(NA, NA) # L50, L95-L50 for gear selectivity
 #' RetenParams = c(NA, NA) # L50, L95-L50 for retention
 #' DiscMort = 0
@@ -2119,7 +2147,7 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, DistnType, GrowthCurveTyp
 #' GrowthParams = c(Linf, vbK, CVSizeAtAge)
 #' RefnceAges = NA
 #' Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#'                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#'                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' lbnd=Res$lbnd
 #' midpt=Res$midpt
 #' ubnd=Res$ubnd
@@ -2134,7 +2162,7 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, DistnType, GrowthCurveTyp
 #' InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform (so F is always between 0 and 1)
 #' params = c(InitFishMort_logit, log(c(InitLinf, InitvbK, InitCVSizeAtAge)))
 #' FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
-#'                                                 lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep)
+#'                                                 lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep)
 #' ########################################################################################################
 #' # Examples below for when data are available in 'raw' form, i.e. as lengths and ages for individual fish
 #' # single (or combined) sexes, using data for individual fish
@@ -2152,7 +2180,7 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, DistnType, GrowthCurveTyp
 #' LenInc = 20
 #' MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified is knife-edged at MLL
 #' SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
-#' SelectivityVec = NA # selectivity vector
+#' SelectivityAtLen = NA # selectivity vector
 #' SelParams = c(300, 50) # L50, L95-L50 for gear selectivity
 #' RetenParams = c(NA, NA) # L50, L95-L50 for retention
 #' DiscMort = 0
@@ -2164,7 +2192,7 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, DistnType, GrowthCurveTyp
 #' RefnceAges = NA
 #' GrowthParams = c(Linf, vbK, CVSizeAtAge)
 #' Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#'                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#'                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' # get individual fish data
 #' FishAges = Res$ObsDecAgeRetCatch # ages for individual fish
 #' FishLengths = Res$ObsRandLenRetCatch # length for individual fish
@@ -2190,7 +2218,7 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, DistnType, GrowthCurveTyp
 #' InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform (so F is always between 0 and 1)
 #' params = c(InitFishMort_logit, log(c(InitL50, InitDelta, InitLinf, InitvbK, InitCVSizeAtAge)))
 #' FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
-#'                                                 lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep)
+#'                                                 lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep)
 #' # 2 sexes, using data for individual fish
 #' # Simulate data
 #' set.seed(123)
@@ -2206,7 +2234,7 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, DistnType, GrowthCurveTyp
 #' LenInc = 20
 #' MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified is knife-edged at MLL
 #' SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
-#' SelectivityVec = NA # selectivity vector
+#' SelectivityAtLen = NA # selectivity vector
 #' SelParams = c(300, 50) # L50, L95-L50 for gear selectivity
 #' RetenParams = c(NA, NA) # L50, L95-L50 for retention
 #' DiscMort = 0
@@ -2218,7 +2246,7 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, DistnType, GrowthCurveTyp
 #' RefnceAges = NA
 #' GrowthParams = data.frame(Linf=Linf, vbK=vbK, CVSizeAtAge=CVSizeAtAge)
 #' Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#'                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#'                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' # get individual fish data
 #' FishAges = c(Res$ObsDecAgeRetCatch_Fem, Res$ObsDecAgeRetCatch_Mal) # ages for individual fish
 #' FishLengths = c(Res$ObsRandLenRetCatch_Fem, Res$ObsRandLenRetCatch_Mal) # length for individual fish
@@ -2249,7 +2277,7 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, DistnType, GrowthCurveTyp
 #' InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform (so F is always between 0 and 1)
 #' params = c(InitFishMort_logit, log(c(InitL50, InitDelta, InitLinf, InitvbK, InitCVSizeAtAge)))
 #' FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
-#'                                                 lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep)
+#'                                                 lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep)
 #' ############################################################
 #' # Fit single (or combined) sex model using Schnute growth curve
 #' # Simulate data
@@ -2263,7 +2291,7 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, DistnType, GrowthCurveTyp
 #' LenInc = 20
 #' MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified
 #' SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
-#' SelectivityVec = NA # selectivity vector
+#' SelectivityAtLen = NA # selectivity vector
 #' SelParams = c(300, 50) # L50, L95-L50 for gear selectivity
 #' RetenParams = c(NA, NA) # L50, L95-L50 for retention
 #' DiscMort = 0 # proportion of fish that die due to natural mortality
@@ -2279,7 +2307,7 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, DistnType, GrowthCurveTyp
 #' RefnceAges = c(t1,t2)
 #' CVSizeAtAge = 0.08
 #' Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#'                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#'                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' plot(Res$ObsDecAgeRetCatch, Res$ObsRandLenRetCatch, ylim=c(0,1200))
 #' # fit model
 #' ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen
@@ -2296,7 +2324,7 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, DistnType, GrowthCurveTyp
 #' y2=900; a=0.15; b=1.5; InitCVSizeAtAge = 0.1
 #' params = c(InitFishMort_logit, log(InitL50), log(InitDelta), log(y2), a, b, log(InitCVSizeAtAge))
 #' FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
-#'                                                 lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep)
+#'                                                 lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep)
 #' # if wanting to obtain estimated lengths-at-ages over larger age range,
 #' # extrapolating beyond MaxAge (using WAFishBiology package)
 #' library(WAFishBiology)
@@ -2313,7 +2341,7 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, DistnType, GrowthCurveTyp
 #' plot(1:MaxModelAge, EstLenAtAge, "o")
 #' @export
 GetAgeAndLengthBasedCatchCurveResults <- function (params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
-                                                   lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep)
+                                                   lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep)
 {
 
   nlmb <- nlminb(params, CalcObjFunc_AgeAndLengthBasedCatchCurve,
@@ -2340,7 +2368,7 @@ GetAgeAndLengthBasedCatchCurveResults <- function (params, RefnceAges, MLL, Grow
   params=nlmb$par
 
   res = AgeAndLengthBasedCatchCurvesCalcs(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge, CatchCurveType,
-                                          MLL, SelectivityType, lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep)
+                                          MLL, SelectivityType, lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep)
 
   # calculate approximate cv for lengths at max age (growth diagnostic), if single timestep
   CV_LenAtMaxAge_Results = GetMaxLenAtAgeCV_AgeAndLengthBasedCatchCurve(TimeStep, res, MaxAge)
@@ -2353,7 +2381,7 @@ GetAgeAndLengthBasedCatchCurveResults <- function (params, RefnceAges, MLL, Grow
   ModelDiag = list(params = nlmb$par,
                    vcov.Params = vcov.Params,
                    cor.Params = cor.Params,
-                   SelAtLength=res$SelAtLength,
+                   SelectivityAtLen=res$SelectivityAtLen,
                    RetAtLength = res$RetAtLength,
                    SelLandAtLength = res$SelLandAtLength,
                    MeanSizeAtAge=res$MeanSizeAtAge,
@@ -3243,22 +3271,19 @@ GetRetainedCatchStats <- function(ObsRetCatchFreqAtLen, ObsTotCatchAtLen, ObsLen
 #' @param midpt mid points of length classes
 #' @param SelectivityType 1=inputted as vector, 2= inputted as params
 #' @param SelParams params for gear selectivity
-#' @param SelectivityVec inputted selectivity at length vector
+#' @param SelectivityAtLen inputted selectivity at length vector
 #' @param RetenParams params for fish retention
 #' @param MLL minimum legal length
 #'
 #' @return SelAtLength, RetAtLength
-GetSelectivityAndRetention <- function(midpt, SelectivityType, SelParams, SelectivityVec, RetenParams, MLL) {
+GetSelectivityAndRetention <- function(midpt, SelectivityType, SelParams, SelectivityAtLen, RetenParams, MLL) {
 
   # gear selectivity
-  if (SelectivityType == 1) { # inputted as vector
-    SelAtLength = SelectivityVec
-  }
   if (SelectivityType == 2) { # logistic gear selectivity
     if (!is.na(SelParams[1])) { # calculate selectivity curve
       L50=SelParams[1]
       L95=L50 + SelParams[2]
-      SelAtLength = CalcLogisticSelOrReten(L50, L95, midpt)
+      SelectivityAtLen = CalcLogisticSelOrReten(L50, L95, midpt)
     } else { # selectivity curve is unknown.
       cat("Gear selectivity params or a selectivity vector needs to be specified",'\n')
     }
@@ -3278,7 +3303,7 @@ GetSelectivityAndRetention <- function(midpt, SelectivityType, SelParams, Select
     }
   }
 
-  Results = list(SelAtLength = SelAtLength,
+  Results = list(SelectivityAtLen = SelectivityAtLen,
                  RetAtLength = RetAtLength)
 
   return(Results)
@@ -3552,7 +3577,7 @@ GetReqdSampleSizesForRandData <- function(MLL, RetenParams, SampleSize, RetCatch
 #' LenInc = 20
 #' MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified
 #' SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
-#' SelectivityVec = NA # selectivity vector
+#' SelectivityAtLen = NA # selectivity vector
 #' SelParams = c(300, 50) # L50, L95-L50 for gear selectivity
 #' RetenParams = c(500, 50) # L50, L95-L50 for retention
 #' DiscMort = 0 # proportion of fish that die due to natural mortality
@@ -3564,7 +3589,7 @@ GetReqdSampleSizesForRandData <- function(MLL, RetenParams, SampleSize, RetCatch
 #' GrowthParams = c(Linf, vbK)
 #' RefnceAges = NA
 #' Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#'                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#'                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' # Now simulate length-frequency data from Dirchlet multinomial distribution.
 #' set.seed(123)
 #' nSampEvents = 50
@@ -3620,7 +3645,7 @@ SimLenFreqDat_DirMultDistn <- function(nSampEvents, nFishPerSampEvent, theta_val
 #' @param SelectivityType 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
 #' @param L50 length at 50 percent selectivity
 #' @param L95 length at 95 percent selectivity
-#' @param SelectivityVec selectivity at length, set to NA if selectivity parameters inputted
+#' @param SelectivityAtLen selectivity at length, set to NA if selectivity parameters inputted
 #' @param DiscMort Proportion of fish that die following to capture and release
 #' @param GrowthCurveType 1=von Bertalanffy, 2=Schnute
 #' @param GrowthParams c(Linf, vbK) single sex von Bertalanffy, or data.frame(Linf=Linf, vbK=vbK) separate sex von Bertalanffy,
@@ -3645,7 +3670,7 @@ SimLenFreqDat_DirMultDistn <- function(nSampEvents, nFishPerSampEvent, theta_val
 #' LenInc = 20
 #' MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified
 #' SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
-#' SelectivityVec = NA # selectivity vector
+#' SelectivityAtLen = NA # selectivity vector
 #' SelParams = c(300, 50) # L50, L95-L50 for gear selectivity
 #' RetenParams = c(NA, NA) # L50, L95-L50 for retention
 #' DiscMort = 0 # proportion of fish that die due to natural mortality
@@ -3657,7 +3682,7 @@ SimLenFreqDat_DirMultDistn <- function(nSampEvents, nFishPerSampEvent, theta_val
 #' GrowthParams = c(Linf, vbK)
 #' RefnceAges = NA
 #' Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#'                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#'                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' # 2 sexes, von Bertalanffy
 #' GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute
 #' Linf = c(700,850)
@@ -3666,7 +3691,7 @@ SimLenFreqDat_DirMultDistn <- function(nSampEvents, nFishPerSampEvent, theta_val
 #' GrowthParams = data.frame(Linf=Linf, vbK=vbK)
 #' RefnceAges = NA
 #' Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#'                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#'                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' # 1 sex, Schnute
 #' GrowthCurveType = 2 # 1 = von Bertalanffy, 2 = Schnute
 #' t1 = 0.5 # growth - Schnute
@@ -3679,7 +3704,7 @@ SimLenFreqDat_DirMultDistn <- function(nSampEvents, nFishPerSampEvent, theta_val
 #' RefnceAges = c(t1,t2)
 #' CVSizeAtAge = 0.05
 #' Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#'                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#'                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' # 2 sexes, Schnute
 #' GrowthCurveType = 2 # 1 = von Bertalanffy, 2 = Schnute
 #' t1 = c(0.5,0.5) # growth - Schnute
@@ -3692,7 +3717,7 @@ SimLenFreqDat_DirMultDistn <- function(nSampEvents, nFishPerSampEvent, theta_val
 #' GrowthParams = data.frame(y1=y1, y2=y2, a=a, b=b)
 #' RefnceAges = data.frame(t1=t1,t2=t2)
 #' Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#'                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#'                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' # Example with selectivity specified as a vector
 #' # Simulate data
 #' SampleSize=5000
@@ -3707,7 +3732,7 @@ SimLenFreqDat_DirMultDistn <- function(nSampEvents, nFishPerSampEvent, theta_val
 #' SelectivityType=1 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
 #' lbnd = seq(0,MaxLen - LenInc, LenInc)
 #' midpt = lbnd + (LenInc/2)
-#' SelectivityVec = 1 / (1 + exp(-log(19)*(midpt-400)/(500-400)))
+#' SelectivityAtLen = 1 / (1 + exp(-log(19)*(midpt-400)/(500-400)))
 #' SelParams = c(NA, NA) # L50, L95-L50 for gear selectivity
 #' RetenParams = c(NA, NA) # L50, L95-L50 for retention
 #' DiscMort = 0 # proportion of fish that die due to natural mortality
@@ -3719,10 +3744,10 @@ SimLenFreqDat_DirMultDistn <- function(nSampEvents, nFishPerSampEvent, theta_val
 #' GrowthParams = c(Linf, vbK)
 #' RefnceAges = NA
 #' Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#'                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#'                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' @export
 SimLenAndAgeFreqData <- function(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-                                 SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge) {
+                                 SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge) {
 
   DecAges = seq(TimeStep,MaxAge,TimeStep)
   MinAge = floor(DecAges[1])
@@ -3733,10 +3758,11 @@ SimLenAndAgeFreqData <- function(SampleSize, MaxAge, TimeStep, NatMort, FishMort
   midpt = lbnd + (LenInc/2)
   nLenCl = length(midpt)
   FishMort_logit = log(FishMort/(1-FishMort)) # logit transform (so F is always between 0 and 1)
+  InitRecNumber = 0.5
 
   # get selectivity and retention
-  SelRes = GetSelectivityAndRetention(midpt, SelectivityType, SelParams, SelectivityVec, RetenParams, MLL)
-  SelAtLength = SelRes$SelAtLength
+  SelRes = GetSelectivityAndRetention(midpt, SelectivityType, SelParams, SelectivityAtLen, RetenParams, MLL)
+  SelectivityAtLen = SelRes$SelectivityAtLen
   RetAtLength = SelRes$RetAtLength
 
   # get growth model type
@@ -3768,12 +3794,24 @@ SimLenAndAgeFreqData <- function(SampleSize, MaxAge, TimeStep, NatMort, FishMort
   LTM_Mal = CalcLTM_cpp(TimestepGrowthSizeInc_Mal, CVSizeAtAge_Mal, lbnd, midpt, ubnd, nLenCl) # length-transition matrix - males
 
   # get expected landed and discarded catches, and selectivity of landings and discards (retention function approach)
-  InitRecNumber = 0.5
+  if (is.vector(SelectivityAtLen)) { # single selectivity curve for combined sexes
+    SelAtLength = SelectivityAtLen
+  } else { # separate sex
+    SelAtLength = as.vector(unlist(SelectivityAtLen[1,]))
+  }
   CatchCurveResults_Fem = CalcCatches_AgeAndLengthBasedCatchCurves_cpp(FishMort_logit, NatMort, RecLenDist_Fem, InitRecNumber, MaxAge, TimeStep, nTimeSteps,
                                                                        nLenCl, midpt, RetAtLength, SelAtLength, DiscMort, LTM_Fem)
-
+  if (is.vector(SelectivityAtLen)) { # single selectivity curve for combined sexes
+    SelAtLength = as.vector(unlist(SelectivityAtLen))
+  } else { # separate sex
+    SelAtLength = as.vector(unlist(SelectivityAtLen[2,]))
+  }
   CatchCurveResults_Mal = CalcCatches_AgeAndLengthBasedCatchCurves_cpp(FishMort_logit, NatMort, RecLenDist_Mal, InitRecNumber, MaxAge, TimeStep, nTimeSteps,
                                                                        nLenCl, midpt, RetAtLength, SelAtLength, DiscMort, LTM_Mal)
+
+  # selectivity of landings at length
+  SelLandings_Fem = CatchCurveResults_Fem$SelLandAtLength; SelLandings_Mal = CatchCurveResults_Mal$SelLandAtLength
+  SelLandAtLength = t(data.frame(SelLandings_Fem=SelLandings_Fem, SelLandings_Mal=SelLandings_Mal))
 
   # expected retained catch at length
   RetCatchAtLen_Fem = CatchCurveResults_Fem$RetCatchAtLen; RetCatchAtLen_Mal = CatchCurveResults_Mal$RetCatchAtLen
@@ -3788,7 +3826,6 @@ SimLenAndAgeFreqData <- function(SampleSize, MaxAge, TimeStep, NatMort, FishMort
   TotCatchAtLen = TotCatchAtLen_Fem + TotCatchAtLen_Mal
 
   # expected retained catch at decimal age and length
-  SelLandAtLength = CatchCurveResults_Fem$SelLandAtLength # selectivity of landings
   RetCatchAtDecAgeLen_Fem = as.matrix(unlist(CatchCurveResults_Fem$RetCatchAtDecAgeLen)) # retained catches, decimal ages and lengths
   RetCatchAtDecAgeLen_Mal = as.matrix(unlist(CatchCurveResults_Mal$RetCatchAtDecAgeLen))
   RetCatchAtDecAgeLen = RetCatchAtDecAgeLen_Fem + RetCatchAtDecAgeLen_Mal # single sex or combined sexes
@@ -3962,7 +3999,7 @@ SimLenAndAgeFreqData <- function(SampleSize, MaxAge, TimeStep, NatMort, FishMort
                    RecLenDist = RecLenDist,
                    MeanSizeAtAge = MeanSizeAtAge,
                    TimestepGrowthSizeInc = TimestepGrowthSizeInc,
-                   SelAtLength = SelAtLength,
+                   SelectivityAtLen = SelectivityAtLen,
                    RetAtLength = RetAtLength,
                    SelLandAtLength = SelLandAtLength,
                    FAtLen_Fem = CatchCurveResults_Fem$FAtLen,
@@ -4087,7 +4124,7 @@ SimLenAndAgeFreqData <- function(SampleSize, MaxAge, TimeStep, NatMort, FishMort
 #' LenInc = 20
 #' MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified
 #' SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
-#' SelectivityVec = NA # selectivity vector
+#' SelectivityAtLen = NA # selectivity vector
 #' SelParams = c(300, 50) # L50, L95-L50 for gear selectivity
 #' RetenParams = c(400, 50) # L50, L95-L50 for retention
 #' DiscMort = 0 # proportion of fish that die due to natural mortality
@@ -4099,7 +4136,7 @@ SimLenAndAgeFreqData <- function(SampleSize, MaxAge, TimeStep, NatMort, FishMort
 #' GrowthParams = c(Linf, vbK)
 #' RefnceAges = NA
 #' SimRes=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#'                             SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#'                             SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' # plot data
 #' PlotOpt=0 # 0=all plots, 1=retained lengths at age and growth curves, 2=retained plus discard lengths at age
 #' # and growth curves, 3=retained plus discard length frequency, 4=retained plus discard age frequency,
@@ -4451,16 +4488,29 @@ PlotSimLenAndAgeFreqData <- function(MaxAge, MaxLen, SimRes, PlotOpt) {
     xint = xlims$xint
     ymax = 1.0
     yint = 0.2
-    plot(SimRes$midpt, SimRes$ModelDiag$SelAtLength, "l", cex.main=1.2, pch=1, cex=0.6,
-         xaxt = "n", yaxt = "n", xlab=list(xaxis_lab,cex=1.2),ylab=list(yaxis_lab,cex=1.2), frame=F, xlim=c(0,xmax),
-         ylim=c(0,ymax), col="red")
-    lines(SimRes$midpt, SimRes$ModelDiag$RetAtLength, col="blue")
-    lines(SimRes$midpt, SimRes$ModelDiag$SelLandAtLength, col="black")
-    AddAxesAndTickLabelsToPlot(xmin=NA, xmax, xint, ymin=NA, ymax, yint, cexval=NA, cexaxisval=NA, lwdval=NA, lineval=NA, lasval=NA)
-    if (SelectivityType==1) {
+    # gear selectivity
+    if (is.vector(SimRes$ModelDiag$SelectivityAtLen)) {
+      plot(SimRes$midpt, SimRes$ModelDiag$SelectivityAtLen, "l", cex.main=1.2, pch=1, cex=0.6,
+           xaxt = "n", yaxt = "n", xlab=list(xaxis_lab,cex=1.2),ylab=list(yaxis_lab,cex=1.2), frame=F, xlim=c(0,xmax),
+           ylim=c(0,ymax), col="red")
+      lines(SimRes$midpt, SimRes$ModelDiag$SelLandAtLength[1,], col="black") # same for both sexes
       legend("bottomright", pch=-1, legend=c("Sel_gear", "Prob_Reten", "Sel_land"), lty="solid", col=c("red","blue","black"),
              bty='n', cex=0.8,lwd=1, y.intersp=1.1)
+    } else {
+      plot(SimRes$midpt, SimRes$ModelDiag$SelectivityAtLen[1,], "l", cex.main=1.2, pch=1, cex=0.6,
+           xaxt = "n", yaxt = "n", xlab=list(xaxis_lab,cex=1.2),ylab=list(yaxis_lab,cex=1.2), frame=F, xlim=c(0,xmax),
+           ylim=c(0,ymax), col="red")
+      lines(SimRes$midpt, SimRes$ModelDiag$SelectivityAtLen[2,], col="purple")
+      lines(SimRes$midpt, SimRes$ModelDiag$SelLandAtLength[1,], col="black") # same for both sexes
+      lines(SimRes$midpt, SimRes$ModelDiag$SelLandAtLength[2,], col="darkgrey") # same for both sexes
+      legend("bottomright", pch=-1, legend=c("Sel_gear_Fem", "Sel_gear_Mal", "Prob_Reten", "Sel_land_Fem","Sel_land_Mal"),
+             lty="solid", col=c("red","purple","blue","black","darkgrey"), bty='n', cex=0.8,lwd=1, y.intersp=1.1)
     }
+    lines(SimRes$midpt, SimRes$ModelDiag$RetAtLength, col="blue")
+
+    AddAxesAndTickLabelsToPlot(xmin=NA, xmax, xint, ymin=NA, ymax, yint, cexval=NA, cexaxisval=NA, lwdval=NA, lineval=NA, lasval=NA)
+
+
     if (SelectivityType==2) { # logistic selectivity
       if(!is.na(SelParams[1])) {
         L50_Est=paste("L50_gear =",round(SelParams[1],0),"mm")
@@ -4558,7 +4608,7 @@ PlotSimLenAndAgeFreqData <- function(MaxAge, MaxLen, SimRes, PlotOpt) {
     xaxis_lab = "Length (mm)"
     plot(SimRes$midpt, SimRes$ModelDiag$FAtLenReten_Fem, "l", main="F (retention)", cex.main=1.0, pch=1, cex=0.6,
          xaxt = "n", yaxt = "n", xlab=list(xaxis_lab,cex=1.2),ylab=NA, frame=F, xlim=c(0,xmax),
-         ylim=c(0,ymax), col="blue")
+         ylim=c(0,ymax), col="red")
     AddAxesAndTickLabelsToPlot(xmin=NA, xmax, xint, ymin=NA, ymax, yint, cexval=NA, cexaxisval=NA, lwdval=NA, lineval=NA, lasval=NA)
     mtext(expression(paste(italic("F") ~ (year^{-1}))),las=3,side=2,line=3,cex=1.0,lwd=1.75)
     lines(SimRes$midpt, SimRes$ModelDiag$FAtLenReten_Mal, col="blue")
@@ -4577,7 +4627,7 @@ PlotSimLenAndAgeFreqData <- function(MaxAge, MaxLen, SimRes, PlotOpt) {
     xaxis_lab = "Length (mm)"
     plot(SimRes$midpt, SimRes$ModelDiag$FAtLenDisc_Fem*DiscMort, "l", main="F (discard mortality)", cex.main=1.0, pch=1, cex=0.6,
          xaxt = "n", yaxt = "n", xlab=list(xaxis_lab,cex=1.2),ylab=NA, frame=F, xlim=c(0,xmax),
-         ylim=c(0,ymax), col="brown")
+         ylim=c(0,ymax), col="red")
     AddAxesAndTickLabelsToPlot(xmin=NA, xmax, xint, ymin=NA, ymax, yint, cexval=NA, cexaxisval=NA, lwdval=NA, lineval=NA, lasval=NA)
     mtext(expression(paste(italic("F") ~ (year^{-1}))),las=3,side=2,line=2.5,cex=1.0,lwd=1.75)
     lines(SimRes$midpt, SimRes$ModelDiag$FAtLenDisc_Mal*DiscMort, col="blue")
@@ -4598,7 +4648,7 @@ PlotSimLenAndAgeFreqData <- function(MaxAge, MaxLen, SimRes, PlotOpt) {
 #' @param lbnd lower bounds of length classes
 #' @param ubnd upper bounds of length classes
 #' @param midpt mid points of length classes
-#' @param SelectivityVec selectivity at length
+#' @param SelectivityAtLen selectivity at length
 #' @param PropReleased proportion of fish that are released
 #' @param ObsDiscCatchFreqAtLen Mean length of fish that are released
 #' @param DiscMort selectivity at length
@@ -4634,7 +4684,7 @@ PlotSimLenAndAgeFreqData <- function(MaxAge, MaxLen, SimRes, PlotOpt) {
 #' LenInc = 20
 #' MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified
 #' SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
-#' SelectivityVec = NA # selectivity vector
+#' SelectivityAtLen = NA # selectivity vector
 #' SelParams = c(300, 50) # L50, L95-L50 for gear selectivity
 #' RetenParams = c(NA, NA) # L50, L95-L50 for retention
 #' DiscMort = 0 # proportion of fish that die due to natural mortality
@@ -4647,7 +4697,7 @@ PlotSimLenAndAgeFreqData <- function(MaxAge, MaxLen, SimRes, PlotOpt) {
 #' GrowthParams = c(Linf, vbK)
 #' RefnceAges = NA
 #' Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#'                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#'                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' # 2 sexes, von Bertalanffy
 #' DistnType = 1 # 1 = Multinomial, 2 = Dirichlet multinomial
 #' GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute
@@ -4657,7 +4707,7 @@ PlotSimLenAndAgeFreqData <- function(MaxAge, MaxLen, SimRes, PlotOpt) {
 #' GrowthParams = data.frame(Linf=Linf, vbK=vbK)
 #' RefnceAges = NA
 #' Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#'                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#'                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' # 1 sex, Schnute
 #' DistnType = 1 # 1 = Multinomial, 2 = Dirichlet multinomial
 #' GrowthCurveType = 2 # 1 = von Bertalanffy, 2 = Schnute
@@ -4671,7 +4721,7 @@ PlotSimLenAndAgeFreqData <- function(MaxAge, MaxLen, SimRes, PlotOpt) {
 #' RefnceAges = c(t1,t2)
 #' CVSizeAtAge = 0.05
 #' Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#'                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#'                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' # 2 sexes, Schnute
 #' DistnType = 1 # 1 = Multinomial, 2 = Dirichlet multinomial
 #' GrowthCurveType = 2 # 1 = von Bertalanffy, 2 = Schnute
@@ -4685,10 +4735,10 @@ PlotSimLenAndAgeFreqData <- function(MaxAge, MaxLen, SimRes, PlotOpt) {
 #' GrowthParams = data.frame(y1=y1, y2=y2, a=a, b=b)
 #' RefnceAges = data.frame(t1=t1,t2=t2)
 #' Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#'                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#'                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen
 #' ObsDiscCatchFreqAtLen = NA # (or set to Res$ObsDiscCatchFreqAtLen)
-#' PropReleased = NA # proportion of fish released, vector including mean and sd (option probably now obselete)
+#' PropReleased = NA # proportion of fish released, vector including mean and sd (option probably now obsolete)
 #' midpt=Res$midpt
 #' lbnd=Res$lbnd
 #' ubnd=Res$ubnd
@@ -4698,15 +4748,15 @@ PlotSimLenAndAgeFreqData <- function(MaxAge, MaxLen, SimRes, PlotOpt) {
 #' InitDelta = 100
 #' params = c(InitFishMort_logit, log(InitL50), log(InitDelta))
 #' FittedRes=GetLengthBasedCatchCurveResults(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
-#'                                          lbnd, ubnd, midpt, SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
+#'                                          lbnd, ubnd, midpt, SelectivityAtLen, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
 #' PlotLengthBasedCatchCurve_RetCatch(params, DistnType, MLL, SelectivityType, ObsRetCatchFreqAtLen, lbnd, ubnd, midpt,
-#'                                    SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, GrowthCurveType, GrowthParams,
+#'                                    SelectivityAtLen, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, GrowthCurveType, GrowthParams,
 #'                                    RefnceAges, MaxAge, NatMort, TimeStep, MainLabel=NA,
 #'                                    xaxis_lab=NA, yaxis_lab=NA, xmax=1500, xint=500,
 #'                                    ymax=0.15, yint=0.05, PlotCLs=TRUE, FittedRes, nReps=200)
 #' @export
 PlotLengthBasedCatchCurve_RetCatch <- function(params, DistnType, MLL, SelectivityType, ObsRetCatchFreqAtLen, lbnd, ubnd, midpt,
-                                             SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges,
+                                             SelectivityAtLen, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges,
                                              MaxAge, NatMort, TimeStep, MainLabel, xaxis_lab, yaxis_lab, xmax, xint,
                                              ymax, yint, PlotCLs, FittedRes, nReps) {
 
@@ -4717,7 +4767,7 @@ PlotLengthBasedCatchCurve_RetCatch <- function(params, DistnType, MLL, Selectivi
     res =  FittedRes
   } else {
     res=GetLengthBasedCatchCurveResults(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
-                                        lbnd, ubnd, midpt, SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
+                                        lbnd, ubnd, midpt, SelectivityAtLen, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
   }
 
   params = res$params
@@ -4733,7 +4783,7 @@ PlotLengthBasedCatchCurve_RetCatch <- function(params, DistnType, MLL, Selectivi
     params = unlist(sims[j,])
     CatchCurveType=1 #1=length-based, 2=age and length based
     Res=AgeAndLengthBasedCatchCurvesCalcs(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge, CatchCurveType,
-                                          MLL, SelectivityType, lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep)
+                                          MLL, SelectivityType, lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep)
 
     EstPropAtLen.sim[j,] = unlist(Res$ExpRetCatchPropInLenClass)
     cat("j",j,'\n')
@@ -4810,7 +4860,7 @@ PlotLengthBasedCatchCurve_RetCatch <- function(params, DistnType, MLL, Selectivi
 #' @param lbnd lower bounds of length classes
 #' @param ubnd upper bounds of length classes
 #' @param midpt mid points of length classes
-#' @param SelectivityVec selectivity at length
+#' @param SelectivityAtLen selectivity at length
 #' @param PropReleased proportion of fish that are released
 #' @param ObsDiscCatchFreqAtLen Mean length of fish that are released
 #' @param DiscMort selectivity at length
@@ -4846,7 +4896,7 @@ PlotLengthBasedCatchCurve_RetCatch <- function(params, DistnType, MLL, Selectivi
 #' LenInc = 20
 #' MLL=500 # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified
 #' SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
-#' SelectivityVec = NA # selectivity vector
+#' SelectivityAtLen = NA # selectivity vector
 #' SelParams = c(300, 50) # L50, L95-L50 for gear selectivity
 #' RetenParams = NA # L50, L95-L50 for retention
 #' DiscMort = 0 # proportion of fish that die due to natural mortality
@@ -4859,10 +4909,10 @@ PlotLengthBasedCatchCurve_RetCatch <- function(params, DistnType, MLL, Selectivi
 #' GrowthParams = c(Linf, vbK)
 #' RefnceAges = NA
 #' Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#'                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#'                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen
 #' ObsDiscCatchFreqAtLen = Res$ObsDiscCatchFreqAtLen
-#' PropReleased = NA # proportion of fish released, vector including mean and sd (option probably now obselete)
+#' PropReleased = NA # proportion of fish released, vector including mean and sd (option probably now obsolete)
 #' midpt=Res$midpt
 #' lbnd=Res$lbnd
 #' ubnd=Res$ubnd
@@ -4872,14 +4922,14 @@ PlotLengthBasedCatchCurve_RetCatch <- function(params, DistnType, MLL, Selectivi
 #' InitDelta = 100
 #' params = c(InitFishMort_logit, log(InitL50), log(InitDelta))
 #' FittedRes=GetLengthBasedCatchCurveResults(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
-#'                                           lbnd, ubnd, midpt, SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
+#'                                           lbnd, ubnd, midpt, SelectivityAtLen, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
 #' PlotLengthBasedCatchCurve_DiscCatch(params, DistnType, MLL, SelectivityType, ObsRetCatchFreqAtLen, lbnd, ubnd, midpt,
-#'                                     SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, MaxAge, NatMort, TimeStep, MainLabel=NA,
+#'                                     SelectivityAtLen, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, MaxAge, NatMort, TimeStep, MainLabel=NA,
 #'                                     xaxis_lab=NA, yaxis_lab=NA, xmax=1500, xint=500,
 #'                                     ymax=0.15, yint=0.05, PlotCLs=TRUE, FittedRes, nReps=200)
 #' @export
 PlotLengthBasedCatchCurve_DiscCatch <- function(params, DistnType, MLL, SelectivityType, ObsRetCatchFreqAtLen, lbnd, ubnd, midpt,
-                                               SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges,
+                                               SelectivityAtLen, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges,
                                                MaxAge, NatMort, TimeStep, MainLabel, xaxis_lab, yaxis_lab, xmax, xint,
                                                ymax, yint, PlotCLs, FittedRes, nReps) {
 
@@ -4894,7 +4944,7 @@ PlotLengthBasedCatchCurve_DiscCatch <- function(params, DistnType, MLL, Selectiv
       res =  FittedRes
     } else {
       res=GetLengthBasedCatchCurveResults(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
-                                          lbnd, ubnd, midpt, SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
+                                          lbnd, ubnd, midpt, SelectivityAtLen, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
     }
 
     params = res$params
@@ -4910,7 +4960,7 @@ PlotLengthBasedCatchCurve_DiscCatch <- function(params, DistnType, MLL, Selectiv
       params = unlist(sims[j,])
       CatchCurveType=1 #1=length-based, 2=age and length based
       Res=AgeAndLengthBasedCatchCurvesCalcs(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge, CatchCurveType,
-                                            MLL, SelectivityType, lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep)
+                                            MLL, SelectivityType, lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep)
 
       EstPropAtLen.sim[j,] = unlist(Res$ExpDiscCatchPropInLenClass)
       cat("j",j,'\n')
@@ -4993,7 +5043,7 @@ PlotLengthBasedCatchCurve_DiscCatch <- function(params, DistnType, MLL, Selectiv
 #' @param ubnd upper bounds of length classes
 #' @param midpt mid points of length classes
 #' @param MLL minimum legal length (for setting knife edge retention, set to NA if not assumed)
-#' @param SelectivityVec selectivity at length
+#' @param SelectivityAtLen selectivity at length
 #' @param PropReleased proportion of fish that are released
 #' @param ObsDiscCatchFreqAtLen mean lenght of released fish
 #' @param DiscMort Proportion of fish that die following to capture and release
@@ -5029,7 +5079,7 @@ PlotLengthBasedCatchCurve_DiscCatch <- function(params, DistnType, MLL, Selectiv
 #' LenInc = 20
 #' MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified
 #' SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
-#' SelectivityVec = NA # selectivity vector
+#' SelectivityAtLen = NA # selectivity vector
 #' SelParams = c(300, 50) # L50, L95-L50 for gear selectivity
 #' RetenParams = c(NA, NA) # L50, L95-L50 for retention
 #' DiscMort = 0 # proportion of fish that die due to natural mortality
@@ -5041,7 +5091,7 @@ PlotLengthBasedCatchCurve_DiscCatch <- function(params, DistnType, MLL, Selectiv
 #' GrowthParams = c(Linf, vbK)
 #' RefnceAges = NA
 #' Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#'                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#'                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' # 2 sexes, von Bertalanffy
 #' GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute
 #' Linf = c(700,850)
@@ -5050,7 +5100,7 @@ PlotLengthBasedCatchCurve_DiscCatch <- function(params, DistnType, MLL, Selectiv
 #' GrowthParams = data.frame(Linf=Linf, vbK=vbK)
 #' RefnceAges = NA
 #' Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#'                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#'                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' # 1 sex, Schnute
 #' GrowthCurveType = 2 # 1 = von Bertalanffy, 2 = Schnute
 #' t1 = 0.5 # growth - Schnute
@@ -5063,7 +5113,7 @@ PlotLengthBasedCatchCurve_DiscCatch <- function(params, DistnType, MLL, Selectiv
 #' RefnceAges = c(t1,t2)
 #' CVSizeAtAge = 0.05
 #' Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#'                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#'                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' # 2 sexes, Schnute
 #' GrowthCurveType = 2 # 1 = von Bertalanffy, 2 = Schnute
 #' t1 = c(0.5,0.5) # growth - Schnute
@@ -5076,54 +5126,81 @@ PlotLengthBasedCatchCurve_DiscCatch <- function(params, DistnType, MLL, Selectiv
 #' GrowthParams = data.frame(y1=y1, y2=y2, a=a, b=b)
 #' RefnceAges = data.frame(t1=t1,t2=t2)
 #' Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#'                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#'                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen
 #' ObsDiscCatchFreqAtLen = NA # (or set to Res$ObsDiscCatchFreqAtLen)
-#' PropReleased = NA # proportion of fish released, vector including mean and sd (option probably now obselete)
+#' PropReleased = NA # proportion of fish released, vector including mean and sd (option probably now obsolete)
 #' midpt=Res$midpt
 #' lbnd=Res$lbnd
 #' ubnd=Res$ubnd
+#' DistnType = 1 # 1 = Multinomial, 2 = Dirichlet multinomial
 #' InitFishMort = 0.25 # specify starting parameters
 #' InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform
 #' InitL50 = 400
 #' InitDelta = 100
 #' params = c(InitFishMort_logit, log(InitL50), log(InitDelta))
 #' FittedRes=GetLengthBasedCatchCurveResults(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
-#'                                     lbnd, ubnd, midpt, SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
-#' PlotLengthBasedCatchCurve_Selectivity(params, DistnType, MLL, SelectivityType, ObsRetCatchFreqAtLen, lbnd, ubnd, midpt, SelectivityVec,
+#'                                     lbnd, ubnd, midpt, SelectivityAtLen, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
+#' PlotLengthBasedCatchCurve_Selectivity(params, DistnType, MLL, SelectivityType, ObsRetCatchFreqAtLen, lbnd, ubnd, midpt, SelectivityAtLen,
 #'                                       PropReleased, ObsDiscCatchFreqAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges,
 #'                                       MaxAge, NatMort, TimeStep, MainLabel=NA, xaxis_lab=NA, yaxis_lab=NA, xmax=1200, xint=200,
 #'                                       ymax=1.0, yint=0.2, PlotCLs=TRUE, FittedRes, nReps=200)
 #' @export
-PlotLengthBasedCatchCurve_Selectivity <- function(params, DistnType, MLL, SelectivityType, ObsRetCatchFreqAtLen, lbnd, ubnd, midpt, SelectivityVec,
+PlotLengthBasedCatchCurve_Selectivity <- function(params, DistnType, MLL, SelectivityType, ObsRetCatchFreqAtLen, lbnd, ubnd, midpt, SelectivityAtLen,
                                                   PropReleased, ObsDiscCatchFreqAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges,
                                                   MaxAge, NatMort, TimeStep, MainLabel, xaxis_lab, yaxis_lab, xmax, xint,
                                                   ymax, yint, PlotCLs, FittedRes, nReps) {
 
   .pardefault <- par(no.readonly = TRUE) # store current par settings
 
+  if (is.na(xaxis_lab)) xaxis_lab = "Length (mm)"
+  if (is.na(yaxis_lab)) yaxis_lab = "Probability"
+  xlims = Get_xaxis_scale(midpt)
+  if (is.na(xmax)) xmax = xlims$xmax
+  if (is.na(xint)) xint = xlims$xint
+  if (is.na(ymax)) ymax = 1.2
+  if (is.na(yint)) yint = 0.2
+
   # if model already fitted, can input results rather than refit
   if (is.list(FittedRes)) {
     res =  FittedRes
   } else {
     res=GetLengthBasedCatchCurveResults(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
-                                        lbnd, ubnd, midpt, SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
+                                        lbnd, ubnd, midpt, SelectivityAtLen, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
   }
 
-  FishLen = seq(0,max(ubnd),1)
-  nFishLen = length(FishLen)
-
-  SelAtLength.sim = as.matrix(data.frame(matrix(nrow = nReps, ncol = nFishLen)))
-  RetAtLength.sim = SelAtLength.sim
-  SelLandAtLength.sim = SelAtLength.sim
-
-  if (SelectivityType == 1) { # input selectivity as vector
-    EstGearSel.sim.med = SelectivityVec
-    EstGearSel.sim.low = SelectivityVec
-    EstGearSel.sim.up = SelectivityVec
+  if (SelectivityType == 1) { # inputted selectivity at length values
+    if (is.vector(SelectivityAtLen)) { # single selectivity curve for combined sexes
+      plot(midpt, SelectivityAtLen, "l", main=MainLabel, cex.main=1.2, pch=1, cex=0.6,
+           xaxt = "n", yaxt = "n", xlab=list(xaxis_lab,cex=1.2),ylab=list(yaxis_lab,cex=1.2), frame=F, xlim=c(0,xmax),
+           ylim=c(0,ymax), col="red")
+      lines(midpt, res$ModelDiag$RetAtLength, col="blue")
+      lines(midpt, res$ModelDiag$SelLandAtLength[1,], col="black")
+      legend("bottomright", pch=-1, legend=c("Sel_gear", "Prob_Reten", "Sel_land"), lty="solid", col=c("red","blue","black"),
+             bty='n', cex=0.8,lwd=1, y.intersp=1.1)
+    } else { # separate sex
+      plot(midpt, SelectivityAtLen[1,], "l", main=MainLabel, cex.main=1.2, pch=1, cex=0.6,
+           xaxt = "n", yaxt = "n", xlab=list(xaxis_lab,cex=1.2),ylab=list(yaxis_lab,cex=1.2), frame=F, xlim=c(0,xmax),
+           ylim=c(0,ymax), col="red")
+      lines(midpt, res$ModelDiag$RetAtLength, col="blue")
+      lines(midpt, SelectivityAtLen[2,], col="purple")
+      lines(midpt, res$ModelDiag$SelLandAtLength[1,], col="black")
+      lines(midpt, res$ModelDiag$SelLandAtLength[2,], col="grey")
+      legend("bottomright", pch=-1, legend=c("Sel_gear_Fem", "Sel_gear_Mal", "Prob_Reten", "Sel_land_Fem", "Sel_land_Mal"),
+             lty="solid", col=c("red","purple","blue","black","grey"), bty='n', cex=0.8,lwd=1, y.intersp=1.1)
+    }
+    axis(1, at = seq(0, xmax, xint), line = 0.2, labels = F)
+    axis(2, at = seq(0, ymax, yint), line = 0.2, labels = F)
+    axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
+    axis(2, at = seq(0, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
   } # SelectivityType == 1
 
   if (SelectivityType == 2) {
+    FishLen = seq(0,max(ubnd),1)
+    nFishLen = length(FishLen)
+    SelAtLength.sim = as.matrix(data.frame(matrix(nrow = nReps, ncol = nFishLen)))
+    RetAtLength.sim = SelAtLength.sim
+    SelLandAtLength.sim = SelAtLength.sim
     params = res$params
     vcov.params = res$vcov.Params
     set.seed(123)
@@ -5171,60 +5248,44 @@ PlotLengthBasedCatchCurve_Selectivity <- function(params, DistnType, MLL, Select
       EstLandSel.sim.low = EstGearSel.sim.low * EstRet.sim.low
       EstLandSel.sim.up = EstGearSel.sim.up * EstRet.sim.up
     }
-  }
 
-  if (is.na(xaxis_lab)) xaxis_lab = "Length (mm)"
-  if (is.na(yaxis_lab)) yaxis_lab = "Probability"
-  xlims = Get_xaxis_scale(midpt)
-  if (is.na(xmax)) xmax = xlims$xmax
-  if (is.na(xint)) xint = xlims$xint
-  if (is.na(ymax)) ymax = 1.2
-  if (is.na(yint)) yint = 0.2
 
-  plot(FishLen, EstGearSel.sim.med, "l", main=MainLabel, cex.main=1.2, pch=1, cex=0.6,
-       xaxt = "n", yaxt = "n", xlab=list(xaxis_lab,cex=1.2),ylab=list(yaxis_lab,cex=1.2), frame=F, xlim=c(0,xmax),
-       ylim=c(0,ymax), col="red")
-  lines(FishLen, EstRet.sim.med, col="blue")
-  lines(FishLen, EstLandSel.sim.med, col="black")
+    plot(FishLen, EstGearSel.sim.med, "l", main=MainLabel, cex.main=1.2, pch=1, cex=0.6,
+         xaxt = "n", yaxt = "n", xlab=list(xaxis_lab,cex=1.2),ylab=list(yaxis_lab,cex=1.2), frame=F, xlim=c(0,xmax),
+         ylim=c(0,ymax), col="red")
+    lines(FishLen, EstRet.sim.med, col="blue")
+    lines(FishLen, EstLandSel.sim.med, col="black")
+    axis(1, at = seq(0, xmax, xint), line = 0.2, labels = F)
+    axis(2, at = seq(0, ymax, yint), line = 0.2, labels = F)
+    axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
+    axis(2, at = seq(0, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
 
-  if (PlotCLs == TRUE) {
-    sm1 = spline(FishLen, EstGearSel.sim.low, n=100, method="natural")
-    sm2 = spline(FishLen, EstGearSel.sim.up, n=100, method="natural")
-    x = c(sm1$x, rev(sm2$x)) # using shading for 95% CLs
-    y = c(sm1$y, rev(sm2$y))
-    polygon(x,y, col="pink",border=NA)
-    lines(FishLen, EstGearSel.sim.med, col="red")
-
-    if(length(ParamVals)>=5) {
-
-      sm1 = spline(FishLen, EstRet.sim.low, n=100, method="natural")
-      sm2 = spline(FishLen, EstRet.sim.up, n=100, method="natural")
+    if (PlotCLs == TRUE) {
+      sm1 = spline(FishLen, EstGearSel.sim.low, n=100, method="natural")
+      sm2 = spline(FishLen, EstGearSel.sim.up, n=100, method="natural")
       x = c(sm1$x, rev(sm2$x)) # using shading for 95% CLs
       y = c(sm1$y, rev(sm2$y))
-      polygon(x,y, col="lightblue",border=NA)
-      lines(FishLen, EstRet.sim.med, col="blue")
+      polygon(x,y, col="pink",border=NA)
+      lines(FishLen, EstGearSel.sim.med, col="red")
+
+      if(length(ParamVals)>=5) {
+
+        sm1 = spline(FishLen, EstRet.sim.low, n=100, method="natural")
+        sm2 = spline(FishLen, EstRet.sim.up, n=100, method="natural")
+        x = c(sm1$x, rev(sm2$x)) # using shading for 95% CLs
+        y = c(sm1$y, rev(sm2$y))
+        polygon(x,y, col="lightblue",border=NA)
+        lines(FishLen, EstRet.sim.med, col="blue")
+      }
+      sm1 = spline(FishLen, EstLandSel.sim.low, n=100, method="natural")
+      sm2 = spline(FishLen, EstLandSel.sim.up, n=100, method="natural")
+      x = c(sm1$x, rev(sm2$x)) # using shading for 95% CLs
+      y = c(sm1$y, rev(sm2$y))
+      polygon(x,y, col="lightgrey",border=NA)
+      lines(FishLen, EstLandSel.sim.med, col="black")
+      lines(FishLen, EstGearSel.sim.med, col="red", cex=0.6)
+      lines(FishLen, EstLandSel.sim.med, col="black", cex=0.6)
     }
-    sm1 = spline(FishLen, EstLandSel.sim.low, n=100, method="natural")
-    sm2 = spline(FishLen, EstLandSel.sim.up, n=100, method="natural")
-    x = c(sm1$x, rev(sm2$x)) # using shading for 95% CLs
-    y = c(sm1$y, rev(sm2$y))
-    polygon(x,y, col="lightgrey",border=NA)
-    lines(FishLen, EstLandSel.sim.med, col="black")
-    lines(FishLen, EstGearSel.sim.med, col="red", cex=0.6)
-    lines(FishLen, EstLandSel.sim.med, col="black", cex=0.6)
-  }
-
-  axis(1, at = seq(0, xmax, xint), line = 0.2, labels = F)
-  axis(2, at = seq(0, ymax, yint), line = 0.2, labels = F)
-  axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
-  axis(2, at = seq(0, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
-
-  if (SelectivityType==1) {
-    legend("bottomright", pch=-1, legend=c("Sel_gear", "Prob_Reten", "Sel_land"), lty="solid", col=c("red","blue","black"),
-           bty='n', cex=0.8,lwd=1, y.intersp=1.1)
-  }
-
-  if (SelectivityType==2) { # logistic selectivity
 
     L50_Est=paste("L50_gear =",round(exp(params[2]),0),"mm")
     Delta_Est=paste("Delta_gear =",round(exp(params[3]),0),"mm")
@@ -5244,23 +5305,22 @@ PlotLengthBasedCatchCurve_Selectivity <- function(params, DistnType, MLL, Select
         lgnd = c("Sel_gear", "Prob_Reten", "Sel_land", L50_Est, Delta_Est, L502_Est, Delta2_Est)
         cls = c("red","blue","black","black","black","black","black")
         lwds = c(1,1,1,-1,-1,-1,-1)
-        }
+      }
       legend("bottomright", pch=-1, legend=lgnd, lty="solid", col=cls, bty='n', cex=0.8, lwd=lwds, y.intersp=1.1)
 
     }
+
+    if (is.numeric(MLL)) {
+      abline(v=MLL, lty="dotted")
+      lines(FishLen, EstRet.sim.med, col="blue")
+      lines(FishLen, EstLandSel.sim.med, col="black")
+      lgnd = c("Sel_gear", "Prob_Reten", "Sel_land", paste("MLL =",MLL), L50_Est, Delta_Est)
+      cls = c("red","blue","black","black","black","black","black")
+      ltps = c("solid","solid","solid","dotted","solid","solid","solid")
+      lwds = c(1,1,1,1,-1,-1,-1)
+      legend("bottomright", pch=-1, legend=lgnd, lty=ltps, col=cls, bty='n', cex=0.8, lwd=lwds, y.intersp=1.1)
+    }
   } # selectivity type = 2
-
-  if (is.numeric(MLL)) {
-    abline(v=MLL, lty="dotted")
-    lines(FishLen, EstRet.sim.med, col="blue")
-    lines(FishLen, EstLandSel.sim.med, col="black")
-    lgnd = c("Sel_gear", "Prob_Reten", "Sel_land", paste("MLL =",MLL), L50_Est, Delta_Est)
-    cls = c("red","blue","black","black","black","black","black")
-    ltps = c("solid","solid","solid","dotted","solid","solid","solid")
-    lwds = c(1,1,1,1,-1,-1,-1)
-
-    legend("bottomright", pch=-1, legend=lgnd, lty=ltps, col=cls, bty='n', cex=0.8, lwd=lwds, y.intersp=1.1)
-  }
 
   par(.pardefault)
 }
@@ -5280,7 +5340,7 @@ PlotLengthBasedCatchCurve_Selectivity <- function(params, DistnType, MLL, Select
 #' @param ubnd upper bounds of length classes
 #' @param midpt mid points of length classes
 #' @param MLL minimum legal length (for setting knife edge retention, set to NA if not assumed)
-#' @param SelectivityVec selectivity at length
+#' @param SelectivityAtLen selectivity at length
 #' @param PropReleased proportion of fish that are released
 #' @param ObsDiscCatchFreqAtLen mean length of released fish
 #' @param DiscMort Proportion of fish that die following to capture and release
@@ -5310,7 +5370,7 @@ PlotLengthBasedCatchCurve_Selectivity <- function(params, DistnType, MLL, Select
 #' LenInc = 20
 #' MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified
 #' SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
-#' SelectivityVec = NA # selectivity vector
+#' SelectivityAtLen = NA # selectivity vector
 #' SelParams = c(300, 50) # L50, L95-L50 for gear selectivity
 #' RetenParams = c(NA, NA) # L50, L95-L50 for retention
 #' DiscMort = 0 # proportion of fish that die due to natural mortality
@@ -5323,7 +5383,7 @@ PlotLengthBasedCatchCurve_Selectivity <- function(params, DistnType, MLL, Select
 #' GrowthParams = c(Linf, vbK)
 #' RefnceAges = NA
 #' Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#'                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#'                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' # 2 sexes, von Bertalanffy
 #' DistnType = 1 # 1 = Multinomial, 2 = Dirichlet multinomial
 #' GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute
@@ -5333,7 +5393,7 @@ PlotLengthBasedCatchCurve_Selectivity <- function(params, DistnType, MLL, Select
 #' GrowthParams = data.frame(Linf=Linf, vbK=vbK)
 #' RefnceAges = NA
 #' Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#'                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#'                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' # 1 sex, Schnute
 #' DistnType = 1 # 1 = Multinomial, 2 = Dirichlet multinomial
 #' GrowthCurveType = 2 # 1 = von Bertalanffy, 2 = Schnute
@@ -5347,7 +5407,7 @@ PlotLengthBasedCatchCurve_Selectivity <- function(params, DistnType, MLL, Select
 #' RefnceAges = c(t1,t2)
 #' CVSizeAtAge = 0.05
 #' Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#'                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#'                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' # 2 sexes, Schnute
 #' DistnType = 1 # 1 = Multinomial, 2 = Dirichlet multinomial
 #' GrowthCurveType = 2 # 1 = von Bertalanffy, 2 = Schnute
@@ -5361,10 +5421,10 @@ PlotLengthBasedCatchCurve_Selectivity <- function(params, DistnType, MLL, Select
 #' GrowthParams = data.frame(y1=y1, y2=y2, a=a, b=b)
 #' RefnceAges = data.frame(t1=t1,t2=t2)
 #' Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#'                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#'                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen
 #' ObsDiscCatchFreqAtLen = NA # (or set to Res$ObsDiscCatchFreqAtLen)
-#' PropReleased = NA # proportion of fish released, vector including mean and sd (option probably now obselete)
+#' PropReleased = NA # proportion of fish released, vector including mean and sd (option probably now obsolete)
 #' midpt=Res$midpt
 #' lbnd=Res$lbnd
 #' ubnd=Res$ubnd
@@ -5374,12 +5434,12 @@ PlotLengthBasedCatchCurve_Selectivity <- function(params, DistnType, MLL, Select
 #' InitDelta = 100
 #' params = c(InitFishMort_logit, log(InitL50), log(InitDelta))
 #' FittedRes=GetLengthBasedCatchCurveResults(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
-#'                                     lbnd, ubnd, midpt, SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
-#' PlotLengthBasedCatchCurve_Mortality(params, DistnType, MLL, SelectivityType, ObsRetCatchFreqAtLen, lbnd, ubnd, midpt, SelectivityVec,
+#'                                     lbnd, ubnd, midpt, SelectivityAtLen, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
+#' PlotLengthBasedCatchCurve_Mortality(params, DistnType, MLL, SelectivityType, ObsRetCatchFreqAtLen, lbnd, ubnd, midpt, SelectivityAtLen,
 #'                                     PropReleased, ObsDiscCatchFreqAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges,
 #'                                     MaxAge, NatMort, TimeStep, xmax=NA, xint=NA, ymax=NA, yint=NA, FittedRes)
 #' @export
-PlotLengthBasedCatchCurve_Mortality <- function(params, DistnType, MLL, SelectivityType, ObsRetCatchFreqAtLen, lbnd, ubnd, midpt, SelectivityVec,
+PlotLengthBasedCatchCurve_Mortality <- function(params, DistnType, MLL, SelectivityType, ObsRetCatchFreqAtLen, lbnd, ubnd, midpt, SelectivityAtLen,
                                                 PropReleased, ObsDiscCatchFreqAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges,
                                                 MaxAge, NatMort, TimeStep, xmax, xint, ymax, yint, FittedRes) {
 
@@ -5390,7 +5450,7 @@ PlotLengthBasedCatchCurve_Mortality <- function(params, DistnType, MLL, Selectiv
     res =  FittedRes
   } else {
     res=GetLengthBasedCatchCurveResults(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
-                                        lbnd, ubnd, midpt, SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
+                                        lbnd, ubnd, midpt, SelectivityAtLen, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
 
   }
 
@@ -5398,14 +5458,12 @@ PlotLengthBasedCatchCurve_Mortality <- function(params, DistnType, MLL, Selectiv
   CatchCurveType=1 #1=length-based, 2=age and length based
   params = res$params
   res = AgeAndLengthBasedCatchCurvesCalcs(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge, CatchCurveType,
-                                          MLL, SelectivityType, lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep)
+                                          MLL, SelectivityType, lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep)
   GrowthModelType = res$GrowthModelType
 
   xlims = Get_xaxis_scale(midpt)
   if (is.na(xmax)) xmax = xlims$xmax
   if (is.na(xint)) xint = xlims$xint
-  if (is.na(ymax)) ymax = 0.2
-  if (is.na(yint)) yint = 0.05
 
   par(mfrow=c(2,2), mar=c(5,4,2,2), oma=c(2,2,2,2))
   yaxis_lab = expression(paste(italic("F") ~ (year^{-1})))
@@ -5413,7 +5471,10 @@ PlotLengthBasedCatchCurve_Mortality <- function(params, DistnType, MLL, Selectiv
 
   # F at age
   if (GrowthModelType ==  1 | GrowthModelType == 3) { # single sex
-    plot(midpt, res$FAtLen, "o", main="F (retention + discard mortality)", cex.main=1.0, pch=1, cex=0.6,
+    ylims = Get_yaxis_scale(res$FAtLen)
+    if (is.na(ymax)) ymax = ylims$ymax
+    if (is.na(yint)) yint = ylims$yint
+    plot(midpt, res$FAtLen, "l", main="F (retention + discard mortality)", cex.main=1.0, pch=1, cex=0.6,
          xaxt = "n", yaxt = "n", xlab=list(xaxis_lab,cex=1.2),ylab=NA, frame=F, xlim=c(0,xmax),
          ylim=c(0,ymax), col="red")
     axis(1, at = seq(0, xmax, xint), line = 0.2, labels = F)
@@ -5423,7 +5484,10 @@ PlotLengthBasedCatchCurve_Mortality <- function(params, DistnType, MLL, Selectiv
     mtext(expression(paste(italic("F") ~ (year^{-1}))),las=3,side=2,line=2.5,cex=1.0,lwd=1.75)
   }
   if (GrowthModelType ==  2 | GrowthModelType == 4) { # separate sex
-    plot(midpt, res$FAtLen_Fem, "o", main="F (retention + discard mortality)", cex.main=1.0, pch=1, cex=0.6,
+    ylims = Get_yaxis_scale(c(res$FAtLen_Fem,res$FAtLen_Mal))
+    if (is.na(ymax)) ymax = ylims$ymax
+    if (is.na(yint)) yint = ylims$yint
+    plot(midpt, res$FAtLen_Fem, "l", main="F (retention + discard mortality)", cex.main=1.0, pch=1, cex=0.6,
          xaxt = "n", yaxt = "n", xlab=list(xaxis_lab,cex=1.2),ylab=NA, frame=F, xlim=c(0,xmax),
          ylim=c(0,ymax), col="red")
     axis(1, at = seq(0, xmax, xint), line = 0.2, labels = F)
@@ -5437,7 +5501,7 @@ PlotLengthBasedCatchCurve_Mortality <- function(params, DistnType, MLL, Selectiv
 
   # F at age, associated with retention
   if (GrowthModelType ==  1 | GrowthModelType == 3) { # single sex
-    plot(midpt, res$FAtLenReten, "o", main="F (retention)", cex.main=1.0, pch=1, cex=0.6,
+    plot(midpt, res$FAtLenReten, "l", main="F (retention)", cex.main=1.0, pch=1, cex=0.6,
          xaxt = "n", yaxt = "n", xlab=list(xaxis_lab,cex=1.2),ylab=NA, frame=F, xlim=c(0,xmax),
          ylim=c(0,ymax), col="blue")
     axis(1, at = seq(0, xmax, xint), line = 0.2, labels = F)
@@ -5447,9 +5511,9 @@ PlotLengthBasedCatchCurve_Mortality <- function(params, DistnType, MLL, Selectiv
     mtext(expression(paste(italic("F") ~ (year^{-1}))),las=3,side=2,line=3,cex=1.0,lwd=1.75)
   }
   if (GrowthModelType ==  2 | GrowthModelType == 4) { # separate sex
-    plot(midpt, res$FAtLenReten_Fem, "o", main="F (retention)", cex.main=1.0, pch=1, cex=0.6,
+    plot(midpt, res$FAtLenReten_Fem, "l", main="F (retention)", cex.main=1.0, pch=1, cex=0.6,
          xaxt = "n", yaxt = "n", xlab=list(xaxis_lab,cex=1.2),ylab=NA, frame=F, xlim=c(0,xmax),
-         ylim=c(0,ymax), col="blue")
+         ylim=c(0,ymax), col="red")
     axis(1, at = seq(0, xmax, xint), line = 0.2, labels = F)
     axis(2, at = seq(0, ymax, yint), line = 0.2, labels = F)
     axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
@@ -5461,9 +5525,9 @@ PlotLengthBasedCatchCurve_Mortality <- function(params, DistnType, MLL, Selectiv
 
   # F at age, associated with fish capture and post-release mortality
   if (GrowthModelType ==  1 | GrowthModelType == 3) { # single sex
-    plot(midpt, res$FAtLenDisc*DiscMort, "o", main="F (discard mortality)", cex.main=1.0, pch=1, cex=0.6,
+    plot(midpt, res$FAtLenDisc*DiscMort, "l", main="F (discard mortality)", cex.main=1.0, pch=1, cex=0.6,
          xaxt = "n", yaxt = "n", xlab=list(xaxis_lab,cex=1.2),ylab=NA, frame=F, xlim=c(0,xmax),
-         ylim=c(0,ymax), col="brown")
+         ylim=c(0,ymax), col="red")
     axis(1, at = seq(0, xmax, xint), line = 0.2, labels = F)
     axis(2, at = seq(0, ymax, yint), line = 0.2, labels = F)
     axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
@@ -5471,9 +5535,9 @@ PlotLengthBasedCatchCurve_Mortality <- function(params, DistnType, MLL, Selectiv
     mtext(expression(paste(italic("F") ~ (year^{-1}))),las=3,side=2,line=2.5,cex=1.0,lwd=1.75)
   }
   if (GrowthModelType ==  2 | GrowthModelType == 4) { # separate sex
-    plot(midpt, res$FAtLenDisc_Fem*DiscMort, "o", main="F (discard mortality)", cex.main=1.0, pch=1, cex=0.6,
+    plot(midpt, res$FAtLenDisc_Fem*DiscMort, "l", main="F (discard mortality)", cex.main=1.0, pch=1, cex=0.6,
          xaxt = "n", yaxt = "n", xlab=list(xaxis_lab,cex=1.2),ylab=NA, frame=F, xlim=c(0,xmax),
-         ylim=c(0,ymax), col="brown")
+         ylim=c(0,ymax), col="red")
     axis(1, at = seq(0, xmax, xint), line = 0.2, labels = F)
     axis(2, at = seq(0, ymax, yint), line = 0.2, labels = F)
     axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
@@ -5486,7 +5550,7 @@ PlotLengthBasedCatchCurve_Mortality <- function(params, DistnType, MLL, Selectiv
 
   # F at age, associated with fish capture and release
   if (GrowthModelType ==  1 | GrowthModelType == 3) { # single sex
-    plot(midpt, res$FAtLenDisc, "o", main="F (capture + release)", cex.main=1.0, pch=1, cex=0.6,
+    plot(midpt, res$FAtLenDisc, "l", main="F (capture + release)", cex.main=1.0, pch=1, cex=0.6,
          xaxt = "n", yaxt = "n", xlab=list(xaxis_lab,cex=1.2),ylab=NA, frame=F, xlim=c(0,xmax),
          ylim=c(0,ymax), col="red")
     axis(1, at = seq(0, xmax, xint), line = 0.2, labels = F)
@@ -5496,7 +5560,7 @@ PlotLengthBasedCatchCurve_Mortality <- function(params, DistnType, MLL, Selectiv
     mtext(expression(paste(italic("F") ~ (year^{-1}))),las=3,side=2,line=2.5,cex=1.0,lwd=1.75)
   }
   if (GrowthModelType ==  2 | GrowthModelType == 4) { # separate sex
-    plot(midpt, res$FAtLenDisc_Fem, "o", main="F (capture + release)", cex.main=1.0, pch=1, cex=0.6,
+    plot(midpt, res$FAtLenDisc_Fem, "l", main="F (capture + release)", cex.main=1.0, pch=1, cex=0.6,
          xaxt = "n", yaxt = "n", xlab=list(xaxis_lab,cex=1.2),ylab=NA, frame=F, xlim=c(0,xmax),
          ylim=c(0,ymax), col="red")
     axis(1, at = seq(0, xmax, xint), line = 0.2, labels = F)
@@ -5533,7 +5597,7 @@ PlotLengthBasedCatchCurve_Mortality <- function(params, DistnType, MLL, Selectiv
 #' @param lbnd lower bounds of length classes
 #' @param ubnd upper bounds of length classes
 #' @param midpt mid points of length classes
-#' @param SelectivityVec selectivity at length
+#' @param SelectivityAtLen selectivity at length
 #' @param DiscMort Proportion of fish that die following to capture and release
 #' @param MaxAge maximum age considered in model
 #' @param NatMort natural mortality
@@ -5566,7 +5630,7 @@ PlotLengthBasedCatchCurve_Mortality <- function(params, DistnType, MLL, Selectiv
 #' LenInc = 20
 #' MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified is knife-edged at MLL
 #' SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
-#' SelectivityVec = NA # selectivity vector
+#' SelectivityAtLen = NA # selectivity vector
 #' SelParams = c(300, 50) # L50, L95-L50 for gear selectivity
 #' RetenParams = c(NA, NA) # L50, L95-L50 for retention
 #' DiscMort = 0
@@ -5578,7 +5642,7 @@ PlotLengthBasedCatchCurve_Mortality <- function(params, DistnType, MLL, Selectiv
 #' RefnceAges = NA
 #' GrowthParams = c(Linf, vbK, CVSizeAtAge)
 #' Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#'                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#'                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' # 2 sexes, von Bertalanffy
 #' # GrowthCurveType = 1 # 1 = von Bertalanffy
 #' # Linf = c(700,850)
@@ -5587,7 +5651,7 @@ PlotLengthBasedCatchCurve_Mortality <- function(params, DistnType, MLL, Selectiv
 #' # RefnceAges = NA
 #' # GrowthParams = data.frame(Linf=Linf, vbK=vbK, CVSizeAtAge=CVSizeAtAge)
 #' # Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#' #                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#' #                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' lbnd=Res$lbnd
 #' midpt=Res$midpt
 #' ubnd=Res$ubnd
@@ -5621,11 +5685,11 @@ PlotLengthBasedCatchCurve_Mortality <- function(params, DistnType, MLL, Selectiv
 #' # InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform (so F is always between 0 and 1)
 #' # params = c(InitFishMort_logit, log(c(InitL50, InitDelta, InitLinf, InitvbK, InitCVSizeAtAge)))
 #' FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
-#'                                                 lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep)
+#'                                                 lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep)
 #' # Example with specified selectivity vector
 #' # Simulate data
 #' SelectivityType=1 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
-#' SelectivityVec = 1 / (1 + exp(-log(19)*(midpt-400)/(500-400)))
+#' SelectivityAtLen = 1 / (1 + exp(-log(19)*(midpt-400)/(500-400)))
 #' SelParams = c(NA, NA) # L50, L95-L50 for gear selectivity
 #' RetenParams = c(NA, NA) # L50, L95-L50 for retention
 #' DiscMort = 0
@@ -5637,7 +5701,7 @@ PlotLengthBasedCatchCurve_Mortality <- function(params, DistnType, MLL, Selectiv
 #' GrowthParams = c(Linf, vbK, CVSizeAtAge)
 #' RefnceAges = NA
 #' Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#'                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#'                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' lbnd=Res$lbnd
 #' midpt=Res$midpt
 #' ubnd=Res$ubnd
@@ -5652,14 +5716,14 @@ PlotLengthBasedCatchCurve_Mortality <- function(params, DistnType, MLL, Selectiv
 #' InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform (so F is always between 0 and 1)
 #' params = c(InitFishMort_logit, log(c(InitLinf, InitvbK, InitCVSizeAtAge)))
 #' FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
-#'                                                 lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep)
+#'                                                 lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep)
 #'PlotAgeLengthCatchCurve_MargLength(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
-#'                                   lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep, MainLabel=NA,
+#'                                   lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep, MainLabel=NA,
 #'                                   xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA,
 #'                                   ymax=0.10, yint=0.02, PlotCLs=TRUE, FittedRes, nReps=200)
 #' @export
 PlotAgeLengthCatchCurve_MargLength <- function(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
-                                               lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep, MainLabel,
+                                               lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep, MainLabel,
                                                xaxis_lab, yaxis_lab, xmax, xint,
                                                ymax, yint, PlotCLs, FittedRes, nReps) {
 
@@ -5670,7 +5734,7 @@ PlotAgeLengthCatchCurve_MargLength <- function(params, RefnceAges, MLL, GrowthCu
   } else {
 
     res=GetAgeAndLengthBasedCatchCurveResults(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
-                                              lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep)
+                                              lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep)
   }
 
   names(res$ModelDiag)
@@ -5699,7 +5763,7 @@ PlotAgeLengthCatchCurve_MargLength <- function(params, RefnceAges, MLL, GrowthCu
     GrowthParams = NA
     CVSizeAtAge = NA
     Res=AgeAndLengthBasedCatchCurvesCalcs(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge, CatchCurveType,
-                                          MLL, SelectivityType, lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep)
+                                          MLL, SelectivityType, lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep)
     EstPropAtLen.sim[j,] = unlist(Res$ExpRetCatchPropInLenClass)
     EstPropAtLen.sim_Fem[j,] = unlist(Res$ExpRetCatchPropInLenClass_Fem)
     EstPropAtLen.sim_Mal[j,] = unlist(Res$ExpRetCatchPropInLenClass_Mal)
@@ -5799,7 +5863,7 @@ PlotAgeLengthCatchCurve_MargLength <- function(params, RefnceAges, MLL, GrowthCu
 #' @param ubnd upper bounds of length classes
 #' @param midpt mid points of length classes
 #' @param MLL minimum legal length (for setting knife edge retention, set to NA if not assumed)
-#' @param SelectivityVec selectivity at length
+#' @param SelectivityAtLen selectivity at length
 #' @param DiscMort proportion of fish that die following capture and release
 #' @param MaxAge maximum age considered in model
 #' @param NatMort natural mortality
@@ -5832,7 +5896,7 @@ PlotAgeLengthCatchCurve_MargLength <- function(params, RefnceAges, MLL, GrowthCu
 #' LenInc = 20
 #' MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified is knife-edged at MLL
 #' SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
-#' SelectivityVec = NA # selectivity vector
+#' SelectivityAtLen = NA # selectivity vector
 #' SelParams = c(300, 50) # L50, L95-L50 for gear selectivity
 #' RetenParams = c(NA, NA) # L50, L95-L50 for retention
 #' DiscMort = 0
@@ -5844,7 +5908,7 @@ PlotAgeLengthCatchCurve_MargLength <- function(params, RefnceAges, MLL, GrowthCu
 #' RefnceAges = NA
 #' GrowthParams = c(Linf, vbK, CVSizeAtAge)
 #' Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#'                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#'                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' # 2 sexes, von Bertalanffy
 #' # GrowthCurveType = 1 # 1 = von Bertalanffy
 #' # Linf = c(700,850)
@@ -5853,7 +5917,7 @@ PlotAgeLengthCatchCurve_MargLength <- function(params, RefnceAges, MLL, GrowthCu
 #' # RefnceAges = NA
 #' # GrowthParams = data.frame(Linf=Linf, vbK=vbK, CVSizeAtAge=CVSizeAtAge)
 #' # Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#' #                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#' #                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' lbnd=Res$lbnd
 #' midpt=Res$midpt
 #' ubnd=Res$ubnd
@@ -5887,11 +5951,11 @@ PlotAgeLengthCatchCurve_MargLength <- function(params, RefnceAges, MLL, GrowthCu
 #' # InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform (so F is always between 0 and 1)
 #' # params = c(InitFishMort_logit, log(c(InitL50, InitDelta, InitLinf, InitvbK, InitCVSizeAtAge)))
 #' FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
-#'                                                 lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep)
+#'                                                 lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep)
 #' # Example with specified selectivity vector
 #' # Simulate data
 #' SelectivityType=1 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
-#' SelectivityVec = 1 / (1 + exp(-log(19)*(midpt-400)/(500-400)))
+#' SelectivityAtLen = 1 / (1 + exp(-log(19)*(midpt-400)/(500-400)))
 #' SelParams = c(NA, NA) # L50, L95-L50 for gear selectivity
 #' RetenParams = c(NA, NA) # L50, L95-L50 for retention
 #' DiscMort = 0
@@ -5903,7 +5967,7 @@ PlotAgeLengthCatchCurve_MargLength <- function(params, RefnceAges, MLL, GrowthCu
 #' GrowthParams = c(Linf, vbK, CVSizeAtAge)
 #' RefnceAges = NA
 #' Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#'                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#'                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' lbnd=Res$lbnd
 #' midpt=Res$midpt
 #' ubnd=Res$ubnd
@@ -5918,14 +5982,14 @@ PlotAgeLengthCatchCurve_MargLength <- function(params, RefnceAges, MLL, GrowthCu
 #' InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform (so F is always between 0 and 1)
 #' params = c(InitFishMort_logit, log(c(InitLinf, InitvbK, InitCVSizeAtAge)))
 #' FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
-#'                                                 lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep)
+#'                                                 lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep)
 #' PlotAgeLengthCatchCurve_Growth(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
-#'                                lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep, MainLabel=NA,
+#'                                lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep, MainLabel=NA,
 #'                                xaxis_lab=NA, yaxis_lab=NA, xmax=40, xint=10,
 #'                                ymax=1000, yint=200, PlotCLs=TRUE, FittedRes, nReps=200)
 #' @export
 PlotAgeLengthCatchCurve_Growth <- function(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
-                                           lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep, MainLabel,
+                                           lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep, MainLabel,
                                            xaxis_lab, yaxis_lab, xmax, xint,
                                            ymax, yint, PlotCLs, FittedRes, nReps) {
 
@@ -5989,7 +6053,7 @@ PlotAgeLengthCatchCurve_Growth <- function(params, RefnceAges, MLL, GrowthCurveT
     res =  FittedRes
   } else {
     res=GetAgeAndLengthBasedCatchCurveResults(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
-                                              lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep)
+                                              lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep)
   }
   params = res$ModelDiag$params
   vcov.params = res$ModelDiag$vcov.Params
@@ -6168,7 +6232,7 @@ PlotAgeLengthCatchCurve_Growth <- function(params, RefnceAges, MLL, GrowthCurveT
 #' @param ubnd upper bounds of length classes
 #' @param midpt mid points of length classes
 #' @param MLL minimum legal length (for setting knife edge retention, set to NA if not assumed)
-#' @param SelectivityVec selectivity at length
+#' @param SelectivityAtLen selectivity at length
 #' @param DiscMort Proportion of fish that die following to capture and release
 #' @param MaxAge maximum age considered in model
 #' @param NatMort natural mortality
@@ -6201,7 +6265,7 @@ PlotAgeLengthCatchCurve_Growth <- function(params, RefnceAges, MLL, GrowthCurveT
 #' LenInc = 20
 #' MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified is knife-edged at MLL
 #' SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
-#' SelectivityVec = NA # selectivity vector
+#' SelectivityAtLen = NA # selectivity vector
 #' SelParams = c(300, 50) # L50, L95-L50 for gear selectivity
 #' RetenParams = c(NA, NA) # L50, L95-L50 for retention
 #' DiscMort = 0
@@ -6213,7 +6277,7 @@ PlotAgeLengthCatchCurve_Growth <- function(params, RefnceAges, MLL, GrowthCurveT
 #' RefnceAges = NA
 #' GrowthParams = c(Linf, vbK, CVSizeAtAge)
 #' Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#'                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#'                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' # 2 sexes, von Bertalanffy
 #' # GrowthCurveType = 1 # 1 = von Bertalanffy
 #' # Linf = c(700,850)
@@ -6222,7 +6286,7 @@ PlotAgeLengthCatchCurve_Growth <- function(params, RefnceAges, MLL, GrowthCurveT
 #' # RefnceAges = NA
 #' # GrowthParams = data.frame(Linf=Linf, vbK=vbK, CVSizeAtAge=CVSizeAtAge)
 #' # Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#' #                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#' #                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' lbnd=Res$lbnd
 #' midpt=Res$midpt
 #' ubnd=Res$ubnd
@@ -6256,11 +6320,11 @@ PlotAgeLengthCatchCurve_Growth <- function(params, RefnceAges, MLL, GrowthCurveT
 #' # InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform (so F is always between 0 and 1)
 #' # params = c(InitFishMort_logit, log(c(InitL50, InitDelta, InitLinf, InitvbK, InitCVSizeAtAge)))
 #' FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
-#'                                                 lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep)
+#'                                                 lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep)
 #' # Example with specified selectivity vector
 #' # Simulate data
 #' SelectivityType=1 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
-#' SelectivityVec = 1 / (1 + exp(-log(19)*(midpt-400)/(500-400)))
+#' SelectivityAtLen = 1 / (1 + exp(-log(19)*(midpt-400)/(500-400)))
 #' SelParams = c(NA, NA) # L50, L95-L50 for gear selectivity
 #' RetenParams = c(NA, NA) # L50, L95-L50 for retention
 #' DiscMort = 0
@@ -6272,7 +6336,7 @@ PlotAgeLengthCatchCurve_Growth <- function(params, RefnceAges, MLL, GrowthCurveT
 #' GrowthParams = c(Linf, vbK, CVSizeAtAge)
 #' RefnceAges = NA
 #' Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#'                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#'                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' lbnd=Res$lbnd
 #' midpt=Res$midpt
 #' ubnd=Res$ubnd
@@ -6287,14 +6351,14 @@ PlotAgeLengthCatchCurve_Growth <- function(params, RefnceAges, MLL, GrowthCurveT
 #' InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform (so F is always between 0 and 1)
 #' params = c(InitFishMort_logit, log(c(InitLinf, InitvbK, InitCVSizeAtAge)))
 #' FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
-#'                                                 lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep)
+#'                                                 lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep)
 #' PlotAgeLengthCatchCurve_Selectivity(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
-#'                                     lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep, MainLabel=NA,
+#'                                     lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep, MainLabel=NA,
 #'                                     xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA,
 #'                                     ymax=NA, yint=NA, PlotCLs=TRUE, FittedRes, nReps=200)
 #' @export
 PlotAgeLengthCatchCurve_Selectivity <- function(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
-                                                lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep, MainLabel,
+                                                lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep, MainLabel,
                                                 xaxis_lab, yaxis_lab, xmax, xint,
                                                 ymax, yint, PlotCLs, FittedRes, nReps) {
 
@@ -6303,11 +6367,11 @@ PlotAgeLengthCatchCurve_Selectivity <- function(params, RefnceAges, MLL, GrowthC
     res =  FittedRes
   } else {
     res=GetAgeAndLengthBasedCatchCurveResults(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
-                                              lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep)
+                                              lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep)
   }
 
   if (SelectivityType == 1) {
-    SelAtLength = res$ModelDiag$SelAtLength
+    SelectivityAtLen = res$ModelDiag$SelectivityAtLen
   }
   if (SelectivityType == 2) {
     params = res$ModelDiag$params
@@ -6332,9 +6396,9 @@ PlotAgeLengthCatchCurve_Selectivity <- function(params, RefnceAges, MLL, GrowthC
   }
 
   if (SelectivityType == 1) { # input selectivity as vector
-    EstProp.sim = SelAtLength
-    EstProp.sim_low = SelAtLength
-    EstProp.sim_up = SelAtLength
+    EstProp.sim = SelectivityAtLen
+    EstProp.sim_low = SelectivityAtLen
+    EstProp.sim_up = SelectivityAtLen
   }
 
   if (is.na(xaxis_lab)) xaxis_lab = "Length (mm)"
@@ -6389,7 +6453,7 @@ PlotAgeLengthCatchCurve_Selectivity <- function(params, RefnceAges, MLL, GrowthC
 #' @param ubnd upper bounds of length classes
 #' @param midpt mid points of length classes
 #' @param MLL minimum legal length (for setting knife edge retention, set to NA if not assumed)
-#' @param SelectivityVec selectivity at length
+#' @param SelectivityAtLen selectivity at length
 #' @param DiscMort Proportion of fish that die following to capture and release
 #' @param MaxAge maximum age considered in model
 #' @param NatMort natural mortality
@@ -6400,7 +6464,7 @@ PlotAgeLengthCatchCurve_Selectivity <- function(params, RefnceAges, MLL, GrowthC
 #' ObsRetCatchFreqAtLengthAndIntAge_Fem, ObsRetCatchFreqAtLengthAndIntAge_Mal, ObsCatchPropAgeAtLength_Fem,
 #' ObsCatchPropAgeAtLength_Mal, ExpRetCatchPropIntAgeGivenLength_Fem, ExpRetCatchPropIntAgeGivenLength_Mal (separaate sex)
 GetInputsForPlotting_Cond_AL <- function(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
-                                         lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep, FittedRes) {
+                                         lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep, FittedRes) {
 
 
   # if model already fitted, can input results rather than refit
@@ -6408,7 +6472,7 @@ GetInputsForPlotting_Cond_AL <- function(params, RefnceAges, MLL, GrowthCurveTyp
     res =  FittedRes
   } else {
     res=GetAgeAndLengthBasedCatchCurveResults(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
-                                              lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep)
+                                              lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep)
   }
 
   MinAge = floor(TimeStep)
@@ -6513,7 +6577,7 @@ GetInputsForPlotting_Cond_AL <- function(params, RefnceAges, MLL, GrowthCurveTyp
 #' @param lbnd lower bounds of length classes
 #' @param ubnd upper bounds of length classes
 #' @param midpt mid points of length classes
-#' @param SelectivityVec selectivity at length
+#' @param SelectivityAtLen selectivity at length
 #' @param DiscMort proportion of fish that die following capture and release
 #' @param MaxAge maximum age considered in model
 #' @param NatMort natural mortality
@@ -6544,7 +6608,7 @@ GetInputsForPlotting_Cond_AL <- function(params, RefnceAges, MLL, GrowthCurveTyp
 #' LenInc = 20
 #' MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified is knife-edged at MLL
 #' SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
-#' SelectivityVec = NA # selectivity vector
+#' SelectivityAtLen = NA # selectivity vector
 #' SelParams = c(300, 50) # L50, L95-L50 for gear selectivity
 #' RetenParams = c(NA, NA) # L50, L95-L50 for retention
 #' DiscMort = 0
@@ -6556,7 +6620,7 @@ GetInputsForPlotting_Cond_AL <- function(params, RefnceAges, MLL, GrowthCurveTyp
 #' RefnceAges = NA
 #' GrowthParams = c(Linf, vbK, CVSizeAtAge)
 #' Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#'                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#'                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' # 2 sexes, von Bertalanffy
 #' # GrowthCurveType = 1 # 1 = von Bertalanffy
 #' # Linf = c(700,850)
@@ -6565,7 +6629,7 @@ GetInputsForPlotting_Cond_AL <- function(params, RefnceAges, MLL, GrowthCurveTyp
 #' # RefnceAges = NA
 #' # GrowthParams = data.frame(Linf=Linf, vbK=vbK, CVSizeAtAge=CVSizeAtAge)
 #' # Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#' #                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#' #                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' lbnd=Res$lbnd
 #' midpt=Res$midpt
 #' ubnd=Res$ubnd
@@ -6599,11 +6663,11 @@ GetInputsForPlotting_Cond_AL <- function(params, RefnceAges, MLL, GrowthCurveTyp
 #' # InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform (so F is always between 0 and 1)
 #' # params = c(InitFishMort_logit, log(c(InitL50, InitDelta, InitLinf, InitvbK, InitCVSizeAtAge)))
 #' FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
-#'                                                 lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep)
+#'                                                 lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep)
 #' # Example with specified selectivity vector
 #' # Simulate data
 #' SelectivityType=1 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
-#' SelectivityVec = 1 / (1 + exp(-log(19)*(midpt-400)/(500-400)))
+#' SelectivityAtLen = 1 / (1 + exp(-log(19)*(midpt-400)/(500-400)))
 #' SelParams = c(NA, NA) # L50, L95-L50 for gear selectivity
 #' RetenParams = c(NA, NA) # L50, L95-L50 for retention
 #' DiscMort = 0
@@ -6615,7 +6679,7 @@ GetInputsForPlotting_Cond_AL <- function(params, RefnceAges, MLL, GrowthCurveTyp
 #' GrowthParams = c(Linf, vbK, CVSizeAtAge)
 #' RefnceAges = NA
 #' Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#'                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#'                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' lbnd=Res$lbnd
 #' midpt=Res$midpt
 #' ubnd=Res$ubnd
@@ -6630,14 +6694,14 @@ GetInputsForPlotting_Cond_AL <- function(params, RefnceAges, MLL, GrowthCurveTyp
 #' InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform (so F is always between 0 and 1)
 #' params = c(InitFishMort_logit, log(c(InitLinf, InitvbK, InitCVSizeAtAge)))
 #' FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
-#'                                                 lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep)
+#'                                                 lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep)
 #' PlotAgeLengthCatchCurve_Cond_AL(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
-#'                                 lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep, MainLabel=NA,
+#'                                 lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep, MainLabel=NA,
 #'                                 xaxis_lab=NA, yaxis_lab=NA, xmax=40, xint=10,
 #'                                 ymax=NA, yint=NA, FittedRes)
 #' @export
 PlotAgeLengthCatchCurve_Cond_AL <- function(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
-                                            lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep, MainLabel,
+                                            lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep, MainLabel,
                                             xaxis_lab, yaxis_lab, xmax, xint, ymax, yint, FittedRes) {
 
   .pardefault <- par(no.readonly = TRUE) # store current par settings
@@ -6647,7 +6711,7 @@ PlotAgeLengthCatchCurve_Cond_AL <- function(params, RefnceAges, MLL, GrowthCurve
     res =  FittedRes
   } else {
     res=GetAgeAndLengthBasedCatchCurveResults(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
-                                              lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep)
+                                              lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep)
   }
 
   MinAge = floor(TimeStep)
@@ -6657,7 +6721,7 @@ PlotAgeLengthCatchCurve_Cond_AL <- function(params, RefnceAges, MLL, GrowthCurve
 
   # get required inputs for plotting
   Res = GetInputsForPlotting_Cond_AL(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
-                                     lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep, FittedRes)
+                                     lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep, FittedRes)
 
   # calculate expected proportions at age, for each length class
   # single sex
@@ -6801,7 +6865,7 @@ PlotAgeLengthCatchCurve_Cond_AL <- function(params, RefnceAges, MLL, GrowthCurve
 #' @param lbnd lower bounds of length classes
 #' @param ubnd upper bounds of length classes
 #' @param midpt mid points of length classes
-#' @param SelectivityVec selectivity at length
+#' @param SelectivityAtLen selectivity at length
 #' @param DiscMort proportion of fish that die following capture and release
 #' @param MaxAge maximum age considered in model
 #' @param NatMort natural mortality
@@ -6834,7 +6898,7 @@ PlotAgeLengthCatchCurve_Cond_AL <- function(params, RefnceAges, MLL, GrowthCurve
 #' LenInc = 20
 #' MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified is knife-edged at MLL
 #' SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
-#' SelectivityVec = NA # selectivity vector
+#' SelectivityAtLen = NA # selectivity vector
 #' SelParams = c(300, 50) # L50, L95-L50 for gear selectivity
 #' RetenParams = c(NA, NA) # L50, L95-L50 for retention
 #' DiscMort = 0
@@ -6846,7 +6910,7 @@ PlotAgeLengthCatchCurve_Cond_AL <- function(params, RefnceAges, MLL, GrowthCurve
 #' RefnceAges = NA
 #' GrowthParams = c(Linf, vbK, CVSizeAtAge)
 #' Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#'                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#'                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' # 2 sexes, von Bertalanffy
 #' # GrowthCurveType = 1 # 1 = von Bertalanffy
 #' # Linf = c(700,850)
@@ -6855,7 +6919,7 @@ PlotAgeLengthCatchCurve_Cond_AL <- function(params, RefnceAges, MLL, GrowthCurve
 #' # RefnceAges = NA
 #' # GrowthParams = data.frame(Linf=Linf, vbK=vbK, CVSizeAtAge=CVSizeAtAge)
 #' # Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#' #                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#' #                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' lbnd=Res$lbnd
 #' midpt=Res$midpt
 #' ubnd=Res$ubnd
@@ -6889,11 +6953,11 @@ PlotAgeLengthCatchCurve_Cond_AL <- function(params, RefnceAges, MLL, GrowthCurve
 #' # InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform (so F is always between 0 and 1)
 #' # params = c(InitFishMort_logit, log(c(InitL50, InitDelta, InitLinf, InitvbK, InitCVSizeAtAge)))
 #' FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
-#'                                                 lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep)
+#'                                                 lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep)
 #' # Example with specified selectivity vector
 #' # Simulate data
 #' SelectivityType=1 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
-#' SelectivityVec = 1 / (1 + exp(-log(19)*(midpt-400)/(500-400)))
+#' SelectivityAtLen = 1 / (1 + exp(-log(19)*(midpt-400)/(500-400)))
 #' SelParams = c(NA, NA) # L50, L95-L50 for gear selectivity
 #' RetenParams = c(NA, NA) # L50, L95-L50 for retention
 #' DiscMort = 0
@@ -6905,7 +6969,7 @@ PlotAgeLengthCatchCurve_Cond_AL <- function(params, RefnceAges, MLL, GrowthCurve
 #' GrowthParams = c(Linf, vbK, CVSizeAtAge)
 #' RefnceAges = NA
 #' Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#'                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#'                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' lbnd=Res$lbnd
 #' midpt=Res$midpt
 #' ubnd=Res$ubnd
@@ -6920,15 +6984,15 @@ PlotAgeLengthCatchCurve_Cond_AL <- function(params, RefnceAges, MLL, GrowthCurve
 #' InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform (so F is always between 0 and 1)
 #' params = c(InitFishMort_logit, log(c(InitLinf, InitvbK, InitCVSizeAtAge)))
 #' FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
-#'                                                 lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep)
+#'                                                 lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep)
 #'
 #' PlotAgeLengthCatchCurve_Pears_Resid(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
-#'                                                 lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep, MainLabel=NA,
+#'                                                 lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep, MainLabel=NA,
 #'                                                 xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA, ymax=NA, yint=NA, CircleScale=5, MinLenClFreq=10, FittedRes)
 #'
 #' @export
 PlotAgeLengthCatchCurve_Pears_Resid <- function(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
-                                                lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep, MainLabel,
+                                                lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep, MainLabel,
                                                 xaxis_lab, yaxis_lab, xmax, xint, ymax, yint, CircleScale, MinLenClFreq, FittedRes) {
 
 
@@ -6939,7 +7003,7 @@ PlotAgeLengthCatchCurve_Pears_Resid <- function(params, RefnceAges, MLL, GrowthC
 
   # get required inputs for plotting
   Res = GetInputsForPlotting_Cond_AL(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
-                                     lbnd, ubnd, midpt, SelectivityVec, DiscMort, MaxAge, NatMort, TimeStep, FittedRes)
+                                     lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep, FittedRes)
 
   # calculate expected proportions at age, for each length class
   # single sex
@@ -7287,7 +7351,7 @@ Calcs_LenCovertCatchCurve_Schnute <- function(GrowthParams, RefnceAges, ObsRetCa
 #' LenInc = 50
 #' MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified is knife-edged at MLL
 #' SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
-#' SelectivityVec = NA # selectivity vector
+#' SelectivityAtLen = NA # selectivity vector
 #' SelParams = c(300, 500) # L50, L95 for gear selectivity
 #' RetenParams = c(NA, NA) # L50, L95 for retention
 #' DiscMort = 0
@@ -7310,7 +7374,7 @@ Calcs_LenCovertCatchCurve_Schnute <- function(GrowthParams, RefnceAges, ObsRetCa
 #' GrowthParams = c(y1, y2, a, b)
 #' RefnceAges = c(t1,t2)
 #' Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#'                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#'                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #'
 #' ObsRetCatchFreqAtLen = as.vector(Res$ObsRetCatchFreqAtLen)
 #' MinFreq = 20 # set minimum frequency for larger lengths for analysis
@@ -7426,7 +7490,7 @@ GetLenConvCatchCurveResults <- function(ModelType, GrowthParams, RefnceAges, Obs
 #' LenInc = 50
 #' MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified is knife-edged at MLL
 #' SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
-#' SelectivityVec = NA # selectivity vector
+#' SelectivityAtLen = NA # selectivity vector
 #' SelParams = c(300, 50) # L50, L95-L50 for gear selectivity
 #' RetenParams = c(NA, NA) # L50, L95-L50 for retention
 #' DiscMort = 0
@@ -7449,7 +7513,7 @@ GetLenConvCatchCurveResults <- function(ModelType, GrowthParams, RefnceAges, Obs
 #' GrowthParams = c(y1, y2, a, b)
 #' RefnceAges = c(t1,t2)
 #' Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-#'                          SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#'                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 #' ObsRetCatchFreqAtLen = as.vector(Res$ObsRetCatchFreqAtLen)
 #' MinFreq = 20 # set minimum frequency for larger lengths for analysis
 #' # note, this needs to be high enough so that data for ln(n/dt) vs relative age for essentially straight
@@ -10513,7 +10577,7 @@ CalcFishingMortalityAtLen <- function(FMort, DiscMort, FemSelDiscAtLen, MalSelDi
 #' LenInc = 2
 #' MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified
 #' SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
-#' SelectivityVec = NA # selectivity vector
+#' SelectivityAtLen = NA # selectivity vector
 #' SelParams = c(60, 20) # L50, L95-L50 for gear selectivity (somewhere around size when abalone emerge from inside caves to being accessible to fishers)
 #' RetenParams = c(150, 10) # L50, L95-L50 for retention
 #' DiscMort = 0 # proportion of fish that die due to natural mortality

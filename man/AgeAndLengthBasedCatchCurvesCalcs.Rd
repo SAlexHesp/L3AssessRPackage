@@ -17,7 +17,7 @@ AgeAndLengthBasedCatchCurvesCalcs(
   lbnd,
   ubnd,
   midpt,
-  SelectivityVec,
+  SelectivityAtLen,
   DiscMort,
   MaxAge,
   NatMort,
@@ -48,7 +48,7 @@ both sexes von Bertalanffy, or c(y1, y2, a, b) single sex Schnute, or data.frame
 
 \item{midpt}{mid points of length classes}
 
-\item{SelectivityVec}{selectivity at length}
+\item{SelectivityAtLen}{selectivity at length}
 
 \item{DiscMort}{proportion of fish that die following catch and release}
 

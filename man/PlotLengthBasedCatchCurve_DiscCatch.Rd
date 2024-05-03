@@ -13,7 +13,7 @@ PlotLengthBasedCatchCurve_DiscCatch(
   lbnd,
   ubnd,
   midpt,
-  SelectivityVec,
+  SelectivityAtLen,
   PropReleased,
   ObsDiscCatchFreqAtLen,
   DiscMort,
@@ -50,7 +50,7 @@ PlotLengthBasedCatchCurve_DiscCatch(
 
 \item{midpt}{mid points of length classes}
 
-\item{SelectivityVec}{selectivity at length}
+\item{SelectivityAtLen}{selectivity at length}
 
 \item{PropReleased}{proportion of fish that are released}
 
@@ -109,7 +109,7 @@ MaxLen = 1200
 LenInc = 20
 MLL=500 # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified
 SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
-SelectivityVec = NA # selectivity vector
+SelectivityAtLen = NA # selectivity vector
 SelParams = c(300, 50) # L50, L95-L50 for gear selectivity
 RetenParams = NA # L50, L95-L50 for retention
 DiscMort = 0 # proportion of fish that die due to natural mortality
@@ -122,10 +122,10 @@ CVSizeAtAge = 0.08
 GrowthParams = c(Linf, vbK)
 RefnceAges = NA
 Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-                         SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+                         SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen
 ObsDiscCatchFreqAtLen = Res$ObsDiscCatchFreqAtLen
-PropReleased = NA # proportion of fish released, vector including mean and sd (option probably now obselete)
+PropReleased = NA # proportion of fish released, vector including mean and sd (option probably now obsolete)
 midpt=Res$midpt
 lbnd=Res$lbnd
 ubnd=Res$ubnd
@@ -135,9 +135,9 @@ InitL50 = 400
 InitDelta = 100
 params = c(InitFishMort_logit, log(InitL50), log(InitDelta))
 FittedRes=GetLengthBasedCatchCurveResults(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
-                                          lbnd, ubnd, midpt, SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
+                                          lbnd, ubnd, midpt, SelectivityAtLen, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
 PlotLengthBasedCatchCurve_DiscCatch(params, DistnType, MLL, SelectivityType, ObsRetCatchFreqAtLen, lbnd, ubnd, midpt,
-                                    SelectivityVec, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, MaxAge, NatMort, TimeStep, MainLabel=NA,
+                                    SelectivityAtLen, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, MaxAge, NatMort, TimeStep, MainLabel=NA,
                                     xaxis_lab=NA, yaxis_lab=NA, xmax=1500, xint=500,
                                     ymax=0.15, yint=0.05, PlotCLs=TRUE, FittedRes, nReps=200)
 }

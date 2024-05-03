@@ -16,7 +16,7 @@ SimLenAndAgeFreqData(
   SelectivityType,
   SelParams,
   RetenParams,
-  SelectivityVec,
+  SelectivityAtLen,
   DiscMort,
   GrowthCurveType,
   GrowthParams,
@@ -45,7 +45,7 @@ retention. Can also specify vector, e.g. SampleSize=c(10000, 2000) produces 1000
 
 \item{SelectivityType}{1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve}
 
-\item{SelectivityVec}{selectivity at length, set to NA if selectivity parameters inputted}
+\item{SelectivityAtLen}{selectivity at length, set to NA if selectivity parameters inputted}
 
 \item{DiscMort}{Proportion of fish that die following to capture and release}
 
@@ -84,7 +84,7 @@ MaxLen = 1200
 LenInc = 20
 MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified
 SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
-SelectivityVec = NA # selectivity vector
+SelectivityAtLen = NA # selectivity vector
 SelParams = c(300, 50) # L50, L95-L50 for gear selectivity
 RetenParams = c(NA, NA) # L50, L95-L50 for retention
 DiscMort = 0 # proportion of fish that die due to natural mortality
@@ -96,7 +96,7 @@ CVSizeAtAge = 0.08
 GrowthParams = c(Linf, vbK)
 RefnceAges = NA
 Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-                         SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+                         SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 # 2 sexes, von Bertalanffy
 GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute
 Linf = c(700,850)
@@ -105,7 +105,7 @@ CVSizeAtAge = c(0.08,0.08)
 GrowthParams = data.frame(Linf=Linf, vbK=vbK)
 RefnceAges = NA
 Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-                         SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+                         SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 # 1 sex, Schnute
 GrowthCurveType = 2 # 1 = von Bertalanffy, 2 = Schnute
 t1 = 0.5 # growth - Schnute
@@ -118,7 +118,7 @@ GrowthParams = c(y1, y2, a, b)
 RefnceAges = c(t1,t2)
 CVSizeAtAge = 0.05
 Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-                         SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+                         SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 # 2 sexes, Schnute
 GrowthCurveType = 2 # 1 = von Bertalanffy, 2 = Schnute
 t1 = c(0.5,0.5) # growth - Schnute
@@ -131,7 +131,7 @@ CVSizeAtAge = c(0.05, 0.05)
 GrowthParams = data.frame(y1=y1, y2=y2, a=a, b=b)
 RefnceAges = data.frame(t1=t1,t2=t2)
 Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-                         SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+                         SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 # Example with selectivity specified as a vector
 # Simulate data
 SampleSize=5000
@@ -146,7 +146,7 @@ MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set 
 SelectivityType=1 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
 lbnd = seq(0,MaxLen - LenInc, LenInc)
 midpt = lbnd + (LenInc/2)
-SelectivityVec = 1 / (1 + exp(-log(19)*(midpt-400)/(500-400)))
+SelectivityAtLen = 1 / (1 + exp(-log(19)*(midpt-400)/(500-400)))
 SelParams = c(NA, NA) # L50, L95-L50 for gear selectivity
 RetenParams = c(NA, NA) # L50, L95-L50 for retention
 DiscMort = 0 # proportion of fish that die due to natural mortality
@@ -158,5 +158,5 @@ CVSizeAtAge = 0.05
 GrowthParams = c(Linf, vbK)
 RefnceAges = NA
 Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-                         SelParams, RetenParams, SelectivityVec, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+                         SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 }

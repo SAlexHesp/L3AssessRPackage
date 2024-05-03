@@ -15,7 +15,7 @@ GetInputsForPlotting_Cond_AL(
   lbnd,
   ubnd,
   midpt,
-  SelectivityVec,
+  SelectivityAtLen,
   DiscMort,
   MaxAge,
   NatMort,
@@ -44,7 +44,7 @@ GetInputsForPlotting_Cond_AL(
 
 \item{midpt}{mid points of length classes}
 
-\item{SelectivityVec}{selectivity at length}
+\item{SelectivityAtLen}{selectivity at length}
 
 \item{DiscMort}{Proportion of fish that die following to capture and release}
 
