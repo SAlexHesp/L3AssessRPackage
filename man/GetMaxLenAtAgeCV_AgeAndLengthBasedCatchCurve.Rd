@@ -4,12 +4,19 @@
 \alias{GetMaxLenAtAgeCV_AgeAndLengthBasedCatchCurve}
 \title{Calculate CV for length corresponding to max age (model diagnostic)}
 \usage{
-GetMaxLenAtAgeCV_AgeAndLengthBasedCatchCurve(TimeStep, res, MaxAge)
+GetMaxLenAtAgeCV_AgeAndLengthBasedCatchCurve(
+  TimeStep,
+  res,
+  MaxAge,
+  SelectivityType
+)
 }
 \arguments{
 \item{res}{output from AgeAndLengthBasedCatchCurvesCalcs function}
 
 \item{MaxAge}{maximum age}
+
+\item{SelectivityType}{1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve}
 
 \item{Timestep}{model timestep}
 }

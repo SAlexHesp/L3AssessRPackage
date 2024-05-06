@@ -134,7 +134,7 @@ Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen
                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 # Example with selectivity specified as a vector
 # Simulate data
-SampleSize=5000
+SampleSize=1000
 set.seed(123)
 MaxAge = 30
 TimeStep = 1 # model timestep (e.g. 1 = annual, 1/12 = monthly)
@@ -146,17 +146,23 @@ MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set 
 SelectivityType=1 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
 lbnd = seq(0,MaxLen - LenInc, LenInc)
 midpt = lbnd + (LenInc/2)
-SelectivityAtLen = 1 / (1 + exp(-log(19)*(midpt-400)/(500-400)))
+# # single sex selectivity input
+# SelectivityAtLen = 1 / (1 + exp(-log(19)*(midpt-400)/(500-400)))
+# two sex selectivity input
+FemSelAtLen = 1 / (1 + exp(-log(19)*(midpt-400)/(500-400)))
+MalSelAtLen = 1 / (1 + exp(-log(19)*(midpt-450)/(550-450)))
+SelectivityAtLen = t(data.frame(FemSelAtLen=FemSelAtLen,MalSelAtLen=MalSelAtLen))
+colnames(SelectivityAtLen) = midpt
 SelParams = c(NA, NA) # L50, L95-L50 for gear selectivity
 RetenParams = c(NA, NA) # L50, L95-L50 for retention
 DiscMort = 0 # proportion of fish that die due to natural mortality
-# single sex, von Bertalanffy
+# 2 sexes, von Bertalanffy
 GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute
-Linf = 800
-vbK = 0.2
-CVSizeAtAge = 0.05
-GrowthParams = c(Linf, vbK)
+Linf = c(700,850)
+vbK = c(0.3,0.2)
+CVSizeAtAge = c(0.06,0.06)
+GrowthParams = data.frame(Linf=Linf, vbK=vbK)
 RefnceAges = NA
-Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
-                         SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+SimRes=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
+                            SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 }

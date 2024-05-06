@@ -31,7 +31,7 @@ GetAgeAndLengthBasedCatchCurveResults(
 
 \item{GrowthCurveType}{1=von Bertalanffy, 2=Schnute}
 
-\item{SelectivityType}{1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve}
+\item{SelectivityType}{1=selectivity inputted as vector, 2=asymptotic logist sel curve, 3=separate logist sel params, common growth (2 fishing fleets)}
 
 \item{ObsRetCatchFreqAtLen}{observed frequencies in length classes}
 
@@ -97,7 +97,7 @@ FishMort = 0.2
 MaxLen = 1200
 LenInc = 20
 MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified is knife-edged at MLL
-SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
+SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logist sel curve, 3=separate logist sel params, common growth (2 fishing fleets)
 SelectivityAtLen = NA # selectivity vector
 SelParams = c(300, 50) # L50, L95-L50 for gear selectivity
 RetenParams = c(NA, NA) # L50, L95-L50 for retention
@@ -154,9 +154,10 @@ params = c(InitFishMort_logit, log(c(InitL50, InitDelta, InitLinf, InitvbK, Init
 # params = c(InitFishMort_logit, log(c(InitL50, InitDelta, InitLinf, InitvbK, InitCVSizeAtAge)))
 FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
                                                 lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep)
+
 # Example with specified selectivity vector
 # Simulate data
-SelectivityType=1 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
+SelectivityType=1 # 1=selectivity inputted as vector, 2=asymptotic logist sel curve, 3=separate logist sel params, common growth (2 fishing fleets)
 SelectivityAtLen = 1 / (1 + exp(-log(19)*(midpt-400)/(500-400)))
 SelParams = c(NA, NA) # L50, L95-L50 for gear selectivity
 RetenParams = c(NA, NA) # L50, L95-L50 for retention
@@ -185,9 +186,64 @@ InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform (so F 
 params = c(InitFishMort_logit, log(c(InitLinf, InitvbK, InitCVSizeAtAge)))
 FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
                                                 lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep)
-########################################################################################################
+
+# Example with separate selectivities for 2 fleets (inputted directly), assuming common growth and mortality
+SampleSize=1000
+set.seed(123)
+MaxAge = 30
+TimeStep = 1 # model timestep (e.g. 1 = annual, 1/12 = monthly)
+nTimeSteps = length(seq(TimeStep,MaxAge,TimeStep))
+NatMort = 4.22/MaxAge
+FishMort = 0.2
+MaxLen = 1200
+LenInc = 20
+MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified
+SelectivityType=1 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
+lbnd = seq(0,MaxLen - LenInc, LenInc)
+midpt = lbnd + (LenInc/2)
+# two sex selectivity input
+FemSelAtLen = 1 / (1 + exp(-log(19)*(midpt-400)/(450-400)))
+MalSelAtLen = 1 / (1 + exp(-log(19)*(midpt-500)/(550-500)))
+SelectivityAtLen = t(data.frame(FemSelAtLen=FemSelAtLen,MalSelAtLen=MalSelAtLen))
+colnames(SelectivityAtLen) = midpt
+SelParams = c(NA, NA) # L50, L95-L50 for gear selectivity
+RetenParams = c(NA, NA) # L50, L95-L50 for retention
+DiscMort = 0 # proportion of fish that die due to natural mortality
+# 2 sexes, von Bertalanffy
+GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute
+Linf = c(700,700)
+vbK = c(0.3,0.3)
+CVSizeAtAge = c(0.06,0.06)
+GrowthParams = data.frame(Linf=Linf, vbK=vbK)
+RefnceAges = NA
+SimRes=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
+                            SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+# get data and fit model
+lbnd=SimRes$lbnd
+midpt=SimRes$midpt
+ubnd=SimRes$ubnd
+ObsRetCatchFreqAtLen <- data.frame(matrix(nrow = 2, ncol = length(midpt))) # 2 sex
+colnames(ObsRetCatchFreqAtLen) <- midpt
+ObsRetCatchFreqAtLen[1,] = SimRes$ObsRetCatchFreqAtLen_Fem
+ObsRetCatchFreqAtLen[2,] = SimRes$ObsRetCatchFreqAtLen_Mal
+ObsRetCatchFreqAtLengthAndAge = array(c(unlist(SimRes$ObsRetCatchFreqAtLengthAndDecAge_Fem), unlist(SimRes$ObsRetCatchFreqAtLengthAndDecAge_Mal)),
+                                      c(nTimeSteps, length(midpt), 2), dimnames=list(rownames(SimRes$ObsRetCatchFreqAtLengthAndDecAge_Fem),
+                                                                                     colnames(SimRes$ObsRetCatchFreqAtLengthAndDecAge_Fem)))
+SelectivityType=3 # 1=selectivity inputted as vector, 2=asymptotic logist sel curve, 3=separate logist sel params, common growth (2 fishing fleets)
+SelectivityAtLen=NA
+InitFishMort = 0.3 # specify starting parameters
+InitFishMort = 0.3 # specify starting parameters
+InitL50 = c(400,500)
+InitDelta = c(50,50) # L95-L50
+InitLinf = 800
+InitvbK = 0.25
+InitCVSizeAtAge = 0.05
+InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform (so F is always between 0 and 1)
+params = c(InitFishMort_logit, log(c(InitL50, InitDelta, InitLinf, InitvbK, InitCVSizeAtAge)))
+FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
+                                                lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep)
+
 # Examples below for when data are available in 'raw' form, i.e. as lengths and ages for individual fish
-# single (or combined) sexes, using data for individual fish
 # Simulate data
 set.seed(123)
 SampleSize=5000
@@ -201,7 +257,7 @@ FishMort = 0.2
 MaxLen = 1200
 LenInc = 20
 MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified is knife-edged at MLL
-SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
+SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logist sel curve, 3=separate logist sel params, common growth (2 fishing fleets)
 SelectivityAtLen = NA # selectivity vector
 SelParams = c(300, 50) # L50, L95-L50 for gear selectivity
 RetenParams = c(NA, NA) # L50, L95-L50 for retention
@@ -255,7 +311,7 @@ FishMort = 0.2
 MaxLen = 1200
 LenInc = 20
 MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified is knife-edged at MLL
-SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
+SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logist sel curve, 3=separate logist sel params, common growth (2 fishing fleets)
 SelectivityAtLen = NA # selectivity vector
 SelParams = c(300, 50) # L50, L95-L50 for gear selectivity
 RetenParams = c(NA, NA) # L50, L95-L50 for retention
@@ -300,7 +356,7 @@ InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform (so F 
 params = c(InitFishMort_logit, log(c(InitL50, InitDelta, InitLinf, InitvbK, InitCVSizeAtAge)))
 FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
                                                 lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep)
-############################################################
+
 # Fit single (or combined) sex model using Schnute growth curve
 # Simulate data
 set.seed(123)
@@ -312,7 +368,7 @@ FishMort = 0.2
 MaxLen = 1200
 LenInc = 20
 MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified
-SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
+SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logist sel curve, 3=separate logist sel params, common growth (2 fishing fleets)
 SelectivityAtLen = NA # selectivity vector
 SelParams = c(300, 50) # L50, L95-L50 for gear selectivity
 RetenParams = c(NA, NA) # L50, L95-L50 for retention
