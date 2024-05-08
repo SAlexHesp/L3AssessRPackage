@@ -99,7 +99,9 @@ PlotAgeBasedCatchCurveResults_NormalSpace(RecAssump, SpecRecAge=NA, MinFreq, Min
                                           ObsAgeFreq, CatchCurveModel, MainLabel=NA,
                                           xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA,
                                           ymax=NA, yint=NA, PlotCLs=T)
+
 # Simulate data from Dirichlet multinomial distribution (single sex)
+library(dirmult)
 # J = number of fish sampling events
 # K = number of age classes
 # n = number of fish sampled from each sampling event
@@ -126,6 +128,7 @@ PlotAgeBasedCatchCurveResults_NormalSpace(RecAssump, SpecRecAge=NA, MinFreq, Min
                                           ObsAgeFreq, CatchCurveModel, MainLabel=NA,
                                           xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA,
                                           ymax=NA, yint=NA, PlotCLs=T)
+
 # Simulate data from Multinomial distribution (two sexes)
 set.seed(123)
 CatchCurveModel = 3 # Logistic selectivity
@@ -151,6 +154,7 @@ PlotAgeBasedCatchCurveResults_NormalSpace(RecAssump, SpecRecAge=NA, MinFreq, Min
                                           ObsAgeFreq, CatchCurveModel, MainLabel=NA,
                                           xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA,
                                           ymax=NA, yint=NA, PlotCLs=T)
+
 # Simulate data from Dirichlet multinomial distribution (two sexes)
 # two sexes
 set.seed(123)

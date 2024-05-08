@@ -5,17 +5,17 @@
 \title{Generic function to add axes and axes labels to plots}
 \usage{
 AddAxesAndTickLabelsToPlot(
-  xmin = NA,
+  xmin,
   xmax,
   xint,
-  ymin = NA,
+  ymin,
   ymax,
   yint,
-  cexval = NA,
-  cexaxisval = NA,
-  lwdval = NA,
-  lineval = NA,
-  lasval = NA
+  cexval,
+  cexaxisval,
+  lwdval,
+  lineval,
+  lasval
 )
 }
 \arguments{

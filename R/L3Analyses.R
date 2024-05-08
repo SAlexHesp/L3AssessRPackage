@@ -123,7 +123,7 @@
  #' @param lasval axis orientation
  #'
  #' @return adds axes to plots
- AddAxesAndTickLabelsToPlot <- function(xmin=NA, xmax, xint, ymin=NA, ymax, yint, cexval=NA, cexaxisval=NA, lwdval=NA, lineval=NA, lasval=NA) {
+ AddAxesAndTickLabelsToPlot <- function(xmin, xmax, xint, ymin, ymax, yint, cexval, cexaxisval, lwdval, lineval, lasval) {
 
    if (is.na(xmin)) xmin=0
    if (is.na(ymin)) ymin=0
@@ -1004,7 +1004,7 @@ GetLengthBasedCatchCurveResults <- function (params, DistnType, GrowthCurveType,
                    MeanEndingLength=res$MeanEndingLength,
                    TimestepGrowthSizeInc=res$TimestepGrowthSizeInc,
                    RecLenDist=res$RecLenDist,
-                   SelAtLength = res$SelAtLength,
+                   SelAtLength = res$SelectivityAtLen,
                    RetAtLength = res$RetAtLength,
                    SelLandAtLength = res$SelLandAtLength,
                    GrowthModelType = res$GrowthModelType,
@@ -1425,8 +1425,6 @@ GetGrowthParams_AgeAndLengthBasedCatchCurvesCalcs <- function(params, GrowthCurv
     }
   } # Schnute
 
-
-
   result = list(GrowthParams = GrowthParams,
                 GrowthModelType = GrowthModelType,
                 CVSizeAtAge = CVSizeAtAge)
@@ -1591,7 +1589,7 @@ GetGrowthModelType <- function (GrowthCurveType, GrowthParams)
   # Allocated a model number, given type of catch curve and growth curve
   if (GrowthCurveType==1) { # von Bertalanffy
     if (is.vector(GrowthParams)) {
-      GrowthModelType =  1 # one sex
+      GrowthModelType = 1 # one sex
     } else {
       GrowthModelType = 2 # two sexes
     }
@@ -1912,7 +1910,6 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, DistnType, GrowthCurveTyp
     } else { # separate sex
       SelAtLength = as.vector(unlist(SelectivityAtLen[1,]))
     }
-
     CatchCurveResults_Fem = CalcCatches_AgeAndLengthBasedCatchCurves_cpp(params, NatMort, RecLenDist_Fem, InitRecNumber, MaxAge, TimeStep, nTimeSteps,
                                                                          nLenCl, midpt, RetAtLength, SelAtLength, DiscMort, LTM_Fem)
     RecLenDist_Mal = as.vector(unlist(RecLenDist[2,]))
@@ -4162,7 +4159,7 @@ SimLenAndAgeFreqData <- function(SampleSize, MaxAge, TimeStep, NatMort, FishMort
                    RecLenDist = RecLenDist,
                    MeanSizeAtAge = MeanSizeAtAge,
                    TimestepGrowthSizeInc = TimestepGrowthSizeInc,
-                   SelectivityAtLen = SelectivityAtLen,
+                   SelAtLength = SelectivityAtLen,
                    RetAtLength = RetAtLength,
                    SelLandAtLength = SelLandAtLength,
                    FAtLen_Fem = CatchCurveResults_Fem$FAtLen,
@@ -4657,8 +4654,10 @@ PlotSimLenAndAgeFreqData <- function(MaxAge, MaxLen, SimRes, PlotOpt) {
            xaxt = "n", yaxt = "n", xlab=list(xaxis_lab,cex=1.2),ylab=list(yaxis_lab,cex=1.2), frame=F, xlim=c(0,xmax),
            ylim=c(0,ymax), col="red")
       lines(SimRes$midpt, SimRes$ModelDiag$SelLandAtLength[1,], col="black") # same for both sexes
-      legend("bottomright", pch=-1, legend=c("Sel_gear", "Prob_Reten", "Sel_land"), lty="solid", col=c("red","blue","black"),
-             bty='n', cex=0.8,lwd=1, y.intersp=1.1)
+      if (SelectivityType == 1) {
+        legend("bottomright", pch=-1, legend=c("Sel_gear", "Prob_Reten", "Sel_land"), lty="solid", col=c("red","blue","black"),
+               bty='n', cex=0.8,lwd=1, y.intersp=1.1)
+      }
     } else {
       plot(SimRes$midpt, SimRes$ModelDiag$SelectivityAtLen[1,], "l", cex.main=1.2, pch=1, cex=0.6,
            xaxt = "n", yaxt = "n", xlab=list(xaxis_lab,cex=1.2),ylab=list(yaxis_lab,cex=1.2), frame=F, xlim=c(0,xmax),
@@ -4666,13 +4665,13 @@ PlotSimLenAndAgeFreqData <- function(MaxAge, MaxLen, SimRes, PlotOpt) {
       lines(SimRes$midpt, SimRes$ModelDiag$SelectivityAtLen[2,], col="purple")
       lines(SimRes$midpt, SimRes$ModelDiag$SelLandAtLength[1,], col="black") # same for both sexes
       lines(SimRes$midpt, SimRes$ModelDiag$SelLandAtLength[2,], col="darkgrey") # same for both sexes
-      legend("bottomright", pch=-1, legend=c("Sel_gear_Fem", "Sel_gear_Mal", "Prob_Reten", "Sel_land_Fem","Sel_land_Mal"),
-             lty="solid", col=c("red","purple","blue","black","darkgrey"), bty='n', cex=0.8,lwd=1, y.intersp=1.1)
+      if (SelectivityType == 1) {
+        legend("bottomright", pch=-1, legend=c("Sel_gear_Fem", "Sel_gear_Mal", "Prob_Reten", "Sel_land_Fem","Sel_land_Mal"),
+               lty="solid", col=c("red","purple","blue","black","darkgrey"), bty='n', cex=0.8,lwd=1, y.intersp=1.1)
+      }
     }
     lines(SimRes$midpt, SimRes$ModelDiag$RetAtLength, col="blue")
-
     AddAxesAndTickLabelsToPlot(xmin=NA, xmax, xint, ymin=NA, ymax, yint, cexval=NA, cexaxisval=NA, lwdval=NA, lineval=NA, lasval=NA)
-
 
     if (SelectivityType==2) { # logistic selectivity
       if(!is.na(SelParams[1])) {
@@ -4988,10 +4987,7 @@ PlotLengthBasedCatchCurve_RetCatch <- function(params, DistnType, MLL, Selectivi
   }
   points(midpt, ObsRelCatchAtLen, col="black", pch=16, cex=0.8)
   points(midpt, ExpCatchAtLen, col="red", pch=1, cex=0.8)
-  axis(1, at = seq(0, xmax, xint), line = 0.2, labels = F)
-  axis(2, at = seq(0, ymax, yint), line = 0.2, labels = F)
-  axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
-  axis(2, at = seq(0, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
+  AddAxesAndTickLabelsToPlot(xmin=0, xmax, xint, ymin=0, ymax, yint, cexval=NA, cexaxisval=1, lwdval=0, lineval=0.2, lasval=1)
   # inverse logit transformed value
   params = res$params # from point estimate, not from resampled values
   Fval = round(1/(1+exp(-params[1])),2)
@@ -5168,10 +5164,7 @@ PlotLengthBasedCatchCurve_DiscCatch <- function(params, DistnType, MLL, Selectiv
     }
     points(midpt, ObsRelCatchAtLen, col="black", pch=16, cex=0.8)
     points(midpt, ExpCatchAtLen, col="red", pch=1, cex=0.8)
-    axis(1, at = seq(0, xmax, xint), line = 0.2, labels = F)
-    axis(2, at = seq(0, ymax, yint), line = 0.2, labels = F)
-    axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
-    axis(2, at = seq(0, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
+    AddAxesAndTickLabelsToPlot(xmin=0, xmax, xint, ymin=0, ymax, yint, cexval=NA, cexaxisval=1, lwdval=0, lineval=0.2, lasval=1)
     # inverse logit transformed value
     params = res$params # from point estimate, not from resampled values
     Fval = round(1/(1+exp(-params[1])),2)
@@ -5352,10 +5345,7 @@ PlotLengthBasedCatchCurve_Selectivity <- function(params, DistnType, MLL, Select
       legend("bottomright", pch=-1, legend=c("Sel_gear_Fem", "Sel_gear_Mal", "Prob_Reten", "Sel_land_Fem", "Sel_land_Mal"),
              lty="solid", col=c("red","purple","blue","black","grey"), bty='n', cex=0.8,lwd=1, y.intersp=1.1)
     }
-    axis(1, at = seq(0, xmax, xint), line = 0.2, labels = F)
-    axis(2, at = seq(0, ymax, yint), line = 0.2, labels = F)
-    axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
-    axis(2, at = seq(0, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
+    AddAxesAndTickLabelsToPlot(xmin=0, xmax, xint, ymin=0, ymax, yint, cexval=NA, cexaxisval=1, lwdval=0, lineval=0, lasval=1)
   } # SelectivityType == 1
 
   if (SelectivityType == 2) {
@@ -5418,11 +5408,7 @@ PlotLengthBasedCatchCurve_Selectivity <- function(params, DistnType, MLL, Select
          ylim=c(0,ymax), col="red")
     lines(FishLen, EstRet.sim.med, col="blue")
     lines(FishLen, EstLandSel.sim.med, col="black")
-    axis(1, at = seq(0, xmax, xint), line = 0.2, labels = F)
-    axis(2, at = seq(0, ymax, yint), line = 0.2, labels = F)
-    axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
-    axis(2, at = seq(0, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
-
+    AddAxesAndTickLabelsToPlot(xmin=0, xmax, xint, ymin=0, ymax, yint, cexval=NA, cexaxisval=1, lwdval=0, lineval=0, lasval=1)
     if (PlotCLs == TRUE) {
       sm1 = spline(FishLen, EstGearSel.sim.low, n=100, method="natural")
       sm2 = spline(FishLen, EstGearSel.sim.up, n=100, method="natural")
@@ -5640,10 +5626,7 @@ PlotLengthBasedCatchCurve_Mortality <- function(params, DistnType, MLL, Selectiv
     plot(midpt, res$FAtLen, "l", main="F (retention + discard mortality)", cex.main=1.0, pch=1, cex=0.6,
          xaxt = "n", yaxt = "n", xlab=list(xaxis_lab,cex=1.2),ylab=NA, frame=F, xlim=c(0,xmax),
          ylim=c(0,ymax), col="red")
-    axis(1, at = seq(0, xmax, xint), line = 0.2, labels = F)
-    axis(2, at = seq(0, ymax, yint), line = 0.2, labels = F)
-    axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
-    axis(2, at = seq(0, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
+    AddAxesAndTickLabelsToPlot(xmin=0, xmax, xint, ymin=0, ymax, yint, cexval=NA, cexaxisval=1, lwdval=1.75, lineval=-0.2, lasval=1)
     mtext(expression(paste(italic("F") ~ (year^{-1}))),las=3,side=2,line=2.5,cex=1.0,lwd=1.75)
   }
   if (GrowthModelType ==  2 | GrowthModelType == 4) { # separate sex
@@ -5653,10 +5636,7 @@ PlotLengthBasedCatchCurve_Mortality <- function(params, DistnType, MLL, Selectiv
     plot(midpt, res$FAtLen_Fem, "l", main="F (retention + discard mortality)", cex.main=1.0, pch=1, cex=0.6,
          xaxt = "n", yaxt = "n", xlab=list(xaxis_lab,cex=1.2),ylab=NA, frame=F, xlim=c(0,xmax),
          ylim=c(0,ymax), col="red")
-    axis(1, at = seq(0, xmax, xint), line = 0.2, labels = F)
-    axis(2, at = seq(0, ymax, yint), line = 0.2, labels = F)
-    axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
-    axis(2, at = seq(0, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
+    AddAxesAndTickLabelsToPlot(xmin=0, xmax, xint, ymin=0, ymax, yint, cexval=NA, cexaxisval=1, lwdval=1.75, lineval=-0.2, lasval=1)
     mtext(expression(paste(italic("F") ~ (year^{-1}))),las=3,side=2,line=2.5,cex=1.0,lwd=1.75)
     lines(midpt, res$FAtLen_Mal, col="blue")
     legend('topright', col=c("red","blue"),lty="solid",legend=c("females","males"),bty='n', cex=0.8,lwd=1.75)
@@ -5667,20 +5647,14 @@ PlotLengthBasedCatchCurve_Mortality <- function(params, DistnType, MLL, Selectiv
     plot(midpt, res$FAtLenReten, "l", main="F (retention)", cex.main=1.0, pch=1, cex=0.6,
          xaxt = "n", yaxt = "n", xlab=list(xaxis_lab,cex=1.2),ylab=NA, frame=F, xlim=c(0,xmax),
          ylim=c(0,ymax), col="blue")
-    axis(1, at = seq(0, xmax, xint), line = 0.2, labels = F)
-    axis(2, at = seq(0, ymax, yint), line = 0.2, labels = F)
-    axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
-    axis(2, at = seq(0, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
+    AddAxesAndTickLabelsToPlot(xmin=0, xmax, xint, ymin=0, ymax, yint, cexval=NA, cexaxisval=1, lwdval=1.75, lineval=-0.2, lasval=1)
     mtext(expression(paste(italic("F") ~ (year^{-1}))),las=3,side=2,line=3,cex=1.0,lwd=1.75)
   }
   if (GrowthModelType ==  2 | GrowthModelType == 4) { # separate sex
     plot(midpt, res$FAtLenReten_Fem, "l", main="F (retention)", cex.main=1.0, pch=1, cex=0.6,
          xaxt = "n", yaxt = "n", xlab=list(xaxis_lab,cex=1.2),ylab=NA, frame=F, xlim=c(0,xmax),
          ylim=c(0,ymax), col="red")
-    axis(1, at = seq(0, xmax, xint), line = 0.2, labels = F)
-    axis(2, at = seq(0, ymax, yint), line = 0.2, labels = F)
-    axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
-    axis(2, at = seq(0, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
+    AddAxesAndTickLabelsToPlot(xmin=0, xmax, xint, ymin=0, ymax, yint, cexval=NA, cexaxisval=1, lwdval=1.75, lineval=-0.2, lasval=1)
     mtext(expression(paste(italic("F") ~ (year^{-1}))),las=3,side=2,line=3,cex=1.0,lwd=1.75)
     lines(midpt, res$FAtLenReten_Mal, col="blue")
     legend('topright', col=c("red","blue"),lty="solid",legend=c("females","males"),bty='n', cex=0.8,lwd=1.75)
@@ -5691,45 +5665,32 @@ PlotLengthBasedCatchCurve_Mortality <- function(params, DistnType, MLL, Selectiv
     plot(midpt, res$FAtLenDisc*DiscMort, "l", main="F (discard mortality)", cex.main=1.0, pch=1, cex=0.6,
          xaxt = "n", yaxt = "n", xlab=list(xaxis_lab,cex=1.2),ylab=NA, frame=F, xlim=c(0,xmax),
          ylim=c(0,ymax), col="red")
-    axis(1, at = seq(0, xmax, xint), line = 0.2, labels = F)
-    axis(2, at = seq(0, ymax, yint), line = 0.2, labels = F)
-    axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
-    axis(2, at = seq(0, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
+    AddAxesAndTickLabelsToPlot(xmin=0, xmax, xint, ymin=0, ymax, yint, cexval=NA, cexaxisval=1, lwdval=1.75, lineval=-0.2, lasval=1)
     mtext(expression(paste(italic("F") ~ (year^{-1}))),las=3,side=2,line=2.5,cex=1.0,lwd=1.75)
   }
   if (GrowthModelType ==  2 | GrowthModelType == 4) { # separate sex
     plot(midpt, res$FAtLenDisc_Fem*DiscMort, "l", main="F (discard mortality)", cex.main=1.0, pch=1, cex=0.6,
          xaxt = "n", yaxt = "n", xlab=list(xaxis_lab,cex=1.2),ylab=NA, frame=F, xlim=c(0,xmax),
          ylim=c(0,ymax), col="red")
-    axis(1, at = seq(0, xmax, xint), line = 0.2, labels = F)
-    axis(2, at = seq(0, ymax, yint), line = 0.2, labels = F)
-    axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
-    axis(2, at = seq(0, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
+    AddAxesAndTickLabelsToPlot(xmin=0, xmax, xint, ymin=0, ymax, yint, cexval=NA, cexaxisval=1, lwdval=1.75, lineval=-0.2, lasval=1)
     mtext(expression(paste(italic("F") ~ (year^{-1}))),las=3,side=2,line=2.5,cex=1.0,lwd=1.75)
     lines(midpt, res$FAtLenDisc_Mal*DiscMort, col="blue")
     legend('topright', col=c("red","blue"),lty="solid",legend=c("females","males"),bty='n', cex=0.8,lwd=1.75)
   }
-
 
   # F at age, associated with fish capture and release
   if (GrowthModelType ==  1 | GrowthModelType == 3) { # single sex
     plot(midpt, res$FAtLenDisc, "l", main="F (capture + release)", cex.main=1.0, pch=1, cex=0.6,
          xaxt = "n", yaxt = "n", xlab=list(xaxis_lab,cex=1.2),ylab=NA, frame=F, xlim=c(0,xmax),
          ylim=c(0,ymax), col="red")
-    axis(1, at = seq(0, xmax, xint), line = 0.2, labels = F)
-    axis(2, at = seq(0, ymax, yint), line = 0.2, labels = F)
-    axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
-    axis(2, at = seq(0, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
+    AddAxesAndTickLabelsToPlot(xmin=0, xmax, xint, ymin=0, ymax, yint, cexval=NA, cexaxisval=1, lwdval=1.75, lineval=-0.2, lasval=1)
     mtext(expression(paste(italic("F") ~ (year^{-1}))),las=3,side=2,line=2.5,cex=1.0,lwd=1.75)
   }
   if (GrowthModelType ==  2 | GrowthModelType == 4) { # separate sex
     plot(midpt, res$FAtLenDisc_Fem, "l", main="F (capture + release)", cex.main=1.0, pch=1, cex=0.6,
          xaxt = "n", yaxt = "n", xlab=list(xaxis_lab,cex=1.2),ylab=NA, frame=F, xlim=c(0,xmax),
          ylim=c(0,ymax), col="red")
-    axis(1, at = seq(0, xmax, xint), line = 0.2, labels = F)
-    axis(2, at = seq(0, ymax, yint), line = 0.2, labels = F)
-    axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
-    axis(2, at = seq(0, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
+    AddAxesAndTickLabelsToPlot(xmin=0, xmax, xint, ymin=0, ymax, yint, cexval=NA, cexaxisval=1, lwdval=1.75, lineval=-0.2, lasval=1)
     mtext(expression(paste(italic("F") ~ (year^{-1}))),las=3,side=2,line=2.5,cex=1.0,lwd=1.75)
     lines(midpt, res$FAtLenDisc_Mal, col="blue")
     legend('topright', col=c("red","blue"),lty="solid",legend=c("females","males"),bty='n', cex=0.8,lwd=1.75)
@@ -8727,7 +8688,9 @@ GetLogisticCatchCurveResults <- function (params, NatMort, Ages, ObsAgeFreq)
 #'                                           ObsAgeFreq, CatchCurveModel, MainLabel=NA,
 #'                                           xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA,
 #'                                           ymax=NA, yint=NA, PlotCLs=T)
+#'
 #' # Simulate data from Dirichlet multinomial distribution (single sex)
+#' library(dirmult)
 #' # J = number of fish sampling events
 #' # K = number of age classes
 #' # n = number of fish sampled from each sampling event
@@ -8754,6 +8717,7 @@ GetLogisticCatchCurveResults <- function (params, NatMort, Ages, ObsAgeFreq)
 #'                                           ObsAgeFreq, CatchCurveModel, MainLabel=NA,
 #'                                           xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA,
 #'                                           ymax=NA, yint=NA, PlotCLs=T)
+#'
 #' # Simulate data from Multinomial distribution (two sexes)
 #' set.seed(123)
 #' CatchCurveModel = 3 # Logistic selectivity
@@ -8779,6 +8743,7 @@ GetLogisticCatchCurveResults <- function (params, NatMort, Ages, ObsAgeFreq)
 #'                                           ObsAgeFreq, CatchCurveModel, MainLabel=NA,
 #'                                           xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA,
 #'                                           ymax=NA, yint=NA, PlotCLs=T)
+#'
 #' # Simulate data from Dirichlet multinomial distribution (two sexes)
 #' # two sexes
 #' set.seed(123)
@@ -8891,10 +8856,7 @@ PlotAgeBasedCatchCurveResults_NormalSpace <- function(RecAssump, SpecRecAge, Min
     # Females
     plot(Ages, ObsAgeFreq[1,], "p", main=c(MainLabel,"Females"), cex.main=1.2, pch=16, cex=0.8, xaxt = "n", yaxt = "n",
          xlab=list(xaxis_lab,cex=1.2),ylab=list(yaxis_lab,cex=1.2), frame=F, xlim=c(0,xmax), ylim=c(0,ymax)) # observed data (normal space)
-    axis(1, at = seq(0, xmax, xint), line = 0.2, labels = F)
-    axis(2, at = seq(0, ymax, yint), line = 0.2, labels = F)
-    axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
-    axis(2, at = seq(0, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
+    AddAxesAndTickLabelsToPlot(xmin=0, xmax, xint, ymin=0, ymax, yint, cexval=NA, cexaxisval=1, lwdval=0, lineval=0.2, lasval=1)
     if (PlotCLs == TRUE) {
       sm1 = spline(Ages[j], Res$ModelDiag$EstFreq_Zlow[1:length(jj)], n=100, method="natural")
       sm2 = spline(Ages[j], Res$ModelDiag$EstFreq_Zup[1:length(j)], n=100, method="natural")
@@ -8915,10 +8877,7 @@ PlotAgeBasedCatchCurveResults_NormalSpace <- function(RecAssump, SpecRecAge, Min
     # Males
     plot(Ages, ObsAgeFreq[2,], "p", main=c(MainLabel,"Males"), cex.main=1.2, pch=16, cex=0.8, xaxt = "n", yaxt = "n",
          xlab=list(xaxis_lab,cex=1.2),ylab=list(yaxis_lab,cex=1.2), frame=F, xlim=c(0,xmax), ylim=c(0,ymax)) # observed data (normal space)
-    axis(1, at = seq(0, xmax, xint), line = 0.2, labels = F)
-    axis(2, at = seq(0, ymax, yint), line = 0.2, labels = F)
-    axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
-    axis(2, at = seq(0, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
+    AddAxesAndTickLabelsToPlot(xmin=0, xmax, xint, ymin=0, ymax, yint, cexval=NA, cexaxisval=1, lwdval=0, lineval=0.2, lasval=1)
     if (PlotCLs == TRUE) {
       sm1 = spline(Ages[j], Res$ModelDiag$EstFreq_Zlow_2[1:length(jj)], n=100, method="natural")
       sm2 = spline(Ages[j], Res$ModelDiag$EstFreq_Zup_2[1:length(j)], n=100, method="natural")
@@ -8942,10 +8901,7 @@ PlotAgeBasedCatchCurveResults_NormalSpace <- function(RecAssump, SpecRecAge, Min
     if (CatchCurveModel==3) ObsAgeFreq = as.vector(ObsAgeFreq[1,])
     plot(Ages, ObsAgeFreq, "p", main=MainLabel, cex.main=1.2, pch=16, cex=0.8, xaxt = "n", yaxt = "n",
          xlab=list(xaxis_lab,cex=1.2),ylab=list(yaxis_lab,cex=1.2), frame=F, xlim=c(0,xmax), ylim=c(0,ymax)) # observed data (normal space)
-    axis(1, at = seq(0, xmax, xint), line = 0.2, labels = F)
-    axis(2, at = seq(0, ymax, yint), line = 0.2, labels = F)
-    axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
-    axis(2, at = seq(0, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
+    AddAxesAndTickLabelsToPlot(xmin=0, xmax, xint, ymin=0, ymax, yint, cexval=NA, cexaxisval=1, lwdval=0, lineval=0.2, lasval=1)
     if (PlotCLs == TRUE) {
       if (CatchCurveModel == 3) {
         sm1 = spline(Ages[j], Res$ModelDiag$EstFreq_Zlow[1:length(jj)], n=100, method="natural")
@@ -9110,10 +9066,7 @@ PlotAgeBasedCatchCurveResults_LogSpace <- function(RecAssump, SpecRecAge, MinFre
 
   plot(Ages, log(ObsAgeFreq), "p", main=MainLabel, pch=16, cex=0.8, cex.main=1.2, xaxt = "n", yaxt = "n",
        xlab=list(xaxis_lab,cex=1.2),ylab=list(yaxis_lab,cex=1.2), frame=F, xlim=c(0,xmax), ylim=c(ymin,ymax)) # observed data (normal space)
-  axis(1, at = seq(0, xmax, xint), line = 0.2, labels = F)
-  axis(2, at = seq(ymin, ymax, yint), line = 0.2, labels = F)
-  axis(1, at = seq(0, xmax, xint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
-  axis(2, at = seq(ymin, ymax, yint), lwd = 0, labels = T, line = 0, cex.axis = 1, las = 1)
+  AddAxesAndTickLabelsToPlot(xmin=0, xmax, xint, ymin, ymax, yint, cexval=NA, cexaxisval=1, lwdval=0, lineval=0.2, lasval=1)
 
   # Chap-Rob
   if (CatchCurveModel == 1) {
@@ -12167,13 +12120,7 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
 
   # plot growth curve
   if (PlotOpt==0 | PlotOpt==1) {
-    y1=max(Res$ModelDiag$FemLenAtAge)
-    y2=max(Res$ModelDiag$MalLenAtAge)
-    if (y1 > y2) {
-      ylims = Get_yaxis_scale(c(0,Res$ModelDiag$FemLenAtAge))
-    } else {
-      ylims = Get_yaxis_scale(c(0,Res$ModelDiag$MalLenAtAge))
-    }
+    ylims = Get_yaxis_scale(c(c(0,Res$ModelDiag$FemLenAtAge),c(0,Res$ModelDiag$MalLenAtAge)))
     ymax = ylims$ymax; yint = ylims$yint
     xlims = Get_xaxis_scale(Res$ModelDiag$Ages)
     xmax = xlims$xmax; xint = xlims$xint
@@ -12188,13 +12135,7 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
 
   # plot weight at age
   if (PlotOpt==0 | PlotOpt==2) {
-    y1=max(Res$ModelDiag$FemWtAtAge)
-    y2=max(Res$ModelDiag$MalWtAtAge)
-    if (y1 > y2) {
-      ylims = Get_yaxis_scale(Res$ModelDiag$FemWtAtAge)
-    } else {
-      ylims = Get_yaxis_scale(Res$ModelDiag$MalWtAtAge)
-    }
+    ylims = Get_yaxis_scale(c(Res$ModelDiag$FemWtAtAge, Res$ModelDiag$MalWtAtAge))
     ymax = ylims$ymax; yint = ylims$yint
     xlims = Get_xaxis_scale(Res$ModelDiag$Ages)
     xmax = xlims$xmax; xint = xlims$xint
@@ -12234,9 +12175,7 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
     plot(Res$ModelDiag$Ages, Res$ModelDiag$MalPropMatAtAge,"l", pch=16, frame.plot=F,ylim=c(0,1),xlim=c(0,xmax),col="blue",yaxt="n",xaxt="n",
          ylab="",xlab="", cex=0.8, lwd=2)
     lines(Res$ModelDiag$Ages, Res$ModelDiag$MalSelLandAtAge, "l", col="black",lty="solid", cex=0.8)
-
-    legend('bottomright', col=c("blue","black"),
-           legend=c("Mal. prop_mat","Mal. sel_land"),
+    legend('bottomright', col=c("blue","black"), legend=c("Mal. prop_mat","Mal. sel_land"),
            lty=c("solid","solid"),bty='n', cex=0.8,lwd=1.75)
     AddAxesAndTickLabelsToPlot(xmin=NA, xmax, xint, ymin=NA, ymax=1, yint=0.5, cexval=NA, cexaxisval=0.8, lwdval=1.5, lineval=NA, lasval=NA)
     mtext(expression(paste(plain("Proportion"))),las=3,side=2,line=2.5,cex=0.7,lwd=1.75)
@@ -12274,7 +12213,6 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
     lines(Res$ModelDiag$Ages,Res$ModelDiag$MalSelDiscAtAge, "l", col="purple",lty="dotted",cex=0.8)
     lines(Res$ModelDiag$Ages, Res$ModelDiag$MalRetProbAtAge, "l", col="brown",lty="dashed", cex=0.8)
     lines(Res$ModelDiag$Ages, Res$ModelDiag$MalGearSelAtAge, "l", col="orange",lty="dotted", cex=0.8)
-
     legend('bottomright', col=c("black","purple","brown","orange"),
            legend=c("Mal. sel_land","Mal. sel_disc","Mal. prob_ret","Mal. gear_sel"),
            lty=c("solid","dotted","dashed","dotted"),bty='n', cex=0.8,lwd=c(2,1,1,1))
@@ -12334,8 +12272,7 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
     ylims = Get_yaxis_scale(Res$ModelDiag$UnfishFemSurvAtAge)
     ymax = ylims$ymax; yint = ylims$yint
     if (ymax > 1) {
-      ymax=1
-      yint=0.2
+      ymax=1; yint=0.2
     }
     xlims = Get_xaxis_scale(Res$ModelDiag$Ages)
     xmax = xlims$xmax; xint = xlims$xint
@@ -12354,8 +12291,7 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
     ylims = Get_yaxis_scale(Res$ModelDiag$UnfishMalSurvAtAge)
     ymax = ylims$ymax; yint = ylims$yint
     if (ymax > 1) {
-      ymax=1
-      yint=0.2
+      ymax=1; yint=0.2
     }
     xlims = Get_xaxis_scale(Res$ModelDiag$Ages)
     xmax = xlims$xmax; xint = xlims$xint
@@ -12437,7 +12373,6 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
     if (PlotOpt==0 | PlotOpt==14) {
       ylims = Get_yaxis_scale(Res$YPRResults)
       ymax = ylims$ymax; yint = ylims$yint
-
       plot(Res$FishMort, Res$YPRResults,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,max(Res$FishMort)),
            col="black",yaxt="n",xaxt="n",ylab="",xlab="")
       points(Current_F, Res$YPR,cex=1.2,col="black",pch=16)
@@ -12461,7 +12396,6 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
       AddAxesAndTickLabelsToPlot(xmin=NA, xmax=max(Res$FishMort), xint=0.5, ymin=NA, ymax=1, yint=0.2, cexval=NA, cexaxisval=0.8, lwdval=1.5, lineval=NA, lasval=NA)
       mtext(expression(paste(plain("Biom. ratio"))),las=3,side=2,line=2.5,cex=0.7,lwd=1.75)
       mtext(expression(paste(italic("F") ~ (year^{-1}))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
-
       if (!is.na(EggFertParam) &  EggFertParam < 1) {
         lines(Res$FishMort, Res$Eq_FemRelSpBiom_AllEggFert_Results, lty="dotted")
         points(Current_F, Res$Eq_FemRelSpBiom_AllEggFert, cex=1.2,col="black",pch=16)
@@ -12473,8 +12407,6 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
                legend=c("Fem SPR","Fem. Rel biom"),bty='n', cex=0.8,lwd=1.75)
       }
     }
-
-
 
     # plot spawning potential ratio (per recruit analysis) and relative spawning biomass (equilbrium age-structured model)
     # given specified current fully-selected fishing mortality, for each sex
@@ -12508,8 +12440,7 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
 
     # plot equilibrium recruitment vs F
     if (PlotOpt==0 | PlotOpt==18) {
-      ymax = 1.0
-      yint = 0.2
+      ymax = 1.0; yint = 0.2
       plot(Res$FishMort, Res$Eq_RecResults,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,max(Res$FishMort)),
            col="red",yaxt="n",xaxt="n",ylab="",xlab="")
       points(Current_F, Res$Eq_Rec, cex=1.2,col="red",pch=16)
@@ -12572,8 +12503,7 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
 
     # plot male depletion vs eq. recruitment
     if (PlotOpt==0 | PlotOpt==22) {
-      ymax = 1.0
-      yint = 0.2
+      ymax = 1.0; yint = 0.2
       plot(Res$FishMort, Res$Eq_RecResults,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,max(Res$FishMort)),
            col="red",yaxt="n",xaxt="n",ylab="",xlab="")
       points(Current_F, Res$Eq_Rec, cex=1.2,col="red",pch=16)
@@ -12593,10 +12523,6 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
   par(.pardefault)
 
 }
-
-
-
-
 
 #' Get plots associated with length-based per recruit analysis and extended analysis
 #' with a stock-recruitment relationship
@@ -12794,7 +12720,6 @@ PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
 
   Growth_95PLs = GetPerRecruitGrowthPredIntervals_LB(nTimeSteps, nLenCl, midpt, lbnd, ubnd, Res)
 
-
   Output_Opt = 1 # 1=standard output, 2=with added length and weight outputs (slower)
   Res = GetPerRecruitResults_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                 RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtLen,
@@ -12811,17 +12736,8 @@ PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
 
   # plot growth curve
   if (PlotOpt==0 | PlotOpt==1) {
-      x=which(!is.na(Growth_95PLs$FemLenAtAge_hi))
-      y1=max(Growth_95PLs$FemLenAtAge_hi[x])
-      x=which(!is.na(Growth_95PLs$MalLenAtAge_hi))
-      y2=max(Growth_95PLs$MalLenAtAge_hi[x])
-      if (y1 > y2) {
-        x=which(!is.na(Growth_95PLs$FemLenAtAge_hi))
-        ylims = Get_yaxis_scale(Growth_95PLs$FemLenAtAge_hi[x])
-      } else {
-        x=which(!is.na(Growth_95PLs$MalLenAtAge_hi))
-        ylims = Get_yaxis_scale(Growth_95PLs$MalLenAtAge_hi[x])
-      }
+      temp = c(Growth_95PLs$FemLenAtAge_hi, Growth_95PLs$MalLenAtAge_hi)
+      ylims = Get_yaxis_scale(temp[which(!is.na(temp))])
       ymax = ylims$ymax; yint = ylims$yint
       xlims = Get_xaxis_scale(Ages)
       xmax = xlims$xmax; xint = xlims$xint
@@ -12838,7 +12754,6 @@ PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
       lines(Ages, Growth_95PLs[,2],col="red",lty="dotted")
       lines(Ages, Growth_95PLs[,3],col="blue",lty="dotted")
       lines(Ages, Growth_95PLs[,4],col="blue",lty="dotted")
-
       AddAxesAndTickLabelsToPlot(xmin=NA, xmax, xint, ymin=NA, ymax, yint, cexval=NA, cexaxisval=0.8, lwdval=1.5, lineval=NA, lasval=NA)
       mtext(expression(paste(plain("Fish length (mm"),plain(")"))),las=3,side=2,line=2,cex=0.7,lwd=1.75)
       mtext(expression(paste(plain("Age (y"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
@@ -12847,17 +12762,10 @@ PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
 
   # plot weight at length
   if (PlotOpt==0 | PlotOpt==2) {
-    y1=max(Res$ModelDiag$FemWtAtLen)
-    y2=max(Res$ModelDiag$MalWtAtLen)
-    if (y1 > y2) {
-      ylims = Get_yaxis_scale(c(0,Res$ModelDiag$FemWtAtLen))
-    } else {
-      ylims = Get_yaxis_scale(c(0,Res$ModelDiag$MalWtAtLen))
-    }
+    ylims = Get_yaxis_scale(c(c(0,Res$ModelDiag$FemWtAtLen),c(0,Res$ModelDiag$MalWtAtLen)))
     ymax = ylims$ymax; yint = ylims$yint
     xlims=Get_xaxis_scale(0:MaxLen)
     xmax = xlims$xmax; xint = xlims$xint
-
     plot(midpt,Res$ModelDiag$FemWtAtLen,"l",frame.plot=F,ylim=c(0,ymax),xlim=c(0,xmax),col="red",yaxt="n",xaxt="n",
          ylab="",xlab="")
     lines(midpt,Res$ModelDiag$MalWtAtLen,col="blue")
@@ -12919,7 +12827,6 @@ PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
     }
   }
 
-
   # plot female selectivity of landings, selectivity of discards, prob retention, and gear selectivity at age
   if (PlotOpt==0 | PlotOpt==5) {
     xlims = Get_xaxis_scale(midpt)
@@ -12955,7 +12862,6 @@ PlotPerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, n
     mtext(expression(paste(plain("Proportion"))),las=3,side=2,line=2.5,cex=0.7,lwd=1.75)
     mtext(expression(paste(plain("Length (mm"),plain(")"))),las=1,side=1,line=2,cex=0.7,lwd=1.75)
   }
-
 
   #plot 2:
   if (PlotOpt==0) {
@@ -14182,13 +14088,7 @@ PlotPerRecruit_Biom_no_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzer
     legend("topleft", col="black", pch = 16, lty=0, legend="Estimate - comb. sex",
            bty="n", cex=0.8, inset = 0.05)
   }
-
-
-  axis(1, at=seq(0, xmax, 0.5), cex.axis=1, lwd=1.75, lab=F)
-  axis(2, at=seq(0, 1, 0.2), cex.axis=1, lwd=1.75, lab=F)
-  axis(1, at=seq(0, xmax, 0.5), labels = seq(0, xmax, 0.5),
-       cex.axis=1, line=0.5, las=1, lwd=1.5, tick=F)
-  axis(2, at=seq(0, 1, 0.2), cex.axis=1, line=0.5, las=1, lwd=1.5, tick=F)
+  AddAxesAndTickLabelsToPlot(xmin=0, xmax, 0.5, ymin=0, ymax=1, yint=0.2, cexval=1, cexaxisval=1, lwdval=1.75, lineval=0.5, lasval=1)
   mtext(expression(paste(plain("Relative spawning biomass"))), las=3, side=2, line=3, cex=1, lwd=1.75)
   mtext(expression(paste(italic("F") ~ (year^{-1}))), las=1, side=1, line=3, cex=1, lwd=1.75)
 
@@ -14351,12 +14251,7 @@ PlotPerRecruit_Biom_no_err_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, mid
     legend("topleft", col="black", pch = 16, lty=0, legend="Estimate - comb. sex",
            bty="n", cex=0.8, inset = 0.05)
   }
-
-  axis(1, at=seq(0, xmax, 0.5), cex.axis=1, lwd=1.75, lab=F)
-  axis(2, at=seq(0, 1, 0.2), cex.axis=1, lwd=1.75, lab=F)
-  axis(1, at=seq(0, xmax, 0.5), labels = seq(0, xmax, 0.5),
-       cex.axis=1, line=0.5, las=1, lwd=1.5, tick=F)
-  axis(2, at=seq(0, 1, 0.2), cex.axis=1, line=0.5, las=1, lwd=1.5, tick=F)
+  AddAxesAndTickLabelsToPlot(xmin=0, xmax, 0.5, ymin=0, ymax=1, yint=0.2, cexval=1, cexaxisval=1, lwdval=1.75, lineval=0.5, lasval=1)
   mtext(expression(paste(plain("Relative spawning biomass"))), las=3, side=2, line=3, cex=1, lwd=1.75)
   mtext(expression(paste(italic("F") ~ (year^{-1}))), las=1, side=1, line=3, cex=1, lwd=1.75)
 
@@ -15130,7 +15025,6 @@ PlotPerRecruit_Biom_with_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
   if (is.na(ymax)) ymax = 1
   if (is.na(yint)) yint = 0.2
 
-
   # Plot per recruit outputs with uncertainty
   if (PlotOpt==1) { # plot females
     EqB_med = apply(Res$Sim_Eq_RelFemSpBiom,2,quantile, probs=c(0.5))
@@ -15197,12 +15091,7 @@ PlotPerRecruit_Biom_with_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
            legend=c("Estimate - comb. sex","60% CLs", "95% CLs"), lty=c("solid","solid","solid"), lwd=c(-1,5,5),
            bty="n", cex=1,0, inset = 0.05)
   }
-
-  axis(1, at=seq(0, xmax, xint), cex.axis=1, lwd=1, lab=F, line=-0.3)
-  axis(2, at=seq(0, ymax, yint), cex.axis=1, lwd=1, lab=F, line=-0.3)
-  axis(1, at=seq(0, xmax, xint), labels = seq(0, xmax, xint),
-       cex.axis=1, line=-0.5, las=1, lwd=1, tick=F)
-  axis(2, at=seq(0, ymax, yint), cex.axis=1, line=-0.5, las=1, lwd=1, tick=F)
+  AddAxesAndTickLabelsToPlot(xmin=0, xmax, xint, ymin=0, ymax, yint, cexval=NA, cexaxisval=1, lwdval=1, lineval=-0.3, lasval=1)
   mtext(yaxis_lab, las=3, side=2, line=3, cex=1.2, lwd=1.75)
   mtext(xaxis_lab, las=1, side=1, line=3, cex=1.2, lwd=1.75)
 
@@ -15359,7 +15248,6 @@ PlotPerRecruit_Biom_with_err_LB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
                                             Current_F, Current_F_sd, PlotOpt, RefPointPlotOpt, FittedRes, nReps, MainLabel,
                                             xaxis_lab, yaxis_lab, xmax, xint, ymax, yint) {
 
-
   # get BMSY reference points
   Output_Opt = 1 # 1=standard output, 2=with added length and weight outputs (slower)
   res=GetPerRecruitResults_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
@@ -15454,13 +15342,7 @@ PlotPerRecruit_Biom_with_err_LB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
            legend=c("Estimate - comb. sex","60% CLs", "95% CLs"), lty=c("solid","solid","solid"), lwd=c(-1,5,5),
            bty="n", cex=1,0, inset = 0.05)
   }
-
-
-  axis(1, at=seq(0, xmax, xint), cex.axis=1, lwd=1, lab=F, line=-0.3)
-  axis(2, at=seq(0, ymax, yint), cex.axis=1, lwd=1, lab=F, line=-0.3)
-  axis(1, at=seq(0, xmax, xint), labels = seq(0, xmax, xint),
-       cex.axis=1, line=-0.5, las=1, lwd=1, tick=F)
-  axis(2, at=seq(0, ymax, yint), cex.axis=1, line=-0.5, las=1, lwd=1, tick=F)
+  AddAxesAndTickLabelsToPlot(xmin=0, xmax, xint, ymin=0, ymax, yint, cexval=NA, cexaxisval=1, lwdval=1, lineval=-0.3, lasval=1)
   mtext(yaxis_lab, las=3, side=2, line=3, cex=1.2, lwd=1.75)
   mtext(xaxis_lab, las=1, side=1, line=3, cex=1.2, lwd=1.75)
 
