@@ -187,6 +187,49 @@ params = c(InitFishMort_logit, log(c(InitLinf, InitvbK, InitCVSizeAtAge)))
 FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
                                                 lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep)
 
+# Example estimating sex-specific growth parameters for a species with sexually-dimorphic growth,
+# fitting the model to combined sex data (as sex not recorded)
+# Simulate data
+set.seed(123)
+SampleSize=1000
+MaxAge = 40
+TimeStep = 1 # model timestep (e.g. 1 = annual, 1/12 = monthly)
+nTimeSteps = length(seq(TimeStep,MaxAge,TimeStep))
+NatMort = 0.115
+FishMort = NatMort
+MaxLen = 1000
+LenInc = 20
+MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified
+SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
+lbnd = seq(0,MaxLen - LenInc, LenInc)
+midpt = lbnd + (LenInc/2)
+SelectivityAtLen = NA
+SelParams = c(350, 50) # L50, L95-L50 for gear selectivity
+RetenParams = NA # L50, L95-L50 for retention
+DiscMort = 0 # proportion of fish that die due to natural mortality
+GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute
+Linf = c(600,800) # sex difference in Linfinity
+vbK = c(0.2,0.2)
+CVSizeAtAge = c(0.05,0.05)
+GrowthParams = data.frame(Linf=Linf, vbK=vbK)
+RefnceAges = NA
+SimRes=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
+                            SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+lbnd=SimRes$lbnd
+midpt=SimRes$midpt
+ubnd=SimRes$ubnd
+# fit catch curve model
+InitFishMort = 0.1 # specify starting parameters
+InitL50 = 300
+InitDelta = 50 # L95-L50
+InitLinf = c(550,750) # make sure starting values reasonable well separated, to aid optimisation
+InitvbK = c(0.3,0.3)
+InitCVSizeAtAge = 0.04
+InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform (so F is always between 0 and 1)
+params = c(InitFishMort_logit, log(c(InitL50, InitDelta, InitLinf, InitvbK, InitCVSizeAtAge)))
+FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
+                                                lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep)
+
 # Example with separate selectivities for 2 fleets (inputted directly), assuming common growth and mortality
 SampleSize=1000
 set.seed(123)

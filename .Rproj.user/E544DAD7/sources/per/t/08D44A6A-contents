@@ -40,18 +40,10 @@
    xpow = log10(xmax_data-xmin_data)
    xint = 10 ^ (xpow-round(xpow,0))
 
-   if (xint>=0 & xint<2.5) {
-     xint = 0.2
-   }
-   if (xint>=2.5 & xint<5) {
-     xint = 0.5
-   }
-   if (xint>=5 & xint<7.5) {
-     xint = 1
-   }
-   if (xint>=7.5) {
-     xint = 2
-   }
+   if (xint>=0 & xint<2.5) xint = 0.2
+   if (xint>=2.5 & xint<5) xint = 0.5
+   if (xint>=5 & xint<7.5) xint = 1
+   if (xint>=7.5) xint = 2
 
    xint = xint * 10^round(xpow,0) # major ticks
    xmin = xint * round(xmin_data/xint,0)
@@ -83,18 +75,10 @@
    ypow = log10(ymax_data-ymin_data)
    yint = 10 ^ (ypow-round(ypow,0))
 
-   if (yint>=0 & yint<2.5) {
-     yint = 0.2
-   }
-   if (yint>=2.5 & yint<5) {
-     yint = 0.5
-   }
-   if (yint>=5 & yint<7.5) {
-     yint = 1
-   }
-   if (yint>=7.5) {
-     yint = 2
-   }
+   if (yint>=0 & yint<2.5) yint = 0.2
+   if (yint>=2.5 & yint<5) yint = 0.5
+   if (yint>=5 & yint<7.5) yint = 1
+   if (yint>=7.5) yint = 2
 
    yint = yint * 10^round(ypow,0) # major ticks
    ymin = yint * round(ymin_data/yint,0)
@@ -256,8 +240,6 @@
    # (can be used when both a and b are not equal to zero)
    Linf = ((exp(a*t2)*y2^b-exp(a*t1)*y1^b)/(exp(a*t2)-exp(a*t1)))^(1/b)
 
-   #cat("InverseSchnuteGrowthfunction: FishLen",FishLen,"a",a,"b",b,"y1",y1,"y2",y2,'\n')
-
    if (is.nan(Linf)) {
      Age = MaxAge
    } else if (FishLen >= Linf-1) {
@@ -267,7 +249,6 @@
    } else {
      Age=log(1-(FishLen^b-y1^b)/(y2^b-y1^b)*(1-exp(-a*(t2-t1))))/-a+t1
    }
-   #cat("Linf",Linf,"MaxAge",MaxAge,"FishLen",FishLen,"Age",Age,'\n')
 
    return(Age)
  }
@@ -1702,13 +1683,13 @@ CalcSelectivityPenalties <- function (Res, GrowthCurveType, GrowthModelType, Gro
 
     if (length(SelParams)==2) { # combined selectivity for sexes
       if (sum(SelParams) > max(Linf)) {
-        L95_Pen = (sum(SelParams) - max(Linf))^2
+        L95_Pen = 10 * (sum(SelParams) - max(Linf))^2
         SelParams[2] = max(Linf) - SelParams[1]
       }
 
       # calculate L50 penalty
       if (SelParams[1] > (sum(SelParams) - 2)) {
-        L50_Pen = ((sum(SelParams) - 2) - SelParams[1])^2
+        L50_Pen = 10 * ((sum(SelParams) - 2) - SelParams[1])^2
         SelParams[1] = sum(SelParams) - 2
       }
     }
@@ -2219,6 +2200,49 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, DistnType, GrowthCurveTyp
 #' InitCVSizeAtAge = 0.05
 #' InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform (so F is always between 0 and 1)
 #' params = c(InitFishMort_logit, log(c(InitLinf, InitvbK, InitCVSizeAtAge)))
+#' FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
+#'                                                 lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep)
+#'
+#' # Example estimating sex-specific growth parameters for a species with sexually-dimorphic growth,
+#' # fitting the model to combined sex data (as sex not recorded)
+#' # Simulate data
+#' set.seed(123)
+#' SampleSize=1000
+#' MaxAge = 40
+#' TimeStep = 1 # model timestep (e.g. 1 = annual, 1/12 = monthly)
+#' nTimeSteps = length(seq(TimeStep,MaxAge,TimeStep))
+#' NatMort = 0.115
+#' FishMort = NatMort
+#' MaxLen = 1000
+#' LenInc = 20
+#' MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified
+#' SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
+#' lbnd = seq(0,MaxLen - LenInc, LenInc)
+#' midpt = lbnd + (LenInc/2)
+#' SelectivityAtLen = NA
+#' SelParams = c(350, 50) # L50, L95-L50 for gear selectivity
+#' RetenParams = NA # L50, L95-L50 for retention
+#' DiscMort = 0 # proportion of fish that die due to natural mortality
+#' GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute
+#' Linf = c(600,800) # sex difference in Linfinity
+#' vbK = c(0.2,0.2)
+#' CVSizeAtAge = c(0.05,0.05)
+#' GrowthParams = data.frame(Linf=Linf, vbK=vbK)
+#' RefnceAges = NA
+#' SimRes=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
+#'                             SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#' lbnd=SimRes$lbnd
+#' midpt=SimRes$midpt
+#' ubnd=SimRes$ubnd
+#' # fit catch curve model
+#' InitFishMort = 0.1 # specify starting parameters
+#' InitL50 = 300
+#' InitDelta = 50 # L95-L50
+#' InitLinf = c(550,750) # make sure starting values reasonable well separated, to aid optimisation
+#' InitvbK = c(0.3,0.3)
+#' InitCVSizeAtAge = 0.04
+#' InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform (so F is always between 0 and 1)
+#' params = c(InitFishMort_logit, log(c(InitL50, InitDelta, InitLinf, InitvbK, InitCVSizeAtAge)))
 #' FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
 #'                                                 lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep)
 #'
@@ -3361,9 +3385,6 @@ if (is.na(MLL) & is.na(RetenParams[1])) {
 
 }
 
-test = c(10,30,50)
-test2 = c(5, 10, 10)
-test3=rep(test,test2)
 
 #' Get retained catch summary statistics
 #'
@@ -3633,8 +3654,6 @@ GetDiscCatchFreqAtLenAndIntAge <- function(TimeStep, MaxAge, midpt, nLenCl, ObsA
 
 }
 
-
-
 #' Get random retained and discarded fish lengths
 #'
 #' Get random retained and discarded fish lengths, given random length classes
@@ -3820,8 +3839,6 @@ SimLenFreqDat_DirMultDistn <- function(nSampEvents, nFishPerSampEvent, theta_val
   return(Results)
 
 }
-
-
 
 #' Simulate length and age data
 #'
@@ -4302,8 +4319,6 @@ SimLenAndAgeFreqData <- function(SampleSize, MaxAge, TimeStep, NatMort, FishMort
 
 }
 
-
-
 #' Produce plots of simulated age and length data
 #'
 #' @param MaxAge Maximum age
@@ -4408,8 +4423,6 @@ PlotSimLenAndAgeFreqData <- function(MaxAge, MaxLen, SimRes, PlotOpt) {
     if (is.vector(SimRes$ModelDiag$MeanSizeAtAge)) {
       sm1 = spline(SimRes$ModelDiag$DecAges, SimRes$ModelDiag$MeanSizeAtAge, n=100, method="natural")
       lines(sm1$x, sm1$y, col="black")
-      # legend("topleft", legend=c("Growth - comb. sexes"), inset=c(0.13,0),
-      #        lty=1, cex = 0.8, bty="n", seg.len = 2, pch=-16, col="black")
     } else {
     sm1 = spline(SimRes$ModelDiag$DecAges, SimRes$ModelDiag$MeanSizeAtAge[1,], n=100, method="natural")
     lines(sm1$x, sm1$y, col="red")
@@ -4841,7 +4854,6 @@ PlotSimLenAndAgeFreqData <- function(MaxAge, MaxLen, SimRes, PlotOpt) {
 
 }
 
-
 #' Produce plot of fitted length-based catch curve to length composition data for retained catches
 #'
 #' @param params vector of model parameters (in log space) to be estimated (if FittedRes=NA)
@@ -5050,7 +5062,6 @@ PlotLengthBasedCatchCurve_RetCatch <- function(params, DistnType, MLL, Selectivi
 
 }
 
-
 #' Produce plot of fitted length-based catch curve to length composition data for discarded catches
 #'
 #' @param params vector of model parameters (in log space) to be estimated (if FittedRes=NA)
@@ -5226,7 +5237,6 @@ PlotLengthBasedCatchCurve_DiscCatch <- function(params, DistnType, MLL, Selectiv
     par(.pardefault)
 
   }
-
 }
 
 
@@ -5515,7 +5525,6 @@ PlotLengthBasedCatchCurve_Selectivity <- function(params, DistnType, MLL, Select
   par(.pardefault)
 }
 
-
 #' Show estimated fishing mortality at length relationships from length-based catch curve model
 #'
 #' This function provides plots of estimated fishing mortality at length relationships from a length-based
@@ -5739,8 +5748,6 @@ PlotLengthBasedCatchCurve_Mortality <- function(params, DistnType, MLL, Selectiv
   par(.pardefault)
 }
 
-
-
 #' Show fit of age and length catch curve model to marginal length composition
 #'
 #' This function provides a plot of the fit of an age and length-based catch curve model, with length-
@@ -5892,7 +5899,6 @@ PlotAgeLengthCatchCurve_MargLength <- function(params, RefnceAges, MLL, GrowthCu
                                                xaxis_lab, yaxis_lab, xmax, xint,
                                                ymax, yint, PlotCLs, FittedRes, nReps) {
 
-
   # if model already fitted, can input results rather than refit
   if (is.list(FittedRes)) {
     res =  FittedRes
@@ -5980,6 +5986,7 @@ PlotAgeLengthCatchCurve_MargLength <- function(params, RefnceAges, MLL, GrowthCu
     } else {
       yaxis_lab1 = yaxis_lab
     }
+
     plot(midpt, ObsRelCatchAtLen[1,], "p", main=MainLabel, cex.main=1.2, pch=16, cex=0.8,
          xaxt = "n", yaxt = "n", xlab=list(xaxis_lab,cex=1.2),ylab=list(yaxis_lab1,cex=1.2), frame=F, xlim=c(0,xmax), ylim=c(0,ymax))
     points(midpt, ObsRelCatchAtLen[1,], col="black", pch=16, cex=0.8)
@@ -6165,7 +6172,6 @@ PlotAgeLengthCatchCurve_Growth <- function(params, RefnceAges, MLL, GrowthCurveT
                                            lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep, MainLabel,
                                            xaxis_lab, yaxis_lab, xmax, xint,
                                            ymax, yint, PlotCLs, FittedRes, nReps) {
-
 
   # generate data for individual fish (age classes and mid points of length classes)
   if (is.vector(ObsRetCatchFreqAtLen)) {
@@ -6729,7 +6735,6 @@ PlotAgeLengthCatchCurve_Selectivity <- function(params, RefnceAges, MLL, GrowthC
 #' ObsCatchPropAgeAtLength_Mal, ExpRetCatchPropIntAgeGivenLength_Fem, ExpRetCatchPropIntAgeGivenLength_Mal (separaate sex)
 GetInputsForPlotting_Cond_AL <- function(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
                                          lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep, FittedRes) {
-
 
   # if model already fitted, can input results rather than refit
   if (is.list(FittedRes)) {
@@ -10280,8 +10285,6 @@ CalcEquilibriumRecruitment <- function(SRrel_Type, Steepness, FishSpBiom, Unfish
 
 }
 
-
-
 #' Calculates inputs required to calculate length transition matrices, for length-based per recruit analysis
 #'
 #' This function calculates inputs required to calculate length transition matrices, for length-based per
@@ -12171,13 +12174,6 @@ PlotPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Es
     # don't change user settings
   }
 
-  # PlotOpt <- 0 # 0=all plots, 1=len at-age, 2=wt at age, 3=fem mat/sel_land at age, 4=mal mat/sel_land at age,
-  # 5=fem sel_land/sel_disc/prob reten/gear sel, 6=mal sel_land/sel_disc/prob reten/gear sel, 7=fem F at age,
-  # 8=mal F at age, 9=fem rel surv, 10=mal rel surv, 11=fem biom at age, 12=mal biom at age,
-  # 13=catch at age, 14=ypr/eq catch, 15=fem SPR/Brel, 16=mal SPR/Brel, 17=comb sex SPR/Brel, 18=eq recruit
-  # 19=male depletion vs F, 20=plot prop male vs F, 21=plot male depletion vs egg. fert rate,
-  # 22=plot male depletion vs eq. recruitment
-
   # plot growth curve
   if (PlotOpt==0 | PlotOpt==1) {
     ylims = Get_yaxis_scale(c(c(0,Res$ModelDiag$FemLenAtAge),c(0,Res$ModelDiag$MalLenAtAge)))
@@ -13687,8 +13683,6 @@ PlotValuePerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, mid
 
   WtAtLen = (Res$ModelDiag$FemWtAtLen + Res$ModelDiag$MalWtAtLen)/2
 
-
-
   # plot relationship between fish length and relative value of fish, considered by fishers
   if (PlotOpt==0) {
     par(mfrow=c(2,2))
@@ -13706,7 +13700,6 @@ PlotValuePerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, mid
     plot(midpt,RelValAtLen,"p",pch=16,xlab=xaxis_lab, ylab=yaxis_lab,yaxt="n",xaxt="n",bty="n",
          xlim=c(0,xmax),ylim=c(0,ymax),cex=0.6)
     AddAxesAndTickLabelsToPlot(xmin=NA, xmax, xint, ymin=NA, ymax, yint, cexval=NA, cexaxisval=0.8, lwdval=1.5, lineval=NA, lasval=NA)
-    # abline(v=Res$MinFishLenOfVal,lty="dotted")
     legend('topright', legend=paste("Min. len. of val. =",round(MinFishLenOfVal,0),"mm"),
            lty=-1,bty='n', cex=0.8, pch=-1)
   }
@@ -13724,7 +13717,6 @@ PlotValuePerRecruitResults_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, mid
     plot(WtAtLen,RelValAtLen,"p",pch=16,xlab=xaxis_lab, ylab=yaxis_lab,yaxt="n",xaxt="n",bty="n",
          xlim=c(0,xmax),ylim=c(0,ymax),cex=0.6)
     AddAxesAndTickLabelsToPlot(xmin=NA, xmax, xint, ymin=NA, ymax, yint, cexval=NA, cexaxisval=0.8, lwdval=1.5, lineval=NA, lasval=NA)
-    # abline(v=MinFishWtOfVal/1000,lty="dotted")
     legend('topright', legend=paste("Min. wt. of val. =",MinFishWtOfVal/1000,"kg"),
            lty=-1,bty='n', cex=0.8, pch=-1)
   }
@@ -14465,7 +14457,6 @@ GetPerRecruitResults_AB_with_err <- function(MaxModelAge, TimeStep, Linf, vbK, t
   } else {
     MValues = exp(rnorm(nReps, log(NatMort), NatMort_sd[1]))
   }
-
 
   for (i in 1:nReps) {
     FMort = FValues[i]
@@ -15974,5 +15965,3 @@ PlotRiskMatrix_CatchCurve_FishMort <- function(EstFMort, EstFMort_se, Sim_FVals,
   return(Results)
 
 }
-
-
