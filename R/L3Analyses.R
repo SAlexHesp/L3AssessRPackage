@@ -2069,7 +2069,7 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, DistnType, GrowthCurveTyp
 #' @param RefnceAges Reference ages for Schnute growth curve (set to NA for von Bertalanffy growth curve)
 #' @param MLL minimum legal length (for setting knife edge retention, set to NA if not assumed)
 #' @param GrowthCurveType 1=von Bertalanffy, 2=Schnute
-#' @param SelectivityType 1=selectivity inputted as vector, 2=asymptotic logist sel curve, 3=separate logist sel params, common growth (2 fishing fleets)
+#' @param SelectivityType 1=selectivity inputted as vector, 2=asymptotic logist sel curve, 3=separate logist sel params, common growth
 #' @param ObsRetCatchFreqAtLen observed frequencies in length classes
 #' @param ObsRetCatchFreqAtLengthAndAge observed frequencies in length and age classes
 #' @param lbnd lower bounds of length classes
@@ -2113,7 +2113,7 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, DistnType, GrowthCurveTyp
 #' MaxLen = 1200
 #' LenInc = 20
 #' MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified is knife-edged at MLL
-#' SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logist sel curve, 3=separate logist sel params, common growth (2 fishing fleets)
+#' SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logist sel curve, 3=separate logist sel params, common growth
 #' SelectivityAtLen = NA # selectivity vector
 #' SelParams = c(300, 50) # L50, L95-L50 for gear selectivity
 #' RetenParams = c(NA, NA) # L50, L95-L50 for retention
@@ -2173,7 +2173,7 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, DistnType, GrowthCurveTyp
 #'
 #' # Example with specified selectivity vector
 #' # Simulate data
-#' SelectivityType=1 # 1=selectivity inputted as vector, 2=asymptotic logist sel curve, 3=separate logist sel params, common growth (2 fishing fleets)
+#' SelectivityType=1 # 1=selectivity inputted as vector, 2=asymptotic logist sel curve, 3=separate logist sel params, common growth
 #' SelectivityAtLen = 1 / (1 + exp(-log(19)*(midpt-400)/(500-400)))
 #' SelParams = c(NA, NA) # L50, L95-L50 for gear selectivity
 #' RetenParams = c(NA, NA) # L50, L95-L50 for retention
@@ -2246,7 +2246,7 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, DistnType, GrowthCurveTyp
 #' FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
 #'                                                 lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep)
 #'
-#' # Example with separate selectivities for 2 fleets (inputted directly), assuming common growth and mortality
+#' # Example with separate selectivities, assuming common growth and mortality
 #' SampleSize=1000
 #' set.seed(123)
 #' MaxAge = 30
@@ -2288,9 +2288,8 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, DistnType, GrowthCurveTyp
 #' ObsRetCatchFreqAtLengthAndAge = array(c(unlist(SimRes$ObsRetCatchFreqAtLengthAndDecAge_Fem), unlist(SimRes$ObsRetCatchFreqAtLengthAndDecAge_Mal)),
 #'                                       c(nTimeSteps, length(midpt), 2), dimnames=list(rownames(SimRes$ObsRetCatchFreqAtLengthAndDecAge_Fem),
 #'                                                                                      colnames(SimRes$ObsRetCatchFreqAtLengthAndDecAge_Fem)))
-#' SelectivityType=3 # 1=selectivity inputted as vector, 2=asymptotic logist sel curve, 3=separate logist sel params, common growth (2 fishing fleets)
+#' SelectivityType=3 # 1=selectivity inputted as vector, 2=asymptotic logist sel curve, 3=separate logist sel params, common growth
 #' SelectivityAtLen=NA
-#' InitFishMort = 0.3 # specify starting parameters
 #' InitFishMort = 0.3 # specify starting parameters
 #' InitL50 = c(400,500)
 #' InitDelta = c(50,50) # L95-L50
@@ -2316,7 +2315,7 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, DistnType, GrowthCurveTyp
 #' MaxLen = 1200
 #' LenInc = 20
 #' MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified is knife-edged at MLL
-#' SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logist sel curve, 3=separate logist sel params, common growth (2 fishing fleets)
+#' SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logist sel curve, 3=separate logist sel params, common growth
 #' SelectivityAtLen = NA # selectivity vector
 #' SelParams = c(300, 50) # L50, L95-L50 for gear selectivity
 #' RetenParams = c(NA, NA) # L50, L95-L50 for retention
@@ -2370,7 +2369,7 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, DistnType, GrowthCurveTyp
 #' MaxLen = 1200
 #' LenInc = 20
 #' MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified is knife-edged at MLL
-#' SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logist sel curve, 3=separate logist sel params, common growth (2 fishing fleets)
+#' SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logist sel curve, 3=separate logist sel params, common growth
 #' SelectivityAtLen = NA # selectivity vector
 #' SelParams = c(300, 50) # L50, L95-L50 for gear selectivity
 #' RetenParams = c(NA, NA) # L50, L95-L50 for retention
@@ -2427,7 +2426,7 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, DistnType, GrowthCurveTyp
 #' MaxLen = 1200
 #' LenInc = 20
 #' MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified
-#' SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logist sel curve, 3=separate logist sel params, common growth (2 fishing fleets)
+#' SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logist sel curve, 3=separate logist sel params, common growth
 #' SelectivityAtLen = NA # selectivity vector
 #' SelParams = c(300, 50) # L50, L95-L50 for gear selectivity
 #' RetenParams = c(NA, NA) # L50, L95-L50 for retention
@@ -5801,7 +5800,7 @@ PlotLengthBasedCatchCurve_Mortality <- function(params, DistnType, MLL, Selectiv
 #' MaxLen = 1200
 #' LenInc = 20
 #' MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified is knife-edged at MLL
-#' SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logist sel curve, 3=separate logist sel params, common growth (2 fishing fleets)
+#' SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logist sel curve, 3=separate logist sel params, common growth
 #' SelectivityAtLen = NA # selectivity vector
 #' SelParams = c(300, 50) # L50, L95-L50 for gear selectivity
 #' RetenParams = c(NA, NA) # L50, L95-L50 for retention
@@ -6075,7 +6074,7 @@ PlotAgeLengthCatchCurve_MargLength <- function(params, RefnceAges, MLL, GrowthCu
 #' MaxLen = 1200
 #' LenInc = 20
 #' MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified is knife-edged at MLL
-#' SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logist sel curve, 3=separate logist sel params, common growth (2 fishing fleets)
+#' SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logist sel curve, 3=separate logist sel params, common growth
 #' SelectivityAtLen = NA # selectivity vector
 #' SelParams = c(300, 50) # L50, L95-L50 for gear selectivity
 #' RetenParams = c(NA, NA) # L50, L95-L50 for retention
@@ -6134,7 +6133,7 @@ PlotAgeLengthCatchCurve_MargLength <- function(params, RefnceAges, MLL, GrowthCu
 #'                                                 lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep)
 #' # Example with specified selectivity vector
 #' # Simulate data
-#' SelectivityType=1 # 1=selectivity inputted as vector, 2=asymptotic logist sel curve, 3=separate logist sel params, common growth (2 fishing fleets)
+#' SelectivityType=1 # 1=selectivity inputted as vector, 2=asymptotic logist sel curve, 3=separate logist sel params, common growth
 #' SelectivityAtLen = 1 / (1 + exp(-log(19)*(midpt-400)/(500-400)))
 #' SelParams = c(NA, NA) # L50, L95-L50 for gear selectivity
 #' RetenParams = c(NA, NA) # L50, L95-L50 for retention
@@ -6496,7 +6495,7 @@ PlotAgeLengthCatchCurve_Growth <- function(params, RefnceAges, MLL, GrowthCurveT
 #' MaxLen = 1200
 #' LenInc = 20
 #' MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified is knife-edged at MLL
-#' SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logist sel curve, 3=separate logist sel params, common growth (2 fishing fleets)
+#' SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logist sel curve, 3=separate logist sel params, common growth
 #' SelectivityAtLen = NA # selectivity vector
 #' SelParams = c(300, 50) # L50, L95-L50 for gear selectivity
 #' RetenParams = c(NA, NA) # L50, L95-L50 for retention
@@ -6876,7 +6875,7 @@ GetInputsForPlotting_Cond_AL <- function(params, RefnceAges, MLL, GrowthCurveTyp
 #' MaxLen = 1200
 #' LenInc = 20
 #' MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified is knife-edged at MLL
-#' SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logist sel curve, 3=separate logist sel params, common growth (2 fishing fleets)
+#' SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logist sel curve, 3=separate logist sel params, common growth
 #' SelectivityAtLen = NA # selectivity vector
 #' SelParams = c(300, 50) # L50, L95-L50 for gear selectivity
 #' RetenParams = c(NA, NA) # L50, L95-L50 for retention
@@ -7166,7 +7165,7 @@ PlotAgeLengthCatchCurve_Cond_AL <- function(params, RefnceAges, MLL, GrowthCurve
 #' MaxLen = 1200
 #' LenInc = 20
 #' MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified is knife-edged at MLL
-#' SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logist sel curve, 3=separate logist sel params, common growth (2 fishing fleets)
+#' SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logist sel curve, 3=separate logist sel params, common growth
 #' SelectivityAtLen = NA # selectivity vector
 #' SelParams = c(300, 50) # L50, L95-L50 for gear selectivity
 #' RetenParams = c(NA, NA) # L50, L95-L50 for retention
@@ -8313,20 +8312,17 @@ Calculate_NLL_LogisticCatchCurve <- function(params) {
     sum1 = 0; sum2 = 0;
     for (s in 1:nSexes) {
       ObsPropAtAge[s,] = ObsAgeFreq[s,] / nObs_total
-      # plot(Ages,ObsPropAtAge[s,])
-      # plot(Ages,ExpPropAtAge[s,])
 
       for (t in 1:nAges) {
         sum1 = sum1 + lgamma(nObs_total * ObsPropAtAge[s,t] + 1)
         sum2 = sum2 + (lgamma(nObs_total * ObsPropAtAge[s,t] + DM_theta * nObs_total * ExpPropAtAge[s,t]) -
                        lgamma(DM_theta * nObs_total * ExpPropAtAge[s,t]))
-        # cat("s",s,"t",t,"sum1",sum1,"sum2",sum2,'\n')
       }
     }
 
     NLL = -(lgamma(nObs_total+1) - sum1 + (lgamma(DM_theta * nObs_total) -
                           lgamma(nObs_total + DM_theta * nObs_total)) + sum2) + F_Pen
-  }  # calc Dirichlet
+  }  # calc Dirich mult
 
   if (length(params)==3 | length(params)==5) {
     cat("NLL",NLL,"F_Pen",F_Pen,"params",exp(params),'\n')
