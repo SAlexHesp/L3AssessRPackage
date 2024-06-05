@@ -19,14 +19,13 @@ log(c(FMort, SelA50, SelDelta, theta) for Dirichlet multinomial NLL}
 \value{
 negative log-likelihood (nll), nlminb convergence diagnostic (convergence)
 sample size (SampleSize), parameter estimates with lower and upper 95 percent
-confidence limits (ParamEst), point estimates for parameters estimated in log space (Estlnparams),
+confidence limits (ParamEst), estimated fishing mortality and standard error (EstFMort, EstFMort_se)
 variance-covariance matrix for estimated parameters (vcov.Params), parameter correlation matrix (cor.Params),
 standard errors for estimated parameters (lnEstFMort_se, lnEstSelA50_se, lnEstFSelA95_se), selectivity at age (SelAtAge), fishing
-mortality at age (FAtAge), estimated frequencies at age with associated 95 percent confidence limits
-(EstFreq, EstFreq_Zlow, EstFreq_Zup), random values of parameters in log space from parametric resampling,
-using rmultinom function (lnparams.sims), and associated median and lower 2.5 and upper 97.5 percentiles
-of estimates for frequency at age (EstFreq.sim), selectivity parameters in normal space (SelA50.sim, SelA95.sim),
-fishing mortality (FMort.sim) and total mortality (EstZMort.sim), estimated parameters from saved par
+mortality at age (FAtAge), sex-specific estimated frequencies at age with associated 95 percent confidence limits
+(EstFreq, EstFreq_Zlow, EstFreq_Zup, EstFreq_2, EstFreq_Zlow_2, EstFreq_Zup_2), median and lower 2.5 and upper
+97.5 percentiles of estimates for sex-specific frequency at age (EstFreq.sim_1, EstFreq.sim_2), selectivity parameters in normal
+space, if combined sex model (SelA50.sim, SelA95.sim), fishing mortality (FMort.sim) and total mortality (EstZMort.sim), estimated parameters from saved par
 object (Estparams), Dirichlet multinomial effective sample size estimate (EffSampSize), if using this
 objective function
 }

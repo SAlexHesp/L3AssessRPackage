@@ -666,15 +666,15 @@ fishing mortality.</p>
 <h4>Growth calculations - length-based catch curve</h4>
 <p>Fish are assumed to recruit into the population at age <span class="math inline">\(t=1\)</span> y (to help avoid the possibility of
 negative lengths), with the size distribution assuming to conform to a
-normal distribution. The proportion of fish of sex <span class="math inline">\(s\)</span>, in length class <span class="math inline">\(l\)</span> at age <span class="math inline">\(t=1\)</span> is calculated as</p>
+normal distribution. The proportion of fish of sex <span class="math inline">\(s\)</span>, in length class <span class="math inline">\(k\)</span> at age <span class="math inline">\(t=1\)</span> is calculated as</p>
 <p><span class="math display">\[
-\theta_{k,s} = \int_{l_k^-}^{\mathrm{l_k^+}}f_{a=1}(l)dl_s
+\theta_{k,s} = \int_{L_k^-}^{\mathrm{L_k^+}}f_{a=1}(L)dL_s
 \]</span></p>
-<p>where <span class="math inline">\(l^-\)</span> and <span class="math inline">\(l^+\)</span> are the lower and upper limits of the
-length class <span class="math inline">\(k\)</span>, and <span class="math inline">\(f_{a=1}(l)\)</span> is the value of the normal
-probability density function for fish of sex <span class="math inline">\(s\)</span> at age <span class="math inline">\(t=1\)</span> for given length <span class="math inline">\(l\)</span>, mean length <span class="math inline">\(\mu\)</span> (as calculated from the growth curve)
+<p>where <span class="math inline">\(L^-\)</span> and <span class="math inline">\(L^+\)</span> are the lower and upper limits of the
+length class <span class="math inline">\(k\)</span>, and <span class="math inline">\(f_{a=1}(L)\)</span> is the value of the normal
+probability density function for fish of sex <span class="math inline">\(s\)</span> at age <span class="math inline">\(t=1\)</span> for given length <span class="math inline">\(L\)</span>, mean length <span class="math inline">\(\mu\)</span> (as calculated from the growth curve)
 and associated standard deviation <span class="math inline">\(\sigma\)</span>, i.e. where <span class="math display">\[
-l_s{\sim}N(\mu_s,\sigma{^2)}
+L_{s,a=1}{\sim}N(\mu,\sigma{^2)}
 \]</span> <span class="math inline">\(\sigma\)</span> is calculated
 given a specified value for the coefficient of variation, <span class="math inline">\(CV\)</span>, assumed to be constant with respect
 to mean fish lengths at age (common to both sexes). The associated value
@@ -725,7 +725,7 @@ the end of each time step, after mortality has been applied.</p>
 catch curve</h3>
 <p>A ‘retention function’ approach is used to account for the
 possibility of ‘discard mortality’ (Fairclough et al., 2021; Shertzer et
-al., 2021). The vulnerability of fish of sex <span class="math inline">\(s\)</span> at the midpoint of length class <span class="math inline">\(l\)</span> to the fishing gear. <span class="math inline">\(V_{s,a}\)</span> is calculated as</p>
+al., 2021). The vulnerability of fish of sex <span class="math inline">\(s\)</span> at the midpoint <span class="math inline">\(l\)</span> of length class <span class="math inline">\(k\)</span> to the fishing gear. <span class="math inline">\(V_{s,a}\)</span> is calculated as</p>
 <p><span class="math display">\[
 V_{s,l} =
 1/(1+\exp(-\log_e(19)(l_s-L_{50,s}^{\mathrm{V}})/(L_{95,s}^{\mathrm{V}}-L_{50,s}^{\mathrm{V}})))
@@ -739,7 +739,7 @@ is inputted by the user as a single parameter value.</p>
 if caught, may set (by the user) to one, regardless of its sex and
 length. In cases where a minimum legal length (MLL) applies, the vast
 majority of fishers comply with this regulation and high-grading of fish
-is likely to be negligible, the probability, of fish of sex <span class="math inline">\(s\)</span> at the midpoint of length class <span class="math inline">\(l\)</span>, being retained in catches, is set to
+is likely to be negligible, the probability, of fish of sex <span class="math inline">\(s\)</span> at the midpoint <span class="math inline">\(l\)</span> of length class <span class="math inline">\(k\)</span>, being retained in catches, is set to
 zero or one, depending on whether the midpoint of its length class is
 below or above the MLL, respectively. The selectivity of landings, for
 fish of sex class <span class="math inline">\(s\)</span> in length class
@@ -759,8 +759,7 @@ The selectivity of discarding is calculated as</p>
 for which the sample length data are unlikely to be affected by an MLL,
 the proportion of fish that die following capture and release, <span class="math inline">\(D\)</span>, is set to zero. In such cases, fishing
 mortality for fish of sex <span class="math inline">\(s\)</span>, at the
-midpoint of length class <span class="math inline">\(l\)</span>, is
-calculated as</p>
+midpoint <span class="math inline">\(l\)</span> of length class <span class="math inline">\(k\)</span>, is calculated as</p>
 <p><span class="math display">\[
 F_{s,l}=V_{s,l}F
 \]</span> where <span class="math inline">\(F\)</span> is the
@@ -773,7 +772,7 @@ F_{s,l} = (\phi_{s,l}+\delta_{s,l}D)F
 proportion of fish that die following capture and release. To allow for
 a possible effect of an MLL on selectivity with negligible discard
 mortality, the value for <span class="math inline">\(D\)</span> can be
-set to 0.001. The fishing mortality of fish of sex <span class="math inline">\(s\)</span> at the midpoint of length class <span class="math inline">\(l\)</span> associated with retention, <span class="math inline">\(F_{s,l}^R\)</span> is calculated as</p>
+set to 0.001. The fishing mortality of fish of sex <span class="math inline">\(s\)</span> at the midpoint <span class="math inline">\(l\)</span> of length class <span class="math inline">\(k\)</span> associated with retention, <span class="math inline">\(F_{s,l}^R\)</span> is calculated as</p>
 <p><span class="math display">\[
 F_{s,l}^R=\phi_{s,l}F
 \]</span> Note that when discard mortality is not being considered,
@@ -786,7 +785,7 @@ either survive or die, may be calculated using <span class="math inline">\(F_{s,
 <p><span class="math display">\[
 F_{s,l}^{D*}=\delta_{s,l}F
 \]</span></p>
-<p>Total mortality for fish of sex <span class="math inline">\(s\)</span> at the midpoint of length class <span class="math inline">\(l\)</span> is calculated as</p>
+<p>Total mortality for fish of sex <span class="math inline">\(s\)</span> at the midpoint <span class="math inline">\(l\)</span> of length class <span class="math inline">\(k\)</span> is calculated as</p>
 <p><span class="math display">\[
 Z_{s,l} = F_{s,l}+M
 \]</span> where <span class="math inline">\(M\)</span> is the
@@ -798,27 +797,30 @@ and length-based catch curve - see below) assumes age 1 recruits are in
 equal proportions (0.5) for each sex, as typically assumed for
 gonochoristic species. Note, if growth is not sexually dimorphic, these
 models can also be applied to hermaphroditic species (if assuming common
-growth, selectivit and mortality for both sexes). The per recruit
-numbers of either sex in length class <span class="math inline">\(l\)</span> that have survived to age <span class="math inline">\(a\)</span>, i.e. <span class="math inline">\(N_{s,l,a}\)</span>, is</p>
+growth, selectivity and mortality for both sexes). The per recruit
+numbers of either sex in length class <span class="math inline">\(k\)</span> that have survived to age <span class="math inline">\(a\)</span>, i.e. <span class="math inline">\(N_{s,k,a}\)</span>, is</p>
 <p><span class="math display">\[
-N_{s,l,a} = \left\{
+N_{s,k,a} = \left\{
     \begin{array}{ll}
-        0.5 &amp; \mbox{if }a=1 \\
-        N_{s,l,a-1}\exp(-Z_{s,l}) &amp;\mbox{if }a=1&lt;a&lt;A \\
-        N_{s,l,a-1}\exp(-Z_{s,l})/(1-\exp(-Z_{s,l})) &amp;\mbox{if }a=A
+        0.5\theta_{k,s} &amp; \mbox{if }a=1 \\
+        N_{s,k,a-1}\exp(-Z_{s,l}) &amp;\mbox{if }a=1&lt;a&lt;A \\
+        N_{s,k,a-1}\exp(-Z_{s,l})/(1-\exp(-Z_{s,l})) &amp;\mbox{if }a=A
 \\
     \end{array}
 \right.
 \]</span></p>
-<p>The estimated numbers of fish of sex <span class="math inline">\(s\)</span> in length class <span class="math inline">\(l\)</span> at age <span class="math inline">\(a\)</span> in retained catches, as calculated from
+<p>where <span class="math inline">\(l\)</span> is the midpoint for a
+corresponding length class, <span class="math inline">\(k\)</span>. The
+estimated numbers of fish of sex <span class="math inline">\(s\)</span>
+in length class <span class="math inline">\(k\)</span> at age <span class="math inline">\(a\)</span> in retained catches, as calculated from
 the Baranov catch equation, is</p>
 <p><span class="math display">\[
-\hat{C}_{s,l}^R = \sum_a(F_{s,l}^R/Z_{s,l})(1-\exp(-Z_{s,l}))N_{s,l,a}
+\hat{C}_{s,k}^R = \sum_k(F_{s,l}^R/Z_{s,l})(1-\exp(-Z_{s,l}))N_{s,k,a}
 \]</span></p>
 <p>The numbers of fish that are caught and discarded, which may either
 survive or die, are calculated as</p>
 <p><span class="math display">\[
-\hat{C}_{s,l}^{D*} = (F_{s,l}^{D*}/Z_{s,l})(1-\exp(-Z_{s,l}))N_{s,l,a}
+\hat{C}_{s,k}^{D*} = (F_{s,l}^{D*}/Z_{s,l})(1-\exp(-Z_{s,l}))N_{s,k,a}
 \]</span></p>
 <p>The above numbers may be used to estimate (if sufficient information
 exists in the data), the proportion of fish that are caught and
@@ -831,7 +833,7 @@ mean length of released fish</h4>
 (which may survive or die), may be calculated as</p>
 <p><span class="math display">\[
 \hat{\rho} =
-\Bigg(\frac{\sum_{s}\sum_{l}\hat{C}_{s,l}^{D*}}{\sum_{s}\sum_{l}(\hat{C}_{s,l}^R+\hat{C}_{s,l}^{D*})}\Bigg)
+\Bigg(\frac{\sum_{s}\sum_{k}\hat{C}_{s,k}^{D*}}{\sum_{s}\sum_{k}(\hat{C}_{s,k}^R+\hat{C}_{s,k}^{D*})}\Bigg)
 \]</span></p>
 <p>The mean size of fish that are caught, and then released (which may
 survive or die), may be calculated as</p>
@@ -847,8 +849,8 @@ is assumed to conform to either a multinomial distribution or
 Dirichlet-multinomial distribution. The expected proportions of fish in
 each length class among such fish, <span class="math inline">\(\hat{P}_l^R\)</span>, for combined sexes, is</p>
 <p><span class="math display">\[
-\hat{P}_l^R =
-\sum_s\sum_l\Bigg(\frac{\hat{C}_{s,l}^R}{\sum_{l}\hat{C}_{s,l}^R}\Bigg)
+\hat{P}_k^R =
+\sum_s\Bigg(\frac{\hat{C}_{s,k}^R}{\sum_{k}\hat{C}_{s,k}^R}\Bigg)
 \]</span></p>
 <p>The multinomial negative log-likelihood associated with the observed
 length composition data for retained fish, <span class="math inline">\(\lambda_1\)</span>, is</p>
@@ -935,17 +937,17 @@ length class is assumed to follow a multinomial distribution. The
 log-likelihood for <span class="math inline">\({C}_{l,a}\)</span>, the
 number of fish in the retained catch in length class <span class="math inline">\(l\)</span> at age <span class="math inline">\(a\)</span>, is calculated as</p>
 <p><span class="math display">\[
-\lambda_2=\sum_{s}\sum_{l}\sum_{a}{C}_{s,l,a}\log_e(\hat{P_s}{(a|l)})
+\lambda_2=\sum_{s}\sum_{k}\sum_{a}{C}_{s,l,a}\log_e(\hat{P_s}{(a|k)})
 \]</span></p>
-<p>In the above equation, <span class="math inline">\(\hat{P_s}(a|l)\)</span> is the expected
-conditional proportion of fish, of sex <span class="math inline">\(s\)</span>, in the catch at age <span class="math inline">\(a\)</span> given length <span class="math inline">\(l\)</span>, which calculated as</p>
+<p>In the above equation, <span class="math inline">\(\hat{P_s}(a|k)\)</span> is the expected
+conditional proportion of fish, of sex <span class="math inline">\(s\)</span>, in the catch at age <span class="math inline">\(a\)</span> in length class <span class="math inline">\(k\)</span>, which calculated as</p>
 <p><span class="math display">\[
-\hat{P_s}{(a|l)}=\frac{\hat{P_s}(l|a)\hat{P_s}(a)}{\sum_{a}\hat{P_s}(l|a)\hat{P_s}(a)}
+\hat{P_s}{(a|k)}=\frac{\hat{P_s}(k|a)\hat{P_s}(a)}{\sum_{a}\hat{P_s}(k|a)\hat{P_s}(a)}
 \]</span> where <span class="math display">\[
 \hat{P_s}(a) = \frac{\hat{C}_{s,a}}{\sum_{s,a}\hat{C}_{s,a}}
 \]</span> and</p>
 <p><span class="math display">\[
-\hat{P_s}(l|a) = \frac{\hat{C}_{s,l,a}}{\sum_{l}\hat{C}_{s,l,a}}
+\hat{P_s}(k|a) = \frac{\hat{C}_{s,k,a}}{\sum_{k}\hat{C}_{s,k,a}}
 \]</span> The overall log-likelihood is calculated as the sum of the
 log-likelihoods associated with the marginal length composition, <span class="math inline">\(\lambda_1\)</span> (as described above for the
 length-based catch curve method) and the conditional age at length
@@ -1256,27 +1258,34 @@ growth coefficient hypothetical age at zero length, respectively.
 Alternatively, applying a Schnute growth model (with <span class="math inline">\(a\)</span> and <span class="math inline">\(b\)</span> not equal to zero), <span class="math inline">\(L_{t,s}\)</span> is calculated as</p>
 <p><span class="math display">\[
 L_t=\bigg((y_1^b+(y_2^b-y_1^b))\frac{1-\exp(-a(t-t_1))}{1-\exp(-a(t_2-t_1))}\bigg)^{1/b}
-\]</span> Fish are assumed to recruit into the population at age <span class="math inline">\(t=1\)</span> y, with the size distribution
-assuming to conform to a normal distribution. The proportion of fish of
-sex <span class="math inline">\(s\)</span>, in length class <span class="math inline">\(l\)</span> at age <span class="math inline">\(t=1\)</span> is calculated as</p>
+\]</span></p>
+<p>Variation in growth is modelling using the same approach as described
+above for the length-based and length and age-based catch curve. For
+completeness, the equations are repeated here for lnegth-based per
+recruit analysis.</p>
+<p>Fish are assumed to recruit into the population at age <span class="math inline">\(t=1\)</span> y (to help avoid the possibility of
+negative lengths), with the size distribution assuming to conform to a
+normal distribution. The proportion of fish of sex <span class="math inline">\(s\)</span>, in length class <span class="math inline">\(k\)</span> at age <span class="math inline">\(t=1\)</span> is calculated as</p>
 <p><span class="math display">\[
-\theta_{k,s} = \int_{l_k^-}^{\mathrm{l_k^+}}f_{a=1}(l)dl_s
-\]</span> where <span class="math inline">\(l^-\)</span> and <span class="math inline">\(l^+\)</span> are the lower and upper limits of the
-length class <span class="math inline">\(k\)</span>, and <span class="math inline">\(f_{a=1}(l)\)</span> is the value of the normal
-probability density function for fish of sex <span class="math inline">\(s\)</span> at age <span class="math inline">\(t=1\)</span> for given length <span class="math inline">\(l\)</span>, mean length <span class="math inline">\(\mu\)</span> (as calculated from the growth curve)
+\theta_{k,s} = \int_{L_k^-}^{\mathrm{L_k^+}}f_{a=1}(L)dL_s
+\]</span></p>
+<p>where <span class="math inline">\(L^-\)</span> and <span class="math inline">\(L^+\)</span> are the lower and upper limits of the
+length class <span class="math inline">\(k\)</span>, and <span class="math inline">\(f_{a=1}(L)\)</span> is the value of the normal
+probability density function for fish of sex <span class="math inline">\(s\)</span> at age <span class="math inline">\(t=1\)</span> for given length <span class="math inline">\(L\)</span>, mean length <span class="math inline">\(\mu\)</span> (as calculated from the growth curve)
 and associated standard deviation <span class="math inline">\(\sigma\)</span>, i.e. where <span class="math display">\[
-l_s{\sim}N(\mu_s,\sigma{^2)}
+L_{s,a=1}{\sim}N(\mu,\sigma{^2)}
 \]</span> <span class="math inline">\(\sigma\)</span> is calculated
 given a specified value for the coefficient of variation, <span class="math inline">\(CV\)</span>, assumed to be constant with respect
 to mean fish lengths at age (common to both sexes). The associated value
-of the normal probability density function, is calculated as <span class="math display">\[
+of the normal probability density function, is</p>
+<p><span class="math display">\[
 f_{a=1}(l_s) =
 \frac{1}{\sigma\sqrt{2{\pi}}}\exp\bigg[\frac{(l_s-\mu_s)^2}{2\sigma^2}\bigg]
-\]</span> As with the length-based and length at age based catch curve
-analyses implemented in this package, growth is modelled using length
-transition matrices, <span class="math inline">\(G_s=g_{k,j}\)</span>,
-which represent the probability that a fish (of sex <span class="math inline">\(s\)</span>) in length class <span class="math inline">\(j\)</span> will grow into length class <span class="math inline">\(k\)</span> over a specified time interval,
-i.e.</p>
+\]</span> Growth is modelled using length transition matrices, <span class="math inline">\(G_s=g_{k,j}\)</span>, which represent the
+probability that a fish (of sex <span class="math inline">\(s\)</span>)
+in length class <span class="math inline">\(j\)</span> will grow into
+length class <span class="math inline">\(k\)</span> over a specified
+time interval, i.e.</p>
 <p><span class="math display">\[
 \begin{equation*}
 G_s =
@@ -1295,9 +1304,9 @@ g_{s,k,j} = \left\{
         \int_{{\infty}^-}^{\mathrm{l_{s,k}^+}}f[\phi_s(T,l_s,j)]dl &amp;
 \mbox{if }k=1 \\
         \int_{l_{s,k}^-}^{\mathrm{l_{s,k}^+}}f[\phi_s(T,l_s,j)]dl
-&amp;\mbox{if }k=1&lt;k&lt;n \\
+&amp;\mbox{if }k=1&lt;k&lt;K \\
 \int_{l_{s,k}^-}^{\mathrm{\infty^+}}f[\phi_s(T,l_s,j)]dl &amp;\mbox{if
-}k=n \\
+}k=K \\
     \end{array}
 \right.
 \]</span> where <span class="math inline">\(l_s\)</span> is the length
@@ -1306,13 +1315,14 @@ for a fish of sex <span class="math inline">\(s\)</span>, <span class="math inli
 respectively, of length class <span class="math inline">\(j\)</span> for
 fish of sex <span class="math inline">\(s\)</span>, and <span class="math inline">\(\phi_s\)</span> is a vector of parameters
 dependent on the time period <span class="math inline">\(T\)</span> and
-sex, and the midpoint of the size class <span class="math inline">\(j\)</span>, <span class="math inline">\(l_j\)</span>. In the model, growth is applied at
-the end of each time step, after mortality has been applied.</p>
-<p>The weight of fish at length <span class="math inline">\(t\)</span>,
-<span class="math inline">\(W_l\)</span>, in kg, can be inputted as a
-vector of mean weights at the midpoints of each length class considered
-in the model, or calculated from inputted parameter values according to
-a weight-length relationship, either</p>
+sex, and the midpoint of the size class <span class="math inline">\(j\)</span>, <span class="math inline">\(l_j\)</span>, and where <span class="math inline">\(K\)</span> is the number of length classes. In the
+model, growth is applied at the end of each time step, after mortality
+has been applied.</p>
+<p><span class="math inline">\(W_l\)</span>, the weight of fish of sex
+<span class="math inline">\(s\)</span> at length midpoint <span class="math inline">\(l\)</span>, in length class <span class="math inline">\(k\)</span>, can be inputted as a vector of mean
+weights at the midpoints of each length class considered in the model,
+or calculated from inputted parameter values according to a
+weight-length relationship, either</p>
 <p><span class="math display">\[
 W_{s,l}=\exp(a_s+b_s\log_el_s)/1000
 \]</span> or <span class="math display">\[
@@ -1320,8 +1330,7 @@ W_{s,l}=(a_s l_s^ {b_s})/1000
 \]</span></p>
 <p>where <span class="math inline">\(a_s\)</span> and <span class="math inline">\(b_s\)</span> are the sex-specific weight-length
 parameters, for a model fitted to weights measured in g and fish lengths
-measured in mm. The probability of a fish of sex <span class="math inline">\(s\)</span> being mature at the midpoint of length
-class <span class="math inline">\(l\)</span> is calculated as</p>
+measured in mm. The probability of a fish of sex <span class="math inline">\(s\)</span> being mature at the midpoint <span class="math inline">\(l\)</span> of length class <span class="math inline">\(k\)</span> is calculated as</p>
 <p><span class="math display">\[
 P_{s,l} =
 1/(1+\exp(-\log_e(19)(l_s-L_{50,s}^{\mathrm{M}})/(L_{95,s}^{\mathrm{M}}-L_{50,s}^{\mathrm{M}})))
@@ -1336,8 +1345,7 @@ recruit analysis</h3>
 <p>As with the age-based per recruit model, a ‘retention function’
 approach is used to account for such ‘discard mortality’ (Fairclough et
 al., 2021; Shertzer et al., 2021). The vulnerability of fish of sex
-<span class="math inline">\(s\)</span> at the midpoint of length class
-<span class="math inline">\(l\)</span> to the fishing gear. <span class="math inline">\(V_{s,a}\)</span> is calculated as</p>
+<span class="math inline">\(s\)</span> at the midpoint <span class="math inline">\(l\)</span> of length class <span class="math inline">\(k\)</span> to the fishing gear, <span class="math inline">\(V_{s,a}\)</span>, is calculated as</p>
 <p><span class="math display">\[
 V_{s,l} =
 1/(1+\exp(-\log_e(19)(l_s-L_{50,s}^{\mathrm{V}})/(L_{95,s}^{\mathrm{V}}-L_{50,s}^{\mathrm{V}})))
@@ -1346,14 +1354,16 @@ V_{s,l} =
 <span class="math inline">\(L_{95,s}^{\mathrm{V}}\)</span> are the
 lengths at which 50 and 95% of fish of sex <span class="math inline">\(s\)</span> are selected by the gear. The
 probability of a fish (during normal fishing operations) of either sex
-of at the midpoint of length class <span class="math inline">\(l\)</span> being retained (i.e. retention ogive),
-<span class="math inline">\(ψ_{s,l}\)</span>, is calculated as</p>
+at the midpoint <span class="math inline">\(l\)</span> of length class
+<span class="math inline">\(k\)</span> being retained (i.e. retention
+curve), <span class="math inline">\(ψ_{s,l}\)</span>, is calculated
+as</p>
 <p><span class="math display">\[
 \psi_{s,a} =
 1/(1+\exp(-\log_e(19)(l_s-L_{50,s}^{\mathrm{\psi}})/(L_{95,s}^{\mathrm{\psi}}-L_{50,s}^{\mathrm{\psi}})))
 \]</span> where <span class="math inline">\(L_{50,s}^{\mathrm{\psi}}\)</span> and <span class="math inline">\(L_{95,s}^{\mathrm{\psi}}\)</span> are the lengths
 at which 50 and 95% of fish of sex <span class="math inline">\(s\)</span> are retained.</p>
-<p>The selectivity of fish landings, <span class="math inline">\(\phi_{s,l}\)</span> for sex <span class="math inline">\(s\)</span> at the midpoint of length class <span class="math inline">\(l\)</span>, is calculated as</p>
+<p>The selectivity of fish landings, <span class="math inline">\(\phi_{s,l}\)</span> for sex <span class="math inline">\(s\)</span> at the midpoint <span class="math inline">\(l\)</span> of length class <span class="math inline">\(k\)</span>, is calculated as</p>
 <p><span class="math display">\[
 \phi_{s,l}=\psi_{s,l}V_{s,l}
 \]</span> The selectivity of discarding is calculated as</p>
@@ -1368,8 +1378,7 @@ undersize fish, the proportion of fish that die following capture and
 release, <span class="math inline">\(D\)</span>, is set to zero. In such
 cases, the annual fishing mortality associated with capture and
 retention of fish of sex <span class="math inline">\(s\)</span> at the
-midpoint of length class <span class="math inline">\(l\)</span> is
-calculated as</p>
+midpoint <span class="math inline">\(l\)</span> of length class <span class="math inline">\(k\)</span> is calculated as</p>
 <p><span class="math display">\[
 F_{s,l}=\psi_{s,l}F
 \]</span> where <span class="math inline">\(F\)</span> is the
@@ -1379,14 +1388,13 @@ allowing for post-release mortality (i.e. <span class="math inline">\(D&gt;0\)<
 F_{s,l} = (\phi_{s,l}+\delta_{s,l}D)F
 \]</span> where <span class="math inline">\(\phi_{s,l}\)</span> and
 <span class="math inline">\(\delta_{s,l}\)</span> are the selectivity of
-fish landings and fish discards, respectively, for fish of sex <span class="math inline">\(s\)</span> at the midpoint of length class <span class="math inline">\(l\)</span>. The fishing mortality associated with
-retention, <span class="math inline">\(F_{s,l}^R\)</span>, for fish of
-sex <span class="math inline">\(s\)</span> at the midpoint at length
-<span class="math inline">\(l\)</span>, is calculated as</p>
+fish landings and fish discards, respectively, for fish of sex <span class="math inline">\(s\)</span> at the midpoint <span class="math inline">\(l\)</span> of length class <span class="math inline">\(k\)</span>. The fishing mortality associated with
+retention, <span class="math inline">\(F_{s,l}^R\)</span>, is calculated
+as</p>
 <p><span class="math display">\[
 F_{s,l}^R=\phi_{s,l}F
 \]</span></p>
-<p>Total mortality for fish of sex <span class="math inline">\(s\)</span> at the midpoint of length class <span class="math inline">\(l\)</span> is calculated as</p>
+<p>Total mortality for fish of sex <span class="math inline">\(s\)</span> at the midpoint <span class="math inline">\(l\)</span> of length class <span class="math inline">\(k\)</span> is calculated as</p>
 <p><span class="math display">\[
 Z_{s,l} = F_{s,l}+M
 \]</span> where <span class="math inline">\(M\)</span> is the
@@ -1396,35 +1404,39 @@ instantaneous rate of natural mortality (<span class="math inline">\(y^-1\)</spa
 <h3>Yield per recruit - length-based per recruit analysis</h3>
 <p>Yield per recruit, <span class="math inline">\(YPR\)</span>, is
 calculated as <span class="math display">\[
-YPR = \sum_{s=1}^{2}\sum_{l=1}^{n}C_{s,l}W_{s,l}
-\]</span> where <span class="math inline">\(n\)</span> donotes the
-number of length classes considered by the model. The retained catch of
-fish of sex <span class="math inline">\(s\)</span> of at the midpoint of
-length class <span class="math inline">\(l\)</span>, i.e. <span class="math inline">\(C_{s,l}\)</span>, is calculated from the Baranov
-catch equation. <span class="math display">\[
-C_{s,l} =
-N_{s,l}\biggl(\frac{F_{s,l}^R}{Z_{s,l}}\biggr)(1-\exp(-Z_{s,l}))
-\]</span> For a model with an annual timestep, <span class="math inline">\(N_s,a,l\)</span>, i.e. the numbers of fish of sex
-<span class="math inline">\(s\)</span> at age <span class="math inline">\(a\)</span> and length <span class="math inline">\(l\)</span>, for the fished population are
+YPR = \sum_{s=1}^{2}\sum_{k=1}^{K}C_{s,k}W_{s,l}
+\]</span> where <span class="math inline">\(K\)</span> donotes the
+number of length classes considered by the model, and W_{s,l} is the
+expected weight for the midpoint of length class <span class="math inline">\(k\)</span>. In the above equation, <span class="math inline">\(C_{s,k}\)</span> is the retained catch of fish of
+sex <span class="math inline">\(s\)</span> for fish in length class
+<span class="math inline">\(k\)</span>, calculated from the Baranov
+catch equation, i.e. <span class="math display">\[
+C_{s,k} =
+N_{s,k}\biggl(\frac{F_{s,l}^R}{Z_{s,l}}\biggr)(1-\exp(-Z_{s,l}))
+\]</span> where <span class="math inline">\(F_{s,l}\)</span> and <span class="math inline">\(Z_{s,l}\)</span> are the length dependent fishing
+and total mortalities, respectively, calculated for the midpoint of
+length class <span class="math inline">\(k\)</span>.</p>
+<p>For a model with an annual timestep, <span class="math inline">\(N_s,a,k\)</span>, i.e. the numbers of fish of sex
+<span class="math inline">\(s\)</span> at age <span class="math inline">\(a\)</span> in length class <span class="math inline">\(k\)</span>, for the fished population are
 calculated as <span class="math display">\[
 \begin{align}
-    N_{s,a,l} = \phi &amp;&amp; \text{if s=1 and a=1}\\
-    N_{s,a,l} = 1-\phi &amp;&amp; \text{if s=2 and a=1}\\
-    N_{s,a,l} = N_{s,a-1,l}\exp(-Z_{s,a-1,l}) &amp;&amp; \text{if
+    N_{s,a,k} = \phi &amp;&amp; \text{if s=1 and a=1}\\
+    N_{s,a,k} = 1-\phi &amp;&amp; \text{if s=2 and a=1}\\
+    N_{s,a,k} = N_{s,a-1,k}\exp(-Z_{s,a-1,l}) &amp;&amp; \text{if
 1&lt;a&lt;A}\\
-    N_{s,a,l} = N_{s,a-1,l}\exp(-Z_{s,a-1,l})/(1-\exp(-Z_{s,a-1,l}))
+    N_{s,a,k} = N_{s,a-1,k}\exp(-Z_{s,a-1,l})/(1-\exp(-Z_{s,a-1,l}))
 &amp;&amp; \text{if a=A}\\
 \end{align}
 \]</span> where <span class="math inline">\(\phi\)</span> is the ratio
 of females to males at age 1 yr, and <span class="math inline">\(A\)</span>, is the maximum age considered by the
 model. Note that, for this length-based per recruit analysis, a juvenile
 is recruited at age one rather than at age zero (to avoid calculations
-of negative values of fish lengths). The numbers of sex <span class="math inline">\(s\)</span> at the midpoint of lengthl class <span class="math inline">\(l\)</span> for the unfished population, <span class="math inline">\(\acute{N}_{s,l}\)</span> are calculated as above
-for <span class="math inline">\(N_{s,l}\)</span>, but replacing all
+of negative values of fish lengths). The numbers of sex <span class="math inline">\(s\)</span> at the midpoint of length class <span class="math inline">\(k\)</span> for the unfished population, <span class="math inline">\(\acute{N}_{s,k}\)</span> are calculated as above
+for <span class="math inline">\(N_{s,k}\)</span>, but replacing all
 values for total mortality with natural mortality, <span class="math inline">\(M\)</span>.</p>
 <p>If the species is a protogynous hermaphrodite (female to male sex
-change), the proportion of females at length is assumed to remain
-constant, and follow the following logistic relationship</p>
+change), the proportion of females at the midpoint <span class="math inline">\(l\)</span> of length class <span class="math inline">\(k\)</span> is assumed to remain constant, and
+follow the following logistic relationship</p>
 <p><span class="math display">\[
 \rho_{l} =
 1-\bigg[P_{max}^{s=2}/(1+\exp(-\log_e(19)(l-L_{50}^{\rho})/(L_{95}^{\rho}-L_{50}^{\rho})))\bigg]
@@ -1436,12 +1448,12 @@ For protandrous species (male to female sex change), <span class="math inline">\
 P_{max}^{s=1}/(1+\exp(-\log_e(19)(l-L_{50}^{\rho})/(L_{95}^{\rho}-L_{50}^{\rho})))
 \]</span> where <span class="math inline">\(P_{max}^{s=1}\)</span>, the
 terminal sex, is females. For hermaphroditic species, the values of
-<span class="math inline">\(N_{s,a,l}\)</span> become modified, prior
+<span class="math inline">\(N_{s,a,k}\)</span> become modified, prior
 calculation of survival at the next age step, to reflect the assumed
-stable sex ratio. The modified values for female, <span class="math inline">\(N&#39;_{s=1,l}\)</span> are calculated as <span class="math display">\[
-N&#39;_{s=1,a,l}=\rho_{l}(N_{s=1,a,l}+N_{s=2,a,l})
+stable sex ratio. The modified values for female, <span class="math inline">\(N&#39;_{s=1,k}\)</span> are calculated as <span class="math display">\[
+N&#39;_{s=1,a,k}=\rho_{l}(N_{s=1,a,k}+N_{s=2,a,k})
 \]</span> and those for males as <span class="math display">\[
-N&#39;_{s=1,a,l}=(1-\rho_{l})(N_{s=1,a,l}+N_{s=2,a,l})
+N&#39;_{s=1,a,k}=(1-\rho_{l})(N_{s=1,a,k}+N_{s=2,a,k})
 \]</span></p>
 </div>
 <div id="spawning-potential-ratio---length-based-per-recruit-analysis" class="section level3">
@@ -1452,10 +1464,13 @@ SPR_s = \frac{\theta_s}{\theta_{0,s}}
 \]</span> where <span class="math inline">\(\theta_s\)</span> and <span class="math inline">\(\theta_{0,s}\)</span> is the spawning biomass per
 recruit for sex <span class="math inline">\(s\)</span>, for the fished
 and unfished population, respectively. In the above equation, <span class="math inline">\(\theta_s\)</span> is calculated as <span class="math display">\[
-\theta_s = \sum_{l=1}^{n}N_{l,s}W_{l,s}P_{l,s}
-\]</span> where <span class="math inline">\(N_{l,s}\)</span>, <span class="math inline">\(W_{l,s}\)</span> and <span class="math inline">\(P_{l,s}\)</span>, respectively, are the number,
-weight and proportion of mature fish, that are of sex <span class="math inline">\(s\)</span> and at the midpoint of length class
-<span class="math inline">\(l\)</span>.</p>
+\theta_s = \sum_{k=1}^{K}N_{k,s}W_{l,s}P_{l,s}
+\]</span> where <span class="math inline">\(N_{k,s}\)</span> is the
+number of fish of sex <span class="math inline">\(s\)</span> in length
+class <span class="math inline">\(k\)</span>, and <span class="math inline">\(W_{l,s}\)</span> and <span class="math inline">\(P_{l,s}\)</span>, respectively, are the weight and
+proportion of mature fish of sex <span class="math inline">\(s\)</span>
+at the midpoint <span class="math inline">\(l\)</span> of length class
+<span class="math inline">\(k\)</span>.</p>
 </div>
 <div id="calculating-equilibrium-recruitment---age-and-length-based-per-recruit-models" class="section level3">
 <h3>Calculating equilibrium recruitment - age and length-based per
@@ -1732,15 +1747,15 @@ curve. Biometrics 16, 354-368.</p>
 <p>Die, D. J., Restrepo, V. R. &amp; Hoenig, J. M. (1988).
 Utility-per-recruit modeling: a neglected concept. Transactions of the
 American Fisheries Society 117, 274-281.</p>
-<p>Evans-Powell, R. T., Hesp, S. A., Denham, A., &amp; Beckley, L. E.
+<p>Evans-Powell, R. T., Hesp, S. A., Denham, A. &amp; Beckley, L. E.
 (2024). Implications of big, old, fat, fecund, female fish (BOFFFFs) for
 the reproductive potential of a demersal teleost stock. Fisheries
 Research 272. Art. 106934.</p>
 <p>Fairclough, D.V., Hesp, S.A., Denham, A., Fisher, E.A., Marks, R.,
-Ryan, K.L., Lek, E., Allen, R., Crisafulli, B.M. 2021. 2021 assessment
-of the status of the West Coast Demersal Scalefish Resource. Fisheries
-Research Report No. 316 Department of Primary Industries and Regional
-Development, Western Australia. 158 pp.</p>
+Ryan, K.L., Lek, E., Allen, R. &amp; Crisafulli, B.M. 2021. 2021
+assessment of the status of the West Coast Demersal Scalefish Resource.
+Fisheries Research Report No. 316 Department of Primary Industries and
+Regional Development, Western Australia. 158 pp.</p>
 <p>Fletcher, W. J. (2015). Review and refinement of an existing
 qualitative risk assessment method for application within an
 ecosystem-based management framework. ICES Journal of Marine Science
@@ -1763,13 +1778,16 @@ trutta in two French rivers. Fisheries Research 22, 197-204.</p>
 random-at-length observations and an equilibrium approximation of the
 population age structure in fitting the von Bertalanffy growth function.
 Fisheries Research 180, 128-137.</p>
+<p>Punt, A. E., Kennedy, R. B. &amp; Frusher, S. D. (1997). Estimating
+the size transition matrix for Tasmanian rock lobster, Jasus edwardsii.
+Marine and Freshwater Research 48, 981-992.</p>
 <p>Ricker,W. E. 1954. Stock and recruitment. Journal of the Fisheries
 Research Board of Canada 11, 559–623.</p>
 <p>Shertzer, K.W., Williams, E.H. &amp; Sagarese, S.R. (2022). Modeling
 discards in stock assessments: red grouper Epinephelus morio in the U.S.
 Gulf of Mexico. Fishes 2022, 7(1), 7. Doi.org/10.3390/fishes7010007.</p>
 <p>Smith, M. W., Then, A. Y., Wor, C., Ralph, G., Pollock, K. H. &amp;
-Hoenig, J/. M. (2012) Recommendations for Catch-Curve Analysis, North
+Hoenig, J. M. (2012) Recommendations for Catch-Curve Analysis, North
 American Journal of Fisheries Management, 32(5), 956-967.</p>
 <p>Thorson, J. T., Johnson, K. F., Methot, R. D. &amp; Taylor, I. G.
 Model-based estimates of effective sample size in stock assessment
