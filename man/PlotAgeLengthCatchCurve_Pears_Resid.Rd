@@ -23,12 +23,15 @@ PlotAgeLengthCatchCurve_Pears_Resid(
   MainLabel,
   xaxis_lab,
   yaxis_lab,
+  xmin,
   xmax,
   xint,
+  ymin,
   ymax,
   yint,
   CircleScale,
   MinLenClFreq,
+  ShowLegend,
   FittedRes
 )
 }
@@ -197,6 +200,6 @@ FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, RefnceAges, MLL, GrowthC
 
 PlotAgeLengthCatchCurve_Pears_Resid(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
                                                 lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep, MainLabel=NA,
-                                                xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA, ymax=NA, yint=NA, CircleScale=5, MinLenClFreq=10, FittedRes)
+                                                xaxis_lab=NA, yaxis_lab=NA, xmin=NA, xmax=NA, xint=NA, ymin=NA, ymax=NA, yint=NA, CircleScale=5, MinLenClFreq=10, ShowLegend=T, FittedRes)
 
 }

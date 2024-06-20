@@ -7256,12 +7256,12 @@ PlotAgeLengthCatchCurve_Cond_AL <- function(params, RefnceAges, MLL, GrowthCurve
 #'
 #' PlotAgeLengthCatchCurve_Pears_Resid(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
 #'                                                 lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep, MainLabel=NA,
-#'                                                 xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA, ymax=NA, yint=NA, CircleScale=5, MinLenClFreq=10, FittedRes)
+#'                                                 xaxis_lab=NA, yaxis_lab=NA, xmin=NA, xmax=NA, xint=NA, ymin=NA, ymax=NA, yint=NA, CircleScale=5, MinLenClFreq=10, ShowLegend=T, FittedRes)
 #'
 #' @export
 PlotAgeLengthCatchCurve_Pears_Resid <- function(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
                                                 lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep, MainLabel,
-                                                xaxis_lab, yaxis_lab, xmax, xint, ymax, yint, CircleScale, MinLenClFreq, FittedRes) {
+                                                xaxis_lab, yaxis_lab, xmin, xmax, xint, ymin, ymax, yint, CircleScale, MinLenClFreq, ShowLegend, FittedRes) {
 
 
   MinAge = floor(TimeStep)
@@ -7331,9 +7331,12 @@ PlotAgeLengthCatchCurve_Pears_Resid <- function(params, RefnceAges, MLL, GrowthC
   }
 
   xlims = Get_xaxis_scale(ubnd)
+  if (is.na(xmin)) xmin = xlims$xmin
   if (is.na(xmax)) xmax = xlims$xmax
   if (is.na(xint)) xint = xlims$xint
+
   ylims = Get_yaxis_scale(1:MaxAge)
+  if (is.na(ymin)) ymin = ylims$ymin
   if (is.na(ymax)) ymax = ylims$ymax
   if (is.na(yint)) yint = ylims$yint
   if (is.na(xaxis_lab)) xaxis_lab = "Length, mm"
@@ -7342,7 +7345,7 @@ PlotAgeLengthCatchCurve_Pears_Resid <- function(params, RefnceAges, MLL, GrowthC
 
   # combined sexes
   if (is.vector(ObsRetCatchFreqAtLen)) {
-    plot(1,1, xlim=c(0,xmax), ylim=c(0,ymax), col=0,
+    plot(1,1, xlim=c(xmin,xmax), ylim=c(ymin,ymax), col=0,
          ylab='',xlab='',xaxt='n',yaxt='n')
     for (i in 1:nLenCl) {
       if (sum(ObsRetCatchFreqAtLengthAndIntAge[,i])>MinLenClFreq) {
@@ -7361,14 +7364,16 @@ PlotAgeLengthCatchCurve_Pears_Resid <- function(params, RefnceAges, MLL, GrowthC
     }
     mtext(yaxis_lab,side=2,cex=1.2,line=2.5, las=3)
     mtext(xaxis_lab,side=1,cex=1.2,line=2.5)
-    AddAxesAndTickLabelsToPlot(xmin=0, xmax, xint, ymin=0, ymax, yint,
+    AddAxesAndTickLabelsToPlot(xmin, xmax, xint, ymin, ymax, yint,
                                cexval=NA, cexaxisval=NA, lwdval=NA, lineval=NA, lasval=NA)
-    legend("bottomright", legend=c("+ve resid.","-ve resid."), inset=c(0.13,0),
-           cex=0.8, bty="n", seg.len = 0, pch=16, border=T, col=c("blue","red"))
+    if (ShowLegend == T) {
+      legend("bottomright", legend=c("+ve resid.","-ve resid."), inset=c(0.13,0),
+             cex=0.8, bty="n", seg.len = 0, pch=16, border=T, col=c("blue","red"))
+    }
   } else {
 
     # females
-    plot(1,1, xlim=c(0,xmax), ylim=c(0,ymax), col=0,
+    plot(1,1, xlim=c(xmin,xmax), ylim=c(ymin,ymax), col=0,
          ylab='',xlab='',xaxt='n',yaxt='n')
     for (i in 1:nLenCl) {
       if (sum(ObsRetCatchFreqAtLengthAndIntAge_Fem[,i])>MinLenClFreq) {
@@ -7387,13 +7392,15 @@ PlotAgeLengthCatchCurve_Pears_Resid <- function(params, RefnceAges, MLL, GrowthC
     }
     mtext(yaxis_lab,side=2,cex=1.2,line=2.5, las=3)
     mtext(xaxis_lab,side=1,cex=1.2,line=2.5)
-    AddAxesAndTickLabelsToPlot(xmin=0, xmax, xint, ymin=0, ymax, yint,
+    AddAxesAndTickLabelsToPlot(xmin, xmax, xint, ymin, ymax, yint,
                                cexval=NA, cexaxisval=NA, lwdval=NA, lineval=NA, lasval=NA)
-    legend("bottomright", legend=c("Fem. +ve resid.","Fem. -ve resid."), inset=c(0.13,0),
-           cex=0.8, bty="n", seg.len = 0, pch=16, border=T, col=c("orange","red"))
+    if (ShowLegend == T) {
+      legend("bottomright", legend=c("Fem. +ve resid.","Fem. -ve resid."), inset=c(0.13,0),
+             cex=0.8, bty="n", seg.len = 0, pch=16, border=T, col=c("orange","red"))
+    }
 
     # males
-    plot(1,1, xlim=c(0,xmax), ylim=c(0,ymax), col=0,
+    plot(1,1, xlim=c(xmin,xmax), ylim=c(ymin,ymax), col=0,
          ylab='',xlab='',xaxt='n',yaxt='n')
     for (i in 1:nLenCl) {
       if (sum(ObsRetCatchFreqAtLengthAndIntAge_Mal[,i])>MinLenClFreq) {
@@ -7412,11 +7419,12 @@ PlotAgeLengthCatchCurve_Pears_Resid <- function(params, RefnceAges, MLL, GrowthC
     }
     mtext(yaxis_lab,side=2,cex=1.2,line=2.5, las=3)
     mtext(xaxis_lab,side=1,cex=1.2,line=2.5)
-    AddAxesAndTickLabelsToPlot(xmin=0, xmax, xint, ymin=0, ymax, yint,
+    AddAxesAndTickLabelsToPlot(xminxmin, xmax, xint, ymin, ymax, yint,
                                cexval=NA, cexaxisval=NA, lwdval=NA, lineval=NA, lasval=NA)
-    legend("bottomright", legend=c("Mal. +ve resid.","Mal. -ve resid."), inset=c(0.13,0),
-           cex=0.8, bty="n", seg.len = 0, pch=16, border=T, col=c("orange","blue"))
-
+    if (ShowLegend == T) {
+      legend("bottomright", legend=c("Mal. +ve resid.","Mal. -ve resid."), inset=c(0.13,0),
+             cex=0.8, bty="n", seg.len = 0, pch=16, border=T, col=c("orange","blue"))
+    }
   }
 }
 
