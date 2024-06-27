@@ -10412,9 +10412,11 @@ CalcEquilibriumRecruitment <- function(SRrel_Type, Steepness, FishSpBiom, Unfish
   #check = (Unfish_FemBiomPerRecSpawnSeas-SR_alpha)/(SR_beta*Unfish_FemBiomPerRecSpawnSeas)
 
   # Alternative parameterisation for Beverton-Holt relationship
-  # if (SRrel_Type == 1) { # Beverton-Holt
-  #   BH_SRRa <- (UnfishSpBiom / 1.0) * ((1-Steepness) / (4*Steepness))
-  #   BH_SRRb <- (Steepness - 0.2) / (0.8 * Steepness * 1.0)
+  if (SRrel_Type == 1) { # Beverton-Holt
+
+    BH_SRRa <- (UnfishSpBiom / 1.0) * ((1-Steepness) / (4*Steepness))
+    BH_SRRb <- (Steepness - 0.2) / (0.8 * Steepness * 1.0)
+
   # Check that the specified initial recruitment can be recovered,
   # given the S_R parameters and unfished female biomass
   # (Check <- UnfishSpBiom/(BH_SRRa + BH_SRRb * UnfishSpBiom))
@@ -10429,14 +10431,16 @@ CalcEquilibriumRecruitment <- function(SRrel_Type, Steepness, FishSpBiom, Unfish
   #   BH_SRRa = NA
   #   BH_SRRb = NA
   #   # BH_Eq_Rec = NA
-  # }
+  }
 
   # account for egg fertilisation rate, based on current male-female sex ratio for mature
   # fish (in numbers), relative to unfished level/
   Eq_Rec = Eq_Rec_AllEggFert * Eq_FertRate
 
   results = list(Eq_Rec=Eq_Rec,
-                 Eq_Rec_AllEggFert=Eq_Rec_AllEggFert)
+                 Eq_Rec_AllEggFert=Eq_Rec_AllEggFert,
+                 BH_SRRa = BH_SRRa,
+                 BH_SRRb = BH_SRRb)
 
   return(results)
 
@@ -11142,7 +11146,6 @@ CalcYPRAndSPRForFMort_LB<- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
   LTM_Fem = CalcLTM_cpp(TimestepGrowthSizeInc_Fem, CV_Fem, lbnd, midpt, ubnd, nLenCl)
   CV_Mal = CVSizeAtAge[2]
   TimestepGrowthSizeInc_Mal = TimestepGrowthSizeInc[2,]
-
   LTM_Mal = CalcLTM_cpp(TimestepGrowthSizeInc_Mal, CV_Mal, lbnd, midpt, ubnd, nLenCl)
 
   # update survival and growth
@@ -11208,6 +11211,8 @@ CalcYPRAndSPRForFMort_LB<- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
   res = CalcEquilibriumRecruitment(SRrel_Type, Steepness, FishSpBiom, UnfishSpBiom, Eq_FertRate)
   Eq_Rec = res$Eq_Rec
   Eq_Rec_AllEggFert = res$Eq_Rec_AllEggFert # assuming all eggs fertilised, i.e. Eq_FertRate=1
+  BH_SRRa = res$BH_SRRa
+  BH_SRRb = res$BH_SRRb
 
   # calculate equilibrium female and male spawning biomass
   Eq_FemSpBiom <- Eq_Rec * FishFemSpBiom
@@ -11267,7 +11272,11 @@ CalcYPRAndSPRForFMort_LB<- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
                           Unfish_MalBiomAtAge=Unfish_MalBiomAtAge,
                           Fish_FemBiomAtAge=Fish_FemBiomAtAge,
                           Fish_MalBiomAtAge=Fish_MalBiomAtAge,
-                          MeanSizeAtAge = MeanSizeAtAge)
+                          MeanSizeAtAge = MeanSizeAtAge,
+                          LTM_Fem = LTM_Fem,
+                          LTM_Mal = LTM_Mal,
+                          BH_SRRa = BH_SRRa,
+                          BH_SRRb = BH_SRRb)
 
   Results = list(YPR = YPR,
                  Fem_SPR = Fem_SPR,
