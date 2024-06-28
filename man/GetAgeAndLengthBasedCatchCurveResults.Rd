@@ -81,7 +81,8 @@ including the NLL associated with the marginal length composition and a conditio
 given the parameters (selectivity, growth and mortality) and data, using nlminb.
 It provides several statistical outputs including convergence statistics, parameter estimates
 and associated 95 percent confidence limits and associated variance-covariance matrix, calculated using
-the MASS package.
+the MASS package. Note, model is not suited to hermaphroditic species
+with sexually divergent growth.
 }
 \examples{
 # Simulate data

@@ -558,10 +558,11 @@ VisualiseGrowthApplyingLTM <- function (nFish, TimeStep, MaxAge, Growth_params, 
 #' This function fits a length-based catch curve with length-based selectivity, based on
 #' either 1) specified length-based selectivity inputted as a vector, or 2) an estimated asymptotic logistic
 #' selectivity curve, and specified growth curve (either von Bertalanffy or Schnute growth model). The model is
-#' to a sample of fish length frequency data, by minimising the negative log-likelihood associated
+#' fited to a sample of fish length frequency data, by minimising the negative log-likelihood associated
 #' with the parameters and data, using nlminb. It provides various statistical outputs in include
 #' convergence statistics, parameter estimates and associated 95 percent confidence limits and associated
-#' variance-covariance matrix, calculated using the MASS package.
+#' variance-covariance matrix, calculated using the MASS package. Note, model is not suited to hermaphroditic species
+#' with sexually divergent growth.
 #'
 #' @param params vector of model parameters in log space (params) to be estimated
 #' @param GrowthCurveType 1 = von Bertalanffy, 2 = Schnute
@@ -2063,7 +2064,8 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, DistnType, GrowthCurveTyp
 #' given the parameters (selectivity, growth and mortality) and data, using nlminb.
 #' It provides several statistical outputs including convergence statistics, parameter estimates
 #' and associated 95 percent confidence limits and associated variance-covariance matrix, calculated using
-#' the MASS package.
+#' the MASS package. Note, model is not suited to hermaphroditic species
+#' with sexually divergent growth.
 #'
 #' @param params vector of model parameters (in log space) to be estimated
 #' @param RefnceAges Reference ages for Schnute growth curve (set to NA for von Bertalanffy growth curve)
@@ -4315,6 +4317,314 @@ SimLenAndAgeFreqData <- function(SampleSize, MaxAge, TimeStep, NatMort, FishMort
 
 
   return(Results)
+
+}
+
+#' Calculate B-H stock recruitment params and unfished spawning biomass
+#'
+#' Calculate B-H stock recruitment parameters and unfished spawning biomass
+#' for dynamic simulation model
+#'
+#' @keywords internal
+#'
+#' @param UnfishSpBiomPerRec unfished spawning biomass per recruit
+#' @param InitRec initial recruitment (R0)
+#' @param Steepness steepness parameters
+#'
+#' @return Unfish_SpBiom, BH_SRRa, BH_SRRb
+CalcStockRecruitParams_DynSimMod <- function(UnfishSpBiomPerRec, InitRec, Steepness) {
+
+  # calculate B-H stock recruitment parameters
+  Unfish_SpBiom = UnfishSpBiomPerRec * InitRec
+
+  BH_SRRa = (UnfishSpBiomPerRec / InitRec) * ((1 - Steepness) / (4 * Steepness))
+
+  BH_SRRb = (Steepness - 0.2) / (0.8 * Steepness * InitRec)
+
+  results = list(Unfish_SpBiom = Unfish_SpBiom,
+                 BH_SRRa = BH_SRRa,
+                 BH_SRRb = BH_SRRb)
+
+  return(results)
+
+}
+
+#' Generate random annual recruitment deviations for dynamic data simulation model
+#'
+#' Generates random annual recruitment deviations, with specified level of process
+#' error and autocorrelation, for using in simulating composition data from a
+#' dynamic model
+#'
+#' @keywords internal
+#'
+#' @param nYears number of years of deviations required
+#' @param lnSigmaR natural logarithm of standard deviation of annual recruitment deviations
+#' @param autocorr level of autocorrelation of annual recruitment deviations
+#'
+#' @return random_dev
+GetRecruitmentDeviations_DynSimMod <- function(nYears, lnSigmaR, autocorr) {
+
+  # generate an auto-correlated series of random recruitment deviations,
+  # with specified level of variation, for simulating data.
+
+  err_normdist_sd1 <- sqrt(1 + autocorr * autocorr) * lnSigmaR
+  lnrandom_dev <- rep(0,nYears)
+  lnrandom_dev[1] <- rnorm(1,0,err_normdist_sd1)
+  for (j in 2:nYears) {
+    lnrandom_dev[j] <- autocorr * lnrandom_dev[j-1] +
+      rnorm(1,0,err_normdist_sd1)
+    random_dev = exp(lnrandom_dev - 0.5*lnSigmaR*lnSigmaR)
+  }
+  return(random_dev)
+}
+
+
+#' Simulate length composition data from a dynamic model with recruitment variation
+#'
+#' This function provides simulated length composition data from a dynamic model
+#' with constant fishing and (natural mortality), but variable annual recruitment
+#' with specified process error and autocorrelation.
+#'
+#' @param SimAnnSampSize specified sample size (for both sexes)
+#' @param nYears number of years of deviations required
+#' @param lnSigmaR natural logarithm of standard deviation of annual recruitment deviations
+#' @param autocorr level of autocorrelation of annual recruitment deviations
+#' @param InitRec initial recruitment (R0)
+#' @param MaxModelAge maximum age considered by model
+#' @param TimeStep model time step (in y)
+#' @param lbnd lower bounds of length classes
+#' @param ubnd upper bounds of length classes
+#' @param midpt mid points bounds of length classes
+#' @param nLenCl number of length classes
+#' @param GrowthCurveType 1=von Bertalanffy, 2=Schnute
+#' @param GrowthParams growth parameters of either von Bertalanffy or Schnute model
+#' @param RefnceAges reference ages for Schnute model, set to NA if using von Bertalanffy model
+#' @param CVSizeAtAge coefficient of variation for size at age
+#' @param lenwt_a weight-length parameter
+#' @param ln_lenwt_a weight-length parameter
+#' @param lenwt_b weight-length parameter
+#' @param WLrel_Type 1=power, 2=log-log
+#' @param EstWtAtLen user-specified weights at lengths
+#' @param ReprodScale <- 1 # 1=default (standard calculations for spawning biomass), 2=hyperallometric reproductive scaling with female mass (i.e. BOFFF effects)
+#' @param ReprodPattern reproductive pattern, 1=gonochoristic, 2=protogynous (female to male sex change) hermaphroditism,
+#' 3=protandrous hermaphroditism (male to female sex change)
+#' @param InitRatioFem proportion of fish that are females at hatching
+#' @param FinalSex_L50 logistic sex change parameter for hermaphroditic species (set to NA for gonochoristic species)
+#' @param FinalSex_L95 logistic sex change parameter for hermaphroditic species (set to NA for gonochoristic species)
+#' @param EstSexRatioAtLen NA  # sex ratio at length, inputted as vector
+#' @param EggFertParam <- NA # (NA or from ~0.2-1) NA = no effect, 0.2 = direct effect of popn. sex ratio changes on egg fertilisation rates, 1 = no effects
+#' @param mat_L50 logistic length at maturity parameter (set to NA if directly inputting proportion mature at age)
+#' @param mat_L95 logistic length at maturity parameter (set to NA if directly inputting proportion mature at age)
+#' @param EstMatAtLen vector of proportion mature at length (set to NA if using age at maturity parameters)
+#' @param sel_L50 logistic parameter for gear selectivity curve
+#' @param sel_L95 logistic parameter for gear selectivity curve
+#' @param EstGearSelAtLen gear selectivity curve inputted as vector
+#' @param ret_Pmax logistic parameter for fish retention curve
+#' @param ret_L50 logistic parameter for fish retention curve
+#' @param ret_L95 logistic parameter for fish retention curve
+#' @param EstRetenAtLen retention curve inputted as vector
+#' @param DiscMort proportion of fish that die following capture and release
+#' @param Steepness steepness parameter of Beverton-Holt or Ricker stock-recruitment relationship
+#' @param SRrel_Type 1 = Beverton-Holt, 2=Ricker stock-recruitment relationship
+#' @param NatMort natural mortality
+#' @param FMort fishing mortality
+#'
+#' @return catches in numbers for females, males and combined sexes (Catch_Fem, Catch_Mal, Catch_CombSex),
+#' catch biomass for combined sexes (Catch_Biom), female, male and combined sex spawning biomass (FemSpBiom,
+#' MalSpBiom, CombSexSpBiom), annual recruitment (AnnRecruit), recruitment deviations (random_dev),
+#' simulated sample sizes for females and males, given combined sex imput and model assumptions (AnnSimSampSize_Fem,
+#' AnnSimSampSize_Mal), randomly-generated length frequencies, by year, for females, males and combined sexes
+#' (RandObsCatchLenFreq_Fem, RandObsCatchLenFreq_Mal, RandObsCatchLenFreq_CombSex)
+#' @export
+SimLenAndAgeFreqData_DynMod <- function(SimAnnSampSize, nYears, lnSigmaR, autocorr, InitRec, MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl,
+                                        GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
+                                        EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_L50, FinalSex_L95, EstSexRatioAtLen,
+                                        EggFertParam, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+                                        ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, FMort) {
+
+  # set up data structures
+  N_Fem <- data.frame(matrix(nrow = 1:nYears, ncol = nLenCl)) # numbers
+  colnames(N_Fem) <- midpt
+  N_Fem[1:nYears,1:nLenCl] = 0
+  N_Mal = N_Fem
+  Surv_Fem = N_Fem; Surv_Mal = N_Fem
+  tempSurv_Fem = N_Fem; tempSurv_Mal = N_Fem
+  Catch_Fem = N_Fem; Catch_Mal = N_Fem
+  AnnRecruit = rep(0,nYears)
+  FemSpBiom = rep(0,nYears)
+  MalSpBiom = rep(0,nYears)
+  CombSexSpBiom = rep(0,nYears)
+  SpBiom = rep(0,nYears) # spawning biomass measure, whether gonochoristic or hermaphroditic, for calculating recruitment
+  VulnPopnBiom = rep(0, nYears)
+  TotNum = rep(0,nYears) # sum across sexes and length classes for each timestep
+  TotCatch = rep(0,nYears)
+  Catch_Biom = rep(0,nYears)
+  TotAnnCatchBiom = rep(0,nYears)
+
+  # variables for simulated length data
+  AnnSimSampSize_Fem = rep(0, nYears); AnnSimSampSize_Mal = rep(0, nYears)
+  Catch_CombSex = N_Fem
+  RandObsCatchLenFreq_Fem = N_Fem; RandObsCatchLenFreq_Mal = N_Fem; RandObsCatchLenFreq_CombSex = N_Fem
+
+  res=CalcYPRAndSPRForFMort_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
+                               RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtLen,
+                               ReprodScale, ReprodPattern, InitRatioFem, FinalSex_L50, FinalSex_L95, EstSexRatioAtLen,
+                               EggFertParam, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+                               ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, FMort)
+
+
+  LTM_Fem = res$ModelDiag$LTM_Fem
+  LTM_Mal = res$ModelDiag$LTM_Mal
+  FemWtAtLen = res$ModelDiag$FemWtAtLen
+  MalWtAtLen = res$ModelDiag$MalWtAtLen
+  RecLenDist = res$ModelDiag$RecLenDist
+  FemRetProbAtLen = res$FemRetProbAtLen
+  Unfish_FemSpBiomPerRec = sum(res$ModelDiag$Unfish_FemBiomPerRecAtAge)
+  Fish_FemSpBiomPerRec = sum(res$ModelDiag$Fish_FemBiomPerRecAtAge)
+  Unfish_CombSexSpBiomPerRec = sum(res$ModelDiag$Unfish_FemBiomPerRecAtAge) + sum(res$ModelDiag$Unfish_MalBiomPerRecAtAge)
+  Fish_CombSexSpBiomPerRec = sum(res$ModelDiag$Fish_FemBiomPerRecAtAge) + sum(res$ModelDiag$Fish_MalBiomPerRecAtAge)
+  Fish_FemNPerRecAtLen = colSums(res$ModelDiag$Fish_FemNPerRecAtAge)
+  Fish_MalNPerRecAtLen = colSums(res$ModelDiag$Fish_MalNPerRecAtAge)
+  FemSelLandAtLen = res$ModelDiag$FemSelLandAtLen # selectivity of landings
+  MalSelLandAtLen = res$ModelDiag$MalSelLandAtLen # selectivity of landings
+  FemFAtLen = res$ModelDiag$FemFAtLen # fishing mortality at length, accounting for any discarding mortality
+  MalFAtLen = res$ModelDiag$MalFAtLen # fishing mortality at length, accounting for any discarding mortality
+  FemLandFAtLen = res$ModelDiag$FemLandFAtLen # fishing mortality at length, associated with retention
+  MalLandFAtLen = res$ModelDiag$MalLandFAtLen # fishing mortality at length, associated with retention
+  Unfish_MalNPerRecLen = res$ModelDiag$Unfish_MalNPerRecLen
+  Fish_MalNPerRecLen = res$ModelDiag$Fish_MalNPerRecLen
+  Unfish_FemNPerRecLen = res$ModelDiag$Unfish_FemNPerRecLen
+  Fish_FemNPerRecLen = res$ModelDiag$Fish_FemNPerRecLen
+  MalPropMatAtLen = res$ModelDiag$MalPropMatAtLen
+  FemPropMatAtLen = res$ModelDiag$FemPropMatAtLen
+  PropFemAtLen = res$ModelDiag$PropFemAtLen
+
+  # calculate ratio of mature males to mature females, by number and egg fertilisation rates
+  res=CalcPopnSexRatioAndFertRate_LB(Unfish_MalNPerRecLen, Fish_MalNPerRecLen, Unfish_FemNPerRecLen, Fish_FemNPerRecLen,
+                                     MalPropMatAtLen, FemPropMatAtLen, EggFertParam)
+  UnfishMalToFemProp = res$UnfishMalToFemProp
+  FishMalToFemProp = res$FishMalToFemProp
+  MalDeplRatio = res$MalDeplRatio
+  Eq_FertRate = res$Eq_FertRate
+
+  if (ReprodPattern == 1) { # gonochoristic species
+    UnfishSpBiomPerRec = Unfish_FemSpBiomPerRec
+    FishSpBiomPerRec = Fish_FemSpBiomPerRec
+  }
+  if (ReprodPattern > 1) { # hermaphroditic species
+    UnfishSpBiomPerRec = Unfish_CombSexSpBiomPerRec
+    FishSpBiomPerRec = Fish_CombSexSpBiomPerRec
+  }
+
+  # calculate stock-recruitment parameters
+  res = CalcStockRecruitParams_DynSimMod(UnfishSpBiomPerRec, InitRec, Steepness)
+  BH_SRRa = res$BH_SRRa
+  BH_SRRb = res$BH_SRRb
+
+  # get random recruitment deviations, note values already log back-transformed
+  # and bias corrected
+  random_dev=GetRecruitmentDeviations_DynSimMod(nYears, lnSigmaR, autocorr)
+
+  # update population dynamics
+  for (t in 1:nYears) {
+
+    # get numbers and female spawning biomass for first time step
+    if (t == 1) {
+      AnnRecruit[t] = (FishSpBiomPerRec - BH_SRRa) / (BH_SRRb * FishSpBiomPerRec) * random_dev[t]
+      N_Fem[t,] = AnnRecruit[t] * Fish_FemNPerRecAtLen # 1000s
+      N_Mal[t,] = AnnRecruit[t] * Fish_MalNPerRecAtLen # 1000s
+    }
+
+    # females
+    # calculate survival to beginning of next timestep
+    tempFemZAtLen = NatMort + FemFAtLen
+    Surv_Fem[t+1,] = N_Fem[t,] * exp(-tempFemZAtLen)
+    tempMalZAtLen = NatMort + MalFAtLen
+    Surv_Mal[t+1,] = N_Mal[t,] * exp(-tempMalZAtLen)
+
+    if (ReprodPattern > 1) { # hermaphroditic species
+
+      # assuming that, regardless of fishing pattern, the sex ratio at age is determined by
+      # by the logistic curve describing probability of sex change at age
+      for (i in 1:nLenCl) {
+        tempSurv_Fem[t+1,i] = PropFemAtLen[i] * (Surv_Fem[t+1,i] + Surv_Mal[t+1,i])
+        tempSurv_Mal[t+1,i] = (1 - PropFemAtLen[i]) * (Surv_Fem[t+1,i] + Surv_Mal[t+1,i])
+        Surv_Fem[t+1,i] = tempSurv_Fem[t+1,i]
+        Surv_Mal[t+1,i] = tempSurv_Mal[t+1,i]
+      } # i
+    } # reproductive pattern
+
+    # grow for timestep
+    # females
+    M1=t(t(Surv_Fem[t+1,]))
+    M2=t(LTM_Fem[,])
+    N_Fem[t+1,]=as.numeric(M1 %*% M2)
+    # males
+    M1=t(t(Surv_Mal[t+1,]))
+    M2=t(LTM_Mal[,])
+    N_Mal[t+1,]=as.numeric(M1 %*% M2)
+
+    # calculate spawning biomass
+    FemSpBiom[t] = sum(N_Fem[t,] * FemPropMatAtLen * FemWtAtLen) # tonnes
+    MalSpBiom[t] = sum(N_Mal[t,] * MalPropMatAtLen * MalWtAtLen) # tonnes
+    CombSexSpBiom[t] = FemSpBiom[t] + MalSpBiom[t]
+
+    if (ReprodPattern == 1) { # gonochoristic species
+      SpBiom[t] = FemSpBiom[t]
+    }
+    if (ReprodPattern > 1) { # hermaphroditic species
+      SpBiom[t] = CombSexSpBiom[t]
+    }
+
+    # annual recruitment
+    if (t > 1) {
+      AnnRecruit[t] = (SpBiom[t] / (BH_SRRa + BH_SRRb * SpBiom[t])) * random_dev[t]
+    }
+
+    # add recruits
+    N_Fem[t+1,] = N_Fem[t+1,] + (AnnRecruit[t] * InitRatioFem * RecLenDist[1,])
+    N_Mal[t+1,] = N_Mal[t+1,] + (AnnRecruit[t] * (1 - InitRatioFem) * RecLenDist[2,])
+    TotNum[t] = sum(N_Fem[t,]) + sum(N_Mal[t,])
+
+    # calculate retained catch at length for timestep (in numbers)
+    Catch_Fem[t,] = N_Fem[t,] * (FemLandFAtLen / tempFemZAtLen) * (1 - exp(-tempFemZAtLen))
+    Catch_Mal[t,] = N_Mal[t,] * (MalLandFAtLen / tempMalZAtLen) * (1 - exp(-tempMalZAtLen))
+    Catch_CombSex[t,] = Catch_Fem[t,] + Catch_Mal[t,]
+    TotCatch[t] = sum(Catch_Fem[t,]) + sum(Catch_Mal[t,])
+
+    # calculate catch biomasses
+    Catch_Biom[t] = sum(Catch_Fem[t,] * FemWtAtLen) + sum(Catch_Mal[t,] * MalWtAtLen)
+
+  }
+
+  # Get sample random length frequency data for each year from multinomial distribution, given expected
+  # length distributions for each year
+  for (t in 1:nYears) {
+    Probs_Fem = as.vector(unlist(Catch_Fem[t,] / sum(Catch_Fem[t,])))
+    Probs_Mal = as.vector(unlist(Catch_Mal[t,] / sum(Catch_Mal[t,])))
+    AnnSimSampSize_Fem[t] = round(sum(Catch_Fem[t,]) / sum(Catch_CombSex[t,]) * SimAnnSampSize,0)
+    AnnSimSampSize_Mal[t] = SimAnnSampSize - AnnSimSampSize_Fem[t]
+    RandObsCatchLenFreq_Fem[t,] = as.vector(rmultinom(1, AnnSimSampSize_Fem[t], Probs_Fem))
+    RandObsCatchLenFreq_Mal[t,] = as.vector(rmultinom(1, AnnSimSampSize_Mal[t], Probs_Mal))
+    RandObsCatchLenFreq_CombSex[t,] = RandObsCatchLenFreq_Fem[t,] + RandObsCatchLenFreq_Mal[t,]
+  }
+
+  res=list(Catch_Fem = Catch_Fem,
+           Catch_Mal = Catch_Mal,
+           Catch_CombSex = Catch_CombSex,
+           Catch_Biom = Catch_Biom,
+           FemSpBiom = FemSpBiom,
+           MalSpBiom = MalSpBiom,
+           CombSexSpBiom = CombSexSpBiom,
+           AnnRecruit = AnnRecruit,
+           random_dev = random_dev,
+           AnnSimSampSize_Fem = AnnSimSampSize_Fem,
+           AnnSimSampSize_Mal = AnnSimSampSize_Mal,
+           RandObsCatchLenFreq_Fem = RandObsCatchLenFreq_Fem,
+           RandObsCatchLenFreq_Mal = RandObsCatchLenFreq_Mal,
+           RandObsCatchLenFreq_CombSex = RandObsCatchLenFreq_CombSex)
+
+  return(res)
 
 }
 

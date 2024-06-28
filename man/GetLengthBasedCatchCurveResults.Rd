@@ -91,10 +91,11 @@ length, for sexes combined or separate (FAtLenDisc, FAtLenDisc_Fem, FAtLenDisc_M
 This function fits a length-based catch curve with length-based selectivity, based on
 either 1) specified length-based selectivity inputted as a vector, or 2) an estimated asymptotic logistic
 selectivity curve, and specified growth curve (either von Bertalanffy or Schnute growth model). The model is
-to a sample of fish length frequency data, by minimising the negative log-likelihood associated
+fited to a sample of fish length frequency data, by minimising the negative log-likelihood associated
 with the parameters and data, using nlminb. It provides various statistical outputs in include
 convergence statistics, parameter estimates and associated 95 percent confidence limits and associated
-variance-covariance matrix, calculated using the MASS package.
+variance-covariance matrix, calculated using the MASS package. Note, model is not suited to hermaphroditic species
+with sexually divergent growth.
 }
 \examples{
 # Simulate data
