@@ -445,7 +445,7 @@ Note that this catch curve routine also allows use of alternative model time ste
 Key functions relevant to applying this method are:  
 SimLenAndAgeFreqData()  
 VisualiseGrowthApplyingLTM()  
-GetAgeAndLengthBasedCatchCurveResults()
+GetAgeAndLengthBasedCatchCurveResults()   
 PlotAgeLengthCatchCurve_Growth()  
 PlotAgeLengthCatchCurve_Selectivity()  
 PlotAgeLengthCatchCurve_Cond_AL()  
@@ -651,12 +651,12 @@ Key functions relevant to applying this method are:
 CalcYPRAndSPRForFMort_AB()  
 GetPerRecruitResults_AB()  
 PlotPerRecruitResults_AB()  
-PlotPerRecruit_Biom_no_err_AB()
-PlotPerRecruit_Yield_no_err_AB()
-PlotPerRecruit_Param_Err_Distns()
-GetPerRecruitResults_with_err_AB()
-PlotPerRecruit_Biom_with_err_AB()
-PlotPerRecruit_RiskMatrix_RelBiom()
+PlotPerRecruit_Biom_no_err_AB()  
+PlotPerRecruit_Yield_no_err_AB()  
+PlotPerRecruit_Param_Err_Distns()  
+GetPerRecruitResults_with_err_AB()  
+PlotPerRecruit_Biom_with_err_AB()  
+PlotPerRecruit_RiskMatrix_RelBiom()  
 Refer to help files and example code, showing function inputs and outputs.
 
 

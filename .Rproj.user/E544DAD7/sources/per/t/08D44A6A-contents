@@ -4378,6 +4378,116 @@ GetRecruitmentDeviations_DynSimMod <- function(nYears, lnSigmaR, autocorr) {
   return(random_dev)
 }
 
+#' Generate an exploitation history, for use in generating length data from a dynamic
+#' length-structured model
+#'
+#' Generate exploitation history, for dynamic length simulation model a dynamic length-structured
+#' model (using SimLenAndAgeFreqData_DynMod). Values of fishing mortality are generated
+#' given specified number of exploitation periods, fishing mortality at the beginning
+#' and end of each period, with values in between for each period linearly interpolated.
+#' Random autocorrelated errord for annual fishing mortality values can also be specified.
+#'
+#' @param nPeriods number of specified exploitation periods with different trends
+#' @param InitYr first year of first exploitation period
+#' @param PeriodEndYr final year of each exploitation period
+#' @param InitYr_FMort fishing mortality at beginning of first exploitation period
+#' @param PeriodEndYr_FMort fishing mortality in final year of each exploitation period
+#' @param FMort_SD random error for fishing mortality deviations
+#' @param autocorr specified level of autocorrelation
+#' @param randerr_sd random error used to generate autocorrelation
+#' @return total number of years of exploitation (nYears), fishing mortality trend
+#' without error (FMort), fishing mortality tren with error (rand_FMort)
+#' @examples
+#' # example exploitation history - initial in increase F, reduction in F then stable F period
+#' nPeriods = 3 # number of periods of mortality trends
+#' InitYr = 1970 # first year of mortality
+#' NatMort = 4.22 / 41 # natural mortality  (year-1)
+#' PeriodEndYr = c(1995,2000,2020) # periods when mortality changes
+#' InitYr_FMort = 0.33*NatMort # initial mortality, at beginning of first period
+#' PeriodEndYr_FMort = c(3*NatMort,0.67*NatMort,0.67*NatMort)
+#' FMort_SD = 0.1
+#' autocorr = 0.1
+#' randerr_sd = 0.1
+#' set.seed(123)
+#' res=SimExploitationHistory_DynMod(nPeriods, InitYr, PeriodEndYr, InitYr_FMort,
+#'                                   PeriodEndYr_FMort, FMort_SD, autocorr, randerr_sd)
+#' # example exploitation history -  stable F with no error
+#' nPeriods = 1 # number of periods of mortality trends
+#' InitYr = 1970 # first year of mortality
+#' NatMort = 4.22 / 41 # natural mortality  (year-1)
+#' InitYr_FMort = NatMort # initial mortality, at beginning of first period
+#' PeriodEndYr_FMort = NatMort
+#' FMort_SD = 0
+#' autocorr = 0
+#' randerr_sd = 0
+#' set.seed(123)
+#' res=SimExploitationHistory_DynMod(nPeriods, InitYr, PeriodEndYr, InitYr_FMort,
+#'                                   PeriodEndYr_FMort, FMort_SD, autocorr, randerr_sd)
+#' @export
+SimExploitationHistory_DynMod <- function(nPeriods, InitYr, PeriodEndYr, InitYr_FMort,
+                                          PeriodEndYr_FMort, FMort_SD, autocorr, randerr_sd) {
+
+  # simulate annual pattern of fishing mortality
+  Period_nYears = rep(0, nPeriods)
+  Period_YrIndex = rep(0, nPeriods)
+  FirstFMort = rep(0, nPeriods)
+  LastFMort = rep(0, nPeriods)
+  Inc_FMort = rep(0, nPeriods)
+  PeriodStartYr = rep(0, nPeriods)
+  nYears = PeriodEndYr[nPeriods] - InitYr + 1
+  FMort = rep(0, nYears)
+
+  for (i in 1:nPeriods) {
+    LastFMort[i] = PeriodEndYr_FMort[i]
+
+    if (i==1) {
+      PeriodStartYr[i] = InitYr
+      Period_nYears[i] = PeriodEndYr[i] - PeriodStartYr[i] + 1
+      FirstFMort[i] = InitYr_FMort
+      Inc_FMort[i] = (LastFMort[i] - FirstFMort[i]) / (Period_nYears[i] - 1)
+    } else {
+      PeriodStartYr[i] = PeriodEndYr[i-1] + 1
+      Period_nYears[i] = PeriodEndYr[i] - PeriodStartYr[i] + 1
+      FirstFMort[i] = PeriodEndYr_FMort[i-1]
+      Inc_FMort[i] = (LastFMort[i] - FirstFMort[i]) / (Period_nYears[i])
+    }
+
+    start = PeriodStartYr[i] - InitYr + 1
+    end = start + Period_nYears[i] - 1
+    Period_YrIndex[start:end] = i
+  }
+
+  for (i in 1:nYears) {
+    if (i == 1) {
+      FMort[i] = InitYr_FMort
+    } else {
+      FMort[i] = FMort[i-1] + Inc_FMort[Period_YrIndex[i]]
+    }
+  }
+
+  # standard dev to be applied to produce random normal distribution
+  # with autocorr
+  err_normdist_sd1 <- sqrt(1 + autocorr * autocorr) * randerr_sd
+
+  # calculate random deviate for first year
+  random_dev <- rep(0,nYears)
+  random_dev[1] <- rnorm(1,0,err_normdist_sd1)
+
+  # calculate random deviates for remaining years
+  for (j in 2:nYears) {
+    random_dev[j] <- autocorr * random_dev[j-1] +
+      rnorm(1,0,err_normdist_sd1)
+  }
+  random_dev = FMort_SD * random_dev
+  rand_FMort <- FMort + random_dev
+
+  res = list(nYears = nYears,
+             FMort = FMort,
+             rand_FMort = rand_FMort)
+
+  return(res)
+}
+
 
 #' Simulate length composition data from a dynamic model with recruitment variation
 #'
@@ -4434,15 +4544,103 @@ GetRecruitmentDeviations_DynSimMod <- function(nYears, lnSigmaR, autocorr) {
 #' MalSpBiom, CombSexSpBiom), annual recruitment (AnnRecruit), recruitment deviations (random_dev),
 #' simulated sample sizes for females and males, given combined sex imput and model assumptions (AnnSimSampSize_Fem,
 #' AnnSimSampSize_Mal), randomly-generated length frequencies, by year, for females, males and combined sexes
-#' (RandObsCatchLenFreq_Fem, RandObsCatchLenFreq_Mal, RandObsCatchLenFreq_CombSex)
+#' (RandObsCatchLenFreq_Fem, RandObsCatchLenFreq_Mal, RandObsCatchLenFreq_CombSex), mean and 95 percent
+#' confidence limits for each year, for simulated length data (MeanLengthStats)
+#' @examples
+#' # Simulate length data from dynamic model, from specified biology and exploitation history
+#' MaxModelAge <- 60 # maximum age considered by model, years
+#' TimeStep <- 1 # Model time step (y) (for shorter-lived species, might be appropriate to use a smaller time step)
+#' MaxLen <- 1400
+#' LenInc <- 20
+#' lbnd <- seq(0,MaxLen - LenInc, LenInc)
+#' ubnd <- lbnd + LenInc
+#' midpt <- lbnd + (LenInc/2)
+#' nLenCl <- length(midpt)
+#' GrowthCurveType <- 1 # 1 = von Bertalanffy, 2 = Schnute
+#' Linf <- c(1000, 1000) # mm - von Bertalanffy growth model parameters - Females, males
+#' vbK <- c(0.12, 0.12) # year-1 - von Bertalanffy growth model parameters - Females, males
+#' tzero <- c(0, 0) # years - von Bertalanffy growth model parameters - Females, males
+#' GrowthParams <- data.frame(Linf=Linf, vbK=vbK, tzero=tzero)
+#' RefnceAges <- NA
+#' CVSizeAtAge = c(0.06,0.06)
+#' lenwt_a <- 0.000005 # combined sexes - weight (g) vs length (mm, TL) relationship parameters
+#' ln_lenwt_a <- NA # for log-log relationship
+#' lenwt_b <- 3 # combined sexes - weight (g) vs length (mm, TL) relationship parameters
+#' WLrel_Type <- 1 # 1=power, 2=log-log relationship
+#' EstWtAtLen <- data.frame(EstFemWtAtLen=NA,
+#'                          EstMalWtAtLen=NA) # weight at length, inputted as values in data frame
+#' ReprodScale <- 1 # 1=default (standard calculations for spawning biomass), 2=hyperallometric reproductive scaling with female mass (i.e. BOFFF effects)
+#' ReprodPattern <- 1 # 1 = gonochoristic (separate sexes), 2 = protogynous (female to male sex change), 3 = protandrous (male to female sex change)
+#' InitRatioFem <- 0.5 # Ratio of females to males at recruitment age/length
+#' FinalSex_L50 <- NA # Logistic sex change relationship parameters (inflection point)
+#' FinalSex_L95 <- NA # Logistic sex change relationship parameters (95% of max probability)
+#' EstSexRatioAtLen <- NA  # sex ratio at length inputted as vector
+#' EggFertParam <- NA # (NA or from ~0.2-1) NA = no effect, ~0.2 = direct effect of popn. sex ratio changes on egg fertilisation rates, 1 = no effects
+#' mat_L50 <- c(350, 350) # females, males - Logistic length (mm) at maturity relationship parameters
+#' mat_L95 <- c(400, 400) # females, males - Logistic length (mm) at maturity relationship parameters
+#' EstMatAtLen <- data.frame(EstFemMatAtLen=NA,
+#'                           EstMalMatAtLen=NA) # maturity at length, inputted as values in data frame
+#' sel_L50 <- c(350, 350) # females, males - Logistic length selectivity relationship parameters
+#' sel_L95 <- c(400, 400) # females, males - Logistic length selectivity relationship parameters
+#' EstGearSelAtLen <- data.frame(EstFemGearSelAtLen=NA,
+#'                               EstMalGearSelAtLen=NA)
+#' ret_Pmax <- c(1.0, 1.0) # maximum retention, values lower than 1 imply discarding of fish above MLL
+#' ret_L50 <- c(490, 490) # females, males - Logistic fish retention at length parameters
+#' ret_L95 <- c(500, 500) # females, males - Logistic fish retention at length parameters
+#' EstRetenAtLen <- data.frame(EstFemRetenAtLen=NA,
+#'                             EstMalRetenAtLen=NA)
+#' DiscMort <- 0.5 # discard mortality (e.g. 50% released fish die = 0.5)
+#' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
+#' SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
+#' NatMort <- 4.22 / 41 # natural mortality  (year-1)
+#' # example exploitation history - initial in increase F, reduction in F then stable F period
+#' nPeriods <- 3 # number of periods of mortality trends
+#' InitYr <- 1970 # first year of mortality
+#' PeriodEndYr <- c(1995,2000,2020) # periods when mortality changes
+#' InitYr_FMort <- 0.33*NatMort # initial mortality, at beginning of first period
+#' PeriodEndYr_FMort <- c(3*NatMort,0.67*NatMort,0.67*NatMort)
+#' FMort_SD <- 0.1
+#' autocorr <- 0.1
+#' randerr_sd <- 0.1
+#' set.seed(123)
+#' res=SimExploitationHistory_DynMod(nPeriods, InitYr, PeriodEndYr, InitYr_FMort,
+#'                                   PeriodEndYr_FMort, FMort_SD, autocorr, randerr_sd)
+#' # # example exploitation history -  stable F with no error
+#' # nPeriods = 1 # number of periods of mortality trends
+#' # InitYr = 1970 # first year of mortality
+#' # InitYr_FMort = NatMort # initial mortality, at beginning of first period
+#' # PeriodEndYr_FMort = NatMort
+#' # FMort_SD = 0
+#' # autocorr = 0
+#' # randerr_sd = 0
+#' # set.seed(123)
+#' res=SimExploitationHistory_DynMod(nPeriods, InitYr, PeriodEndYr, InitYr_FMort,
+#'                                   PeriodEndYr_FMort, FMort_SD, autocorr, randerr_sd)
+#' # Get random length data
+#' nYears <- res$nYears
+#' FMortByYear <- res$rand_FMort
+#' SimAnnSampSize <- 1000
+#' lnSigmaR <- 0.6
+#' autocorr <- 0.3
+#' InitRec <- 1000
+#' Res=SimLenAndAgeFreqData_DynMod(SimAnnSampSize, nYears, lnSigmaR, autocorr, InitRec,
+#'                                 MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
+#'                                 RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtLen,
+#'                                 ReprodScale, ReprodPattern, InitRatioFem, FinalSex_L50, FinalSex_L95, EstSexRatioAtLen,
+#'                                 EggFertParam, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+#'                                 ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, FMortByYear)
 #' @export
 SimLenAndAgeFreqData_DynMod <- function(SimAnnSampSize, nYears, lnSigmaR, autocorr, InitRec, MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl,
                                         GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type,
                                         EstWtAtLen, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_L50, FinalSex_L95, EstSexRatioAtLen,
                                         EggFertParam, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
-                                        ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, FMort) {
+                                        ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, FMortByYear) {
 
   # set up data structures
+  FemMeanCatchLen <- rep(0,nYears); MalMeanCatchLen <- rep(0,nYears)
+  FemMeanCatchLen.lw95 <- rep(0,nYears); FemMeanCatchLen.up95 <- rep(0,nYears)
+  MalMeanCatchLen.lw95 <- rep(0,nYears); MalMeanCatchLen.up95 <- rep(0,nYears)
+
   N_Fem <- data.frame(matrix(nrow = 1:nYears, ncol = nLenCl)) # numbers
   colnames(N_Fem) <- midpt
   N_Fem[1:nYears,1:nLenCl] = 0
@@ -4466,6 +4664,7 @@ SimLenAndAgeFreqData_DynMod <- function(SimAnnSampSize, nYears, lnSigmaR, autoco
   Catch_CombSex = N_Fem
   RandObsCatchLenFreq_Fem = N_Fem; RandObsCatchLenFreq_Mal = N_Fem; RandObsCatchLenFreq_CombSex = N_Fem
 
+  FMort = FMortByYear[1] # i.e. assuming population at equilibrium, at value of F specified for first year
   res=CalcYPRAndSPRForFMort_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtLen,
                                ReprodScale, ReprodPattern, InitRatioFem, FinalSex_L50, FinalSex_L95, EstSexRatioAtLen,
@@ -4485,12 +4684,10 @@ SimLenAndAgeFreqData_DynMod <- function(SimAnnSampSize, nYears, lnSigmaR, autoco
   Fish_CombSexSpBiomPerRec = sum(res$ModelDiag$Fish_FemBiomPerRecAtAge) + sum(res$ModelDiag$Fish_MalBiomPerRecAtAge)
   Fish_FemNPerRecAtLen = colSums(res$ModelDiag$Fish_FemNPerRecAtAge)
   Fish_MalNPerRecAtLen = colSums(res$ModelDiag$Fish_MalNPerRecAtAge)
-  FemSelLandAtLen = res$ModelDiag$FemSelLandAtLen # selectivity of landings
-  MalSelLandAtLen = res$ModelDiag$MalSelLandAtLen # selectivity of landings
-  FemFAtLen = res$ModelDiag$FemFAtLen # fishing mortality at length, accounting for any discarding mortality
-  MalFAtLen = res$ModelDiag$MalFAtLen # fishing mortality at length, accounting for any discarding mortality
-  FemLandFAtLen = res$ModelDiag$FemLandFAtLen # fishing mortality at length, associated with retention
-  MalLandFAtLen = res$ModelDiag$MalLandFAtLen # fishing mortality at length, associated with retention
+  FemGearSelAtLen = res$ModelDiag$FemGearSelAtLen; MalGearSelAtLen = res$ModelDiag$MalGearSelAtLen
+  FemRetProbAtLen = res$ModelDiag$FemRetProbAtLen; MalRetProbAtLen = res$ModelDiag$MalRetProbAtLen
+  FemSelLandAtLen = res$ModelDiag$FemSelLandAtLen; MalSelLandAtLen = res$ModelDiag$MalSelLandAtLen
+  FemSelDiscAtLen = res$ModelDiag$FemSelDiscAtLen; MalSelDiscAtLen = res$ModelDiag$MalSelDiscAtLen
   Unfish_MalNPerRecLen = res$ModelDiag$Unfish_MalNPerRecLen
   Fish_MalNPerRecLen = res$ModelDiag$Fish_MalNPerRecLen
   Unfish_FemNPerRecLen = res$ModelDiag$Unfish_FemNPerRecLen
@@ -4534,6 +4731,10 @@ SimLenAndAgeFreqData_DynMod <- function(SimAnnSampSize, nYears, lnSigmaR, autoco
       N_Fem[t,] = AnnRecruit[t] * Fish_FemNPerRecAtLen # 1000s
       N_Mal[t,] = AnnRecruit[t] * Fish_MalNPerRecAtLen # 1000s
     }
+
+    # get fishing mortality at length, for calculating survival
+    FemFAtLen <- FMortByYear[t] * (FemSelLandAtLen + (DiscMort * FemSelDiscAtLen))
+    MalFAtLen <- FMortByYear[t] * (MalSelLandAtLen + (DiscMort * MalSelDiscAtLen))
 
     # females
     # calculate survival to beginning of next timestep
@@ -4587,6 +4788,9 @@ SimLenAndAgeFreqData_DynMod <- function(SimAnnSampSize, nYears, lnSigmaR, autoco
     TotNum[t] = sum(N_Fem[t,]) + sum(N_Mal[t,])
 
     # calculate retained catch at length for timestep (in numbers)
+    # calculate female and male fishing mortality at length associated with landings
+    FemLandFAtLen = FMortByYear[t] * FemSelLandAtLen
+    MalLandFAtLen = FMortByYear[t] * MalSelLandAtLen
     Catch_Fem[t,] = N_Fem[t,] * (FemLandFAtLen / tempFemZAtLen) * (1 - exp(-tempFemZAtLen))
     Catch_Mal[t,] = N_Mal[t,] * (MalLandFAtLen / tempMalZAtLen) * (1 - exp(-tempMalZAtLen))
     Catch_CombSex[t,] = Catch_Fem[t,] + Catch_Mal[t,]
@@ -4597,9 +4801,9 @@ SimLenAndAgeFreqData_DynMod <- function(SimAnnSampSize, nYears, lnSigmaR, autoco
 
   }
 
-  # Get sample random length frequency data for each year from multinomial distribution, given expected
-  # length distributions for each year
   for (t in 1:nYears) {
+    # Get sample random length frequency data, for retained catches for each year,
+    # given expected length distributions for each year, assuming a multinomial distribution
     Probs_Fem = as.vector(unlist(Catch_Fem[t,] / sum(Catch_Fem[t,])))
     Probs_Mal = as.vector(unlist(Catch_Mal[t,] / sum(Catch_Mal[t,])))
     AnnSimSampSize_Fem[t] = round(sum(Catch_Fem[t,]) / sum(Catch_CombSex[t,]) * SimAnnSampSize,0)
@@ -4607,7 +4811,27 @@ SimLenAndAgeFreqData_DynMod <- function(SimAnnSampSize, nYears, lnSigmaR, autoco
     RandObsCatchLenFreq_Fem[t,] = as.vector(rmultinom(1, AnnSimSampSize_Fem[t], Probs_Fem))
     RandObsCatchLenFreq_Mal[t,] = as.vector(rmultinom(1, AnnSimSampSize_Mal[t], Probs_Mal))
     RandObsCatchLenFreq_CombSex[t,] = RandObsCatchLenFreq_Fem[t,] + RandObsCatchLenFreq_Mal[t,]
+
+    # get random individual lengths (nearest 1 mm), and mean lengths with 95% CLs
+    LenInterv = (ubnd[1] - lbnd[1]) / 2 # randomising fish lengths, within each length class
+    FemFishLen = round(rep(midpt, RandObsCatchLenFreq_Fem[t,]) + runif(length(rep(midpt, RandObsCatchLenFreq_Fem[t,])),-LenInterv, LenInterv),0)
+    MalFishLen = round(rep(midpt, RandObsCatchLenFreq_Mal[t,]) + runif(length(rep(midpt, RandObsCatchLenFreq_Mal[t,])),-LenInterv, LenInterv),0)
+    # calculate mean lengths for each year and associated 95% CLs
+    FemMeanCatchLen[t] = round(mean(FemFishLen),1)
+    MalMeanCatchLen[t] = round(mean(MalFishLen),1)
+    FemMeanCatchLen.lw95[t] = round(FemMeanCatchLen[t] -1.96 * (sd(FemFishLen)/sqrt(length(FemFishLen))),1)
+    FemMeanCatchLen.up95[t] = round(FemMeanCatchLen[t] +1.96 * (sd(FemFishLen)/sqrt(length(FemFishLen))),1)
+    MalMeanCatchLen.lw95[t] = round(MalMeanCatchLen[t] -1.96 * (sd(MalFishLen)/sqrt(length(MalFishLen))),1)
+    MalMeanCatchLen.up95[t] = round(MalMeanCatchLen[t] +1.96 * (sd(MalFishLen)/sqrt(length(MalFishLen))),1)
   }
+
+  MeanLengthStats <- data.frame(YrIndex = 1:nYears,
+                                FemMeanLen=FemMeanCatchLen,
+                                FemMeanLen.lw95=FemMeanCatchLen.lw95,
+                                FemMeanLen.up95=FemMeanCatchLen.up95,
+                                MalMeanLen=MalMeanCatchLen,
+                                MalMeanLen.lw95=MalMeanCatchLen.lw95,
+                                MalMeanLen.up95=MalMeanCatchLen.up95)
 
   res=list(Catch_Fem = Catch_Fem,
            Catch_Mal = Catch_Mal,
@@ -4622,7 +4846,8 @@ SimLenAndAgeFreqData_DynMod <- function(SimAnnSampSize, nYears, lnSigmaR, autoco
            AnnSimSampSize_Mal = AnnSimSampSize_Mal,
            RandObsCatchLenFreq_Fem = RandObsCatchLenFreq_Fem,
            RandObsCatchLenFreq_Mal = RandObsCatchLenFreq_Mal,
-           RandObsCatchLenFreq_CombSex = RandObsCatchLenFreq_CombSex)
+           RandObsCatchLenFreq_CombSex = RandObsCatchLenFreq_CombSex,
+           MeanLengthStats = MeanLengthStats)
 
   return(res)
 
@@ -9002,8 +9227,8 @@ CalcDirMultNLL_LogisticCatchCurve <- function(params, nSexes, Ages, ObsAgeFreq, 
 #' MinFreq = NA # # Logistic selectivity
 #' Init_FMort = 0.2
 #' Init_SelA50 = 5
-#' Init_SelA95 = 7
-#' params = log(c(Init_FMort, Init_SelA50, SelA95))
+#' Init_SelDelta = 2
+#' params = log(c(Init_FMort, Init_SelA50, Init_SelDelta))
 #' res=GetLogisticCatchCurveResults(params, NatMort, Ages, ObsAgeFreq)
 #' res$ParamEst
 #' library(dirmult)
@@ -9212,8 +9437,8 @@ GetLogisticCatchCurveResults <- function (params, NatMort, Ages, ObsAgeFreq)
 #' MinFreq = NA # # Logistic selectivity
 #' Init_FMort = 0.2
 #' Init_SelA50 = 5
-#' Init_SelA95 = 7
-#' params = log(c(Init_FMort, Init_SelA50, SelA95))
+#' Init_SelDelta = 2
+#' params = log(c(Init_FMort, Init_SelA50, Init_SelDelta))
 #' res=GetLogisticCatchCurveResults(params, NatMort, Ages, ObsAgeFreq)
 #' res$ParamEst
 #' PlotAgeBasedCatchCurveResults_NormalSpace(RecAssump, SpecRecAge=NA, MinFreq, MinAge, MaxAge, NatMort,
@@ -11073,13 +11298,8 @@ CalcFishingMortalityAtLen <- function(FMort, DiscMort, FemSelDiscAtLen, MalSelDi
   MalLandFAtLen <- FMort * MalSelLandAtLen
 
   # calculate (total) female and male fishing mortality at length
-  if (DiscMort >= 0.001) {
-    FemFAtLen <- FMort * (FemSelLandAtLen + (DiscMort * FemSelDiscAtLen))
-    MalFAtLen <- FMort * (MalSelLandAtLen + (DiscMort * MalSelDiscAtLen))
-  } else {
-    FemFAtLen <- FMort * FemSelLandAtLen
-    MalFAtLen <- FMort * MalSelLandAtLen
-  }
+  FemFAtLen <- FMort * (FemSelLandAtLen + (DiscMort * FemSelDiscAtLen))
+  MalFAtLen <- FMort * (MalSelLandAtLen + (DiscMort * MalSelDiscAtLen))
 
   results = list(FemDiscFAtLen = FemDiscFAtLen,
                  MalDiscFAtLen = MalDiscFAtLen,

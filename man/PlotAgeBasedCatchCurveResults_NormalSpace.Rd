@@ -91,8 +91,8 @@ NatMort = 0.104 # Logistic selectivity
 MinFreq = NA # # Logistic selectivity
 Init_FMort = 0.2
 Init_SelA50 = 5
-Init_SelA95 = 7
-params = log(c(Init_FMort, Init_SelA50, SelA95))
+Init_SelDelta = 2
+params = log(c(Init_FMort, Init_SelA50, Init_SelDelta))
 res=GetLogisticCatchCurveResults(params, NatMort, Ages, ObsAgeFreq)
 res$ParamEst
 PlotAgeBasedCatchCurveResults_NormalSpace(RecAssump, SpecRecAge=NA, MinFreq, MinAge, MaxAge, NatMort,
