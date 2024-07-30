@@ -7954,7 +7954,7 @@ PlotAgeLengthCatchCurve_Pears_Resid <- function(params, RefnceAges, MLL, GrowthC
     }
     mtext(yaxis_lab,side=2,cex=1.2,line=2.5, las=3)
     mtext(xaxis_lab,side=1,cex=1.2,line=2.5)
-    AddAxesAndTickLabelsToPlot(xminxmin, xmax, xint, ymin, ymax, yint,
+    AddAxesAndTickLabelsToPlot(xmin, xmax, xint, ymin, ymax, yint,
                                cexval=NA, cexaxisval=NA, lwdval=NA, lineval=NA, lasval=NA)
     if (ShowLegend == T) {
       legend("bottomright", legend=c("Mal. +ve resid.","Mal. -ve resid."), inset=c(0.13,0),
