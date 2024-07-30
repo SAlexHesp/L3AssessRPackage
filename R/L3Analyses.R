@@ -4405,27 +4405,25 @@ GetRecruitmentDeviations_DynSimMod <- function(nYears, lnSigmaR, autocorr) {
 #' PeriodEndYr = c(1995,2000,2020) # periods when mortality changes
 #' InitYr_FMort = 0.33*NatMort # initial mortality, at beginning of first period
 #' PeriodEndYr_FMort = c(3*NatMort,0.67*NatMort,0.67*NatMort)
-#' FMort_SD = 0.1
-#' autocorr = 0.1
-#' randerr_sd = 0.1
+#' autocorr = 0.2
+#' randerr_sd = 0.01
 #' set.seed(123)
 #' res=SimExploitationHistory_DynMod(nPeriods, InitYr, PeriodEndYr, InitYr_FMort,
-#'                                   PeriodEndYr_FMort, FMort_SD, autocorr, randerr_sd)
+#'                                   PeriodEndYr_FMort, autocorr, randerr_sd)
 #' # example exploitation history -  stable F with no error
 #' nPeriods = 1 # number of periods of mortality trends
 #' InitYr = 1970 # first year of mortality
 #' NatMort = 4.22 / 41 # natural mortality  (year-1)
 #' InitYr_FMort = NatMort # initial mortality, at beginning of first period
 #' PeriodEndYr_FMort = NatMort
-#' FMort_SD = 0
 #' autocorr = 0
-#' randerr_sd = 0
+#' randerr_sd = 0.01
 #' set.seed(123)
 #' res=SimExploitationHistory_DynMod(nPeriods, InitYr, PeriodEndYr, InitYr_FMort,
-#'                                   PeriodEndYr_FMort, FMort_SD, autocorr, randerr_sd)
+#'                                   PeriodEndYr_FMort, autocorr, randerr_sd)
 #' @export
 SimExploitationHistory_DynMod <- function(nPeriods, InitYr, PeriodEndYr, InitYr_FMort,
-                                          PeriodEndYr_FMort, FMort_SD, autocorr, randerr_sd) {
+                                          PeriodEndYr_FMort, autocorr, randerr_sd) {
 
   # simulate annual pattern of fishing mortality
   Period_nYears = rep(0, nPeriods)
@@ -4478,7 +4476,7 @@ SimExploitationHistory_DynMod <- function(nPeriods, InitYr, PeriodEndYr, InitYr_
     random_dev[j] <- autocorr * random_dev[j-1] +
       rnorm(1,0,err_normdist_sd1)
   }
-  random_dev = FMort_SD * random_dev
+
   rand_FMort <- FMort + random_dev
 
   res = list(nYears = nYears,
@@ -4599,12 +4597,11 @@ SimExploitationHistory_DynMod <- function(nPeriods, InitYr, PeriodEndYr, InitYr_
 #' PeriodEndYr <- c(1995,2000,2020) # periods when mortality changes
 #' InitYr_FMort <- 0.33*NatMort # initial mortality, at beginning of first period
 #' PeriodEndYr_FMort <- c(3*NatMort,0.67*NatMort,0.67*NatMort)
-#' FMort_SD <- 0.1
-#' autocorr <- 0.1
+#' autocorr <- 0.2
 #' randerr_sd <- 0.1
 #' set.seed(123)
 #' res=SimExploitationHistory_DynMod(nPeriods, InitYr, PeriodEndYr, InitYr_FMort,
-#'                                   PeriodEndYr_FMort, FMort_SD, autocorr, randerr_sd)
+#'                                   PeriodEndYr_FMort, autocorr, randerr_sd)
 #' # # example exploitation history -  stable F with no error
 #' # nPeriods = 1 # number of periods of mortality trends
 #' # InitYr = 1970 # first year of mortality
@@ -4615,7 +4612,7 @@ SimExploitationHistory_DynMod <- function(nPeriods, InitYr, PeriodEndYr, InitYr_
 #' # randerr_sd = 0
 #' # set.seed(123)
 #' res=SimExploitationHistory_DynMod(nPeriods, InitYr, PeriodEndYr, InitYr_FMort,
-#'                                   PeriodEndYr_FMort, FMort_SD, autocorr, randerr_sd)
+#'                                   PeriodEndYr_FMort, autocorr, randerr_sd)
 #' # Get random length data
 #' nYears <- res$nYears
 #' FMortByYear <- res$rand_FMort
@@ -4641,14 +4638,19 @@ SimLenAndAgeFreqData_DynMod <- function(SimAnnSampSize, nYears, lnSigmaR, autoco
   FemMeanCatchLen.lw95 <- rep(0,nYears); FemMeanCatchLen.up95 <- rep(0,nYears)
   MalMeanCatchLen.lw95 <- rep(0,nYears); MalMeanCatchLen.up95 <- rep(0,nYears)
 
-  N_Fem <- data.frame(matrix(nrow = 1:nYears, ncol = nLenCl)) # numbers
+  N_Fem <- data.frame(matrix(nrow = nYears+1, ncol = nLenCl)) # numbers
   colnames(N_Fem) <- midpt
-  N_Fem[1:nYears,1:nLenCl] = 0
+  N_Fem[seq(1,nYears+1,1),seq(1,nLenCl,1)] = 0
   N_Mal = N_Fem
   Surv_Fem = N_Fem; Surv_Mal = N_Fem
   tempSurv_Fem = N_Fem; tempSurv_Mal = N_Fem
-  Catch_Fem = N_Fem; Catch_Mal = N_Fem
-  AnnRecruit = rep(0,nYears)
+
+  Catch_Fem <- data.frame(matrix(nrow = nYears, ncol = nLenCl)) # numbers
+  colnames(Catch_Fem) <- midpt
+  Catch_Fem[seq(1,nYears,1),seq(1,nLenCl,1)] = 0
+  Catch_Mal = Catch_Fem
+
+  AnnRecruit = rep(0,nYears+1)
   FemSpBiom = rep(0,nYears)
   MalSpBiom = rep(0,nYears)
   CombSexSpBiom = rep(0,nYears)
@@ -4731,6 +4733,7 @@ SimLenAndAgeFreqData_DynMod <- function(SimAnnSampSize, nYears, lnSigmaR, autoco
       N_Fem[t,] = AnnRecruit[t] * Fish_FemNPerRecAtLen # 1000s
       N_Mal[t,] = AnnRecruit[t] * Fish_MalNPerRecAtLen # 1000s
     }
+    TotNum[t] = sum(N_Fem[t,]) + sum(N_Mal[t,])
 
     # get fishing mortality at length, for calculating survival
     FemFAtLen <- FMortByYear[t] * (FemSelLandAtLen + (DiscMort * FemSelDiscAtLen))
@@ -4778,14 +4781,11 @@ SimLenAndAgeFreqData_DynMod <- function(SimAnnSampSize, nYears, lnSigmaR, autoco
     }
 
     # annual recruitment
-    if (t > 1) {
-      AnnRecruit[t] = (SpBiom[t] / (BH_SRRa + BH_SRRb * SpBiom[t])) * random_dev[t]
-    }
+    AnnRecruit[t+1] = (SpBiom[t] / (BH_SRRa + BH_SRRb * SpBiom[t])) * random_dev[t]
 
     # add recruits
-    N_Fem[t+1,] = N_Fem[t+1,] + (AnnRecruit[t] * InitRatioFem * RecLenDist[1,])
-    N_Mal[t+1,] = N_Mal[t+1,] + (AnnRecruit[t] * (1 - InitRatioFem) * RecLenDist[2,])
-    TotNum[t] = sum(N_Fem[t,]) + sum(N_Mal[t,])
+    N_Fem[t+1,] = N_Fem[t+1,] + (AnnRecruit[t+1] * InitRatioFem * RecLenDist[1,])
+    N_Mal[t+1,] = N_Mal[t+1,] + (AnnRecruit[t+1] * (1 - InitRatioFem) * RecLenDist[2,])
 
     # calculate retained catch at length for timestep (in numbers)
     # calculate female and male fishing mortality at length associated with landings

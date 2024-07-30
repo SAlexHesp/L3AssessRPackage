@@ -202,12 +202,11 @@ InitYr <- 1970 # first year of mortality
 PeriodEndYr <- c(1995,2000,2020) # periods when mortality changes
 InitYr_FMort <- 0.33*NatMort # initial mortality, at beginning of first period
 PeriodEndYr_FMort <- c(3*NatMort,0.67*NatMort,0.67*NatMort)
-FMort_SD <- 0.1
-autocorr <- 0.1
+autocorr <- 0.2
 randerr_sd <- 0.1
 set.seed(123)
 res=SimExploitationHistory_DynMod(nPeriods, InitYr, PeriodEndYr, InitYr_FMort,
-                                  PeriodEndYr_FMort, FMort_SD, autocorr, randerr_sd)
+                                  PeriodEndYr_FMort, autocorr, randerr_sd)
 # # example exploitation history -  stable F with no error
 # nPeriods = 1 # number of periods of mortality trends
 # InitYr = 1970 # first year of mortality
@@ -218,7 +217,7 @@ res=SimExploitationHistory_DynMod(nPeriods, InitYr, PeriodEndYr, InitYr_FMort,
 # randerr_sd = 0
 # set.seed(123)
 res=SimExploitationHistory_DynMod(nPeriods, InitYr, PeriodEndYr, InitYr_FMort,
-                                  PeriodEndYr_FMort, FMort_SD, autocorr, randerr_sd)
+                                  PeriodEndYr_FMort, autocorr, randerr_sd)
 # Get random length data
 nYears <- res$nYears
 FMortByYear <- res$rand_FMort

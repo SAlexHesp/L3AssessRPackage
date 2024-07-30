@@ -283,13 +283,6 @@ catch curve (regression approach)</a></li>
 <li><a href="#apply-length-converted-catch-curve-regression-approach" id="toc-apply-length-converted-catch-curve-regression-approach">Apply
 length-converted catch curve (regression approach)</a></li>
 </ul></li>
-<li><a href="#simulation-of-age-data" id="toc-simulation-of-age-data">Simulation of age data</a></li>
-<li><a href="#simulation-of-length-and-age-data" id="toc-simulation-of-length-and-age-data">Simulation of length and age
-data</a>
-<ul>
-<li><a href="#apply-routine-for-simulating-length-andor-age-data" id="toc-apply-routine-for-simulating-length-andor-age-data">Apply
-routine for simulating length and/or age data</a></li>
-</ul></li>
 <li><a href="#age-based-per-recruit-analysis" id="toc-age-based-per-recruit-analysis">Age-based per recruit
 analysis</a>
 <ul>
@@ -344,6 +337,30 @@ mortality - length-based per recruit analysis</a></li>
 per recruit calculations - length-based per recruit analysis</a></li>
 <li><a href="#apply-length-based-per-recruit-analysis" id="toc-apply-length-based-per-recruit-analysis">Apply length-based per
 recruit analysis</a></li>
+</ul></li>
+<li><a href="#simulation-of-age-data-assuming-constant-mortality-and-recruitment" id="toc-simulation-of-age-data-assuming-constant-mortality-and-recruitment">Simulation
+of age data (assuming constant mortality and recruitment)</a></li>
+<li><a href="#simulation-of-length-and-age-data-assuming-constant-mortality-and-recruitment" id="toc-simulation-of-length-and-age-data-assuming-constant-mortality-and-recruitment">Simulation
+of length and age data (assuming constant mortality and
+recruitment)</a></li>
+<li><a href="#simulation-of-length-data-using-a-dynamic-length-structured-model" id="toc-simulation-of-length-data-using-a-dynamic-length-structured-model">Simulation
+of length data using a dynamic length-structured model</a></li>
+<li><a href="#description-of-dynamic-length-structured-model" id="toc-description-of-dynamic-length-structured-model">Description of
+dynamic length-structured model</a>
+<ul>
+<li><a href="#specifying-an-exploitation-history-with-stochasticity-and-autocorrelation" id="toc-specifying-an-exploitation-history-with-stochasticity-and-autocorrelation">Specifying
+an exploitation history (with stochasticity and
+autocorrelation)</a></li>
+<li><a href="#generating-recruitment-deviations-with-stochasticity-and-autocorrelation" id="toc-generating-recruitment-deviations-with-stochasticity-and-autocorrelation">Generating
+recruitment deviations (with stochasticity and autocorrelation)</a></li>
+<li><a href="#calculation-of-annual-recruitment" id="toc-calculation-of-annual-recruitment">Calculation of annual
+recruitment</a></li>
+<li><a href="#calculating-annual-survival" id="toc-calculating-annual-survival">Calculating annual
+survival</a></li>
+<li><a href="#generating-simulated-annual-length-compositions" id="toc-generating-simulated-annual-length-compositions">Generating
+(simulated) annual length compositions</a></li>
+<li><a href="#apply-routines-for-simulating-length-andor-age-data" id="toc-apply-routines-for-simulating-length-andor-age-data">Apply
+routines for simulating length and/or age data</a></li>
 </ul></li>
 <li><a href="#references" id="toc-references">References:</a></li>
 </ul></li>
@@ -702,11 +719,11 @@ g_{s,n,1} &amp; g_{s,n,2} &amp; \cdots &amp; g_{s,n,n}
 <p><span class="math display">\[
 g_{s,k,j} = \left\{
     \begin{array}{ll}
-        \int_{{\infty}^-}^{\mathrm{l_{s,k}^+}}f[\phi_s(T,l_s,j)]dl &amp;
-\mbox{if }k=1 \\
-        \int_{l_{s,k}^-}^{\mathrm{l_{s,k}^+}}f[\phi_s(T,l_s,j)]dl
+        \int_{{\infty}^-}^{\mathrm{l_{s,k}^+}}f[\omega_s(T,l_s,j)]dl
+&amp; \mbox{if }k=1 \\
+        \int_{l_{s,k}^-}^{\mathrm{l_{s,k}^+}}f[\omega_s(T,l_s,j)]dl
 &amp;\mbox{if }k=1&lt;k&lt;n \\
-\int_{l_{s,k}^-}^{\mathrm{\infty^+}}f[\phi_s(T,l_s,j)]dl &amp;\mbox{if
+\int_{l_{s,k}^-}^{\mathrm{\infty^+}}f[\omega_s(T,l_s,j)]dl &amp;\mbox{if
 }k=n \\
     \end{array}
 \right.
@@ -714,7 +731,7 @@ g_{s,k,j} = \left\{
 for a fish of sex <span class="math inline">\(s\)</span>, <span class="math inline">\(f\)</span> is the specified (normal) distribution,
 <span class="math inline">\(l_{s,k}^-\)</span> and <span class="math inline">\(l_{s,k}^+\)</span> are the lower and upper limits,
 respectively, of length class <span class="math inline">\(j\)</span> for
-fish of sex <span class="math inline">\(s\)</span>, and <span class="math inline">\(\phi_s\)</span> is a vector of parameters
+fish of sex <span class="math inline">\(s\)</span>, and <span class="math inline">\(\omega_s\)</span> is a vector of parameters
 dependent on the time period <span class="math inline">\(T\)</span> and
 sex, and the midpoint of the size class <span class="math inline">\(j\)</span>, <span class="math inline">\(l_j\)</span>. In the model, growth is applied at
 the end of each time step, after mortality has been applied.</p>
@@ -1030,34 +1047,6 @@ Refer to help files and example code, showing function inputs and
 outputs.</p>
 </div>
 </div>
-<div id="simulation-of-age-data" class="section level2">
-<h2>Simulation of age data</h2>
-<p>The package provides a simple procedure for simulating age frequency
-samples, based on the equations provided above describing the
-(age-based) catch curve method available with logistic selectivity.
-Given a specified sample size, values for expected catch proportions at
-age, <span class="math inline">\(\hat{P_a}\)</span>, an age sample can
-be generated from a multinomial distribution, i.e. using the rmultinom()
-function in R. This method for simulating age frequency data is provided
-in code for several examples for applying age-based catch curves.</p>
-</div>
-<div id="simulation-of-length-and-age-data" class="section level2">
-<h2>Simulation of length and age data</h2>
-<p>A function is provided in the package for simulating length and age
-data, using the ‘length and age based catch curve model’ described
-above. The function produces length frequency samples of a specified
-sample size, given the expected proportion of fish in each length class
-<span class="math inline">\(l\)</span>, i.e. <span class="math inline">\(\hat{P}_l\)</span>, using the rmultinom() function
-in R. An associated age frequency sample for each length class <span class="math inline">\(l\)</span> is generated from the expected each
-distributions for each length class, <span class="math inline">\(\hat{P}_{a|l}\)</span>, by applying the
-rmultinom() function from within R.</p>
-<div id="apply-routine-for-simulating-length-andor-age-data" class="section level3">
-<h3>Apply routine for simulating length and/or age data</h3>
-<p>Key functions relevant to applying this method are:<br />
-SimLenAndAgeFreqData()<br />
-PlotSimLenAndAgeFreqData()</p>
-</div>
-</div>
 <div id="age-based-per-recruit-analysis" class="section level2">
 <h2>Age-based per recruit analysis</h2>
 <p>This package implements an age-based per recruit analysis, including
@@ -1161,15 +1150,15 @@ N_{s,a}\biggl(\frac{F_{s,a}^R}{Z_{s,a}}\biggr)(1-\exp(-Z_{s,a}))
 \]</span> In the above equation, <span class="math inline">\(N_s,a\)</span>, i.e. the numbers of sex <span class="math inline">\(s\)</span> at age <span class="math inline">\(a\)</span>, for the fished population are
 calculated as <span class="math display">\[
 \begin{align}
-    N_{s,a} = \phi &amp;&amp; \text{if s=1 and a=0}\\
-    N_{s,a} = 1-\phi &amp;&amp; \text{if s=2 and a=0}\\
+    N_{s,a} = \xi &amp;&amp; \text{if s=1 and a=0}\\
+    N_{s,a} = 1-\xi &amp;&amp; \text{if s=2 and a=0}\\
     N_{s,a} = N_{s,a-1}\exp(-Z_{s,a-1}) &amp;&amp; \text{if
 0&lt;a&lt;A}\\
     N_{s,a} = N_{s,a-1}\exp(-Z_{s,a-1})/(1-\exp(-Z_{s,a-1})) &amp;&amp;
 \text{if a=A}\\
 \end{align}
-\]</span> where <span class="math inline">\(\phi\)</span> is the ratio
-of females to males at age 0 yr, and <span class="math inline">\(A\)</span>, is the maximum age considered by the
+\]</span> where <span class="math inline">\(\xi\)</span> is the ratio of
+females to males at age 0 yr, and <span class="math inline">\(A\)</span>, is the maximum age considered by the
 model. The numbers of sex <span class="math inline">\(s\)</span> at age
 <span class="math inline">\(a\)</span> for the unfished population,
 <span class="math inline">\(\acute{N}_{s,a}\)</span> are calculated as
@@ -1202,18 +1191,18 @@ N&#39;_{s=1,a}=(1-\rho_{a})(N_{s=1,a}+N_{s=2,a})
 <h3>Spawning potential ratio - age-based per recruit analysis</h3>
 <p>Spawning potential ratio, <span class="math inline">\(SPR\)</span>,
 for sex <span class="math inline">\(s\)</span>, is calculated as <span class="math display">\[
-SPR_s = \frac{\theta_s}{\theta_{0,s}}
-\]</span> where <span class="math inline">\(\theta_s\)</span> and <span class="math inline">\(\theta_{0,s}\)</span> is the spawning biomass per
+SPR_s = \frac{\Phi_s}{\Phi_{0,s}}
+\]</span> where <span class="math inline">\(\Phi_s\)</span> and <span class="math inline">\(\Phi_{0,s}\)</span> is the spawning biomass per
 recruit for sex <span class="math inline">\(s\)</span>, for the fished
 and unfished population, respectively. For gonochoristic species, <span class="math inline">\(SPR\)</span> is calculated based on females only.
 For hermaphroditic species, Spawning potential ratio, <span class="math inline">\(SPR\)</span> is calculated for combined sexes,
 i.e.</p>
 <p><span class="math display">\[
 SPR_{s=1:2} =
-\frac{\theta_{s=1}+\theta_{s=2}}{\theta_{0,{s=1}}+\theta_{0,{s=2}}}
+\frac{\Phi_{s=1}+\Phi_{s=2}}{\Phi_{0,{s=1}}+\Phi_{0,{s=2}}}
 \]</span></p>
-<p><span class="math inline">\(\theta_s\)</span> is calculated as <span class="math display">\[
-\theta_s = \sum_{a=0}^{A}N_{a,s}W_{a,s}P_{a,s}
+<p><span class="math inline">\(\Phi_s\)</span> is calculated as <span class="math display">\[
+\Phi_s = \sum_{a=0}^{A}N_{a,s}W_{a,s}P_{a,s}
 \]</span> where <span class="math inline">\(N_{a,s}\)</span>, <span class="math inline">\(W_{a,s}\)</span> and <span class="math inline">\(P_{a,s}\)</span>, respectively, are the number,
 weight and proportion of mature fish, that are of sex <span class="math inline">\(s\)</span> and age <span class="math inline">\(a\)</span>.</p>
 </div>
@@ -1264,11 +1253,13 @@ L_t=\bigg((y_1^b+(y_2^b-y_1^b))\frac{1-\exp(-a(t-t_1))}{1-\exp(-a(t_2-t_1))}\big
 \]</span></p>
 <p>Variation in growth is modelling using the same approach as described
 above for the length-based and length and age-based catch curve. For
-completeness, the equations are repeated here for lnegth-based per
+completeness, the equations are repeated here for length-based per
 recruit analysis.</p>
-<p>Fish are assumed to recruit into the population at age <span class="math inline">\(t=1\)</span> y (to help avoid the possibility of
-negative lengths), with the size distribution assuming to conform to a
-normal distribution. The proportion of fish of sex <span class="math inline">\(s\)</span>, in length class <span class="math inline">\(k\)</span> at age <span class="math inline">\(t=1\)</span> is calculated as</p>
+<p>Fish are assumed to recruit into the population at age <span class="math inline">\(t=1\)</span> years (to help avoid the possibility
+of negative lengths), with the size distribution assuming to conform to
+a normal distribution. For each sex, the proportion of recruits (among
+fish of that sex) in length class <span class="math inline">\(k\)</span>
+at age <span class="math inline">\(t=1\)</span> is calculated as</p>
 <p><span class="math display">\[
 \theta_{k,s} = \int_{L_k^-}^{\mathrm{L_k^+}}f_{a=1}(L)dL_s
 \]</span></p>
@@ -1304,11 +1295,11 @@ g_{s,n,1} &amp; g_{s,n,2} &amp; \cdots &amp; g_{s,n,n}
 <p><span class="math display">\[
 g_{s,k,j} = \left\{
     \begin{array}{ll}
-        \int_{{\infty}^-}^{\mathrm{l_{s,k}^+}}f[\phi_s(T,l_s,j)]dl &amp;
-\mbox{if }k=1 \\
-        \int_{l_{s,k}^-}^{\mathrm{l_{s,k}^+}}f[\phi_s(T,l_s,j)]dl
+        \int_{{\infty}^-}^{\mathrm{l_{s,k}^+}}f[\omega_s(T,l_s,j)]dl
+&amp; \mbox{if }k=1 \\
+        \int_{l_{s,k}^-}^{\mathrm{l_{s,k}^+}}f[\omega_s(T,l_s,j)]dl
 &amp;\mbox{if }k=1&lt;k&lt;K \\
-\int_{l_{s,k}^-}^{\mathrm{\infty^+}}f[\phi_s(T,l_s,j)]dl &amp;\mbox{if
+\int_{l_{s,k}^-}^{\mathrm{\infty^+}}f[\omega_s(T,l_s,j)]dl &amp;\mbox{if
 }k=K \\
     \end{array}
 \right.
@@ -1316,7 +1307,7 @@ g_{s,k,j} = \left\{
 for a fish of sex <span class="math inline">\(s\)</span>, <span class="math inline">\(f\)</span> is the specified (normal) distribution,
 <span class="math inline">\(l_{s,k}^-\)</span> and <span class="math inline">\(l_{s,k}^+\)</span> are the lower and upper limits,
 respectively, of length class <span class="math inline">\(j\)</span> for
-fish of sex <span class="math inline">\(s\)</span>, and <span class="math inline">\(\phi_s\)</span> is a vector of parameters
+fish of sex <span class="math inline">\(s\)</span>, and <span class="math inline">\(\omega_s\)</span> is a vector of parameters
 dependent on the time period <span class="math inline">\(T\)</span> and
 sex, and the midpoint of the size class <span class="math inline">\(j\)</span>, <span class="math inline">\(l_j\)</span>, and where <span class="math inline">\(K\)</span> is the number of length classes. In the
 model, growth is applied at the end of each time step, after mortality
@@ -1410,31 +1401,35 @@ calculated as <span class="math display">\[
 YPR = \sum_{s=1}^{2}\sum_{k=1}^{K}C_{s,k}W_{s,l}
 \]</span> where <span class="math inline">\(K\)</span> donotes the
 number of length classes considered by the model, and W_{s,l} is the
-expected weight for the midpoint of length class <span class="math inline">\(k\)</span>. In the above equation, <span class="math inline">\(C_{s,k}\)</span> is the retained catch of fish of
-sex <span class="math inline">\(s\)</span> for fish in length class
-<span class="math inline">\(k\)</span>, calculated from the Baranov
-catch equation, i.e. <span class="math display">\[
+expected weight for the midpoint <span class="math inline">\(l\)</span>
+of length class <span class="math inline">\(k\)</span>. In the above
+equation, <span class="math inline">\(C_{s,k}\)</span> is the retained
+catch of fish of sex <span class="math inline">\(s\)</span> for fish in
+length class <span class="math inline">\(k\)</span>, calculated from the
+Baranov catch equation, i.e. <span class="math display">\[
 C_{s,k} =
 N_{s,k}\biggl(\frac{F_{s,l}^R}{Z_{s,l}}\biggr)(1-\exp(-Z_{s,l}))
-\]</span> where <span class="math inline">\(F_{s,l}\)</span> and <span class="math inline">\(Z_{s,l}\)</span> are the length dependent fishing
-and total mortalities, respectively, calculated for the midpoint of
-length class <span class="math inline">\(k\)</span>.</p>
+\]</span> where <span class="math inline">\(F_{s,l}\)</span> is the
+length-dependent fishing mortality associated with retention for sex
+<span class="math inline">\(s\)</span>, and <span class="math inline">\(Z_{s,l}\)</span> is the length dependent total
+mortality for sex <span class="math inline">\(s\)</span>, calculated for
+the midpoint of length class <span class="math inline">\(k\)</span>.</p>
 <p>For a model with an annual timestep, <span class="math inline">\(N_s,a,k\)</span>, i.e. the numbers of fish of sex
-<span class="math inline">\(s\)</span> at age <span class="math inline">\(a\)</span> in length class <span class="math inline">\(k\)</span>, for the fished population are
+<span class="math inline">\(s\)</span> at age <span class="math inline">\(a\)</span> at midpoint <span class="math inline">\(l\)</span> in length class <span class="math inline">\(k\)</span>, for the fished population are
 calculated as <span class="math display">\[
 \begin{align}
-    N_{s,a,k} = \phi &amp;&amp; \text{if s=1 and a=1}\\
-    N_{s,a,k} = 1-\phi &amp;&amp; \text{if s=2 and a=1}\\
-    N_{s,a,k} = N_{s,a-1,k}\exp(-Z_{s,a-1,l}) &amp;&amp; \text{if
+    N_{s,a,l} = \xi &amp;&amp; \text{if s=1 and a=1}\\
+    N_{s,a,l} = 1-\xi &amp;&amp; \text{if s=2 and a=1}\\
+    N_{s,a,l} = N_{s,a-1,l}\exp(-Z_{s,a-1,l}) &amp;&amp; \text{if
 1&lt;a&lt;A}\\
-    N_{s,a,k} = N_{s,a-1,k}\exp(-Z_{s,a-1,l})/(1-\exp(-Z_{s,a-1,l}))
+    N_{s,a,l} = N_{s,a-1,l}\exp(-Z_{s,a-1,l})/(1-\exp(-Z_{s,a-1,l}))
 &amp;&amp; \text{if a=A}\\
 \end{align}
-\]</span> where <span class="math inline">\(\phi\)</span> is the ratio
-of females to males at age 1 yr, and <span class="math inline">\(A\)</span>, is the maximum age considered by the
+\]</span> where <span class="math inline">\(\xi\)</span> is the ratio of
+females to males at age 1 yr, and <span class="math inline">\(A\)</span>, is the maximum age considered by the
 model. Note that, for this length-based per recruit analysis, a juvenile
 is recruited at age one rather than at age zero (to avoid calculations
-of negative values of fish lengths). The numbers of sex <span class="math inline">\(s\)</span> at the midpoint of length class <span class="math inline">\(k\)</span> for the unfished population, <span class="math inline">\(\acute{N}_{s,k}\)</span> are calculated as above
+of negative values of fish lengths). The numbers of sex <span class="math inline">\(s\)</span> at the midpoint <span class="math inline">\(l\)</span> of length class <span class="math inline">\(k\)</span> for the unfished population, <span class="math inline">\(\acute{N}_{s,k}\)</span> are calculated as above
 for <span class="math inline">\(N_{s,k}\)</span>, but replacing all
 values for total mortality with natural mortality, <span class="math inline">\(M\)</span>.</p>
 <p>If the species is a protogynous hermaphrodite (female to male sex
@@ -1451,23 +1446,23 @@ For protandrous species (male to female sex change), <span class="math inline">\
 P_{max}^{s=1}/(1+\exp(-\log_e(19)(l-L_{50}^{\rho})/(L_{95}^{\rho}-L_{50}^{\rho})))
 \]</span> where <span class="math inline">\(P_{max}^{s=1}\)</span>, the
 terminal sex, is females. For hermaphroditic species, the values of
-<span class="math inline">\(N_{s,a,k}\)</span> become modified, prior
+<span class="math inline">\(N_{s,a,l}\)</span> become modified, prior
 calculation of survival at the next age step, to reflect the assumed
-stable sex ratio. The modified values for female, <span class="math inline">\(N&#39;_{s=1,k}\)</span> are calculated as <span class="math display">\[
-N&#39;_{s=1,a,k}=\rho_{l}(N_{s=1,a,k}+N_{s=2,a,k})
+stable sex ratio. The modified values for female, <span class="math inline">\(N&#39;_{s=1,l}\)</span> are calculated as <span class="math display">\[
+N&#39;_{s=1,a,l}=\rho_{l}(N_{s=1,a,l}+N_{s=2,a,l})
 \]</span> and those for males as <span class="math display">\[
-N&#39;_{s=1,a,k}=(1-\rho_{l})(N_{s=1,a,k}+N_{s=2,a,k})
+N&#39;_{s=1,a,l}=(1-\rho_{l})(N_{s=1,a,l}+N_{s=2,a,l})
 \]</span></p>
 </div>
 <div id="spawning-potential-ratio---length-based-per-recruit-analysis" class="section level3">
 <h3>Spawning potential ratio - length-based per recruit analysis</h3>
 <p>As with age-based per recruit analysis, spawning potential ratio,
 <span class="math inline">\(SPR\)</span>, for sex <span class="math inline">\(s\)</span>, is calculated as <span class="math display">\[
-SPR_s = \frac{\theta_s}{\theta_{0,s}}
+SPR_s = \frac{\Phi_s}{\Phi_{0,s}}
 \]</span> where <span class="math inline">\(\theta_s\)</span> and <span class="math inline">\(\theta_{0,s}\)</span> is the spawning biomass per
 recruit for sex <span class="math inline">\(s\)</span>, for the fished
 and unfished population, respectively. In the above equation, <span class="math inline">\(\theta_s\)</span> is calculated as <span class="math display">\[
-\theta_s = \sum_{k=1}^{K}N_{k,s}W_{l,s}P_{l,s}
+\Phi_s = \sum_{k=1}^{K}N_{k,s}W_{l,s}P_{l,s}
 \]</span> where <span class="math inline">\(N_{k,s}\)</span> is the
 number of fish of sex <span class="math inline">\(s\)</span> in length
 class <span class="math inline">\(k\)</span>, and <span class="math inline">\(W_{l,s}\)</span> and <span class="math inline">\(P_{l,s}\)</span>, respectively, are the weight and
@@ -1488,8 +1483,8 @@ R = \frac{S}{Sb+a}
 <span class="math inline">\(S\)</span> is (in most cases, see below)
 female spawning biomass and <span class="math inline">\(a\)</span> and
 <span class="math inline">\(b\)</span> are parameters of the
-stock-recruitment relationship. This equation may be reparametrised into
-an alternative form that employs a steepness parameter <span class="math inline">\(h\)</span>, i.e., the proportion of the
+stock-recruitment relationship. This equation may be reparameterised
+into an alternative form that employs a steepness parameter <span class="math inline">\(h\)</span>, i.e., the proportion of the
 unexploited equilibrium recruitment expected to recruit when spawning
 biomass is reduced to 20% of its unfished equilibrium level (Mace and
 Doonan, 1988). For gonochoristic species, the equilibrium level of
@@ -1497,7 +1492,7 @@ recruitment for the fished population, relative to that for the unfished
 population, <span class="math inline">\(R_{eq}\)</span>, may be
 calculated as</p>
 <p><span class="math display">\[
-R_{eq} = \frac{4h\theta_{s=1}-(1-h)\theta_{0,s=1}}{5(h-0.2)\theta_{s=1}}
+R_{eq} = \frac{4h\Phi_{s=1}-(1-h)\Phi_{0,s=1}}{5(h-0.2)\Phi_{s=1}}
 \]</span> For hermaphroditic species, recruitment is calculated on the
 combined mature biomass for both sexes, <span class="math inline">\(SPR_{s=1:2}\)</span>, rather than just
 females.</p>
@@ -1508,7 +1503,7 @@ R = aS\exp(-bS)
 equilibrium level of recruitment of the fished population, relative to
 that for the unfished population may be calculated as</p>
 <p><span class="math display">\[
-R_{eq}=\frac{\theta_{0,s=1}\bigg(1-\frac{4\log_e(\theta_{s=1,0}/\theta_{s=1})}{5\log_e(5h)}\bigg)}{\theta_{s=1}}
+R_{eq}=\frac{\Phi_{0,s=1}\bigg(1-\frac{4\log_e(\Phi_{s=1,0}/\Phi_{s=1})}{5\log_e(5h)}\bigg)}{\Phi_{s=1}}
 \]</span> ### Calculating equilibrium recruitment for hermaphroditc
 species - age and length-based per recruit models</p>
 <p>As fishing tends to be focused towards capturing larger individuals,
@@ -1556,10 +1551,10 @@ C_{eq}=R_{eq}YPR
 \]</span> The equilibrium level of spawning biomass for sex <span class="math inline">\(s\)</span>, for the fished population may be
 calculated as</p>
 <p><span class="math display">\[
-S_{eq,s}=R_{eq}\theta_s
+S_{eq,s}=R_{eq}\Phi_s
 \]</span> The equilibrium ratio of spawning biomass of sex <span class="math inline">\(s\)</span>, relative to the unfished level, is</p>
 <p><span class="math display">\[
-B_{rel,s} =S_{eq,s}/\theta_{0,s}
+B_{rel,s} =S_{eq,s}/\Phi_{0,s}
 \]</span></p>
 </div>
 <div id="calculation-of-biological-reference-points---age-and-length-based-per-recruit-models" class="section level3">
@@ -1589,14 +1584,18 @@ target at <span class="math inline">\(B_{rel}=0.4\)</span>.</p>
 length-based per recruit models</h3>
 <p>This implementation of per recruit analysis allows for incorporation
 uncertainty in estimates of fishing mortality, natural mortality and
-steepness, assuming independent normal distributions for each of these
-parameters. Estimates of key outputs from per recruit analysis, with
-uncertainty, are produced using parametric sampling to produce a
-specified number (e.g. 500) of F, M and h values, which are inputted
-into the deterministic per recruit equations (i.e. within the
-CalcYPRAndSPRForFMort() function), to produce 500 sets of estimated
-results of key parameters of interest. Lower and Upper 95% confidence
-limits are taken as the 2.5 and 97.5 percentiles of the 500
+steepness, assuming independent normal or lognormal distributions for
+each of these parameters. Following the recommendation of Hamel &amp;
+Cope (2022), for natural mortality, the example code specifies a
+lognormal distribtuion, with standard deviation value, in log space, of
+0.31. For fishing mortality, the standard deviation value can be derived
+from outputs of catch curve analysis. Estimates of key outputs from per
+recruit analysis, with uncertainty, are produced using parametric
+sampling to produce a specified number (e.g. 500) of F, M and h values,
+which are inputted into the deterministic per recruit equations
+(i.e. within the CalcYPRAndSPRForFMort() function), to produce 500 sets
+of estimated results of key parameters of interest. Lower and Upper 95%
+confidence limits are taken as the 2.5 and 97.5 percentiles of the 500
 estimates.</p>
 <p>Note, it is also possible to incorporate other sources of
 uncertainty, such as for growth and maturity curves, if estimates are
@@ -1688,8 +1687,8 @@ the minimum legal length and is therefore discarded if caught) and ii)
 above that length, value scales according fish length according to the
 following relationship:</p>
 <p><span class="math display">\[
-\Phi_l = \bigg(L_{\min}+((L-L_{min})^{\gamma}\bigg)/L
-\]</span> where, <span class="math inline">\(\Phi_l\)</span>, is a
+\Lambda_l = \bigg(L_{\min}+((L-L_{min})^{\gamma}\bigg)/L
+\]</span> where, <span class="math inline">\(\Lambda_l\)</span>, is a
 measure of the value of a fish in length class <span class="math inline">\(l\)</span>, relative to the value accorded to a
 fish of length <span class="math inline">\(L_{\min}\)</span>, which is
 the minimum length of a fish to be considered to be of any value to a
@@ -1706,7 +1705,7 @@ L_{\min}=(W_{\min}/{a})^{1/b}
 relationship. For a given level of fishing mortality, the value of all
 fish (of both sexes) in retained catches is calculated as</p>
 <p><span class="math display">\[
-X = \sum_lC_{l}W_{l}\Phi_lR_{eq}
+X = \sum_lC_{l}W_{l}\Lambda_lR_{eq}
 \]</span> Values of <span class="math inline">\(X\)</span> are
 calculated for a wide range of fishing mortalities, and a search is
 undertaken to identify the value of fishing mortality that maximises
@@ -1737,6 +1736,232 @@ Refer to help files and example code, showing function inputs and
 outputs.</p>
 </div>
 </div>
+<div id="simulation-of-age-data-assuming-constant-mortality-and-recruitment" class="section level2">
+<h2>Simulation of age data (assuming constant mortality and
+recruitment)</h2>
+<p>The package provides a basic procedure in the SimAgeFreqData()
+function for simulating age frequency samples, based on the equations
+provided above describing the age-based catch curve method with logistic
+selectivity. Given a specified sample size, values for expected catch
+proportions at age, <span class="math inline">\(\hat{P_a}\)</span>, an
+age sample can be generated from a multinomial distribution, i.e. using
+the rmultinom() function in R. This method for simulating age frequency
+data is provided in code for several examples for applying age-based
+catch curves. Note that these data generated for a stock assumed to at
+equilibrium with respect to mortality and recruitment, assuming logistic
+age-based selectivity.</p>
+</div>
+<div id="simulation-of-length-and-age-data-assuming-constant-mortality-and-recruitment" class="section level2">
+<h2>Simulation of length and age data (assuming constant mortality and
+recruitment)</h2>
+<p>The function SimLenAndAgeFreqData() is provided for simulating length
+and age data, based on the equations and assumptions of the ‘length and
+age based catch curve model’. The function produces length frequency
+samples of a specified sample size, given the expected proportion of
+fish in each length class <span class="math inline">\(l\)</span>,
+i.e. <span class="math inline">\(\hat{P}_l\)</span>, using the
+rmultinom() function in R. An associated age frequency sample for each
+length class <span class="math inline">\(l\)</span> is generated from
+the expected, conditional age distributions for each length class, <span class="math inline">\(\hat{P}_{a|l}\)</span>, by applying the
+rmultinom() function from within R. Note that these data generated for a
+stock assumed to at equilibrium with respect to mortality and
+recruitment, assuming logistic length-based selectivity (and allowing
+for discarding, if specified).</p>
+</div>
+<div id="simulation-of-length-data-using-a-dynamic-length-structured-model" class="section level2">
+<h2>Simulation of length data using a dynamic length-structured
+model</h2>
+<p>The function SimLenAndAgeFreqData_DynMod() is available for
+simulating length data, allowing for constant or variable mortality,
+and/or constant or variable recruitment, using a dynamic
+length-structured model. This length-based uses outputs from the
+extended, length-based per recruit analyses to calculate the stock
+recruitment relationship and specify the initial population at fished
+equilibrium.</p>
+</div>
+<div id="description-of-dynamic-length-structured-model" class="section level2">
+<h2>Description of dynamic length-structured model</h2>
+<p>Broadly, the dynamics of the population may be represented by the
+equation below, describing the numbers of fish in the exploited
+population surviving to year <span class="math inline">\(t\)</span>,
+i.e. <span class="math inline">\(N_t\)</span>. That is,</p>
+<p><span class="math display">\[
+N_{t+1,s}=G_sS_{t,s}N_{t,s}+R_{t+1,s}
+\]</span> where <span class="math inline">\(G_s\)</span> is a
+sex-specific length transition matrix, <span class="math inline">\(S_{t,s}\)</span> is the survival matrix for sex
+<span class="math inline">\(s\)</span> in year <span class="math inline">\(t\)</span> and <span class="math inline">\(R_{t+1,s}\)</span> is a vector for the numbers of
+fish of sex <span class="math inline">\(s\)</span> recruiting to the
+different size classes in year <span class="math inline">\(t\)</span>.</p>
+<p>Growth for sex <span class="math inline">\(s\)</span>, is modelled
+using a sex-specific length transition matrix, i.e. <span class="math inline">\(G_s=(g_{k,i,s})\)</span>, representing the
+probability of fish in length class <span class="math inline">\(k\)</span> growing into length class <span class="math inline">\(i\)</span>, within a model timestep.</p>
+<p><span class="math display">\[
+G_s=\begin{bmatrix}
+g_{1,1,s} &amp;  &amp; . &amp;   &amp;   \\
+g_{2,1,s} &amp; g_{2,2,s} &amp; . &amp;   &amp;   \\
+. &amp; . &amp; . &amp; . &amp; . \\
+g_{K-1,1,s} &amp; g_{K-1,2,s} &amp; . &amp; g_{K-1,K-1,s} &amp;   \\
+g_{K,1,s} &amp; g_{K,2,s} &amp; . &amp; S_{K,K-1,s} &amp; S_{K,K,s} \\
+\end{bmatrix}
+\]</span></p>
+<p>The survival matrix <span class="math inline">\(S_s\)</span>,
+describes the proportions of fish of sex <span class="math inline">\(s\)</span> in each length class <span class="math inline">\(k\)</span> that survive the combined effects of
+fishing and natural mortality in year <span class="math inline">\(t\)</span>, i.e.</p>
+<p><span class="math display">\[
+S_{t,s}=\begin{bmatrix}
+S_{1,t,s} &amp; 0 &amp; 0 \\
+0 &amp; S_{2,t,s} &amp; 0 \\
+. &amp; . &amp; . \\
+0 &amp; 0 &amp; S_{K,t,s} \\
+\end{bmatrix}
+\]</span></p>
+<p><span class="math inline">\(N_{t,s}\)</span> is a vector, containing
+the number of fish <span class="math inline">\(N_{t,k,s}\)</span>, of
+sex <span class="math inline">\(s\)</span> within length class <span class="math inline">\(k\)</span> of the <span class="math inline">\(K\)</span> different length classes comprising the
+length composition in year <span class="math inline">\(t\)</span>,
+i.e.</p>
+<p><span class="math display">\[
+N_{t,s}=\begin{bmatrix}
+N_{1,t,s} \\
+N_{2,t,s} \\
+. \\
+N_{K,t,s} \\
+\end{bmatrix}
+\]</span></p>
+<p><span class="math inline">\(R_{t,s}\)</span> is also a vector of
+recruitment, for fish of sex <span class="math inline">\(s\)</span>,
+resulting from spawning in year <span class="math inline">\(t\)</span>,
+distributed over <span class="math inline">\(K\)</span> length classes,
+i.e.</p>
+<p><span class="math display">\[
+R_{t+1,s}=\begin{bmatrix}
+R_{1,t+1,s} \\
+R_{2,t+1,s} \\
+. \\
+R_{K,t+1,s} \\
+\end{bmatrix}
+\]</span></p>
+<div id="specifying-an-exploitation-history-with-stochasticity-and-autocorrelation" class="section level3">
+<h3>Specifying an exploitation history (with stochasticity and
+autocorrelation)</h3>
+<p>The function SimExploitationHistory_DynMod() may be used to specify
+an exploitation history, as input to the length-based dynamic model
+function SimLenAndAgeFreqData_DynMod(), to allow for variable mortality.
+For this routine, the user specifies an initial value for fishing
+mortality, then values for fishing mortality at the end of one or
+several periods, e.g. there the user may specify an initial period of
+increasing mortality, followed by a period of decreasing mortality and
+then a period of stable mortality. The values of fishing mortality
+between the initial and final year of each fishing period are calculated
+using linear interpolation. Stochasticity and autocorrelation in the
+fishing mortality series are introduced according to an AR1 process,
+i.e.</p>
+<p><span class="math display">\[
+F_t = A_FF_{t-1}+{\epsilon}_{t_F}
+\]</span> where <span class="math inline">\(A_F\)</span> represents
+autocorrelation between successive F values and <span class="math inline">\(\epsilon_{t_F}\)</span> are random, normally
+distributed errors. The values of <span class="math inline">\(\epsilon_{t_F}\)</span> are generated using the
+rnorm() function in R, specifying a mean of zero and standard deviation
+<span class="math inline">\({\sigma\epsilon}_{t_F}\)</span>, calculated
+as</p>
+<p><span class="math display">\[
+{\sigma\epsilon}_{t_F} = \bigg(\sqrt{(1+A_F^2)}\bigg){\sigma_F}
+\]</span> where the value for <span class="math inline">\(\sigma_F\)</span> is a value for standard
+deviation for fishing mortality input by the user. Thus, <span class="math inline">\(\sigma_\epsilon\)</span> increases as the level of
+autocorrelation increases. Note that fishing mortality may also be input
+to SimLenAndAgeFreqData_DynMod() as remaining constant, with or without
+error (as in Crisafulli et al., submitted).</p>
+</div>
+<div id="generating-recruitment-deviations-with-stochasticity-and-autocorrelation" class="section level3">
+<h3>Generating recruitment deviations (with stochasticity and
+autocorrelation)</h3>
+<p>The function GetRecruitmentDeviations_DynSimMod() may be used to
+specify an recruitment deviations <span class="math inline">\(\epsilon_{t_R}\)</span> with random,
+auto-correlated errors, as input to the dynamic length-based model to
+allow recruitment variation. This routine requires the number of years
+for the simulation period, and specified levels for recruitment
+variation and auto-correlation. Stochasticity and autocorrelation are
+introduced according to an AR1 process, i.e.</p>
+<p><span class="math display">\[
+\epsilon_{t_R} = A_R\epsilon_{t-1}+{\epsilon&#39;}_{t_R}
+\]</span> where <span class="math inline">\(A_R\)</span> represents
+autocorrelation between successive recruitment deviation values, in log
+space, and <span class="math inline">\({\epsilon&#39;}_{t_R}\)</span>
+are random, normally distributed errors. The values of <span class="math inline">\({\epsilon&#39;}_{t_R}\)</span> are generated using
+the rnorm() function in R, specifying a mean of zero and standard
+deviation <span class="math inline">\({\sigma{\epsilon}_{t_R}}\)</span>,
+calculated as</p>
+<p><span class="math display">\[
+{\sigma{\epsilon&#39;}_{t_F}} = \bigg(\sqrt{(1+A_R^2)}\bigg){\sigma_R}
+\]</span> where the value for <span class="math inline">\(\sigma_R\)</span> is a value for standard
+deviation for recruitment deviations, in log space, input by the user.
+Thus, <span class="math inline">\(\sigma_\epsilon\)</span> increases as
+the level of autocorrelation increases.</p>
+</div>
+<div id="calculation-of-annual-recruitment" class="section level3">
+<h3>Calculation of annual recruitment</h3>
+<p>The parameters of the assumed Beverton-Holt stock-recruitment for the
+dynamic simulation model are calculated as</p>
+<p><span class="math display">\[
+\alpha = (B_0/R_0)\frac{1-h}{4h}
+\]</span> and</p>
+<p><span class="math display">\[
+\beta=(h-0.2)/(0.8hR_0)
+\]</span> In the above equations, <span class="math inline">\(R_0\)</span>, is an arbitrary value for initial
+recruitment for the unfished population (e.g. 1000) and <span class="math inline">\(B_0\)</span> is the unfished biomass, calculated
+as</p>
+<p><span class="math display">\[
+B_0=\Phi_{0,s=1}R_0
+\]</span> The value of female spawning biomass per recruit, <span class="math inline">\(\theta_{s=1}\)</span>, is calculated using the
+length-based per recruit model.</p>
+<p><span class="math display">\[
+\begin{align}
+    R_t = (\Phi_{s=1}-\beta)/(\beta-\Phi_{s=1}) &amp;&amp; \text{if
+t=1}\\
+    R_{t+1} = (B_t/(\alpha+{\beta}B_t))\epsilon_{t_R}-0.5\sigma_{R}^2\\
+\end{align}
+\]</span></p>
+</div>
+<div id="calculating-annual-survival" class="section level3">
+<h3>Calculating annual survival</h3>
+<p>The numbers of females of length <span class="math inline">\(l\)</span> at the midpoint of length class <span class="math inline">\(k\)</span>, at the beginning of timestep <span class="math inline">\(t+1\)</span>, after addition of juvenile recruits,
+is</p>
+<p><span class="math display">\[
+N_{{t+1},s=1,l}=N_{{t+1},s=1,l}+(\xi{R_{t+1,l}}\theta_{s=1,l})
+\]</span> and the corresponding number of males is</p>
+<p><span class="math display">\[
+N_{{t+1},s=2,l}=N_{t+1,s=2,l}+((1-\xi){R_{t+1,l}}\theta_{s=2,l})
+\]</span> ### Calculating annual catches (in numbers)</p>
+<p>The annual catch in year <span class="math inline">\(t\)</span>, for
+sex <span class="math inline">\(s\)</span> in length class <span class="math inline">\(k\)</span>, in numbers, is calculated as</p>
+<p><span class="math display">\[
+C_{t,s,k} =
+N_{t,s,k}\biggl(\frac{F_{t,s,l}^R}{Z_{t,s,l}}\biggr)(1-\exp(-Z_{t,s,l}))
+\]</span></p>
+<p>where <span class="math inline">\(F_{t,s,l}\)</span> is the
+length-dependent fishing mortality associated with retention in year
+<span class="math inline">\(t\)</span> for sex <span class="math inline">\(s\)</span>, and <span class="math inline">\(Z_{t,
+s,l}\)</span> is the length dependent total mortality in year <span class="math inline">\(t\)</span> for sex <span class="math inline">\(s\)</span>, both calculated for the midpoint <span class="math inline">\(l\)</span> of length class <span class="math inline">\(k\)</span>.</p>
+</div>
+<div id="generating-simulated-annual-length-compositions" class="section level3">
+<h3>Generating (simulated) annual length compositions</h3>
+<p>Length frequency samples of a specified sample size for sex <span class="math inline">\(s\)</span> in year <span class="math inline">\(t\)</span>, are generated from the expected
+proportions of such fish in that year in each length class <span class="math inline">\(l\)</span>, i.e. <span class="math inline">\(\hat{P}_{t,l}\)</span>, using the rmultinom()
+function in R. The values of <span class="math inline">\(\hat{P_{t,l}}\)</span> are calculated as</p>
+<p><span class="math display">\[
+\hat{P}_{t,s,k}=C_{t,s,k}/\sum_{k=1}^{K}C_{t,s,k}
+\]</span></p>
+</div>
+<div id="apply-routines-for-simulating-length-andor-age-data" class="section level3">
+<h3>Apply routines for simulating length and/or age data</h3>
+<p>Key functions relevant to applying this method are:
+SimAgeFreqData()<br />
+SimLenAndAgeFreqData()<br />
+PlotSimLenAndAgeFreqData()<br />
+SimExploitationHistory_DynMod()<br />
+SimLenAndAgeFreqData_DynMod()</p>
+</div>
+</div>
 <div id="references" class="section level2">
 <h2>References:</h2>
 <p>Beverton, R. J. H. &amp; Holt, S. J. (1957). On the Dynamics of
@@ -1763,6 +1988,9 @@ Regional Development, Western Australia. 158 pp.</p>
 qualitative risk assessment method for application within an
 ecosystem-based management framework. ICES Journal of Marine Science
 (2015), 72(3), 1043–1056. <a href="doi:10.1093/icesjms/fsu142" class="uri">doi:10.1093/icesjms/fsu142</a>.</p>
+<p>Hamel, O. S. &amp; Cope, J. M. (2022). Development and considerations
+for application of a longevity-based prior for the natural mortality
+rate. Fisheries Research 256 (2022) 106477.</p>
 <p>Hoenig, J. M. (1983). Empirical use of longevity data to estimate
 mortality rates. Fishery Bulletin 82, 898–903.</p>
 <p>Kirkwood, G. P. &amp; Walker, T. I. (1986). Gill net mesh
