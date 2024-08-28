@@ -6654,13 +6654,14 @@ GetAgeLenVectors_AgeLengthCatchCurve_Growth <- function(nTimeSteps, TimeStep, nL
 #' @return EstProp.sim, EstProp.sim_low, EstProp.sim_up, EstPropF.sim, EstPropF.sim_low, EstPropF.sim_up,
 #' EstPropM.sim, EstPropM.sim_low, EstPropM.sim_up, EstLenAtAge.sim, EstLenAtAgeF.sim, EstLenAtAgeM.sim
 #'
-GetResampLengthsAtAge_AgeLengthCatchCurve_Growth <- function(nReps, nTimeSteps, DecAges, GrowthCurveType, RefnceAges, params, vcov.params,
+GetResampLengthsAtAge_AgeLengthCatchCurve_Growth <- function(nReps, nTimeSteps, PlotAges, GrowthCurveType, RefnceAges, params, vcov.params,
                                                           ObsRetCatchFreqAtLen) {
 
 
   set.seed(123)
+  nPlotAges = length(PlotAges)
   sims = data.frame(MASS::mvrnorm(n = nReps, params, vcov.params))
-  EstLenAtAge.sim = data.frame(matrix(nrow = nReps, ncol = nTimeSteps))
+  EstLenAtAge.sim = data.frame(matrix(nrow = nReps, ncol = nPlotAges))
   EstLenAtAgeF.sim = EstLenAtAge.sim
   EstLenAtAgeM.sim = EstLenAtAge.sim
 
@@ -6669,34 +6670,34 @@ GetResampLengthsAtAge_AgeLengthCatchCurve_Growth <- function(nReps, nTimeSteps, 
       ParamVals = exp(unlist(sims[j,]))
       if (is.vector(ObsRetCatchFreqAtLen)) { # length at age data for combined sexes
         if (SelectivityType == 1) { # input vector
-          EstLenAtAge.sim[j,] = ParamVals[2] * (1 - exp(-ParamVals[3]*(DecAges)))
+          EstLenAtAge.sim[j,] = ParamVals[2] * (1 - exp(-ParamVals[3]*(PlotAges)))
         }
         if (SelectivityType == 2) { # estimated
           if (length(ParamVals)==8) { # estimating sex-specific growth parameters, with sexes unknown for observed data
-            EstLenAtAgeF.sim[j,] = ParamVals[4] * (1 - exp(-ParamVals[6]*(DecAges)))
-            EstLenAtAgeM.sim[j,] = ParamVals[5] * (1 - exp(-ParamVals[7]*(DecAges)))
+            EstLenAtAgeF.sim[j,] = ParamVals[4] * (1 - exp(-ParamVals[6]*(PlotAges)))
+            EstLenAtAgeM.sim[j,] = ParamVals[5] * (1 - exp(-ParamVals[7]*(PlotAges)))
           } else {
-            EstLenAtAge.sim[j,] = ParamVals[4] * (1 - exp(-ParamVals[5]*(DecAges))) # growth curve for single sex or combined sexes
+            EstLenAtAge.sim[j,] = ParamVals[4] * (1 - exp(-ParamVals[5]*(PlotAges))) # growth curve for single sex or combined sexes
           }
         }
 
       } else { # length at age data for separate sexes
         if (SelectivityType == 1) { # input vector
-          EstLenAtAgeF.sim[j,] = ParamVals[2] * (1 - exp(-ParamVals[4]*(DecAges)))
-          EstLenAtAgeM.sim[j,] = ParamVals[3] * (1 - exp(-ParamVals[5]*(DecAges)))
+          EstLenAtAgeF.sim[j,] = ParamVals[2] * (1 - exp(-ParamVals[4]*(PlotAges)))
+          EstLenAtAgeM.sim[j,] = ParamVals[3] * (1 - exp(-ParamVals[5]*(PlotAges)))
         } # SelectivityType = 1
         if (SelectivityType == 2) { # estimated
           if (length(ParamVals)==8) { # sex-specific growth, selectivity for combined sexes
-            EstLenAtAgeF.sim[j,] = ParamVals[4] * (1 - exp(-ParamVals[6]*(DecAges)))
-            EstLenAtAgeM.sim[j,] = ParamVals[5] * (1 - exp(-ParamVals[7]*(DecAges)))
+            EstLenAtAgeF.sim[j,] = ParamVals[4] * (1 - exp(-ParamVals[6]*(PlotAges)))
+            EstLenAtAgeM.sim[j,] = ParamVals[5] * (1 - exp(-ParamVals[7]*(PlotAges)))
           }
           if (length(ParamVals)==10) { # sex-specific growth, selectivity for separate sexes
-            EstLenAtAgeF.sim[j,] = ParamVals[6] * (1 - exp(-ParamVals[8]*(DecAges)))
-            EstLenAtAgeM.sim[j,] = ParamVals[7] * (1 - exp(-ParamVals[9]*(DecAges)))
+            EstLenAtAgeF.sim[j,] = ParamVals[6] * (1 - exp(-ParamVals[8]*(PlotAges)))
+            EstLenAtAgeM.sim[j,] = ParamVals[7] * (1 - exp(-ParamVals[9]*(PlotAges)))
           }
         } # SelectivityType = 2
         if (SelectivityType == 3) { # estimated, separate sex with single growth curve
-          EstLenAtAge.sim[j,] = ParamVals[6] * (1 - exp(-ParamVals[7]*(DecAges)))
+          EstLenAtAge.sim[j,] = ParamVals[6] * (1 - exp(-ParamVals[7]*(PlotAges)))
         }
       }
       cat("j",j,'\n')
@@ -6710,23 +6711,23 @@ GetResampLengthsAtAge_AgeLengthCatchCurve_Growth <- function(nReps, nTimeSteps, 
         t1=RefnceAges[1]; t2=RefnceAges[2]
         if (SelectivityType == 1) { # input vector
           y1=0; y2=exp(ParamVals[2]); a=ParamVals[3]; b=ParamVals[4]
-          for(i in 1:length(DecAges)) {
-            Age=DecAges[i]
+          for(i in 1:length(PlotAges)) {
+            Age=PlotAges[i]
             EstLenAtAge.sim[j,i] = SchnuteGrowthfunction(Age, t1, t2, y1, y2, a, b)
           }
         }
         if (SelectivityType == 2) { # estimated
           t1=RefnceAges[1]; t2=RefnceAges[2]
           y1=0; y2=exp(ParamVals[4]); a=ParamVals[5]; b=ParamVals[6]
-          for(i in 1:length(DecAges)) {
-            Age=DecAges[i]
+          for(i in 1:length(PlotAges)) {
+            Age=PlotAges[i]
             EstLenAtAge.sim[j,i] = SchnuteGrowthfunction(Age, t1, t2, y1, y2, a, b)
           }
         }
       } else {
         if (SelectivityType == 1) { # input vector
-          for(i in 1:length(DecAges)) {
-            Age=DecAges[i]
+          for(i in 1:length(PlotAges)) {
+            Age=PlotAges[i]
             y1=0; y2=exp(ParamVals[2]); a=ParamVals[4]; b=ParamVals[6]
             t1=RefnceAges[1,1]; t2=RefnceAges[1,2]
             EstLenAtAgeF.sim[j,] = SchnuteGrowthfunction(Age, t1, t2, y1, y2, a, b)
@@ -6736,8 +6737,8 @@ GetResampLengthsAtAge_AgeLengthCatchCurve_Growth <- function(nReps, nTimeSteps, 
           }
         }
         if (SelectivityType == 2) { # estimated
-          for(i in 1:length(DecAges)) {
-            Age=DecAges[i]
+          for(i in 1:length(PlotAges)) {
+            Age=PlotAges[i]
             y1=0; y2=exp(ParamVals[4]); a=ParamVals[6]; b=ParamVals[8]
             t1=RefnceAges[1,1]; t2=RefnceAges[1,2]
             EstLenAtAgeF.sim[j,i] = SchnuteGrowthfunction(Age, t1, t2, y1, y2, a, b)
@@ -6940,6 +6941,7 @@ PlotAgeLengthCatchCurve_Growth <- function(params, RefnceAges, MLL, GrowthCurveT
   nLenCl = length(midpt)
   MinAge = floor(TimeStep)
   nAgeCl = length(MinAge:MaxAge)
+  PlotAges = seq(TimeStep,MaxAge,0.1)
   DecAges = seq(TimeStep,MaxAge,TimeStep)
   nTimeSteps = length(DecAges)
 
@@ -6960,7 +6962,7 @@ PlotAgeLengthCatchCurve_Growth <- function(params, RefnceAges, MLL, GrowthCurveT
   vcov.params = res$ModelDiag$vcov.Params
 
   # Get lengths at age and associated quantiles from resampling
-  res = GetResampLengthsAtAge_AgeLengthCatchCurve_Growth(nReps, nTimeSteps, DecAges, GrowthCurveType, RefnceAges,
+  res = GetResampLengthsAtAge_AgeLengthCatchCurve_Growth(nReps, nTimeSteps, PlotAges, GrowthCurveType, RefnceAges,
                                                          params, vcov.params, ObsRetCatchFreqAtLen)
 
   EstProp.sim = res$EstProp.sim; EstProp.sim_low = res$EstProp.sim_low; EstProp.sim_up = res$EstProp.sim_up
@@ -6969,7 +6971,7 @@ PlotAgeLengthCatchCurve_Growth <- function(params, RefnceAges, MLL, GrowthCurveT
   EstLenAtAge.sim = res$EstLenAtAge.sim; EstLenAtAgeF.sim = res$EstLenAtAgeF.sim; EstLenAtAgeM.sim = res$EstLenAtAgeM.sim
 
   if (is.na(xaxis_lab)) xaxis_lab = "Age (y)"
-  xlims = Get_xaxis_scale(DecAges)
+  xlims = Get_xaxis_scale(PlotAges)
   if (is.na(xmax)) xmax = xlims$xmax
   if (is.na(xint)) xint = xlims$xint
 
@@ -6978,29 +6980,29 @@ PlotAgeLengthCatchCurve_Growth <- function(params, RefnceAges, MLL, GrowthCurveT
     ylims = Get_yaxis_scale(midpt)
     if (is.na(ymax)) ymax = ylims$ymax
     if (is.na(yint)) yint = ylims$yint
-    plot(ObsAge, ObsLenClRetCatchMidPt, "p", main=MainLabel, cex.main=1.2, pch=16, cex=1.0, col=rgb(1,0,0,0.1),
+    plot(ObsAge, ObsLenClRetCatchMidPt, "p", main=MainLabel, cex.main=1.0, pch=16, cex=1.0, col=rgb(1,0,0,0.1),
          xaxt = "n", yaxt = "n", xlab=list(xaxis_lab,cex=1.2),ylab=list(yaxis_lab,cex=1.2), frame=F, xlim=c(0,xmax), ylim=c(0,ymax))
     points(ObsAge, ObsLenClRetCatchMidPt, col=rgb(1,0,0,0.1), cex=1.0)
 
     if (!is.na(EstLenAtAge.sim[1,1])) {
       if (PlotCLs == TRUE) {
-        x = c(DecAges,rev(DecAges)) # using shading for 95% CLs
+        x = c(PlotAges,rev(PlotAges)) # using shading for 95% CLs
         y = c(EstProp.sim_low, rev(EstProp.sim_up))
         polygon(x,y,col="lightgrey",border=NA)
       }
       points(ObsAge, ObsLenClRetCatchMidPt, col=rgb(1,0,0,0.1), cex=1.0)
-      points(DecAges, EstProp.sim, col="black", pch=16, cex=1.0)
+      lines(PlotAges, EstProp.sim, , col="black", lwd=2)
     } else {
       if (PlotCLs == TRUE) {
-        x = c(DecAges,rev(DecAges)) # using shading for 95% CLs
+        x = c(PlotAges,rev(PlotAges)) # using shading for 95% CLs
         y = c(EstPropF.sim_low, rev(EstPropF.sim_up))
         polygon(x,y,col="lightgrey",border=NA)
         y = c(EstPropM.sim_low, rev(EstPropM.sim_up))
         polygon(x,y,col="lightgrey",border=NA)
 
       }
-      points(DecAges,EstPropF.sim, col="black", cex=1.0, "o")
-      points(DecAges,EstPropM.sim, col="black", cex=1.0, "o")
+      points(PlotAges,EstPropF.sim, col="black", cex=1.0, "o")
+      points(PlotAges,EstPropM.sim, col="black", cex=1.0, "o")
     }
     AddAxesAndTickLabelsToPlot(xmin=NA, xmax, xint, ymin=NA, ymax, yint, cexval=NA, cexaxisval=NA, lwdval=NA, lineval=NA, lasval=NA)
     if (ShowLegend == T) {
@@ -7018,22 +7020,22 @@ PlotAgeLengthCatchCurve_Growth <- function(params, RefnceAges, MLL, GrowthCurveT
       yaxis_lab1 = yaxis_lab
     }
 
-    plot(ObsAge_F, ObsLenClRetCatchMidPt_F, "p", main=MainLabel, cex.main=1.2, pch=16, cex=1.0, col=rgb(1,0,0,0.1),
+    plot(ObsAge_F, ObsLenClRetCatchMidPt_F, "p", main=MainLabel, cex.main=1.0, pch=16, cex=1.0, col=rgb(1,0,0,0.1),
          xaxt = "n", yaxt = "n", xlab=list(xaxis_lab,cex=1.2), ylab=list(yaxis_lab1,cex=1.2), frame=F, xlim=c(0,xmax), ylim=c(0,ymax))
     points(ObsAge_F, ObsLenClRetCatchMidPt_F, col=rgb(1,0,0,0.1), cex=1.0)
     if (SelectivityType != 3) {
       if (PlotCLs == TRUE) {
-        x = c(DecAges,rev(DecAges)) # using shading for 95% CLs
+        x = c(PlotAges,rev(PlotAges)) # using shading for 95% CLs
         y = c(EstPropF.sim_low, rev(EstPropF.sim_up))
         polygon(x,y,col="lightgrey",border=NA)
-        points(DecAges,EstPropF.sim, col="black", cex=1.0, pch=16)
+        lines(PlotAges,EstPropF.sim, col="black", lwd=2)
       }
     } else {
       if (PlotCLs == TRUE) {
-        x = c(DecAges,rev(DecAges)) # using shading for 95% CLs
+        x = c(PlotAges,rev(PlotAges)) # using shading for 95% CLs
         y = c(EstProp.sim_low, rev(EstProp.sim_up))
         polygon(x,y,col="lightgrey",border=NA)
-        points(DecAges,EstProp.sim, col="black", cex=1.0, pch=16)
+        lines(PlotAges,EstProp.sim, col="black", lwd=2)
       }
       points(ObsAge_F, ObsLenClRetCatchMidPt_F, col=rgb(1,0,0,0.1), cex=1.0, pch=16)
     }
@@ -7057,18 +7059,18 @@ PlotAgeLengthCatchCurve_Growth <- function(params, RefnceAges, MLL, GrowthCurveT
     points(ObsAge_M, ObsLenClRetCatchMidPt_M, col=rgb(0,0,1,0.1), cex=1.0)
     if (SelectivityType != 3) {
       if (PlotCLs == TRUE) {
-        x = c(DecAges,rev(DecAges)) # using shading for 95% CLs
+        x = c(PlotAges,rev(PlotAges)) # using shading for 95% CLs
         y = c(EstPropM.sim_low, rev(EstPropM.sim_up))
         polygon(x,y,col="lightgrey",border=NA)
       }
-      points(DecAges, EstPropM.sim, col="black", cex=1.0, pch=16)
+      lines(PlotAges, EstPropM.sim, col="black", lwd=2)
     } else {
       if (PlotCLs == TRUE) {
-        x = c(DecAges,rev(DecAges)) # using shading for 95% CLs
+        x = c(PlotAges,rev(PlotAges)) # using shading for 95% CLs
         y = c(EstProp.sim_low, rev(EstProp.sim_up))
         polygon(x,y,col="lightgrey",border=NA)
       }
-      points(DecAges,EstProp.sim, col="black", cex=1.0, pch=16, pch=16)
+      points(PlotAges,EstProp.sim, col="black", cex=1.0, pch=16, pch=16)
     }
     AddAxesAndTickLabelsToPlot(xmin=NA, xmax, xint, ymin=NA, ymax, yint, cexval=NA, cexaxisval=NA, lwdval=NA, lineval=NA, lasval=NA)
     if (ShowLegend == T) {
@@ -7936,7 +7938,6 @@ PlotAgeLengthCatchCurve_Pears_Resid <- function(params, RefnceAges, MLL, GrowthC
       PearResid[,i]=0
       if (sum(ObsRetCatchFreqAtLengthAndIntAge[,i]) > 1) {
         Prop_Resid = (ObsCatchPropAgeAtLength[,i] - ExpRetCatchPropIntAgeGivenLength[,i])
-        cat('\n')
         Prop_Var = sqrt(ExpRetCatchPropIntAgeGivenLength[,i]*(1-ExpRetCatchPropIntAgeGivenLength[,i]) /
                           sum(ObsRetCatchFreqAtLengthAndIntAge[,i]))
         Prop_Var[which(Prop_Var<=0.01)]=0.01

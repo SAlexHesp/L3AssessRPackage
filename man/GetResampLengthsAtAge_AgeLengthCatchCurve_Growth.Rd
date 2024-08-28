@@ -7,7 +7,7 @@
 GetResampLengthsAtAge_AgeLengthCatchCurve_Growth(
   nReps,
   nTimeSteps,
-  DecAges,
+  PlotAges,
   GrowthCurveType,
   RefnceAges,
   params,
@@ -17,8 +17,6 @@ GetResampLengthsAtAge_AgeLengthCatchCurve_Growth(
 }
 \arguments{
 \item{nReps}{number of samples}
-
-\item{DecAges}{decimal ages}
 
 \item{GrowthCurveType}{1=von Bertalanffy, 2=Schnute}
 
@@ -31,6 +29,8 @@ GetResampLengthsAtAge_AgeLengthCatchCurve_Growth(
 \item{ObsRetCatchFreqAtLen}{observed catch length frequency}
 
 \item{TimeStep}{observed frequencies in length classes}
+
+\item{DecAges}{decimal ages}
 }
 \value{
 EstProp.sim, EstProp.sim_low, EstProp.sim_up, EstPropF.sim, EstPropF.sim_low, EstPropF.sim_up,
