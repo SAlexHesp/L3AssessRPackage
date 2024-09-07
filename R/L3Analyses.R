@@ -4327,14 +4327,20 @@ SimLenAndAgeFreqData <- function(SampleSize, MaxAge, TimeStep, NatMort, FishMort
 #'
 #' @keywords internal
 #'
-#' @param UnfishSpBiomPerRec unfished spawning biomass per recruit
+#' @param ReprodPattern 1=gonochoristic, 2=protogynous, 3=protandrous
+#' @param Unfish_FemSpBiomPerRec unfished spawning biomass per recruit for females
+#' @param Unfish_CombSexSpBiomPerRec unfished spawning biomass per recruit for combined sexes
 #' @param InitRec initial recruitment (R0)
 #' @param Steepness steepness parameters
 #'
 #' @return Unfish_SpBiom, BH_SRRa, BH_SRRb
-CalcStockRecruitParams_DynSimMod <- function(UnfishSpBiomPerRec, InitRec, Steepness) {
+CalcStockRecruitParams_DynSimMod <- function(ReprodPattern, Unfish_FemSpBiomPerRec, Unfish_CombSexSpBiomPerRec, InitRec, Steepness) {
 
   # calculate B-H stock recruitment parameters
+
+  if (ReprodPattern == 1 | ReprodPattern == 3) UnfishSpBiomPerRec = Unfish_FemSpBiomPerRec # gonochoristic or protandrous species
+  if (ReprodPattern == 2) UnfishSpBiomPerRec = Unfish_CombSexSpBiomPerRec # protogynous species
+
   Unfish_SpBiom = UnfishSpBiomPerRec * InitRec
 
   BH_SRRa = (UnfishSpBiomPerRec / InitRec) * ((1 - Steepness) / (4 * Steepness))
@@ -4377,6 +4383,164 @@ GetRecruitmentDeviations_DynSimMod <- function(nYears, lnSigmaR, autocorr) {
   }
   return(random_dev)
 }
+
+#' Update population dynamics for dynamic simulation model
+#'
+#' Generates outputs from a dynamic simulation model for generation of
+#' annual composition data
+#'
+#' @keywords internal
+#'
+#' @param nYears number of years of deviations required
+#' @param nLenCl number of length classes
+#' @param midpt mid points of length classes
+#' @param NatMort natural mortality
+#' @param ReprodPattern reproductive pattern, 1=gonochoristic, 2=protogynous (female to male sex change) hermaphroditism,
+#' 3=protandrous hermaphroditism (male to female sex change)
+#' @param InitRatioFem ratio of females to males at birth
+#' @param RecLenDist length distribution of recruits
+#' @param FemPropMatAtLen female proportion mature at length
+#' @param MalPropMatAtLen male proportion mature at length
+#' @param FemWtAtLen female weight at length
+#' @param MalWtAtLen male weight at length
+#' @param Fish_FemNPerRecAtLen numbers of females per recruit in each length class
+#' @param Fish_MalNPerRecAtLen numbers of males per recruit in each length class
+#' @param Fish_FemSpBiomPerRec female spawning biomass per recruit
+#' @param Fish_CombSexSpBiomPerRec combined sex spawning biomass per recruit
+#' @param BH_SRRa stock recruitment parameter
+#' @param BH_SRRb stock recruitment parameter
+#' @param random_dev annual recruitment deviations
+#' @param FMortByYear annual values for fully selected fishing mortality
+#' @param DiscMort level of discard mortality
+#' @param FemSelLandAtLen selectivity of landings for females
+#' @param MalSelLandAtLen selectivity of landings for males
+#' @param FemSelDiscAtLen selectivity of discards for females
+#' @param MalSelDiscAtLen selectivity of discards for males
+#'
+#' @return FemSpBiom, MalSpBiom, CombSexSpBiom, AnnRecruit, Catch_Fem, Catch_Mal, Catch_CombSex, Catch_Biom
+UpdatePopnDynamics_DynSimMod <- function(nYears, nLenCl, midpt, NatMort, ReprodPattern, InitRatioFem, RecLenDist,
+                                         FemPropMatAtLen, MalPropMatAtLen, FemWtAtLen, MalWtAtLen, LTM_Fem, LTM_Mal,
+                                         Fish_FemNPerRecAtLen, Fish_MalNPerRecAtLen, Fish_FemSpBiomPerRec,
+                                         Fish_CombSexSpBiomPerRec, BH_SRRa, BH_SRRb, random_dev, FMortByYear, DiscMort,
+                                         FemSelLandAtLen, MalSelLandAtLen, FemSelDiscAtLen, MalSelDiscAtLen) {
+
+  N_Fem <- data.frame(matrix(nrow = nYears+1, ncol = nLenCl)) # numbers
+  colnames(N_Fem) <- midpt
+  N_Fem[seq(1,nYears+1,1),seq(1,nLenCl,1)] = 0
+  N_Mal = N_Fem
+  Surv_Fem = N_Fem; Surv_Mal = N_Fem
+  tempSurv_Fem = N_Fem; tempSurv_Mal = N_Fem
+
+  Catch_Fem <- data.frame(matrix(nrow = nYears, ncol = nLenCl)) # numbers
+  colnames(Catch_Fem) <- midpt
+  Catch_Fem[seq(1,nYears,1),seq(1,nLenCl,1)] = 0
+  Catch_Mal = Catch_Fem
+  Catch_CombSex = N_Fem
+
+  AnnRecruit = rep(0,nYears+1)
+  FemSpBiom = rep(0,nYears)
+  MalSpBiom = rep(0,nYears)
+  CombSexSpBiom = rep(0,nYears)
+  SpBiom = rep(0,nYears) # spawning biomass measure, whether gonochoristic or hermaphroditic, for calculating recruitment
+  VulnPopnBiom = rep(0, nYears)
+  TotNum = rep(0,nYears) # sum across sexes and length classes for each timestep
+  TotCatch = rep(0,nYears)
+  Catch_Biom = rep(0,nYears)
+  TotAnnCatchBiom = rep(0,nYears)
+
+  if (ReprodPattern == 1 | ReprodPattern == 3) { # gonochoristic or protandrous species
+    FishSpBiomPerRec = Fish_FemSpBiomPerRec
+  }
+  if (ReprodPattern == 2) { # protogynous species
+    FishSpBiomPerRec = Fish_CombSexSpBiomPerRec
+  }
+
+  for (t in 1:nYears) {
+
+    # get numbers and female spawning biomass for first time step
+    if (t == 1) {
+      AnnRecruit[t] = (FishSpBiomPerRec - BH_SRRa) / (BH_SRRb * FishSpBiomPerRec) * random_dev[t]
+      N_Fem[t,] = AnnRecruit[t] * Fish_FemNPerRecAtLen # 1000s
+      N_Mal[t,] = AnnRecruit[t] * Fish_MalNPerRecAtLen # 1000s
+    }
+    TotNum[t] = sum(N_Fem[t,]) + sum(N_Mal[t,])
+
+    # get fishing mortality at length, for calculating survival
+    FemFAtLen <- FMortByYear[t] * (FemSelLandAtLen + (DiscMort * FemSelDiscAtLen))
+    MalFAtLen <- FMortByYear[t] * (MalSelLandAtLen + (DiscMort * MalSelDiscAtLen))
+
+    # females
+    # calculate survival to beginning of next timestep
+    tempFemZAtLen = NatMort + FemFAtLen
+    Surv_Fem[t+1,] = N_Fem[t,] * exp(-tempFemZAtLen)
+    tempMalZAtLen = NatMort + MalFAtLen
+    Surv_Mal[t+1,] = N_Mal[t,] * exp(-tempMalZAtLen)
+
+    if (ReprodPattern > 1) { # hermaphroditic species
+
+      # assuming that, regardless of fishing pattern, the sex ratio at age is determined by
+      # by the logistic curve describing probability of sex change at age
+      for (i in 1:nLenCl) {
+        tempSurv_Fem[t+1,i] = PropFemAtLen[i] * (Surv_Fem[t+1,i] + Surv_Mal[t+1,i])
+        tempSurv_Mal[t+1,i] = (1 - PropFemAtLen[i]) * (Surv_Fem[t+1,i] + Surv_Mal[t+1,i])
+        Surv_Fem[t+1,i] = tempSurv_Fem[t+1,i]
+        Surv_Mal[t+1,i] = tempSurv_Mal[t+1,i]
+      } # i
+    } # reproductive pattern
+
+    # grow for timestep
+    # females
+    M1=t(t(Surv_Fem[t+1,]))
+    M2=t(LTM_Fem[,])
+    N_Fem[t+1,]=as.numeric(M1 %*% M2)
+    # males
+    M1=t(t(Surv_Mal[t+1,]))
+    M2=t(LTM_Mal[,])
+    N_Mal[t+1,]=as.numeric(M1 %*% M2)
+
+    # calculate spawning biomass
+    FemSpBiom[t] = sum(N_Fem[t,] * FemPropMatAtLen * FemWtAtLen) # tonnes
+    MalSpBiom[t] = sum(N_Mal[t,] * MalPropMatAtLen * MalWtAtLen) # tonnes
+    CombSexSpBiom[t] = FemSpBiom[t] + MalSpBiom[t]
+
+    # get spawning biomass
+    if (ReprodPattern == 1 | ReprodPattern == 3) SpBiom[t] = FemSpBiom[t] # gonochoristic or protandrous species
+    if (ReprodPattern == 3) SpBiom[t] = CombSexSpBiom[t] # hermaphroditic species
+
+    # annual recruitment
+    AnnRecruit[t+1] = (SpBiom[t] / (BH_SRRa + BH_SRRb * SpBiom[t])) * random_dev[t]
+
+    # add recruits
+    N_Fem[t+1,] = N_Fem[t+1,] + (AnnRecruit[t+1] * InitRatioFem * RecLenDist[1,])
+    N_Mal[t+1,] = N_Mal[t+1,] + (AnnRecruit[t+1] * (1 - InitRatioFem) * RecLenDist[2,])
+
+    # calculate female and male fishing mortality at length associated with landings
+    FemLandFAtLen = FMortByYear[t] * FemSelLandAtLen
+    MalLandFAtLen = FMortByYear[t] * MalSelLandAtLen
+
+    # calculate retained catch at length for timestep (in numbers)
+    Catch_Fem[t,] = N_Fem[t,] * (FemLandFAtLen / tempFemZAtLen) * (1 - exp(-tempFemZAtLen))
+    Catch_Mal[t,] = N_Mal[t,] * (MalLandFAtLen / tempMalZAtLen) * (1 - exp(-tempMalZAtLen))
+    Catch_CombSex[t,] = Catch_Fem[t,] + Catch_Mal[t,]
+    TotCatch[t] = sum(Catch_Fem[t,]) + sum(Catch_Mal[t,])
+
+    # calculate retained catch biomass
+    Catch_Biom[t] = sum(Catch_Fem[t,] * FemWtAtLen) + sum(Catch_Mal[t,] * MalWtAtLen)
+
+  }
+
+  Results = list(FemSpBiom=FemSpBiom,
+                 MalSpBiom=MalSpBiom,
+                 CombSexSpBiom=CombSexSpBiom,
+                 AnnRecruit=AnnRecruit,
+                 Catch_Fem=Catch_Fem,
+                 Catch_Mal=Catch_Mal,
+                 Catch_CombSex=Catch_CombSex,
+                 Catch_Biom=Catch_Biom)
+
+  return(Results)
+}
+
 
 #' Generate an exploitation history, for use in generating length data from a dynamic
 #' length-structured model
@@ -4484,6 +4648,103 @@ SimExploitationHistory_DynMod <- function(nPeriods, InitYr, PeriodEndYr, InitYr_
              rand_FMort = rand_FMort)
 
   return(res)
+}
+
+
+
+#' Generate random length data from dynamic simulation model
+#'
+#' Generates random length data, and associated length frequencies,
+#' for each year, from dynamics simulation model
+#'
+#' @keywords internal
+#'
+#' @param nYears number of years of length data
+#' @param SimAnnSampSize specified annual sample size (both sexes)
+#' @param lbnd lower bounds of length classes
+#' @param midpt mid points of length classes
+#' @param ubnd upper bounds of length classes
+#' @param Catch_Fem number of females in annual retained catches in each length class
+#' @param Catch_Mal number of females in annual retained catches in each length class
+#' @param Catch_Mal number of females and males in annual retained catches in each length class
+#'
+#' @return MeanLengthStats
+GenerateRandomLengthFreqData_DynSimMod <- function(nYears, SimAnnSampSize, lbnd, midpt, ubnd, Catch_Fem, Catch_Mal, Catch_CombSex) {
+
+  # Get sample random length frequency data, for retained catches for each year,
+  # given expected length distributions for each year, assuming a multinomial distribution
+  AnnSimSampSize_Fem = rep(0, nYears); AnnSimSampSize_Mal = rep(0, nYears)
+  RandObsCatchLenFreq_Fem <- data.frame(matrix(nrow = nYears+1, ncol = nLenCl))
+  colnames(RandObsCatchLenFreq_Fem) <- midpt
+  RandObsCatchLenFreq_Fem[seq(1,nYears+1,1),seq(1,nLenCl,1)] = 0
+  RandObsCatchLenFreq_Mal = RandObsCatchLenFreq_Fem; RandObsCatchLenFreq_CombSex = RandObsCatchLenFreq_Fem
+
+  for (t in 1:nYears) {
+    Probs_Fem = as.vector(unlist(Catch_Fem[t,] / sum(Catch_Fem[t,])))
+    Probs_Mal = as.vector(unlist(Catch_Mal[t,] / sum(Catch_Mal[t,])))
+    AnnSimSampSize_Fem[t] = round(sum(Catch_Fem[t,]) / sum(Catch_CombSex[t,]) * SimAnnSampSize, 0)
+    AnnSimSampSize_Mal[t] = SimAnnSampSize - AnnSimSampSize_Fem[t]
+    RandObsCatchLenFreq_Fem[t,] = as.vector(rmultinom(1, AnnSimSampSize_Fem[t], Probs_Fem))
+    RandObsCatchLenFreq_Mal[t,] = as.vector(rmultinom(1, AnnSimSampSize_Mal[t], Probs_Mal))
+    RandObsCatchLenFreq_CombSex[t,] = RandObsCatchLenFreq_Fem[t,] + RandObsCatchLenFreq_Mal[t,]
+  }
+
+  results = list(RandObsCatchLenFreq_Fem = RandObsCatchLenFreq_Fem,
+                 RandObsCatchLenFreq_Mal = RandObsCatchLenFreq_Mal,
+                 RandObsCatchLenFreq_CombSex = RandObsCatchLenFreq_CombSex,
+                 AnnSimSampSize_Fem = AnnSimSampSize_Fem,
+                 AnnSimSampSize_Mal = AnnSimSampSize_Mal)
+
+  return(results)
+
+}
+
+
+#' Calculate mean length statistics for dynamic simulation model
+#'
+#' Calculates mean length and associated 95 percent confidence limits for
+#' each year of generated length data from dynamic simulation model
+#'
+#' @keywords internal
+#'
+#' @param nYears number of years of length data
+#' @param RandObsCatchLenFreq_Fem randomly generated annual length frequencies for females
+#' @param RandObsCatchLenFreq_Mal randomly generated annual length frequencies for males
+#'
+#' @return MeanLengthStats
+GetMeanLengthStats_DynSimMod <- function(nYears, RandObsCatchLenFreq_Fem, RandObsCatchLenFreq_Mal) {
+
+  FemMeanCatchLen <- rep(0,nYears); MalMeanCatchLen <- rep(0,nYears)
+  FemMeanCatchLen.lw95 <- rep(0,nYears); FemMeanCatchLen.up95 <- rep(0,nYears)
+  MalMeanCatchLen.lw95 <- rep(0,nYears); MalMeanCatchLen.up95 <- rep(0,nYears)
+  LenInterv = (ubnd[1] - lbnd[1]) / 2 # randomising fish lengths, within each length class
+
+  # calculate mean lengths for each year and associated 95% CLs
+  for (t in 1:nYears) {
+
+    # get random individual lengths (nearest 1 mm), and mean lengths with 95% CLs
+    FemFishLen = round(rep(midpt, RandObsCatchLenFreq_Fem[t,]) + runif(length(rep(midpt, RandObsCatchLenFreq_Fem[t,])),-LenInterv, LenInterv),0)
+    MalFishLen = round(rep(midpt, RandObsCatchLenFreq_Mal[t,]) + runif(length(rep(midpt, RandObsCatchLenFreq_Mal[t,])),-LenInterv, LenInterv),0)
+
+    FemMeanCatchLen[t] = round(mean(FemFishLen),1)
+    MalMeanCatchLen[t] = round(mean(MalFishLen),1)
+    FemMeanCatchLen.lw95[t] = round(FemMeanCatchLen[t] -1.96 * (sd(FemFishLen)/sqrt(length(FemFishLen))),1)
+    FemMeanCatchLen.up95[t] = round(FemMeanCatchLen[t] +1.96 * (sd(FemFishLen)/sqrt(length(FemFishLen))),1)
+    MalMeanCatchLen.lw95[t] = round(MalMeanCatchLen[t] -1.96 * (sd(MalFishLen)/sqrt(length(MalFishLen))),1)
+    MalMeanCatchLen.up95[t] = round(MalMeanCatchLen[t] +1.96 * (sd(MalFishLen)/sqrt(length(MalFishLen))),1)
+
+  }
+
+  MeanLengthStats <- data.frame(YrIndex = 1:nYears,
+                                FemMeanLen=FemMeanCatchLen,
+                                FemMeanLen.lw95=FemMeanCatchLen.lw95,
+                                FemMeanLen.up95=FemMeanCatchLen.up95,
+                                MalMeanLen=MalMeanCatchLen,
+                                MalMeanLen.lw95=MalMeanCatchLen.lw95,
+                                MalMeanLen.up95=MalMeanCatchLen.up95)
+
+  return(MeanLengthStats)
+
 }
 
 
@@ -4633,38 +4894,6 @@ SimLenAndAgeFreqData_DynMod <- function(SimAnnSampSize, nYears, lnSigmaR, autoco
                                         EggFertParam, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
                                         ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, FMortByYear) {
 
-  # set up data structures
-  FemMeanCatchLen <- rep(0,nYears); MalMeanCatchLen <- rep(0,nYears)
-  FemMeanCatchLen.lw95 <- rep(0,nYears); FemMeanCatchLen.up95 <- rep(0,nYears)
-  MalMeanCatchLen.lw95 <- rep(0,nYears); MalMeanCatchLen.up95 <- rep(0,nYears)
-
-  N_Fem <- data.frame(matrix(nrow = nYears+1, ncol = nLenCl)) # numbers
-  colnames(N_Fem) <- midpt
-  N_Fem[seq(1,nYears+1,1),seq(1,nLenCl,1)] = 0
-  N_Mal = N_Fem
-  Surv_Fem = N_Fem; Surv_Mal = N_Fem
-  tempSurv_Fem = N_Fem; tempSurv_Mal = N_Fem
-
-  Catch_Fem <- data.frame(matrix(nrow = nYears, ncol = nLenCl)) # numbers
-  colnames(Catch_Fem) <- midpt
-  Catch_Fem[seq(1,nYears,1),seq(1,nLenCl,1)] = 0
-  Catch_Mal = Catch_Fem
-
-  AnnRecruit = rep(0,nYears+1)
-  FemSpBiom = rep(0,nYears)
-  MalSpBiom = rep(0,nYears)
-  CombSexSpBiom = rep(0,nYears)
-  SpBiom = rep(0,nYears) # spawning biomass measure, whether gonochoristic or hermaphroditic, for calculating recruitment
-  VulnPopnBiom = rep(0, nYears)
-  TotNum = rep(0,nYears) # sum across sexes and length classes for each timestep
-  TotCatch = rep(0,nYears)
-  Catch_Biom = rep(0,nYears)
-  TotAnnCatchBiom = rep(0,nYears)
-
-  # variables for simulated length data
-  AnnSimSampSize_Fem = rep(0, nYears); AnnSimSampSize_Mal = rep(0, nYears)
-  Catch_CombSex = N_Fem
-  RandObsCatchLenFreq_Fem = N_Fem; RandObsCatchLenFreq_Mal = N_Fem; RandObsCatchLenFreq_CombSex = N_Fem
 
   FMort = FMortByYear[1] # i.e. assuming population at equilibrium, at value of F specified for first year
   res=CalcYPRAndSPRForFMort_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
@@ -4673,11 +4902,8 @@ SimLenAndAgeFreqData_DynMod <- function(SimAnnSampSize, nYears, lnSigmaR, autoco
                                EggFertParam, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
                                ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, FMort)
 
-
-  LTM_Fem = res$ModelDiag$LTM_Fem
-  LTM_Mal = res$ModelDiag$LTM_Mal
-  FemWtAtLen = res$ModelDiag$FemWtAtLen
-  MalWtAtLen = res$ModelDiag$MalWtAtLen
+  LTM_Fem = res$ModelDiag$LTM_Fem; LTM_Mal = res$ModelDiag$LTM_Mal
+  FemWtAtLen = res$ModelDiag$FemWtAtLen; MalWtAtLen = res$ModelDiag$MalWtAtLen
   RecLenDist = res$ModelDiag$RecLenDist
   FemRetProbAtLen = res$FemRetProbAtLen
   Unfish_FemSpBiomPerRec = sum(res$ModelDiag$Unfish_FemBiomPerRecAtAge)
@@ -4690,12 +4916,9 @@ SimLenAndAgeFreqData_DynMod <- function(SimAnnSampSize, nYears, lnSigmaR, autoco
   FemRetProbAtLen = res$ModelDiag$FemRetProbAtLen; MalRetProbAtLen = res$ModelDiag$MalRetProbAtLen
   FemSelLandAtLen = res$ModelDiag$FemSelLandAtLen; MalSelLandAtLen = res$ModelDiag$MalSelLandAtLen
   FemSelDiscAtLen = res$ModelDiag$FemSelDiscAtLen; MalSelDiscAtLen = res$ModelDiag$MalSelDiscAtLen
-  Unfish_MalNPerRecLen = res$ModelDiag$Unfish_MalNPerRecLen
-  Fish_MalNPerRecLen = res$ModelDiag$Fish_MalNPerRecLen
-  Unfish_FemNPerRecLen = res$ModelDiag$Unfish_FemNPerRecLen
-  Fish_FemNPerRecLen = res$ModelDiag$Fish_FemNPerRecLen
-  MalPropMatAtLen = res$ModelDiag$MalPropMatAtLen
-  FemPropMatAtLen = res$ModelDiag$FemPropMatAtLen
+  Unfish_FemNPerRecLen = res$ModelDiag$Unfish_FemNPerRecLen; Unfish_MalNPerRecLen = res$ModelDiag$Unfish_MalNPerRecLen
+  Fish_FemNPerRecLen = res$ModelDiag$Fish_FemNPerRecLen; Fish_MalNPerRecLen = res$ModelDiag$Fish_MalNPerRecLen
+  FemPropMatAtLen = res$ModelDiag$FemPropMatAtLen; MalPropMatAtLen = res$ModelDiag$MalPropMatAtLen
   PropFemAtLen = res$ModelDiag$PropFemAtLen
 
   # calculate ratio of mature males to mature females, by number and egg fertilisation rates
@@ -4703,135 +4926,32 @@ SimLenAndAgeFreqData_DynMod <- function(SimAnnSampSize, nYears, lnSigmaR, autoco
                                      MalPropMatAtLen, FemPropMatAtLen, EggFertParam)
   UnfishMalToFemProp = res$UnfishMalToFemProp
   FishMalToFemProp = res$FishMalToFemProp
-  MalDeplRatio = res$MalDeplRatio
-  Eq_FertRate = res$Eq_FertRate
-
-  if (ReprodPattern == 1) { # gonochoristic species
-    UnfishSpBiomPerRec = Unfish_FemSpBiomPerRec
-    FishSpBiomPerRec = Fish_FemSpBiomPerRec
-  }
-  if (ReprodPattern > 1) { # hermaphroditic species
-    UnfishSpBiomPerRec = Unfish_CombSexSpBiomPerRec
-    FishSpBiomPerRec = Fish_CombSexSpBiomPerRec
-  }
 
   # calculate stock-recruitment parameters
-  res = CalcStockRecruitParams_DynSimMod(UnfishSpBiomPerRec, InitRec, Steepness)
-  BH_SRRa = res$BH_SRRa
-  BH_SRRb = res$BH_SRRb
+  res = CalcStockRecruitParams_DynSimMod(ReprodPattern, Unfish_FemSpBiomPerRec, Unfish_CombSexSpBiomPerRec, InitRec, Steepness)
+  BH_SRRa = res$BH_SRRa; BH_SRRb = res$BH_SRRb
 
   # get random recruitment deviations, note values already log back-transformed
   # and bias corrected
   random_dev=GetRecruitmentDeviations_DynSimMod(nYears, lnSigmaR, autocorr)
 
-  # update population dynamics
-  for (t in 1:nYears) {
+  # update population dynamics, and calculate annual catches
+  res=UpdatePopnDynamics_DynSimMod(nYears, nLenCl, midpt, NatMort, ReprodPattern, InitRatioFem, RecLenDist,
+                                   FemPropMatAtLen, MalPropMatAtLen, FemWtAtLen, MalWtAtLen, LTM_Fem, LTM_Mal,
+                                   Fish_FemNPerRecAtLen, Fish_MalNPerRecAtLen, Fish_FemSpBiomPerRec,
+                                   Fish_CombSexSpBiomPerRec, BH_SRRa, BH_SRRb, random_dev, FMortByYear, DiscMort,
+                                   FemSelLandAtLen, MalSelLandAtLen, FemSelDiscAtLen, MalSelDiscAtLen)
 
-    # get numbers and female spawning biomass for first time step
-    if (t == 1) {
-      AnnRecruit[t] = (FishSpBiomPerRec - BH_SRRa) / (BH_SRRb * FishSpBiomPerRec) * random_dev[t]
-      N_Fem[t,] = AnnRecruit[t] * Fish_FemNPerRecAtLen # 1000s
-      N_Mal[t,] = AnnRecruit[t] * Fish_MalNPerRecAtLen # 1000s
-    }
-    TotNum[t] = sum(N_Fem[t,]) + sum(N_Mal[t,])
+  FemSpBiom=res$FemSpBiom; MalSpBiom=res$MalSpBiom; CombSexSpBiom=res$CombSexSpBiom; AnnRecruit=res$AnnRecruit
+  Catch_Fem=res$Catch_Fem; Catch_Mal=res$Catch_Mal; Catch_CombSex=res$Catch_CombSex; Catch_Biom=res$Catch_Biom
 
-    # get fishing mortality at length, for calculating survival
-    FemFAtLen <- FMortByYear[t] * (FemSelLandAtLen + (DiscMort * FemSelDiscAtLen))
-    MalFAtLen <- FMortByYear[t] * (MalSelLandAtLen + (DiscMort * MalSelDiscAtLen))
+  # Get sample random length frequency data, for retained catches for each year,
+  # given expected length distributions for each year, assuming a multinomial distribution
+  res=GenerateRandomLengthFreqData_DynSimMod(nYears, SimAnnSampSize, lbnd, midpt, ubnd, Catch_Fem, Catch_Mal, Catch_CombSex)
+  RandObsCatchLenFreq_Fem = res$RandObsCatchLenFreq_Fem; RandObsCatchLenFreq_Mal = res$RandObsCatchLenFreq_Mal
 
-    # females
-    # calculate survival to beginning of next timestep
-    tempFemZAtLen = NatMort + FemFAtLen
-    Surv_Fem[t+1,] = N_Fem[t,] * exp(-tempFemZAtLen)
-    tempMalZAtLen = NatMort + MalFAtLen
-    Surv_Mal[t+1,] = N_Mal[t,] * exp(-tempMalZAtLen)
-
-    if (ReprodPattern > 1) { # hermaphroditic species
-
-      # assuming that, regardless of fishing pattern, the sex ratio at age is determined by
-      # by the logistic curve describing probability of sex change at age
-      for (i in 1:nLenCl) {
-        tempSurv_Fem[t+1,i] = PropFemAtLen[i] * (Surv_Fem[t+1,i] + Surv_Mal[t+1,i])
-        tempSurv_Mal[t+1,i] = (1 - PropFemAtLen[i]) * (Surv_Fem[t+1,i] + Surv_Mal[t+1,i])
-        Surv_Fem[t+1,i] = tempSurv_Fem[t+1,i]
-        Surv_Mal[t+1,i] = tempSurv_Mal[t+1,i]
-      } # i
-    } # reproductive pattern
-
-    # grow for timestep
-    # females
-    M1=t(t(Surv_Fem[t+1,]))
-    M2=t(LTM_Fem[,])
-    N_Fem[t+1,]=as.numeric(M1 %*% M2)
-    # males
-    M1=t(t(Surv_Mal[t+1,]))
-    M2=t(LTM_Mal[,])
-    N_Mal[t+1,]=as.numeric(M1 %*% M2)
-
-    # calculate spawning biomass
-    FemSpBiom[t] = sum(N_Fem[t,] * FemPropMatAtLen * FemWtAtLen) # tonnes
-    MalSpBiom[t] = sum(N_Mal[t,] * MalPropMatAtLen * MalWtAtLen) # tonnes
-    CombSexSpBiom[t] = FemSpBiom[t] + MalSpBiom[t]
-
-    if (ReprodPattern == 1) { # gonochoristic species
-      SpBiom[t] = FemSpBiom[t]
-    }
-    if (ReprodPattern > 1) { # hermaphroditic species
-      SpBiom[t] = CombSexSpBiom[t]
-    }
-
-    # annual recruitment
-    AnnRecruit[t+1] = (SpBiom[t] / (BH_SRRa + BH_SRRb * SpBiom[t])) * random_dev[t]
-
-    # add recruits
-    N_Fem[t+1,] = N_Fem[t+1,] + (AnnRecruit[t+1] * InitRatioFem * RecLenDist[1,])
-    N_Mal[t+1,] = N_Mal[t+1,] + (AnnRecruit[t+1] * (1 - InitRatioFem) * RecLenDist[2,])
-
-    # calculate retained catch at length for timestep (in numbers)
-    # calculate female and male fishing mortality at length associated with landings
-    FemLandFAtLen = FMortByYear[t] * FemSelLandAtLen
-    MalLandFAtLen = FMortByYear[t] * MalSelLandAtLen
-    Catch_Fem[t,] = N_Fem[t,] * (FemLandFAtLen / tempFemZAtLen) * (1 - exp(-tempFemZAtLen))
-    Catch_Mal[t,] = N_Mal[t,] * (MalLandFAtLen / tempMalZAtLen) * (1 - exp(-tempMalZAtLen))
-    Catch_CombSex[t,] = Catch_Fem[t,] + Catch_Mal[t,]
-    TotCatch[t] = sum(Catch_Fem[t,]) + sum(Catch_Mal[t,])
-
-    # calculate catch biomasses
-    Catch_Biom[t] = sum(Catch_Fem[t,] * FemWtAtLen) + sum(Catch_Mal[t,] * MalWtAtLen)
-
-  }
-
-  for (t in 1:nYears) {
-    # Get sample random length frequency data, for retained catches for each year,
-    # given expected length distributions for each year, assuming a multinomial distribution
-    Probs_Fem = as.vector(unlist(Catch_Fem[t,] / sum(Catch_Fem[t,])))
-    Probs_Mal = as.vector(unlist(Catch_Mal[t,] / sum(Catch_Mal[t,])))
-    AnnSimSampSize_Fem[t] = round(sum(Catch_Fem[t,]) / sum(Catch_CombSex[t,]) * SimAnnSampSize,0)
-    AnnSimSampSize_Mal[t] = SimAnnSampSize - AnnSimSampSize_Fem[t]
-    RandObsCatchLenFreq_Fem[t,] = as.vector(rmultinom(1, AnnSimSampSize_Fem[t], Probs_Fem))
-    RandObsCatchLenFreq_Mal[t,] = as.vector(rmultinom(1, AnnSimSampSize_Mal[t], Probs_Mal))
-    RandObsCatchLenFreq_CombSex[t,] = RandObsCatchLenFreq_Fem[t,] + RandObsCatchLenFreq_Mal[t,]
-
-    # get random individual lengths (nearest 1 mm), and mean lengths with 95% CLs
-    LenInterv = (ubnd[1] - lbnd[1]) / 2 # randomising fish lengths, within each length class
-    FemFishLen = round(rep(midpt, RandObsCatchLenFreq_Fem[t,]) + runif(length(rep(midpt, RandObsCatchLenFreq_Fem[t,])),-LenInterv, LenInterv),0)
-    MalFishLen = round(rep(midpt, RandObsCatchLenFreq_Mal[t,]) + runif(length(rep(midpt, RandObsCatchLenFreq_Mal[t,])),-LenInterv, LenInterv),0)
-    # calculate mean lengths for each year and associated 95% CLs
-    FemMeanCatchLen[t] = round(mean(FemFishLen),1)
-    MalMeanCatchLen[t] = round(mean(MalFishLen),1)
-    FemMeanCatchLen.lw95[t] = round(FemMeanCatchLen[t] -1.96 * (sd(FemFishLen)/sqrt(length(FemFishLen))),1)
-    FemMeanCatchLen.up95[t] = round(FemMeanCatchLen[t] +1.96 * (sd(FemFishLen)/sqrt(length(FemFishLen))),1)
-    MalMeanCatchLen.lw95[t] = round(MalMeanCatchLen[t] -1.96 * (sd(MalFishLen)/sqrt(length(MalFishLen))),1)
-    MalMeanCatchLen.up95[t] = round(MalMeanCatchLen[t] +1.96 * (sd(MalFishLen)/sqrt(length(MalFishLen))),1)
-  }
-
-  MeanLengthStats <- data.frame(YrIndex = 1:nYears,
-                                FemMeanLen=FemMeanCatchLen,
-                                FemMeanLen.lw95=FemMeanCatchLen.lw95,
-                                FemMeanLen.up95=FemMeanCatchLen.up95,
-                                MalMeanLen=MalMeanCatchLen,
-                                MalMeanLen.lw95=MalMeanCatchLen.lw95,
-                                MalMeanLen.up95=MalMeanCatchLen.up95)
+  # calculate mean lengths for each year and associated 95% CLs
+  MeanLengthStats = GetMeanLengthStats_DynSimMod(nYears, RandObsCatchLenFreq_Fem, RandObsCatchLenFreq_Mal)
 
   res=list(Catch_Fem = Catch_Fem,
            Catch_Mal = Catch_Mal,
@@ -4842,11 +4962,11 @@ SimLenAndAgeFreqData_DynMod <- function(SimAnnSampSize, nYears, lnSigmaR, autoco
            CombSexSpBiom = CombSexSpBiom,
            AnnRecruit = AnnRecruit,
            random_dev = random_dev,
-           AnnSimSampSize_Fem = AnnSimSampSize_Fem,
-           AnnSimSampSize_Mal = AnnSimSampSize_Mal,
-           RandObsCatchLenFreq_Fem = RandObsCatchLenFreq_Fem,
-           RandObsCatchLenFreq_Mal = RandObsCatchLenFreq_Mal,
-           RandObsCatchLenFreq_CombSex = RandObsCatchLenFreq_CombSex,
+           AnnSimSampSize_Fem = res$AnnSimSampSize_Fem,
+           AnnSimSampSize_Mal = res$AnnSimSampSize_Mal,
+           RandObsCatchLenFreq_Fem = res$RandObsCatchLenFreq_Fem,
+           RandObsCatchLenFreq_Mal = res$RandObsCatchLenFreq_Mal,
+           RandObsCatchLenFreq_CombSex = res$RandObsCatchLenFreq_CombSex,
            MeanLengthStats = MeanLengthStats)
 
   return(res)

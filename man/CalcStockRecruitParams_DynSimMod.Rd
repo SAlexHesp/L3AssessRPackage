@@ -4,10 +4,20 @@
 \alias{CalcStockRecruitParams_DynSimMod}
 \title{Calculate B-H stock recruitment params and unfished spawning biomass}
 \usage{
-CalcStockRecruitParams_DynSimMod(UnfishSpBiomPerRec, InitRec, Steepness)
+CalcStockRecruitParams_DynSimMod(
+  ReprodPattern,
+  Unfish_FemSpBiomPerRec,
+  Unfish_CombSexSpBiomPerRec,
+  InitRec,
+  Steepness
+)
 }
 \arguments{
-\item{UnfishSpBiomPerRec}{unfished spawning biomass per recruit}
+\item{ReprodPattern}{1=gonochoristic, 2=protogynous, 3=protandrous}
+
+\item{Unfish_FemSpBiomPerRec}{unfished spawning biomass per recruit for females}
+
+\item{Unfish_CombSexSpBiomPerRec}{unfished spawning biomass per recruit for combined sexes}
 
 \item{InitRec}{initial recruitment (R0)}
 
