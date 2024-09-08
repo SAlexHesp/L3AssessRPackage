@@ -121,7 +121,7 @@ vbK = 0.2
 CVSizeAtAge = 0.08
 GrowthParams = c(Linf, vbK)
 RefnceAges = NA
-Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
+Res=SimLenAndAgeFreqData_EqMod(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen
 ObsDiscCatchFreqAtLen = Res$ObsDiscCatchFreqAtLen

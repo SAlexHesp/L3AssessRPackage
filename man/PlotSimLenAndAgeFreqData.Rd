@@ -11,7 +11,7 @@ PlotSimLenAndAgeFreqData(MaxAge, MaxLen, SimRes, PlotOpt)
 
 \item{MaxLen}{Maximum length}
 
-\item{SimRes}{Outputs of SimLenAndAgeFreqData function}
+\item{SimRes}{Outputs of SimLenAndAgeFreqData_EqMod function}
 
 \item{PlotOpt}{# 0=all plots, 1=retained lengths at age, 2=retained plus discarded lengths at age, 3=length frequency, 4=age frequency}
 }
@@ -44,7 +44,7 @@ vbK = 0.2
 CVSizeAtAge = 0.08
 GrowthParams = c(Linf, vbK)
 RefnceAges = NA
-SimRes=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
+SimRes=SimLenAndAgeFreqData_EqMod(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
                             SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 # plot data
 PlotOpt=0 # 0=all plots, 1=retained lengths at age and growth curves, 2=retained plus discard lengths at age
@@ -52,5 +52,5 @@ PlotOpt=0 # 0=all plots, 1=retained lengths at age and growth curves, 2=retained
 # 5=sex specific retained lengths at age and growth curves, 6=retained plus discard lengths at age and growth curves,
 # 7=female length frequency, 8=male length frequency, 9=female age frequency, 10=male age frequency,
 # 11=selectivity/retention, 12=F-at-age reten + disc, 13=F-at-age reten, 14=F-at-age disc
-PlotSimLenAndAgeFreqData(MaxAge, MaxLen, SimRes, PlotOpt)
+PlotSimLenAndAgeFreqData_EqMod(MaxAge, MaxLen, SimRes, PlotOpt)
 }

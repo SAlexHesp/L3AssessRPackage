@@ -120,7 +120,7 @@ vbK = 0.2
 CVSizeAtAge = 0.08
 GrowthParams = c(Linf, vbK)
 RefnceAges = NA
-Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
+Res=SimLenAndAgeFreqData_EqMod(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 # 2 sexes, von Bertalanffy
 GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute
@@ -129,7 +129,7 @@ vbK = c(0.3,0.2)
 CVSizeAtAge = c(0.08,0.08)
 GrowthParams = data.frame(Linf=Linf, vbK=vbK)
 RefnceAges = NA
-Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
+Res=SimLenAndAgeFreqData_EqMod(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 # 1 sex, Schnute
 GrowthCurveType = 2 # 1 = von Bertalanffy, 2 = Schnute
@@ -142,7 +142,7 @@ b = 3.0 # growth - Schnute
 GrowthParams = c(y1, y2, a, b)
 RefnceAges = c(t1,t2)
 CVSizeAtAge = 0.05
-Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
+Res=SimLenAndAgeFreqData_EqMod(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 # 2 sexes, Schnute
 GrowthCurveType = 2 # 1 = von Bertalanffy, 2 = Schnute
@@ -155,7 +155,7 @@ b = c(3,3) # growth - Schnute
 CVSizeAtAge = c(0.05, 0.05)
 GrowthParams = data.frame(y1=y1, y2=y2, a=a, b=b)
 RefnceAges = data.frame(t1=t1,t2=t2)
-Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
+Res=SimLenAndAgeFreqData_EqMod(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen
 ObsDiscCatchFreqAtLen = NA # (or set to Res$ObsDiscCatchFreqAtLen)

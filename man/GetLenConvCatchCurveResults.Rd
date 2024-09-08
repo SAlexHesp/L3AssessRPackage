@@ -81,7 +81,7 @@ b = 2.0 # growth - Schnute
 CVSizeAtAge = 0.08
 GrowthParams = c(y1, y2, a, b)
 RefnceAges = c(t1,t2)
-Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
+Res=SimLenAndAgeFreqData_EqMod(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 
 ObsRetCatchFreqAtLen = as.vector(Res$ObsRetCatchFreqAtLen)

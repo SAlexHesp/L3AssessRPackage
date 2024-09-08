@@ -110,7 +110,7 @@ vbK = 0.2
 CVSizeAtAge = 0.05
 RefnceAges = NA
 GrowthParams = c(Linf, vbK, CVSizeAtAge)
-Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
+Res=SimLenAndAgeFreqData_EqMod(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 # 2 sexes, von Bertalanffy
 # GrowthCurveType = 1 # 1 = von Bertalanffy
@@ -119,7 +119,7 @@ Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen
 # CVSizeAtAge = c(0.05,0.05)
 # RefnceAges = NA
 # GrowthParams = data.frame(Linf=Linf, vbK=vbK, CVSizeAtAge=CVSizeAtAge)
-# Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
+# Res=SimLenAndAgeFreqData_EqMod(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
 #                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 lbnd=Res$lbnd
 midpt=Res$midpt
@@ -170,7 +170,7 @@ vbK = 0.2
 CVSizeAtAge = 0.05
 GrowthParams = c(Linf, vbK, CVSizeAtAge)
 RefnceAges = NA
-Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
+Res=SimLenAndAgeFreqData_EqMod(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 lbnd=Res$lbnd
 midpt=Res$midpt
@@ -214,7 +214,7 @@ vbK = c(0.2,0.2)
 CVSizeAtAge = c(0.05,0.05)
 GrowthParams = data.frame(Linf=Linf, vbK=vbK)
 RefnceAges = NA
-SimRes=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
+SimRes=SimLenAndAgeFreqData_EqMod(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
                             SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 lbnd=SimRes$lbnd
 midpt=SimRes$midpt
@@ -260,7 +260,7 @@ vbK = c(0.3,0.3)
 CVSizeAtAge = c(0.06,0.06)
 GrowthParams = data.frame(Linf=Linf, vbK=vbK)
 RefnceAges = NA
-SimRes=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
+SimRes=SimLenAndAgeFreqData_EqMod(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
                             SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 # get data and fit model
 lbnd=SimRes$lbnd
@@ -312,7 +312,7 @@ vbK = 0.2
 CVSizeAtAge = 0.05
 RefnceAges = NA
 GrowthParams = c(Linf, vbK, CVSizeAtAge)
-Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
+Res=SimLenAndAgeFreqData_EqMod(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 # get individual fish data
 FishAges = Res$ObsDecAgeRetCatch # ages for individual fish
@@ -366,7 +366,7 @@ vbK = c(0.25,0.2)
 CVSizeAtAge = c(0.05,0.05)
 RefnceAges = NA
 GrowthParams = data.frame(Linf=Linf, vbK=vbK, CVSizeAtAge=CVSizeAtAge)
-Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
+Res=SimLenAndAgeFreqData_EqMod(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 # get individual fish data
 FishAges = c(Res$ObsDecAgeRetCatch_Fem, Res$ObsDecAgeRetCatch_Mal) # ages for individual fish
@@ -427,7 +427,7 @@ b = 2 # growth - Schnute
 GrowthParams = c(y1, y2, a, b) # ensure t1 and y1 are fixed at zero (not possible to estimate with this model)
 RefnceAges = c(t1,t2)
 CVSizeAtAge = 0.08
-Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
+Res=SimLenAndAgeFreqData_EqMod(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 plot(Res$ObsDecAgeRetCatch, Res$ObsRandLenRetCatch, ylim=c(0,1200))
 # fit model

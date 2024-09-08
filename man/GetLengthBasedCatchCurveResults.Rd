@@ -120,7 +120,7 @@ vbK = 0.2
 CVSizeAtAge = 0.08
 GrowthParams = c(Linf, vbK)
 RefnceAges = NA
-Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
+Res=SimLenAndAgeFreqData_EqMod(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 # 2 sexes, von Bertalanffy
 DistnType = 1 # 1 = Multinomial, 2 = Dirichlet multinomial
@@ -130,7 +130,7 @@ vbK = c(0.3,0.2)
 CVSizeAtAge = c(0.08,0.08)
 GrowthParams = data.frame(Linf=Linf, vbK=vbK)
 RefnceAges = NA
-Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
+Res=SimLenAndAgeFreqData_EqMod(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 # 1 sex, Schnute
 DistnType = 1 # 1 = Multinomial, 2 = Dirichlet multinomial
@@ -144,7 +144,7 @@ b = 3.0 # growth - Schnute
 GrowthParams = c(y1, y2, a, b)
 RefnceAges = c(t1,t2)
 CVSizeAtAge = 0.05
-Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
+Res=SimLenAndAgeFreqData_EqMod(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 # 2 sexes, Schnute
 DistnType = 1 # 1 = Multinomial, 2 = Dirichlet multinomial
@@ -158,7 +158,7 @@ b = c(3,3) # growth - Schnute
 CVSizeAtAge = c(0.05, 0.05)
 GrowthParams = data.frame(y1=y1, y2=y2, a=a, b=b)
 RefnceAges = data.frame(t1=t1,t2=t2)
-Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
+Res=SimLenAndAgeFreqData_EqMod(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen
 ObsDiscCatchFreqAtLen = NA # (or set to Res$ObsDiscCatchFreqAtLen)
@@ -209,7 +209,7 @@ vbK = c(0.3,0.2)
 CVSizeAtAge = c(0.06,0.06)
 GrowthParams = data.frame(Linf=Linf, vbK=vbK)
 RefnceAges = NA
-SimRes=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
+SimRes=SimLenAndAgeFreqData_EqMod(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
                             SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 ObsRetCatchFreqAtLen = SimRes$ObsRetCatchFreqAtLen
 ObsDiscCatchFreqAtLen = NA # (or set to Res$ObsDiscCatchFreqAtLen)
@@ -236,7 +236,7 @@ FittedRes=GetLengthBasedCatchCurveResults(params, DistnType, GrowthCurveType, Gr
                                           lbnd, ubnd, midpt, SelectivityAtLen, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
 
 # Fit length-based catch curve to length-frequency data generated from Dirchlet multinomial distribution.
-# First, use SimLenAndAgeFreqData function to calculate expected proportions at length
+# First, use SimLenAndAgeFreqData_EqMod function to calculate expected proportions at length
 set.seed(123)
 SampleSize=5000 # sample size for retained catches (and same number for released fish, if an MLL is specified)
 MaxAge = 30
@@ -258,7 +258,7 @@ vbK = 0.2
 CVSizeAtAge = 0.08
 GrowthParams = c(Linf, vbK)
 RefnceAges = NA
-Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
+Res=SimLenAndAgeFreqData_EqMod(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 # Now simulate length-frequency data from Dirchlet multinomial distribution.
 set.seed(123)
@@ -352,7 +352,7 @@ plot(midpt,MeanEndingLength_TagRes)
 MeanSizeAtAge = MeanSizeAtAge_TagRes[2:length(MeanSizeAtAge_TagRes)] # removing size at age zero, as model starts at age 1
 GrowthParams = list(MeanSizeAtAge=MeanSizeAtAge, TimestepGrowthSizeInc=TimestepGrowthSizeInc_TagRes, MeanEndingLength=MeanEndingLength_TagRes)
 RefnceAges = NA
-SimRes=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
+SimRes=SimLenAndAgeFreqData_EqMod(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
                             SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 DistnType = 1 # 1 = Multinomial, 2 = Dirichlet multinomial
 GrowthCurveType = 3 # 1 = von Bertalanffy, 2 = Schnute, 3 = any model with annual mean length increment input

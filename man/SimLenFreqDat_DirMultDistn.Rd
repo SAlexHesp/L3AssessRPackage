@@ -30,11 +30,11 @@ midpt, simSampEventLenDat, simLenFreq, TotSampSize
 Get length frequency data simulated from the Dirichlet multinomial distribution. Using this
 distribution allows for auto-correlation in length frequency data associated with, for example,
 fish schooling (according to size) behaviours. This routine uses the dirmult package. Expected
-proportions in each length class may be calculated using the SimLenAndAgeFreqData function.
+proportions in each length class may be calculated using the SimLenAndAgeFreqData_EqMod function.
 }
 \examples{
 # Simulate length-frequency data from Dirchlet multinomial distribution.
-# First, use SimLenAndAgeFreqData function to calculate expected proportions at length
+# First, use SimLenAndAgeFreqData_EqMod function to calculate expected proportions at length
 set.seed(123)
 SampleSize=5000 # sample size for retained catches (and same number for released fish, if an MLL is specified)
 MaxAge = 30
@@ -56,7 +56,7 @@ vbK = 0.2
 CVSizeAtAge = 0.08
 GrowthParams = c(Linf, vbK)
 RefnceAges = NA
-Res=SimLenAndAgeFreqData(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
+Res=SimLenAndAgeFreqData_EqMod(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 # Now simulate length-frequency data from Dirchlet multinomial distribution.
 set.seed(123)
