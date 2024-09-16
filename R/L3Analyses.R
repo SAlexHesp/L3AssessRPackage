@@ -4532,7 +4532,7 @@ GetRecruitmentDeviations_DynSimMod <- function(nYears, lnSigmaR, autocorr) {
 #' @param MalSelDiscAtLen selectivity of discards for males
 #'
 #' @return FemSpBiom, MalSpBiom, CombSexSpBiom, AnnRecruit, Catch_Fem, Catch_Mal, Catch_CombSex, Catch_Biom
-UpdatePopnDynamics_DynSimMod <- function(nYears, nLenCl, midpt, NatMort, ReprodPattern, InitRatioFem, RecLenDist,
+UpdatePopnDynamics_DynSimMod_LB <- function(nYears, nLenCl, midpt, NatMort, ReprodPattern, InitRatioFem, RecLenDist,
                                          FemPropMatAtLen, MalPropMatAtLen, FemWtAtLen, MalWtAtLen, LTM_Fem, LTM_Mal,
                                          Fish_FemNPerRecAtLen, Fish_MalNPerRecAtLen, Fish_FemSpBiomPerRec,
                                          Fish_CombSexSpBiomPerRec, BH_SRRa, BH_SRRb, random_dev, FMortByYear, DiscMort,
@@ -5050,7 +5050,7 @@ SimLenFreqData_DynMod <- function(SimAnnSampSize, nYears, lnSigmaR, autocorr, In
   random_dev=GetRecruitmentDeviations_DynSimMod(nYears, lnSigmaR, autocorr)
 
   # update population dynamics, and calculate annual catches
-  res=UpdatePopnDynamics_DynSimMod(nYears, nLenCl, midpt, NatMort, ReprodPattern, InitRatioFem, RecLenDist,
+  res=UpdatePopnDynamics_DynSimMod_LB(nYears, nLenCl, midpt, NatMort, ReprodPattern, InitRatioFem, RecLenDist,
                                    FemPropMatAtLen, MalPropMatAtLen, FemWtAtLen, MalWtAtLen, LTM_Fem, LTM_Mal,
                                    Fish_FemNPerRecAtLen, Fish_MalNPerRecAtLen, Fish_FemSpBiomPerRec,
                                    Fish_CombSexSpBiomPerRec, BH_SRRa, BH_SRRb, random_dev, FMortByYear, DiscMort,
@@ -5086,6 +5086,9 @@ SimLenFreqData_DynMod <- function(SimAnnSampSize, nYears, lnSigmaR, autocorr, In
   return(res)
 
 }
+
+
+
 
 #' Produce plots of simulated age and length data
 #'
@@ -8882,7 +8885,7 @@ CalcLastAgeForLinearCatchCurve <- function (MinFreq, RecAge, Ages, ObsAgeFreq)
 #' SelA95 = 8
 #' SampleSize = 1000 # required sample size. For 2 sex model, same sample size generated for each sex.
 #' Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
-#' ObsAgeFreq = Res$CatchSample
+#' ObsAgeFreq = as.vector(unlist(Res$CatchSample))
 #' res=GetLinearCatchCurveResults(RecAssump=0, SpecRecAge=NA, MinFreq=1, Ages, ObsAgeFreq)
 #' @export
 GetLinearCatchCurveResults <- function(RecAssump, SpecRecAge, MinFreq, Ages, ObsAgeFreq) {
@@ -8999,7 +9002,7 @@ GetLinearCatchCurveResults <- function(RecAssump, SpecRecAge, MinFreq, Ages, Obs
 #' SelA95 = 8
 #' SampleSize = 1000 # required sample size. For 2 sex model, same sample size generated for each sex.
 #' Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
-#' ObsAgeFreq = Res$CatchSample
+#' ObsAgeFreq = as.vector(unlist(Res$CatchSample))
 #' res=GetChapmanRobsonMortalityResults(RecAssump=1, SpecRecAge=NA, MinAge, MaxAge, ObsAgeFreq)
 #' @export
 GetChapmanRobsonMortalityResults <- function(RecAssump, SpecRecAge, MinAge, MaxAge, ObsAgeFreq)
