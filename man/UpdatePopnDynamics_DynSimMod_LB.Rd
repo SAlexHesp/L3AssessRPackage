@@ -2,7 +2,7 @@
 % Please edit documentation in R/L3Analyses.R
 \name{UpdatePopnDynamics_DynSimMod_LB}
 \alias{UpdatePopnDynamics_DynSimMod_LB}
-\title{Update population dynamics for dynamic simulation model}
+\title{Update population dynamics for length-based dynamic simulation model}
 \usage{
 UpdatePopnDynamics_DynSimMod_LB(
   nYears,
@@ -11,6 +11,7 @@ UpdatePopnDynamics_DynSimMod_LB(
   NatMort,
   ReprodPattern,
   InitRatioFem,
+  PropFemAtLen,
   RecLenDist,
   FemPropMatAtLen,
   MalPropMatAtLen,
@@ -46,6 +47,8 @@ UpdatePopnDynamics_DynSimMod_LB(
 3=protandrous hermaphroditism (male to female sex change)}
 
 \item{InitRatioFem}{ratio of females to males at birth}
+
+\item{PropFemAtLen}{proportion females at length}
 
 \item{RecLenDist}{length distribution of recruits}
 
@@ -84,10 +87,11 @@ UpdatePopnDynamics_DynSimMod_LB(
 \item{MalSelDiscAtLen}{selectivity of discards for males}
 }
 \value{
-FemSpBiom, MalSpBiom, CombSexSpBiom, AnnRecruit, Catch_Fem, Catch_Mal, Catch_CombSex, Catch_Biom
+FemSpBiom, MalSpBiom, CombSexSpBiom, AnnRecruit, RetCatch_Fem, RetCatch_Mal, RetCatch_CombSex, RetCatch_Biom,
+DiscCatch_Fem, DiscCatch_Mal, DiscCatch_CombSex, DiscCatch_Biom
 }
 \description{
 Generates outputs from a dynamic simulation model for generation of
-annual composition data
+annual length composition data
 }
 \keyword{internal}
