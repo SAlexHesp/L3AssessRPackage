@@ -186,6 +186,7 @@ List CalcCatches_AgeAndLengthBasedCatchCurves_cpp(NumericVector params, const do
   } // t
 
   return List::create(Named("SelLandAtLength") = SelLandAtLength,
+                      Named("SelDiscAtLength") = SelDiscAtLength,
                       Named("RetCatchAtDecAgeLen") = RetCatchAtDecAgeLen,
                       Named("DiscCatchAtDecAgeLen") = DiscCatchAtDecAgeLen,
                       Named("TotCatchAtDecAgeLen") = TotCatchAtDecAgeLen,
@@ -215,14 +216,14 @@ NumericMatrix CalcLTM_cpp(NumericVector TimeStepGrowthSizeInc, const double CVSi
   NumericVector temp;
 
     MeanEndingLength = midpt + TimeStepGrowthSizeInc;
-    StDev = MeanEndingLength * CVSizeAtAge;
+    StDev = MeanEndingLength * CVSizeAtAge;  
 
       for (ii=0; ii<nLenCl; ii++) { // starting length class, upper bound - lower bound
 
         temp = pnorm(ubnd, MeanEndingLength(ii), StDev(ii)) -
           pnorm(lbnd, MeanEndingLength(ii), StDev(ii));
 
-        for (i=0; i<nLenCl; i++) { // starting length class
+        for (i=0; i<nLenCl; i++) {
           LTM(i,ii) = temp(i);
         }
       }

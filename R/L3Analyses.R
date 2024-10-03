@@ -5631,7 +5631,7 @@ SimLenFreqData_DynMod_LB <- function(SimAnnSampSize, nYears, lnSigmaR, autocorr,
 #' # 11=selectivity/retention, 12=F-at-age reten + disc, 13=F-at-age reten, 14=F-at-age disc
 #' PlotSimLenAndAgeFreqData_EqMod(MaxAge, MaxLen, SimRes, PlotOpt)
 #' @export
-PlotSimLenAndAgeFreqData <- function(MaxAge, MaxLen, SimRes, PlotOpt) {
+PlotSimLenAndAgeFreqData_EqMod <- function(MaxAge, MaxLen, SimRes, PlotOpt) {
 
   .pardefault <- par(no.readonly = TRUE) # store current par settings
   # combined sexes
@@ -5749,11 +5749,11 @@ PlotSimLenAndAgeFreqData <- function(MaxAge, MaxLen, SimRes, PlotOpt) {
     ylims = Get_yaxis_scale(c(0,MaxFreq))
     ymax = ylims$ymax
     yint = ylims$yint
-    plot(SimRes$ModelDiag$AgeCl, SimRes$ModelDiag$ObsRetCatchFreqAtIntAge, "l", main=NA, cex.main=1.2, pch=16, cex=1, xaxt = "n", yaxt = "n",
+    plot(0:MaxAge, SimRes$ModelDiag$ObsRetCatchFreqAtIntAge, "l", main=NA, cex.main=1.2, pch=16, cex=1, xaxt = "n", yaxt = "n",
          xlab=list(xaxis_lab,cex=1.2),ylab=list(yaxis_lab,cex=1.2), frame=F, xlim=c(0,xmax), ylim=c(0,ymax), col="red")
-    if(sum(SimRes$ModelDiag$ObsDiscCatchFreqAtIntAge)>0) lines(SimRes$ModelDiag$AgeCl, SimRes$ModelDiag$ObsDiscCatchFreqAtIntAge, "l", col='blue', pch=16, cex=1)
-    if(sum(SimRes$ModelDiag$ObsDiscCatchFreqAtIntAge)>0) lines(SimRes$ModelDiag$AgeCl, SimRes$ModelDiag$ObsRetCatchFreqAtIntAge+SimRes$ModelDiag$ObsDiscCatchFreqAtIntAge, "l", col='black', pch=16, cex=1)
-    lines(SimRes$ModelDiag$AgeCl, SimRes$ModelDiag$ObsRetCatchFreqAtIntAge, "l", col='red', pch=16, cex=1,lwd=2)
+    if(sum(SimRes$ModelDiag$ObsDiscCatchFreqAtIntAge)>0) lines(0:MaxAge, SimRes$ModelDiag$ObsDiscCatchFreqAtIntAge, "l", col='blue', pch=16, cex=1)
+    if(sum(SimRes$ModelDiag$ObsDiscCatchFreqAtIntAge)>0) lines(0:MaxAge, SimRes$ModelDiag$ObsRetCatchFreqAtIntAge+SimRes$ModelDiag$ObsDiscCatchFreqAtIntAge, "l", col='black', pch=16, cex=1)
+    lines(0:MaxAge, SimRes$ModelDiag$ObsRetCatchFreqAtIntAge, "l", col='red', pch=16, cex=1,lwd=2)
     AddAxesAndTickLabelsToPlot(xmin=NA, xmax, xint, ymin=NA, ymax, yint, cexval=NA, cexaxisval=NA, lwdval=NA, lineval=NA, lasval=NA)
     if(sum(SimRes$ModelDiag$ObsDiscCatchFreqAtIntAge)>0) {
       legend("topright", legend=c("Ret. fish","Disc. fish","All fish"), inset=c(0.13,0),
@@ -5907,11 +5907,11 @@ PlotSimLenAndAgeFreqData <- function(MaxAge, MaxLen, SimRes, PlotOpt) {
       ylims = Get_yaxis_scale(c(0,MaxFreq))
       ymax = ylims$ymax
       yint = ylims$yint
-      plot(SimRes$ModelDiag$AgeCl, SimRes$ModelDiag$ObsRetCatchFreqAtIntAge_Fem, "l", main=NA, cex.main=1.2, pch=16, cex=1, xaxt = "n", yaxt = "n",
+      plot(0:MaxAge, SimRes$ModelDiag$ObsRetCatchFreqAtIntAge_Fem, "l", main=NA, cex.main=1.2, pch=16, cex=1, xaxt = "n", yaxt = "n",
            xlab=list(xaxis_lab,cex=1.2),ylab=list(yaxis_lab,cex=1.2), frame=F, xlim=c(0,xmax), ylim=c(0,ymax), col="red")
-      if(sum(SimRes$ModelDiag$ObsDiscCatchFreqAtIntAge_Fem)>0) lines(SimRes$ModelDiag$AgeCl, SimRes$ModelDiag$ObsDiscCatchFreqAtIntAge_Fem, "l", col='pink', pch=16, cex=1)
-      if(sum(SimRes$ModelDiag$ObsDiscCatchFreqAtIntAge_Fem)>0) lines(SimRes$ModelDiag$AgeCl, SimRes$ModelDiag$ObsRetCatchFreqAtIntAge_Fem+SimRes$ModelDiag$ObsDiscCatchFreqAtIntAge_Fem, "l", col='black', pch=16, cex=1)
-      lines(SimRes$ModelDiag$AgeCl, SimRes$ModelDiag$ObsRetCatchFreqAtIntAge_Fem, "l", col='red', pch=16, cex=1,lwd=2)
+      if(sum(SimRes$ModelDiag$ObsDiscCatchFreqAtIntAge_Fem)>0) lines(0:MaxAge, SimRes$ModelDiag$ObsDiscCatchFreqAtIntAge_Fem, "l", col='pink', pch=16, cex=1)
+      if(sum(SimRes$ModelDiag$ObsDiscCatchFreqAtIntAge_Fem)>0) lines(0:MaxAge, SimRes$ModelDiag$ObsRetCatchFreqAtIntAge_Fem+SimRes$ModelDiag$ObsDiscCatchFreqAtIntAge_Fem, "l", col='black', pch=16, cex=1)
+      lines(0:MaxAge, SimRes$ModelDiag$ObsRetCatchFreqAtIntAge_Fem, "l", col='red', pch=16, cex=1,lwd=2)
       AddAxesAndTickLabelsToPlot(xmin=NA, xmax, xint, ymin=NA, ymax, yint, cexval=NA, cexaxisval=NA, lwdval=NA, lineval=NA, lasval=NA)
       if(sum(SimRes$ModelDiag$ObsDiscCatchFreqAtIntAge_Fem)>0) {
         legend("topright", legend=c("Ret. females","Disc. females","All females"), inset=c(0.13,0),
@@ -5938,11 +5938,11 @@ PlotSimLenAndAgeFreqData <- function(MaxAge, MaxLen, SimRes, PlotOpt) {
       ylims = Get_yaxis_scale(c(0,MaxFreq))
       ymax = ylims$ymax
       yint = ylims$yint
-      plot(SimRes$ModelDiag$AgeCl, SimRes$ModelDiag$ObsRetCatchFreqAtIntAge_Mal, "l", main=NA, cex.main=1.2, pch=16, cex=1, xaxt = "n", yaxt = "n",
+      plot(0:MaxAge, SimRes$ModelDiag$ObsRetCatchFreqAtIntAge_Mal, "l", main=NA, cex.main=1.2, pch=16, cex=1, xaxt = "n", yaxt = "n",
            xlab=list(xaxis_lab,cex=1.2),ylab=list(yaxis_lab,cex=1.2), frame=F, xlim=c(0,xmax), ylim=c(0,ymax), col="blue")
-      if(sum(SimRes$ModelDiag$ObsDiscCatchFreqAtIntAge_Mal)>0) lines(SimRes$ModelDiag$AgeCl, SimRes$ModelDiag$ObsDiscCatchFreqAtIntAge_Mal, "l", col='lightblue', pch=16, cex=1)
-      if(sum(SimRes$ModelDiag$ObsDiscCatchFreqAtIntAge_Mal)>0) lines(SimRes$ModelDiag$AgeCl, SimRes$ModelDiag$ObsRetCatchFreqAtIntAge_Mal+SimRes$ModelDiag$ObsDiscCatchFreqAtIntAge_Mal, "l", col='black', pch=16, cex=1)
-      lines(SimRes$ModelDiag$AgeCl, SimRes$ModelDiag$ObsRetCatchFreqAtIntAge_Mal, "l", col='blue', pch=16, cex=1,lwd=2)
+      if(sum(SimRes$ModelDiag$ObsDiscCatchFreqAtIntAge_Mal)>0) lines(0:MaxAge, SimRes$ModelDiag$ObsDiscCatchFreqAtIntAge_Mal, "l", col='lightblue', pch=16, cex=1)
+      if(sum(SimRes$ModelDiag$ObsDiscCatchFreqAtIntAge_Mal)>0) lines(0:MaxAge, SimRes$ModelDiag$ObsRetCatchFreqAtIntAge_Mal+SimRes$ModelDiag$ObsDiscCatchFreqAtIntAge_Mal, "l", col='black', pch=16, cex=1)
+      lines(0:MaxAge, SimRes$ModelDiag$ObsRetCatchFreqAtIntAge_Mal, "l", col='blue', pch=16, cex=1,lwd=2)
       AddAxesAndTickLabelsToPlot(xmin=NA, xmax, xint, ymin=NA, ymax, yint, cexval=NA, cexaxisval=NA, lwdval=NA, lineval=NA, lasval=NA)
       if(sum(SimRes$ModelDiag$ObsDiscCatchFreqAtIntAge_Mal)>0) {
         legend("topright", legend=c("Ret. males","Disc. males","All males"), inset=c(0.13,0),
@@ -5973,8 +5973,8 @@ PlotSimLenAndAgeFreqData <- function(MaxAge, MaxLen, SimRes, PlotOpt) {
     ymax = 1.0
     yint = 0.2
     # gear selectivity
-    if (is.vector(SimRes$ModelDiag$SelectivityAtLen)) {
-      plot(SimRes$midpt, SimRes$ModelDiag$SelectivityAtLen, "l", cex.main=1.2, pch=1, cex=0.6,
+    if (is.vector(SimRes$ModelDiag$SelAtLength)) {
+      plot(SimRes$midpt, SimRes$ModelDiag$SelAtLength, "l", cex.main=1.2, pch=1, cex=0.6,
            xaxt = "n", yaxt = "n", xlab=list(xaxis_lab,cex=1.2),ylab=list(yaxis_lab,cex=1.2), frame=F, xlim=c(0,xmax),
            ylim=c(0,ymax), col="red")
       lines(SimRes$midpt, SimRes$ModelDiag$SelLandAtLength, col="black") # same for both sexes
@@ -5983,10 +5983,10 @@ PlotSimLenAndAgeFreqData <- function(MaxAge, MaxLen, SimRes, PlotOpt) {
                bty='n', cex=0.8,lwd=1, y.intersp=1.1)
       }
     } else {
-      plot(SimRes$midpt, SimRes$ModelDiag$SelectivityAtLen[1,], "l", cex.main=1.2, pch=1, cex=0.6,
+      plot(SimRes$midpt, SimRes$ModelDiag$SelAtLength[1,], "l", cex.main=1.2, pch=1, cex=0.6,
            xaxt = "n", yaxt = "n", xlab=list(xaxis_lab,cex=1.2),ylab=list(yaxis_lab,cex=1.2), frame=F, xlim=c(0,xmax),
            ylim=c(0,ymax), col="red")
-      lines(SimRes$midpt, SimRes$ModelDiag$SelectivityAtLen[2,], col="purple")
+      lines(SimRes$midpt, SimRes$ModelDiag$SelAtLength[2,], col="purple")
       lines(SimRes$midpt, SimRes$ModelDiag$SelLandAtLength, col="black") # same for both sexes
       if (SelectivityType == 1) {
         legend("bottomright", pch=-1, legend=c("Sel_gear_Fem", "Sel_gear_Mal", "Prob_Reten", "Sel_land"),
