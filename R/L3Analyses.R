@@ -774,7 +774,9 @@ VisualiseGrowthApplyingLTM <- function (nFish, TimeStep, MaxAge, Growth_params, 
 #' nFishPerSampEvent = 20
 #' theta_val = 0.3
 #' midpt = Res$midpt
-#' ExpPropAtLen = Res$ModelDiag$ExpRetCatchPropAtLen
+#' ExpPropAtLen = Res$ModelDiag$ExpRetCatchPropAtLen_Fem
+#' # plot(midpt, Res$ModelDiag$ExpRetCatchPropAtLen_Fem, "l")
+#' # lines(midpt, Res$ModelDiag$ExpRetCatchPropAtLen_Mal, col="blue") # check that same for both sexes (as single sex model)
 #' res=SimLenFreqDat_DirMultDistn(nSampEvents, nFishPerSampEvent, theta_val, midpt, ExpPropAtLen)
 #' plot(res$midpt, res$simLenFreq, "o")
 #' # Fit length-based catch curve, assuming Dirichlet multinomial distribution
