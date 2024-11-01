@@ -218,137 +218,194 @@ CalcGillnetSelectivity()
 Refer to help files and example code, showing function inputs and outputs.
 
 ## Length-based catch curve methods
-### Length-based catch curve
 
-This sex-structured length-based catch curve approach allows for common or divergent growth between the two sexes, growth variation (by applying sex-specific length-transition matrices). Selectivity can be assumed to be common, or separate, for both sexes. Fully-selected fishing mortality (and natural mortality) are assumed to be common to both sexes. Growth can be based on either a von Bertalanffy growth curve or Schnute growth curve. The approach involves calculating expected survival and catches for each sex, per recruit, given specified values for natural mortality, growth parameters (and associated variation), weight-at-length parameters, and model parameters for selectivity and fishing mortality. 
+### Length-based catch curve (LBCC)
+
+This sex-structured length-based catch curve approach allows for common or divergent growth between the two sexes and growth variation (by applying sex-specific length-transition matrices). Selectivity, fully-selected fishing mortality (and natural mortality) are assumed to be common to both sexes. Growth can be based on either a von Bertalanffy growth curve or Schnute growth curve. The approach involves calculating expected survival and catches for each sex, per recruit, given specified values for natural mortality, growth parameters (and associated variation), weight-at-length parameters, and model parameters for selectivity and fishing mortality. 
 
 #### Growth calculations - length-based catch curve
 
-Fish are assumed to recruit into the population at age $t=1$ y (to help avoid the possibility of negative lengths), with the size distribution assuming to conform to a normal distribution. The proportion of fish of sex $s$, in length class $k$ at age $t=1$ is calculated as
+If assuming a von Bertalanffy growth curve, the expected length of fish of sex $s$ at age $a$ is
 
 $$
-\theta_{k,s} = \int_{L_k^-}^{\mathrm{L_k^+}}f_{a=1}(L)dL_s
+L_{s,a} = L_{s,\infty} \left( 1 - \exp \left( -\kappa_s (a - t_{s,0}) \right) \right)
 $$
+where $L_{s,\infty}$, $\kappa_s$ and $t_{s,0}$ are the asymptotic length, growth coefficient and hypothetical age at zero length, for sex $s$. 
 
-where $L^-$ and $L^+$ are the lower and upper limits of the length class $k$, and $f_{a=1}(L)$ is the value of the normal probability density function for fish of sex $s$ at age $t=1$ for given length $L$, mean length $\mu$ (as calculated from the growth curve) and associated standard deviation $\sigma$, i.e. where 
-$$
-L_{s,a=1}{\sim}N(\mu,\sigma{^2)}
-$$
-$\sigma$ is calculated given a specified value for the coefficient of variation, $CV$, assumed to be constant with respect to mean fish lengths at age (common to both sexes). The associated value of the normal probability density function, is calculated as
+The proportion ($\theta_{s,k} \approx 1$) of sex $s$, in length class $k$ at age $a = 1$, assuming a normal distribution, with variance $\sigma^2$, around the expected length ($\mu_s$), as calculated above from the von Bertalanffy growth equation (or from a Schnute growth equation). That is, 
+
 
 $$
-f_{a=1}(l_s) = \frac{1}{\sigma\sqrt{2{\pi}}}\exp\bigg[\frac{(l_s-\mu_s)^2}{2\sigma^2}\bigg]
+\theta_{s,k} \propto \frac{1}{\sqrt{2\pi\sigma^2}} \int_{L_k^-}^{L_k^+} \exp \left( -\frac{(l_s - \mu_s)^2}{2\sigma^2} \right) dl_s
 $$
-Growth is modelled using length transition matrices, $G_s=g_{k,j}$, which represent the probability that a fish (of sex $s$) in length class $j$ will grow into length class $k$ over a specified time interval, i.e.
+where $l_s$ refers to a given length for fish of sex $s$. The constant of proportionality is chosen to satisfy the constraint that $\sum_{k=1}^K \theta_{s,k} = 1$. $\Delta L_{s,k}$. The mean annual growth increment for fish of sex $s$ in length class $s$ is calculated as
 
 $$
-\begin{equation*}
-G_s = 
-\begin{pmatrix}
-g_{s,1,1} & g_{s,1,2} & \cdots & g_{s,1,n} \\
-g_{s,2,1} & g_{s,2,2} & \cdots & g_{s,2,n} \\
-\vdots  & \vdots  & \ddots & \vdots  \\
-g_{s,n,1} & g_{s,n,2} & \cdots & g_{s,n,n} 
+\Delta L_{s,k} = L_{\infty,s} - L_k \left( 1 - \exp \left( -\kappa_s \right) \right)
+$$
+where $L_k$ denotes the midpoint of length class $k$. Elements of the (sex-specific) length transition matrices (Punt et al., 1997), describing the probability of fish of sex $s$, in length class $k$ moving into length class $j$ are calculated as
+
+$$
+g_{s,j,k} = 
+\begin{cases} 
+0 & \text{if } j < k \\
+\propto \frac{1}{\sqrt{2\pi\sigma^2}} \int_{L_k^-}^{L_k^+} \exp \left( -\frac{(l - (L_k + \Delta L_{s,k}))^2}{2\sigma^2} \right) dl & \text{if } j = k \\
+\propto \frac{1}{\sqrt{2\pi\sigma^2}} \int_{L_j^-}^{L_j^+} \exp \left( -\frac{(l - (L_k + \Delta L_{s,k}))^2}{2\sigma^2} \right) dl & \text{if } j > k
+\end{cases}
+$$
+The sex-specific length transition matrices $\textbf{G}_s$ are of the following form, noting that the elements ($g_{s,j,k}$) in each column of the sex-specific length transition matrix sum to 1
+
+$$
+\textbf{G}_s = [g_{s,j,k}]=\begin{pmatrix}
+g_{s,1,1} & 0 & \cdots & 0 & 0 \\
+g_{s,2,1} & g_{s,2,2} & \cdots & 0 & 0 \\
+\vdots & \vdots & \ddots & \vdots & \vdots \\
+g_{s,K-1,1} & g_{s,K-2,2} & \cdots & g_{s,K-1,K-1} & 0 \\
+g_{s,K,1} & g_{s,K,2} & \cdots & g_{s,K,K-1} & g_{s,K,K}
 \end{pmatrix}
-\end{equation*}
-$$
-The general form of a length transition matrix (Punt et al., 1997; see also Hall et al., 2000),is
-
-$$
-g_{s,k,j} = \left\{
-    \begin{array}{ll}
-        \int_{{\infty}^-}^{\mathrm{l_{s,k}^+}}f[\omega_s(T,l_s,j)]dl & \mbox{if }k=1 \\
-        \int_{l_{s,k}^-}^{\mathrm{l_{s,k}^+}}f[\omega_s(T,l_s,j)]dl &\mbox{if }k=1<k<n \\
-\int_{l_{s,k}^-}^{\mathrm{\infty^+}}f[\omega_s(T,l_s,j)]dl &\mbox{if }k=n \\
-    \end{array}
-\right.
-$$
-where $l_s$ is the length for a fish of sex $s$, $f$ is the specified (normal) distribution, $l_{s,k}^-$ and $l_{s,k}^+$ are the lower and upper limits, respectively, of length class $j$ for fish of sex $s$, and $\omega_s$ is a vector of parameters dependent on the time period $T$ and sex, and the midpoint of the size class $j$, $l_j$. In the model, growth is applied at the end of each time step, after mortality has been applied.
-
-
-### Gear selectivity, retention and discard mortality - length-based catch curve
-
-A 'retention function' approach is used to account for the possibility of 'discard mortality' (Fairclough et al., 2021; Shertzer et al., 2021). The vulnerability of fish of sex $s$ at the midpoint $l$ of length class $k$ to the fishing gear. $V_{s,a}$ is calculated as
-
-$$
-V_{s,l} = 1/(1+\exp(-\log_e(19)(l_s-L_{50,s}^{\mathrm{V}})/(L_{95,s}^{\mathrm{V}}-L_{50,s}^{\mathrm{V}})))
 $$
 
-where $L_{50,s}^{\mathrm{V}}$ and $L_{95,s}^{\mathrm{V}}$ are the lengths at which 50 and 95% of fish of sex $s$ are selected by the gear. Note that, for more robust optimisation, $$L_{95,s}^{\mathrm{V}}-L_{50,s}^{\mathrm{V}}$$ is inputted by the user as a single parameter value.
+### Selectivity of fishing gear, retention and discarding - length-based catch curve
 
-If an MLL does not apply, the probability of any fish being retained, if caught, may set (by the user) to one, regardless of its sex and length. In cases where a minimum legal length (MLL) applies, the vast majority of fishers comply with this regulation and high-grading of fish is likely to be negligible, the probability, of fish of sex $s$ at the midpoint $l$ of length class $k$, being retained in catches, is set to zero or one, depending on whether the midpoint of its length class is below or above the MLL, respectively. The selectivity of landings, for fish of sex class $s$ in length class $l$, is calculated as
-
-$$
-\phi_{s,l}=\psi_{s,l}V_{s,l}
-$$
-where $\psi_{s,l}$ denotes the probability of fish being retained, according to its sex and length. The selectivity of discarding is calculated as
+A 'retention function' approach is used to account for the possibility of 'discard mortality' (Fairclough et al., 2021; Shertzer et al., 2021). The vulnerability of fish in length class $k$ to the fishing gear, $V_k$, is calculated as
 
 $$
-\delta_{s,l}=V_{s,l}(1-\psi_{s,l})
+V_k = 1/(1+\exp(-\log_e(19)(L_k-L_{50}^{\mathrm{V}})/(L_{95}^{\mathrm{V}}-L_{50}^{\mathrm{V}})))
+$$
+where $L_{50}^{\mathrm{V}}$ and $L_{95}^{\mathrm{V}}$ are the lengths at which 50 and 95% of fish are selected by the gear. Note that, for more robust optimisation, $L_{95}^{\mathrm{V}}-L_{50}^{\mathrm{V}}$ is inputted by the user as a single value. Similarly, the probability of fish in length class $k$ being retained, by default, is calculated as
+
+$$
+\psi_k = 1/(1+\exp(-\log_e(19)(L_k-L_{50}^{\mathrm{\psi}})/(L_{95}^{\mathrm{\psi}}-L_{50}^{\mathrm{\psi}})))
+$$
+If a minimum legal length (MLL) does not apply and all fish are assumed to be retained, $\psi_k$ may set by the user to one for all lengths. If an MLL applies and all fishers are assumed to comply with this regulation and high-grading of fish does not occur, $$\psi_k$$ can be set to be 'knife edged', by specifying zero or one, depending on whether the midpoint of its length class is below or above the MLL, respectively. The selectivity of landings, $\phi_k$, for fish in length class $k$, is calculated as
+
+$$
+\phi_k = \psi_k V_k
+$$
+The selectivity of discarding, $D_k$, is calculated as
+
+$$
+D_k = 1 - \psi_k V_k
 $$
 
 ### Fishing mortality - length-based catch curve
 
-For model scenarios not concerned with post-release mortality, and for which the sample length data are unlikely to be affected by an MLL, the proportion of fish that die following capture and release, $D$, is set to zero. In such cases, fishing mortality for fish of sex $s$, at the midpoint $l$ of length class $k$, is calculated as
+The fishing mortality of fish in length class $k$ allowing for post release mortality, $F_k$, is
 
 $$
-F_{s,l}=V_{s,l}F
+F_k = \phi_k + D_k \delta F
 $$
-where $F$ is the fully-selected fishing mortality. For model scenarios allowing for post-release mortality associated with release of undersize fish (i.e. when $D>=0.001$), $F_{s,l}$ is calculated as
+where $\delta$ is the specified proportion of fish that die following capture and release. For model scenarios not concerned with post-release mortality, $\delta$, should be set to zero. The fishing mortality of fish in length class $k$ associated with retention, $F_k^R$, is
 
 $$
-F_{s,l} = (\phi_{s,l}+\delta_{s,l}D)F
+F_k^R = \phi_k F
 $$
-where $D$ is the specified proportion of fish that die following capture and release. To allow for a possible effect of an MLL on selectivity with negligible discard mortality, the value for $D$ can be set to 0.001. The fishing mortality of fish of sex $s$ at the midpoint $l$ of length class $k$ associated with retention, $F_{s,l}^R$ is calculated as
+Total mortality for fish in length class $k$ is
 
 $$
-F_{s,l}^R=\phi_{s,l}F
+Z_k = F_k + M
 $$
-Note that when discard mortality is not being considered, $F_{s,l}^R$ is equal to $F_{s,l}$. The fishing mortality associated with discarding, $F_{s,l}^D$, is 
-
-$$
-F_{s,l}^D=\delta_{s,l}DF
-$$
-The total number of fish that are discarded, i.e. that may either survive or die, may be calculated using $F_{s,l}^{D*}$, determined as
-
-$$
-F_{s,l}^{D*}=\delta_{s,l}F
-$$
-
-Total mortality for fish of sex $s$ at the midpoint $l$ of length class $k$ is calculated as 
-
-$$
-Z_{s,l} = F_{s,l}+M
-$$
-where $M$ is the instantaneous rate of natural mortality ($y^-1$).
+where $M$ is the instantaneous rate of natural mortality ($y^{-1}$).
 
 #### Survival and catch calculations - length-based catch curve
 
-As currently set up, the length-based catch curve model (and also age and length-based catch curve - see below) assumes age 1 recruits are in equal proportions (0.5) for each sex, as typically assumed for gonochoristic species. Note, if growth is not sexually dimorphic, these models can also be applied to hermaphroditic species (if assuming common growth, selectivity and mortality for both sexes). The per recruit numbers of either sex in length class $k$ that have survived to age $a$, i.e. $N_{s,k,a}$, is
+The proportion of fish of sex $s$ and length class $k$ surviving in age $a$ is 
 
 $$
-N_{s,k,a} = \left\{
-    \begin{array}{ll}
-        0.5\theta_{k,s} & \mbox{if }a=1 \\
-        N_{s,k,a-1}\exp(-Z_{s,l}) &\mbox{if }a=1<a<A \\
-        N_{s,k,a-1}\exp(-Z_{s,l})/(1-\exp(-Z_{s,l})) &\mbox{if }a=A \\
-    \end{array}
-\right.
+S_{s,k,a} = 
+\begin{cases} 
+\exp(-Z_k) & \text{if } 1 \le a < A \\
+\exp(-Z_k) / (1 - \exp(-Z_k)) & \text{if } a = A 
+\end{cases}
 $$
-
-where $l$ is the midpoint for a corresponding length class, $k$. The estimated numbers of fish of sex $s$ in length class $k$ at age $a$ in retained catches, as calculated from the Baranov catch equation, is
+where $A$ is the maximum age considered by the model. The sex and age-specific survival matrix is
 
 $$
-\hat{C}_{s,k}^R = \sum_k(F_{s,l}^R/Z_{s,l})(1-\exp(-Z_{s,l}))N_{s,k,a}
+\textbf{S}_{s,a} = [S_{s,k,a}]= \begin{pmatrix}
+S_{s,1,a} & 0 & \cdots & 0 & 0 \\
+0 & S_{s,2,a} & \cdots & 0 & 0 \\
+\vdots & \vdots & \ddots & \vdots & \vdots \\
+0 & 0 & \cdots & S_{s,K-1,a} & 0 \\
+0 & 0 & \cdots & 0 & S_{s,K,a}
+\end{pmatrix}
 $$
 
-The numbers of fish that are caught and discarded, which may either survive or die, are calculated as
+The numbers of fish of sex $s$ in the exploited population surviving to age $a$ is 
+$$
+N_{s,a} = 
+\begin{cases} 
+R_s & \text{if } a = 1 \\
+G_s S_{s,a-1} N_{s,a-1} & \text{if } 1 < a \le A 
+\end{cases}
+$$
+where recruitment, $R_s=0.5$, such that numbers are ‘per recruit’. $R_s$ is a column vector of recruits in the $K$ different length classes, i,e.
 
 $$
-\hat{C}_{s,k}^{D*} = (F_{s,l}^{D*}/Z_{s,l})(1-\exp(-Z_{s,l}))N_{s,k,a}
+R_s = \begin{pmatrix}
+\theta_{s,1} \\
+\theta_{s,2} \\
+\theta_{s,3} \\
+\vdots \\
+\theta_{s,K}
+\end{pmatrix}
+$$
+The numbers of fish of sex $s$ are represented by a the following number matrix, 
+
+$$
+\textbf{N}_s = [N_{s,k,a}] = \begin{pmatrix}
+N_{s,1,1} & N_{s,1,2} & \cdots & N_{s,1,A-1} & N_{s,1,A} \\
+N_{s,2,1} & N_{s,2,2} & \cdots & N_{s,2,A-1} & N_{s,2,A} \\
+\vdots & \vdots & \ddots & \vdots & \vdots \\
+N_{s,K-1,1} & N_{s,K-1,2} & \cdots & N_{s,K-1,A-1} & N_{s,K-1,A} \\
+N_{s,K,1} & N_{s,K,2} & \cdots & N_{s,K,A-1} & N_{s,K,A}
+\end{pmatrix}
+$$
+the elements of which ($N_{s,k,a}$) are the numbers of fish of sex $s$ in length class $k$ and age $a$, in the population at equilibrium with constant recruitment, mortality and growth. The number of fish of sex $s$ in length class $k$ is thus
+
+$$
+N_{s,k} = \sum_{a=1}^A N_{s,k,a}
+$$
+The estimated numbers of fish of sex $s$ in length class $k$ at age $a$ in retained catches, as calculated from the Baranov catch equation are
+
+$$
+C_{s,k}^R = \frac{F_k^R}{Z_k} \left( 1 - \exp(-Z_k) \right) N_{s,k}
+$$
+The expected proportions of fish in length class $k$ in retained catches for combined sexes is calculated as
+
+#### Objective function calculations - length-based catch curve
+
+
+$$
+P_k^R = \frac{\sum_s C_{s,k}^R}{\sum_k \sum_s C_{s,k}^R}
+$$
+The multinomial negative log-likelihood associated with the observed length composition data for retained fish is as follows 
+
+$$
+\lambda = \sum_k C_k^R \ln \left( P_k^R + 0.0001 \right)
+$$
+Note that the small constant is used to robustify the calculations.
+
+This length-based catch curve (LBCC) may also be fitted simultaneously to size compositions for retained fish and also for fish of sizes that would typically be caught and released during normal fishing operations (e.g. if such fish were measured by researchers during onboard monitoring). 
+
+In such cases, the expected numbers of fish of sex $s$ in length class $k$ at age $a$ in (normally) discarded catches, are
+
+$$
+C_{s,k}^R = \frac{F_k^R}{Z_k} \left( 1 - \exp(-Z_k) \right) N_{s,k}
 $$
 
-The above numbers may be used to estimate (if sufficient information exists in the data), the proportion of fish that are caught and released. 
+the expected proportions of fish are calculated as described above for retained fish, replacing $\hat{C}_{s,a}^R$ with $\hat{C}_{s,a}^D*$. Likewise, the negative log likelihood, $\lambda_2$, associated with fish that are caught and released is calculated in the same way as for retained fish, replacing $C_l^R$ with $C^{D*}_l$ and $\hat{P}_l^R$ with $\hat{P}^{D*}$.
+
+The model is fitted by minimsing the negative log-likelihood using nlminb in R, by estimating the fully-selected fishing mortality $F^*$, and selectivity parameters, $L_{50}^{\mathrm{sel}}$ and $L_{95}^{\mathrm{sel}}$. Estimates of asymptotic standard errors, $\sigma$ are derived from the variance-covariance matrix (i.e. from the inverted Hessian matrix produced by nlminb). Approximate 95% confidence intervals for the estimated parameters are calculated as $1.96\sigma$. 
+
+The overall negative log-likelihood, $\lambda$, is calculated as
+
+$$
+\lambda = \lambda_1 + \lambda_2
+$$
+with $\lambda_2$ set to zero if the associated model options are not selected by the user.
+
+The Dirichlet-multinomial has been implemented in the same way for the length-based catch curve, i.e. using the 'linear effective sample size' parameterisation as recommended in Thorson et al. (2017). The associated model equations are as described for the age-based logistic catch curve (see above).
+
 
 #### Calculation of model diagnostics on proportion of released fish, and mean length of released fish
 
@@ -365,33 +422,9 @@ $$
 $$
 
 
-#### Objective function calculations - length-based catch curve
 
-The observed length composition for fish that are caught and retained is assumed to conform to either a multinomial distribution or Dirichlet-multinomial distribution. The expected proportions of fish in each length class among such fish, $\hat{P}_l^R$, for combined sexes, is
 
-$$
-\hat{P}_k^R = \sum_s\Bigg(\frac{\hat{C}_{s,k}^R}{\sum_{k}\hat{C}_{s,k}^R}\Bigg)
-$$
 
-The multinomial negative log-likelihood associated with the observed length composition data for retained fish, $\lambda_1$, is
-
-$$
-\lambda_1 = \sum_lC_l^R\log_e(\hat{P}_l^R)
-$$
-where $C_l^R$ is the observed retained catch frequency in length class $l$. 
-
-If data for fish which are caught and released are included, the expected proportions of fish are calculated as described above for retained fish, replacing $\hat{C}_{s,a}^R$ with $\hat{C}_{s,a}^D*$. Likewise, the negative log likelihood, $\lambda_2$, associated with fish that are caught and released is calculated in the same way as for retained fish, replacing $C_l^R$ with $C^{D*}_l$ and $\hat{P}_l^R$ with $\hat{P}^{D*}$.
-
-The model is fitted by minimsing the negative log-likelihood using nlminb in R, by estimating the fully-selected fishing mortality $F^*$, and selectivity parameters, $L_{50}^{\mathrm{sel}}$ and $L_{95}^{\mathrm{sel}}$. Estimates of asymptotic standard errors, $\sigma$ are derived from the variance-covariance matrix (i.e. from the inverted Hessian matrix produced by nlminb). Approximate 95% confidence intervals for the estimated parameters are calculated as $1.96\sigma$. 
-
-The overall negative log-likelihood, $\lambda$, is calculated as
-
-$$
-\lambda = \lambda_1 + \lambda_2
-$$
-with $\lambda_2$ set to zero if the associated model options are not selected by the user.
-
-The Dirichlet-multinomial has been implemented in the same way for the length-based catch curve, i.e. using the 'linear effective sample size' parameterisation as recommended in Thorson et al. (2017). The associated model equations are as described for the age-based logistic catch curve (see above).
 
 
 ### Estimating uncertainty for model outputs
