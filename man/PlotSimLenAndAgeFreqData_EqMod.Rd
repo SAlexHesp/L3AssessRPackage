@@ -2,7 +2,7 @@
 % Please edit documentation in R/L3Analyses.R
 \name{PlotSimLenAndAgeFreqData_EqMod}
 \alias{PlotSimLenAndAgeFreqData_EqMod}
-\title{Produce plots of simulated age and length data}
+\title{Produce plots of simulated age and length data from equilibrium population simulation model}
 \usage{
 PlotSimLenAndAgeFreqData_EqMod(MaxAge, MaxLen, SimRes, PlotOpt)
 }
@@ -19,7 +19,7 @@ PlotSimLenAndAgeFreqData_EqMod(MaxAge, MaxLen, SimRes, PlotOpt)
 plots of simulated age and length data
 }
 \description{
-Produce plots of simulated age and length data
+Produce plots of simulated age and length data from equilibrium population simulation model
 }
 \examples{
 # Simulate data

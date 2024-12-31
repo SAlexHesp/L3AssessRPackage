@@ -82,7 +82,7 @@ UpdatePopnDynamics_DynSimMod_AB(
 FemSpBiom, MalSpBiom, CombSexSpBiom, AnnRecruit, Catch_Fem, Catch_Mal, Catch_CombSex, Catch_Biom
 }
 \description{
-Generates outputs from a dynamic simulation model for generation of
+Generates outputs from a dynamic age-based simulation model (with age-based selectivity) for generation of
 annual age composition data
 }
 \keyword{internal}
