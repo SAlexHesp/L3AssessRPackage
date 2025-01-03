@@ -216,7 +216,7 @@ NumericMatrix CalcLTM_cpp(NumericVector TimeStepGrowthSizeInc, const double CVSi
   NumericVector temp;
 
     MeanEndingLength = midpt + TimeStepGrowthSizeInc;
-    StDev = MeanEndingLength * CVSizeAtAge;  
+    StDev = MeanEndingLength * CVSizeAtAge;
 
       for (ii=0; ii<nLenCl; ii++) { // starting length class, upper bound - lower bound
 
@@ -253,19 +253,19 @@ List UpdateGrowthAndSurvival_cpp(const int ReprodPattern, const double TimeStep,
   NumericMatrix tempFish_FemSurvPerRecAtAge(nTimeSteps,nLenCl);
   NumericMatrix tempUnfish_MalSurvPerRecAtAge(nTimeSteps,nLenCl);
   NumericMatrix tempFish_MalSurvPerRecAtAge(nTimeSteps,nLenCl);
-  NumericMatrix Unfish_FemBiomPerRecAtAge(nTimeSteps,nLenCl);
-  NumericMatrix Fish_FemBiomPerRecAtAge(nTimeSteps,nLenCl);
-  NumericMatrix Unfish_MalBiomPerRecAtAge(nTimeSteps,nLenCl);
-  NumericMatrix Fish_MalBiomPerRecAtAge(nTimeSteps,nLenCl);
+  NumericMatrix Unfish_FemSpBiomPerRecAtAge(nTimeSteps,nLenCl);
+  NumericMatrix Fish_FemSpBiomPerRecAtAge(nTimeSteps,nLenCl);
+  NumericMatrix Unfish_MalSpBiomPerRecAtAge(nTimeSteps,nLenCl);
+  NumericMatrix Fish_MalSpBiomPerRecAtAge(nTimeSteps,nLenCl);
 
   NumericVector Unfish_FemNPerRec(nLenCl);
   NumericVector Fish_FemNPerRec(nLenCl);
   NumericVector Unfish_MalNPerRec(nLenCl);
   NumericVector Fish_MalNPerRec(nLenCl);
-  NumericVector Unfish_FemBiomAtAge(nTimeSteps);
-  NumericVector Fish_FemBiomAtAge(nTimeSteps);
-  NumericVector Unfish_MalBiomAtAge(nTimeSteps);
-  NumericVector Fish_MalBiomAtAge(nTimeSteps);
+  NumericVector Unfish_FemSpBiomAtAge(nTimeSteps);
+  NumericVector Fish_FemSpBiomAtAge(nTimeSteps);
+  NumericVector Unfish_MalSpBiomAtAge(nTimeSteps);
+  NumericVector Fish_MalSpBiomAtAge(nTimeSteps);
 
   NumericVector tempVec1(nLenCl);
   NumericVector tempVec2(nLenCl);
@@ -359,16 +359,16 @@ List UpdateGrowthAndSurvival_cpp(const int ReprodPattern, const double TimeStep,
   for (t=0; t<nTimeSteps; t++) {
     for (i=0; i<nLenCl; i++) {
       tempWt = FemWtAtLen(i) * 1000;
-      Unfish_FemBiomPerRecAtAge(t,i) = Unfish_FemNPerRecAtAge(t,i) * (pow(tempWt,ReprodScale) / 1000) * FemPropMatAtLen(i);
-      Fish_FemBiomPerRecAtAge(t,i) = Fish_FemNPerRecAtAge(t,i) * (pow(tempWt,ReprodScale) / 1000) * FemPropMatAtLen(i);
+      Unfish_FemSpBiomPerRecAtAge(t,i) = Unfish_FemNPerRecAtAge(t,i) * (pow(tempWt,ReprodScale) / 1000) * FemPropMatAtLen(i);
+      Fish_FemSpBiomPerRecAtAge(t,i) = Fish_FemNPerRecAtAge(t,i) * (pow(tempWt,ReprodScale) / 1000) * FemPropMatAtLen(i);
       tempWt = MalWtAtLen(i) * 1000;
-      Unfish_MalBiomPerRecAtAge(t,i) = Unfish_MalNPerRecAtAge(t,i) * (pow(tempWt,ReprodScale) / 1000) * MalPropMatAtLen(i);
-      Fish_MalBiomPerRecAtAge(t,i) = Fish_MalNPerRecAtAge(t,i) * (pow(tempWt,ReprodScale) / 1000) * MalPropMatAtLen(i);
+      Unfish_MalSpBiomPerRecAtAge(t,i) = Unfish_MalNPerRecAtAge(t,i) * (pow(tempWt,ReprodScale) / 1000) * MalPropMatAtLen(i);
+      Fish_MalSpBiomPerRecAtAge(t,i) = Fish_MalNPerRecAtAge(t,i) * (pow(tempWt,ReprodScale) / 1000) * MalPropMatAtLen(i);
 
-      Unfish_FemBiomAtAge(t) = Unfish_FemBiomAtAge(t) + Unfish_FemBiomPerRecAtAge(t,i);
-      Fish_FemBiomAtAge(t) = Fish_FemBiomAtAge(t) + Fish_FemBiomPerRecAtAge(t,i);
-      Unfish_MalBiomAtAge(t) = Unfish_MalBiomAtAge(t) + Unfish_MalBiomPerRecAtAge(t,i);
-      Fish_MalBiomAtAge(t) = Fish_MalBiomAtAge(t) + Fish_MalBiomPerRecAtAge(t,i);
+      Unfish_FemSpBiomAtAge(t) = Unfish_FemSpBiomAtAge(t) + Unfish_FemSpBiomPerRecAtAge(t,i);
+      Fish_FemSpBiomAtAge(t) = Fish_FemSpBiomAtAge(t) + Fish_FemSpBiomPerRecAtAge(t,i);
+      Unfish_MalSpBiomAtAge(t) = Unfish_MalSpBiomAtAge(t) + Unfish_MalSpBiomPerRecAtAge(t,i);
+      Fish_MalSpBiomAtAge(t) = Fish_MalSpBiomAtAge(t) + Fish_MalSpBiomPerRecAtAge(t,i);
     }
   } // t
 
@@ -380,12 +380,12 @@ List UpdateGrowthAndSurvival_cpp(const int ReprodPattern, const double TimeStep,
                       Named("Fish_FemNPerRec") = Fish_FemNPerRec,
                       Named("Unfish_MalNPerRec") = Unfish_MalNPerRec,
                       Named("Fish_MalNPerRec") = Fish_MalNPerRec,
-                      Named("Unfish_FemBiomPerRecAtAge") = Unfish_FemBiomPerRecAtAge,
-                      Named("Fish_FemBiomPerRecAtAge") = Fish_FemBiomPerRecAtAge,
-                      Named("Unfish_MalBiomPerRecAtAge") = Unfish_MalBiomPerRecAtAge,
-                      Named("Fish_MalBiomPerRecAtAge") = Fish_MalBiomPerRecAtAge,
-                      Named("Unfish_FemBiomAtAge") = Unfish_FemBiomAtAge,
-                      Named("Fish_FemBiomAtAge") = Fish_FemBiomAtAge,
-                      Named("Unfish_MalBiomAtAge") = Unfish_MalBiomAtAge,
-                      Named("Fish_MalBiomAtAge") = Fish_MalBiomAtAge);
+                      Named("Unfish_FemSpBiomPerRecAtAge") = Unfish_FemSpBiomPerRecAtAge,
+                      Named("Fish_FemSpBiomPerRecAtAge") = Fish_FemSpBiomPerRecAtAge,
+                      Named("Unfish_MalSpBiomPerRecAtAge") = Unfish_MalSpBiomPerRecAtAge,
+                      Named("Fish_MalSpBiomPerRecAtAge") = Fish_MalSpBiomPerRecAtAge,
+                      Named("Unfish_FemSpBiomAtAge") = Unfish_FemSpBiomAtAge,
+                      Named("Fish_FemSpBiomAtAge") = Fish_FemSpBiomAtAge,
+                      Named("Unfish_MalSpBiomAtAge") = Unfish_MalSpBiomAtAge,
+                      Named("Fish_MalSpBiomAtAge") = Fish_MalSpBiomAtAge);
 }

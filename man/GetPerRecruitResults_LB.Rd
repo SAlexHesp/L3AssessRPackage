@@ -129,9 +129,9 @@ yield per recruit for combined sexes (YPR), female, male and combined sex spawni
 female and male weight at length (FemWtAtLen, MalWtAtLen), female and male proportion mature at length
 (FemPropMatAtLen, MalPropMatAtLen), unfished female and male numbers per recruit at age and length
 (Unfish_FemNPerRec, Unfish_MalNPerRec), fished female and male numbers per recruit at age and length (Fish_FemNPerRec,
-Fish_MalNPerRec), unfished female and male biomass per recruit at age and length (Unfish_FemBiomPerRecAtAge,
-Unfish_MalBiomPerRecAtAge), fished female and male biomass per recruit at age and length (Fish_FemBiomPerRecAtAge,
-Fish_MalBiomPerRecAtAge), unfished female and male biomass at age (Unfish_FemBiomAtAge, Unfish_MalBiomAtAge),
+Fish_MalNPerRec), unfished female and male biomass per recruit at age and length (Unfish_FemSpBiomPerRecAtAge,
+Unfish_MalSpBiomPerRecAtAge), fished female and male biomass per recruit at age and length (Fish_FemSpBiomPerRecAtAge,
+Fish_MalSpBiomPerRecAtAge), unfished female and male biomass at age (Unfish_FemBiomAtAge, Unfish_MalBiomAtAge),
 fished female and male biomass at age (Fish_FemBiomAtAge, Fish_MalBiomAtAge), female and male catch biomass
 (FemCatchBiom, MalCatchBiom), equilibrium recruitment for either Beverton-Holt or Ricker relationship (Eq_Rec),
 equilibrium catch (Eq_Catch), female and male and spawning biomass (Eq_FemSpBiom, Eq_MalSpBiom), equilibrium relative

@@ -4453,13 +4453,12 @@ SimLenAndAgeFreqData_EqMod <- function(SampleSize, MaxAge, TimeStep, NatMort, Fi
 CalcStockRecruitParams_DynSimMod <- function(ReprodPattern, Unfish_FemSpBiomPerRec, Unfish_CombSexSpBiomPerRec, InitRec, Steepness) {
 
   # calculate B-H stock recruitment parameters
-
   if (ReprodPattern == 1 | ReprodPattern == 3) UnfishSpBiomPerRec = Unfish_FemSpBiomPerRec # gonochoristic or protandrous species
   if (ReprodPattern == 2) UnfishSpBiomPerRec = Unfish_CombSexSpBiomPerRec # protogynous species
 
   Unfish_SpBiom = UnfishSpBiomPerRec * InitRec
 
-  BH_SRRa = (UnfishSpBiomPerRec / InitRec) * ((1 - Steepness) / (4 * Steepness))
+  BH_SRRa = (Unfish_SpBiom / InitRec) * ((1 - Steepness) / (4 * Steepness))
 
   BH_SRRb = (Steepness - 0.2) / (0.8 * Steepness * InitRec)
 
@@ -4571,7 +4570,7 @@ UpdatePopnDynamics_DynSimMod_AB <- function(nYears, MaxModelAge, NatMort, Reprod
 
     if (t == 1) {
 
-      # recruitment, for initial, equilbrium fished population, 1000s. Recruitment is at age zero.
+      # recruitment, for initial, equilibrium fished population, 1000s. Recruitment is at age zero.
       AnnRecruit[t] = (FishSpBiomPerRec - BH_SRRa) / (BH_SRRb * FishSpBiomPerRec)
 
       # get initial numbers at age
@@ -4891,7 +4890,7 @@ UpdatePopnDynamics_DynSimMod_ALB <- function(nYears, TimeStep, MaxModelAge, nLen
 
   # retained catches at length, by year
   RetCatch_Fem_yl <- data.frame(matrix(nrow = nYears, ncol = nLenCl)) # numbers
-  colnames(RetCatch_Fem_yl) <- midpt
+  colnames(RetCatch_Fem_yl) <- midpt; RetCatch_Fem_yl <- as.matrix(RetCatch_Fem_yl)
   RetCatch_Fem_yl[seq(1,nYears,1),seq(1,nLenCl,1)] = 0
   RetCatch_Mal_yl = RetCatch_Fem_yl; RetCatch_CombSex_yl = RetCatch_Fem_yl
   DiscCatch_Fem_yl = RetCatch_Fem_yl; DiscCatch_Mal_yl = RetCatch_Fem_yl; DiscCatch_CombSex_yl = RetCatch_Fem_yl
@@ -4921,8 +4920,10 @@ UpdatePopnDynamics_DynSimMod_ALB <- function(nYears, TimeStep, MaxModelAge, nLen
     # get numbers and female spawning biomass for initial fished population at equilibrium
     if (t == 1) {
       AnnRecruit[t] = (FishSpBiomPerRec - BH_SRRa) / (BH_SRRb * FishSpBiomPerRec)
-      N_Fem_yal[t,,] = AnnRecruit[t] * Fish_FemNPerRecAtAge # 1000s
-      N_Mal_yal[t,,] = AnnRecruit[t] * Fish_MalNPerRecAtAge # 1000s
+      for (a in 1:nTimeSteps) {
+        N_Fem_yal[t,a,] = Fish_FemNPerRecAtAge[a,] * AnnRecruit[t] # 1000s
+        N_Mal_yal[t,a,] = Fish_MalNPerRecAtAge[a,] * AnnRecruit[t] # 1000s
+      }
     }
 
     # get fishing mortality at length, for calculating survival
@@ -4971,8 +4972,10 @@ UpdatePopnDynamics_DynSimMod_ALB <- function(nYears, TimeStep, MaxModelAge, nLen
     }
 
     # calculate spawning biomass
-    FemSpBiom[t] = sum(N_Fem_yal[t,,] * FemPropMatAtLen * FemWtAtLen) # tonnes
-    MalSpBiom[t] = sum(N_Mal_yal[t,,] * MalPropMatAtLen * MalWtAtLen) # tonnes
+    for (a in 1:nTimeSteps) {
+      FemSpBiom[t] = FemSpBiom[t] + (sum(N_Fem_yal[t,a,] * FemPropMatAtLen * (((FemWtAtLen * 1000) ^ ReprodScale) / 1000))) # tonnes
+      MalSpBiom[t] = MalSpBiom[t] + (sum(N_Mal_yal[t,a,] * MalPropMatAtLen * (((MalWtAtLen * 1000) ^ ReprodScale) / 1000))) # tonnes
+    }
     CombSexSpBiom[t] = FemSpBiom[t] + MalSpBiom[t]
 
     # get spawning biomass
@@ -4984,7 +4987,7 @@ UpdatePopnDynamics_DynSimMod_ALB <- function(nYears, TimeStep, MaxModelAge, nLen
 
     # add recruits
     N_Fem_yal[t+1,1,] = AnnRecruit[t+1] * InitRatioFem * RecLenDist[1,]
-    N_Mal_yal[t+1,1,] = AnnRecruit[t+1] * (1 - InitRatioFem) * RecLenDist[2,]
+    N_Mal_yal[t+1,1,] = AnnRecruit[t+1] * (1.0 - InitRatioFem) * RecLenDist[2,]
 
     # calculate female and male fishing mortality at length associated with landings
     FemLandFAtLen = FMortByYear[t] * FemSelLandAtLen
@@ -4995,8 +4998,8 @@ UpdatePopnDynamics_DynSimMod_ALB <- function(nYears, TimeStep, MaxModelAge, nLen
     FemDiscCatchFAtLen = FMortByYear[t] * FemSelDiscAtLen
     MalDiscCatchFAtLen = FMortByYear[t] * MalSelDiscAtLen
 
-    # calculate retained and discarded catches at length and age for timestep (in numbers)
     for (a in 1:nTimeSteps) {
+      # calculate retained and discarded catches at length and age for timestep (in numbers)
       RetCatch_Fem_yal[t,a,] = N_Fem_yal[t,a,] * (FemLandFAtLen / FemZAtLen) * (1 - exp(-FemZAtLen))
       RetCatch_Mal_yal[t,a,] = N_Mal_yal[t,a,] * (MalLandFAtLen / MalZAtLen) * (1 - exp(-MalZAtLen))
       RetCatch_CombSex_yal[t,a,] = RetCatch_Fem_yal[t,a,] + RetCatch_Mal_yal[t,a,]
@@ -5005,23 +5008,25 @@ UpdatePopnDynamics_DynSimMod_ALB <- function(nYears, TimeStep, MaxModelAge, nLen
       DiscCatch_Fem_yal[t,a,] = N_Fem_yal[t,a,] * (FemDiscCatchFAtLen / FemZAtLen) * (1 - exp(-FemZAtLen))
       DiscCatch_Mal_yal[t,a,] = N_Mal_yal[t,a,] * (MalDiscCatchFAtLen / MalZAtLen) * (1 - exp(-MalZAtLen))
       DiscCatch_CombSex_yal[t,a,] = DiscCatch_Fem_yal[t,a,] + DiscCatch_Mal_yal[t,a,]
+
+      RetCatch_Num[t] = RetCatch_Num[t] + sum(RetCatch_CombSex_yal[t,a,])
+      DiscCatch_Num[t] = DiscCatch_Num[t] + sum(DiscCatch_CombSex_yal[t,a,])
+
+      # calculate retained catch at length for timestep (in numbers)
+      RetCatch_Fem_yl[t,] = RetCatch_Fem_yl[t,] + RetCatch_Fem_yal[t,a,]
+      RetCatch_Mal_yl[t,] = RetCatch_Mal_yl[t,] + RetCatch_Mal_yal[t,a,]
+
+      # calculate retained catch at length for timestep (in numbers)
+      DiscCatch_Fem_yl[t,] = DiscCatch_Fem_yl[t,] + DiscCatch_Fem_yal[t,a,]
+      DiscCatch_Mal_yl[t,] = DiscCatch_Mal_yl[t,] + DiscCatch_Mal_yal[t,a,]
+
+      # calculate retained and discarded catch biomass
+      RetCatch_Biom[t] = RetCatch_Biom[t] + sum(RetCatch_Fem_yal[t,a,] * FemWtAtLen) + sum(RetCatch_Mal_yal[t,a,] * MalWtAtLen)
+      DiscCatch_Biom[t] = DiscCatch_Biom[t] + sum(DiscCatch_Fem_yal[t,a,] * FemWtAtLen) + sum(DiscCatch_Mal_yal[t,a,] * MalWtAtLen)
     }
-    RetCatch_Num[t] = sum(RetCatch_CombSex_yal[t,,])
-    DiscCatch_Num[t] = sum(DiscCatch_CombSex_yal[t,,])
 
-    # calculate retained catch at length for timestep (in numbers)
-    RetCatch_Fem_yl[t,] = colSums(RetCatch_Fem_yal[t,,])
-    RetCatch_Mal_yl[t,] = colSums(RetCatch_Mal_yal[t,,])
     RetCatch_CombSex_yl[t,] = RetCatch_Fem_yl[t,] + RetCatch_Mal_yl[t,]
-
-    # calculate retained catch at length for timestep (in numbers)
-    DiscCatch_Fem_yl[t,] = colSums(DiscCatch_Fem_yal[t,,])
-    DiscCatch_Mal_yl[t,] = colSums(DiscCatch_Mal_yal[t,,])
     DiscCatch_CombSex_yl[t,] = DiscCatch_Fem_yl[t,] + DiscCatch_Mal_yl[t,]
-
-    # calculate retained and discarded catch biomass
-    RetCatch_Biom[t] = sum(RetCatch_Fem_yal[t,,] * FemWtAtLen) + sum(RetCatch_Mal_yal[t,,] * MalWtAtLen)
-    DiscCatch_Biom[t] = sum(DiscCatch_Fem_yal[t,,] * FemWtAtLen) + sum(DiscCatch_Mal_yal[t,,] * MalWtAtLen)
     # cat("t",t,"FemSpBiom",FemSpBiom[t],"AnnRecruit[t+1]",AnnRecruit[t+1], '\n')
   }
 
@@ -5990,7 +5995,7 @@ SimAgeFreqData_DynMod_AB <- function(SimAnnSampSize, nYears, lnSigmaR, autocorr,
 
   # calculate stock-recruitment parameters
   res = CalcStockRecruitParams_DynSimMod(ReprodPattern, Unfish_FemSpBiomPerRec, Unfish_CombSexSpBiomPerRec, InitRec, Steepness)
-  BH_SRRa = res$BH_SRRa; BH_SRRb = res$BH_SRRb
+  BH_SRRa = res$BH_SRRa; BH_SRRb = res$BH_SRRb; Unfish_SpBiom = res$Unfish_SpBiom
 
   # get random recruitment deviations, note values already log back-transformed
   # and bias corrected
@@ -6196,10 +6201,10 @@ SimLenFreqData_DynMod_LB <- function(SimAnnSampSize, nYears, lnSigmaR, autocorr,
   FemWtAtLen = res$ModelDiag$FemWtAtLen; MalWtAtLen = res$ModelDiag$MalWtAtLen
   RecLenDist = res$ModelDiag$RecLenDist
   FemRetProbAtLen = res$FemRetProbAtLen
-  Unfish_FemSpBiomPerRec = sum(res$ModelDiag$Unfish_FemBiomPerRecAtAge)
-  Fish_FemSpBiomPerRec = sum(res$ModelDiag$Fish_FemBiomPerRecAtAge)
-  Unfish_CombSexSpBiomPerRec = sum(res$ModelDiag$Unfish_FemBiomPerRecAtAge) + sum(res$ModelDiag$Unfish_MalBiomPerRecAtAge)
-  Fish_CombSexSpBiomPerRec = sum(res$ModelDiag$Fish_FemBiomPerRecAtAge) + sum(res$ModelDiag$Fish_MalBiomPerRecAtAge)
+  Unfish_FemSpBiomPerRec = sum(res$ModelDiag$Unfish_FemSpBiomPerRecAtAge)
+  Fish_FemSpBiomPerRec = sum(res$ModelDiag$Fish_FemSpBiomPerRecAtAge)
+  Unfish_CombSexSpBiomPerRec = sum(res$ModelDiag$Unfish_FemSpBiomPerRecAtAge) + sum(res$ModelDiag$Unfish_MalSpBiomPerRecAtAge)
+  Fish_CombSexSpBiomPerRec = sum(res$ModelDiag$Fish_FemSpBiomPerRecAtAge) + sum(res$ModelDiag$Fish_MalSpBiomPerRecAtAge)
   Fish_FemNPerRecAtLen = colSums(res$ModelDiag$Fish_FemNPerRecAtAge)
   Fish_MalNPerRecAtLen = colSums(res$ModelDiag$Fish_MalNPerRecAtAge)
   FemGearSelAtLen = res$ModelDiag$FemGearSelAtLen; MalGearSelAtLen = res$ModelDiag$MalGearSelAtLen
@@ -6435,14 +6440,17 @@ SimLenAndAgeFreqData_DynMod_ALB <- function(SimAnnSampSize, nYears, lnSigmaR, au
                                EggFertParam, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
                                ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, FMort)
 
+  MeanSizeAtAge = res$ModelDiag$MeanSizeAtAge
   LTM_Fem = res$ModelDiag$LTM_Fem; LTM_Mal = res$ModelDiag$LTM_Mal
   FemWtAtLen = res$ModelDiag$FemWtAtLen; MalWtAtLen = res$ModelDiag$MalWtAtLen
   RecLenDist = res$ModelDiag$RecLenDist
   FemRetProbAtLen = res$FemRetProbAtLen
-  Unfish_FemSpBiomPerRec = sum(res$ModelDiag$Unfish_FemBiomPerRecAtAge)
-  Fish_FemSpBiomPerRec = sum(res$ModelDiag$Fish_FemBiomPerRecAtAge)
-  Unfish_CombSexSpBiomPerRec = sum(res$ModelDiag$Unfish_FemBiomPerRecAtAge) + sum(res$ModelDiag$Unfish_MalBiomPerRecAtAge)
-  Fish_CombSexSpBiomPerRec = sum(res$ModelDiag$Fish_FemBiomPerRecAtAge) + sum(res$ModelDiag$Fish_MalBiomPerRecAtAge)
+  Unfish_FemSpBiomPerRec = sum(res$ModelDiag$Unfish_FemSpBiomPerRecAtAge)
+  Fish_FemSpBiomPerRec = sum(res$ModelDiag$Fish_FemSpBiomPerRecAtAge)
+  Unfish_MalSpBiomPerRec = sum(res$ModelDiag$Unfish_MalSpBiomPerRecAtAge)
+  Fish_MalSpBiomPerRec = sum(res$ModelDiag$Fish_MalSpBiomPerRecAtAge)
+  Unfish_CombSexSpBiomPerRec = sum(res$ModelDiag$Unfish_FemSpBiomPerRecAtAge) + sum(res$ModelDiag$Unfish_MalSpBiomPerRecAtAge)
+  Fish_CombSexSpBiomPerRec = sum(res$ModelDiag$Fish_FemSpBiomPerRecAtAge) + sum(res$ModelDiag$Fish_MalSpBiomPerRecAtAge)
   Fish_FemNPerRecAtAge = res$ModelDiag$Fish_FemNPerRecAtAge
   Fish_MalNPerRecAtAge = res$ModelDiag$Fish_MalNPerRecAtAge
   Fish_FemNPerRecAtLen = colSums(res$ModelDiag$Fish_FemNPerRecAtAge)
@@ -6464,7 +6472,7 @@ SimLenAndAgeFreqData_DynMod_ALB <- function(SimAnnSampSize, nYears, lnSigmaR, au
 
   # calculate stock-recruitment parameters
   res = CalcStockRecruitParams_DynSimMod(ReprodPattern, Unfish_FemSpBiomPerRec, Unfish_CombSexSpBiomPerRec, InitRec, Steepness)
-  BH_SRRa = res$BH_SRRa; BH_SRRb = res$BH_SRRb
+  BH_SRRa = res$BH_SRRa; BH_SRRb = res$BH_SRRb; Unfish_SpBiom = res$Unfish_SpBiom
 
   # get random recruitment deviations, note values already log back-transformed and bias corrected
   random_dev=GetRecruitmentDeviations_DynSimMod(nYears, lnSigmaR, autocorr)
@@ -6478,7 +6486,11 @@ SimLenAndAgeFreqData_DynMod_ALB <- function(SimAnnSampSize, nYears, lnSigmaR, au
   RetCatch_Fem_yal = result$RetCatch_Fem_yal; RetCatch_Mal_yal = result$RetCatch_Mal_yal
   DiscCatch_Fem_yal = result$DiscCatch_Fem_yal; DiscCatch_Mal_yal = result$DiscCatch_Mal_yal
   FemSpBiom = result$FemSpBiom; MalSpBiom = result$MalSpBiom; CombSexSpBiom = result$CombSexSpBiom
-  AnnRecruit = result$AnnRecruit
+  AnnRecruit = result$AnnRecruit; RetCatch_Biom = result$RetCatch_Biom; DiscCatch_Biom = result$DiscCatch_Biom
+
+  # calculate relative female spawning biomass by year
+  if (ReprodPattern == 1 | ReprodPattern == 3) RelSpBiom = FemSpBiom / Unfish_SpBiom # gonochoristic or protandrous species
+  if (ReprodPattern == 2) UnfishSpBiomPerRec = RelSpBiom = CombSexSpBiom / Unfish_SpBiom # protogynous species
 
   # get length composition samples by year
 
@@ -6574,16 +6586,42 @@ SimLenAndAgeFreqData_DynMod_ALB <- function(SimAnnSampSize, nYears, lnSigmaR, au
 
 
 
-  ModelDiag = list(FMortByYear = FMortByYear,
+  ModelDiag = list(MeanSizeAtAge = MeanSizeAtAge,
+                   FemWtAtLen = FemWtAtLen,
+                   MalWtAtLen = MalWtAtLen,
+                   FemPropMatAtLen = FemPropMatAtLen,
+                   MalPropMatAtLen = MalPropMatAtLen,
+                   PropFemAtLen = PropFemAtLen,
+                   FemGearSelAtLen = FemGearSelAtLen,
+                   MalGearSelAtLen = MalGearSelAtLen,
+                   FemRetProbAtLen = FemRetProbAtLen,
+                   MalRetProbAtLen = MalRetProbAtLen,
+                   FemSelLandAtLen = FemSelLandAtLen,
+                   MalSelLandAtLen = MalSelLandAtLen,
+                   FemSelDiscAtLen = FemSelDiscAtLen,
+                   MalSelDiscAtLen = MalSelDiscAtLen,
+                   FMortByYear = FMortByYear,
                    random_dev = random_dev,
                    FemSpBiom=FemSpBiom,
                    MalSpBiom=MalSpBiom,
                    CombSexSpBiom=CombSexSpBiom,
+                   Unfish_SpBiom = Unfish_SpBiom,
+                   RelSpBiom = RelSpBiom,
+                   Unfish_FemSpBiomPerRec = Unfish_FemSpBiomPerRec,
+                   Fish_FemSpBiomPerRec = Fish_FemSpBiomPerRec,
+                   Unfish_MalSpBiomPerRec = Unfish_MalSpBiomPerRec,
+                   Fish_MalSpBiomPerRec = Fish_MalSpBiomPerRec,
+                   Unfish_CombSexSpBiomPerRec = Unfish_CombSexSpBiomPerRec,
+                   Fish_CombSexSpBiomPerRec = Fish_CombSexSpBiomPerRec,
+                   BH_SRRa = BH_SRRa,
+                   BH_SRRb = BH_SRRb,
                    AnnRecruit=AnnRecruit,
                    RetCatch_Fem_yal = RetCatch_Fem_yal,
                    RetCatch_Mal_yal = RetCatch_Mal_yal,
                    DiscCatch_Fem_yal = DiscCatch_Fem_yal,
                    DiscCatch_Mal_yal = DiscCatch_Mal_yal,
+                   RetCatch_Biom = RetCatch_Biom,
+                   DiscCatch_Biom = DiscCatch_Biom,
                    SampleSize_Fem = SampleSize_Fem,
                    SampleSize_Mal = SampleSize_Mal,
                    SampleSize = SampleSize,
@@ -12778,7 +12816,7 @@ CalcPropMatureAtLength <- function(mat_L50, mat_L95, EstMatAtLen, midpt) {
 CalcEquilibriumRecruitment <- function(SRrel_Type, Steepness, FishSpBiom, UnfishSpBiom, Eq_FertRate) {
 
 
-  # Calculate equilbrium recruitment
+  # Calculate equilibrium recruitment
   if (SRrel_Type == 1) { # Beverton-Holt
     Eq_Rec_AllEggFert = ((4 * Steepness * FishSpBiom) - (1 - Steepness) * UnfishSpBiom) /
       (5 * (Steepness - 0.2) * FishSpBiom)
@@ -13204,9 +13242,9 @@ CalcFishingMortalityAtLen <- function(FMort, DiscMort, FemSelDiscAtLen, MalSelDi
 #'
 #' @return length distribution of recruits (RecLenDist), unfished female and male numbers per recruit at age and length
 #' (Unfish_FemNPerRec, Unfish_MalNPerRec), fished female and male numbers per recruit at age and length (Fish_FemNPerRec,
-#' Fish_MalNPerRec), unfished female and male biomass per recruit at age and length (Unfish_FemBiomPerRecAtAge,
-#' Unfish_MalBiomPerRecAtAge), fished female and male biomass per recruit at age and length (Fish_FemBiomPerRecAtAge,
-#' Fish_MalBiomPerRecAtAge), unfished female and male biomass at age (Unfish_FemBiomAtAge, Unfish_MalBiomAtAge),
+#' Fish_MalNPerRec), unfished female and male biomass per recruit at age and length (Unfish_FemSpBiomPerRecAtAge,
+#' Unfish_MalSpBiomPerRecAtAge), fished female and male biomass per recruit at age and length (Fish_FemSpBiomPerRecAtAge,
+#' Fish_MalSpBiomPerRecAtAge), unfished female and male biomass at age (Unfish_FemBiomAtAge, Unfish_MalBiomAtAge),
 #' fished female and male biomass at age (Fish_FemBiomAtAge, Fish_MalBiomAtAge), female and male catch biomass (FemCatchBiom, MalCatchBiom),
 #' yield per recruit for combined sexes (YPR), female, male and combined sex spawning potential ratio (Fem_SPR, Mal_SPR, CombSex_SPR),
 #' equilibrium recruitment for either Beverton-Holt or Ricker relationship (Eq_Rec),
@@ -13529,10 +13567,10 @@ CalcYPRAndSPRForFMort_LB<- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
 
   Unfish_FemNPerRecAtAge=PopnRes$Unfish_FemNPerRecAtAge; Fish_FemNPerRecAtAge=PopnRes$Fish_FemNPerRecAtAge
   Unfish_MalNPerRecAtAge=PopnRes$Unfish_MalNPerRecAtAge; Fish_MalNPerRecAtAge=PopnRes$Fish_MalNPerRecAtAge
-  Unfish_FemBiomPerRecAtAge = PopnRes$Unfish_FemBiomPerRecAtAge; Fish_FemBiomPerRecAtAge = PopnRes$Fish_FemBiomPerRecAtAge
-  Unfish_MalBiomPerRecAtAge = PopnRes$Unfish_MalBiomPerRecAtAge; Fish_MalBiomPerRecAtAge = PopnRes$Fish_MalBiomPerRecAtAge
-  Unfish_FemBiomAtAge = PopnRes$Unfish_FemBiomAtAge; Fish_FemBiomAtAge = PopnRes$Fish_FemBiomAtAge
-  Unfish_MalBiomAtAge = PopnRes$Unfish_MalBiomAtAge; Fish_MalBiomAtAge = PopnRes$Fish_MalBiomAtAge
+  Unfish_FemSpBiomPerRecAtAge = PopnRes$Unfish_FemSpBiomPerRecAtAge; Fish_FemSpBiomPerRecAtAge = PopnRes$Fish_FemSpBiomPerRecAtAge
+  Unfish_MalSpBiomPerRecAtAge = PopnRes$Unfish_MalSpBiomPerRecAtAge; Fish_MalSpBiomPerRecAtAge = PopnRes$Fish_MalSpBiomPerRecAtAge
+  Unfish_FemSpBiomAtAge = PopnRes$Unfish_FemSpBiomAtAge; Fish_FemSpBiomAtAge = PopnRes$Fish_FemSpBiomAtAge
+  Unfish_MalSpBiomAtAge = PopnRes$Unfish_MalSpBiomAtAge; Fish_MalSpBiomAtAge = PopnRes$Fish_MalSpBiomAtAge
   Unfish_FemNPerRecLen=PopnRes$Unfish_FemNPerRec; Fish_FemNPerRecLen=PopnRes$Fish_FemNPerRec
   Unfish_MalNPerRecLen=PopnRes$Unfish_MalNPerRec; Fish_MalNPerRecLen=PopnRes$Fish_MalNPerRec
 
@@ -13545,13 +13583,13 @@ CalcYPRAndSPRForFMort_LB<- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
   Eq_FertRate = res$Eq_FertRate
 
   # Unfished spawning biomass in kg
-  UnfishFemSpBiom <- sum(Unfish_FemBiomAtAge)
-  UnfishMalSpBiom <- sum(Unfish_MalBiomAtAge)
+  UnfishFemSpBiom <- sum(Unfish_FemSpBiomAtAge)
+  UnfishMalSpBiom <- sum(Unfish_MalSpBiomAtAge)
   UnfishCombSexSpBiom <- UnfishFemSpBiom + UnfishMalSpBiom
 
   # Fished spawning biomass in kg
-  FishFemSpBiom <- sum(Fish_FemBiomAtAge)
-  FishMalSpBiom <- sum(Fish_MalBiomAtAge)
+  FishFemSpBiom <- sum(Fish_FemSpBiomAtAge)
+  FishMalSpBiom <- sum(Fish_MalSpBiomAtAge)
   FishCombSexSpBiom <- FishFemSpBiom + FishMalSpBiom
 
   # calculate catch yield (biomass)
@@ -13638,14 +13676,14 @@ CalcYPRAndSPRForFMort_LB<- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
                           Unfish_MalNPerRecAtAge=Unfish_MalNPerRecAtAge,
                           Fish_FemNPerRecAtAge=Fish_FemNPerRecAtAge,
                           Fish_MalNPerRecAtAge=Fish_MalNPerRecAtAge,
-                          Unfish_FemBiomPerRecAtAge=Unfish_FemBiomPerRecAtAge,
-                          Unfish_MalBiomPerRecAtAge=Unfish_MalBiomPerRecAtAge,
-                          Fish_FemBiomPerRecAtAge=Fish_FemBiomPerRecAtAge,
-                          Fish_MalBiomPerRecAtAge=Fish_MalBiomPerRecAtAge,
-                          Unfish_FemBiomAtAge=Unfish_FemBiomAtAge,
-                          Unfish_MalBiomAtAge=Unfish_MalBiomAtAge,
-                          Fish_FemBiomAtAge=Fish_FemBiomAtAge,
-                          Fish_MalBiomAtAge=Fish_MalBiomAtAge,
+                          Unfish_FemSpBiomPerRecAtAge=Unfish_FemSpBiomPerRecAtAge,
+                          Unfish_MalSpBiomPerRecAtAge=Unfish_MalSpBiomPerRecAtAge,
+                          Fish_FemSpBiomPerRecAtAge=Fish_FemSpBiomPerRecAtAge,
+                          Fish_MalSpBiomPerRecAtAge=Fish_MalSpBiomPerRecAtAge,
+                          Unfish_FemSpBiomAtAge=Unfish_FemSpBiomAtAge,
+                          Unfish_MalSpBiomAtAge=Unfish_MalSpBiomAtAge,
+                          Fish_FemSpBiomAtAge=Fish_FemSpBiomAtAge,
+                          Fish_MalSpBiomAtAge=Fish_MalSpBiomAtAge,
                           MeanSizeAtAge = MeanSizeAtAge,
                           LTM_Fem = LTM_Fem,
                           LTM_Mal = LTM_Mal,
@@ -14072,9 +14110,9 @@ GetPerRecruitResults_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, Est
 #' female and male weight at length (FemWtAtLen, MalWtAtLen), female and male proportion mature at length
 #' (FemPropMatAtLen, MalPropMatAtLen), unfished female and male numbers per recruit at age and length
 #' (Unfish_FemNPerRec, Unfish_MalNPerRec), fished female and male numbers per recruit at age and length (Fish_FemNPerRec,
-#' Fish_MalNPerRec), unfished female and male biomass per recruit at age and length (Unfish_FemBiomPerRecAtAge,
-#' Unfish_MalBiomPerRecAtAge), fished female and male biomass per recruit at age and length (Fish_FemBiomPerRecAtAge,
-#' Fish_MalBiomPerRecAtAge), unfished female and male biomass at age (Unfish_FemBiomAtAge, Unfish_MalBiomAtAge),
+#' Fish_MalNPerRec), unfished female and male biomass per recruit at age and length (Unfish_FemSpBiomPerRecAtAge,
+#' Unfish_MalSpBiomPerRecAtAge), fished female and male biomass per recruit at age and length (Fish_FemSpBiomPerRecAtAge,
+#' Fish_MalSpBiomPerRecAtAge), unfished female and male biomass at age (Unfish_FemBiomAtAge, Unfish_MalBiomAtAge),
 #' fished female and male biomass at age (Fish_FemBiomAtAge, Fish_MalBiomAtAge), female and male catch biomass
 #' (FemCatchBiom, MalCatchBiom), equilibrium recruitment for either Beverton-Holt or Ricker relationship (Eq_Rec),
 #' equilibrium catch (Eq_Catch), female and male and spawning biomass (Eq_FemSpBiom, Eq_MalSpBiom), equilibrium relative

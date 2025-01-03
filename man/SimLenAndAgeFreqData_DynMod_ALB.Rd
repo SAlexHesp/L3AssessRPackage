@@ -150,7 +150,7 @@ ObsLenClRetCatchMidPt, ObsLenClDiscCatchMidPt_Fem, ObsLenClDiscCatchMidPt_Mal, O
 }
 \description{
 This function provides simulated age, length, and conditional age-at-length data from a dynamic age-based model allowing
-for length variation, with specified annual fishing and (natural mortality), annual recruitment with specified process
+for length variation, with specified annual fishing and natural mortality, and annual recruitment with specified process
 error and autocorrelation.
 }
 \examples{
