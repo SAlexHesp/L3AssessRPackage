@@ -4921,7 +4921,7 @@ UpdatePopnDynamics_DynSimMod_ALB <- function(nYears, TimeStep, MaxModelAge, nLen
     if (t == 1) {
       AnnRecruit[t] = (FishSpBiomPerRec - BH_SRRa) / (BH_SRRb * FishSpBiomPerRec)
       FemSpBiom[t] = FishSpBiomPerRec * AnnRecruit[t]
-      #cat("t",t,"FishSpBiomPerRec",FishSpBiomPerRec,"AnnRecruit[t]",AnnRecruit[t],"FemSpBiom[t]",FemSpBiom[t],'\n')
+      cat("t",t,"FishSpBiomPerRec",FishSpBiomPerRec,"AnnRecruit[t]",AnnRecruit[t],"FemSpBiom[t]",FemSpBiom[t],'\n')
       for (a in 1:nTimeSteps) {
         N_Fem_yal[t,a,] = Fish_FemNPerRecAtAge[a,] * AnnRecruit[t] # 1000s
         N_Mal_yal[t,a,] = Fish_MalNPerRecAtAge[a,] * AnnRecruit[t] # 1000s
@@ -4979,7 +4979,7 @@ UpdatePopnDynamics_DynSimMod_ALB <- function(nYears, TimeStep, MaxModelAge, nLen
         FemSpBiom[t] = FemSpBiom[t] + (sum(N_Fem_yal[t,a,] * FemPropMatAtLen * (((FemWtAtLen * 1000) ^ ReprodScale) / 1000))) # tonnes
         MalSpBiom[t] = MalSpBiom[t] + (sum(N_Mal_yal[t,a,] * MalPropMatAtLen * (((MalWtAtLen * 1000) ^ ReprodScale) / 1000))) # tonnes
       }
-      #cat("t",t,"AnnRecruit[t]",AnnRecruit[t],"FemSpBiom[t]",FemSpBiom[t],'\n')
+      cat("t",t,"AnnRecruit[t]",AnnRecruit[t],"FemSpBiom[t]",FemSpBiom[t],'\n')
     }
     CombSexSpBiom[t] = FemSpBiom[t] + MalSpBiom[t]
 
@@ -5636,7 +5636,7 @@ SimExploitationHistory_DynMod <- function(nPeriods, InitYr, PeriodEndYr, InitYr_
   }
 
   rand_FMort <- FMort + random_dev
-  rand_FMort[which(rand_FMort<0.0001)] <- 0.0001
+  rand_FMort[which(rand_FMort<0.001)] <- 0.001
 
   res = list(nYears = nYears,
              FMort = FMort,

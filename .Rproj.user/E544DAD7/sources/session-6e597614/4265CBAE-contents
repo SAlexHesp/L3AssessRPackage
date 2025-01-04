@@ -1,0 +1,398 @@
+# Alex Hesp, 4 Jan, 2025
+# Analyses for Assessment ladder paper with Jason, Chantel, Natalie and Emily
+
+# Age, length and conditional age-at-length data are simulated from an age based, dynamic population model,
+# allowing for growth variation (using length-transition matrices). Selectivity is length-based and
+# a retention-function approach is used for modelling discards. An exploitation history is specified
+# (separate R routine) and the associated F values for the specified simulation years are inputted into the
+# dynamic population model. Recruitment variation (with specified autocorrelation) can be specified.
+# Some age and length frequency data (single realisation) are outputted to .csv files, e.g. for analysis in
+# SS (one file contains data simulated without recruitment variation - "Determ_CatchDat.csv", and the other
+# with recruitment variation - "Rand_CatchDat.csv". The sample size specified by the user represents all
+# retained and discarded catches, for both sexes (with the model determining the sizes in each category according
+# to expected proportions of each). All of the analyses are implemented in my L3Assess R package, which I hope
+# makes this script easier to follow.
+
+# At the end of this script, several data-limited catch curve methods are applied to the simulated data
+# for estimating mortality, using as an example, data generated for the final
+# simulation year. The catch curve F estimates are compared with the F value (for the final simulation year)
+# used generated to simulate the length and age data in the dynamic population model.
+# Finally, a length-based per recruit model (extended to include an SR relationship) is used to calculate
+# relative biomass (using a catch curve F estimate), and this compared with the relative biomass
+# value calculated by the dynamic population model for the final year.
+
+rm(list=ls())
+
+# Note, I've modified my R package substantially to include this dynamic data-generation model,
+# so will need to be downloaded again from github to run this script.
+
+# if installing from .gz file (for Alex)
+# install.packages("C:/~/L3Assess_0.1.0.tar.gz", source = TRUE, repos=NULL)
+
+# if installing from github
+# library(devtools)
+# devtools::install_github("SAlexHesp/L3AssessRPackage", build_vignettes=TRUE, force=TRUE)
+
+library(L3Assess)
+
+# Simulate length data from dynamic age-length model, given specified biology and exploitation history
+MaxModelAge <- 60 # maximum age considered by model, years
+TimeStep <- 1 # Model time step (y) (for shorter-lived species, might be appropriate to use a smaller time step)
+MaxLen <- 1400
+LenInc <- 20
+lbnd <- seq(0,MaxLen - LenInc, LenInc)
+ubnd <- lbnd + LenInc
+midpt <- lbnd + (LenInc/2)
+nLenCl <- length(midpt)
+GrowthCurveType <- 1 # 1 = von Bertalanffy, 2 = Schnute
+Linf <- c(983, 1119) # mm - von Bertalanffy growth model parameters - Females, males
+vbK <- c(0.11, 0.11) # year-1 - von Bertalanffy growth model parameters - Females, males
+tzero <- c(0, 0) # years - von Bertalanffy growth model parameters - Females, males
+GrowthParams <- data.frame(Linf=Linf, vbK=vbK, tzero=tzero)
+RefnceAges <- NA
+CVSizeAtAge = c(0.06,0.06)
+lenwt_a <- 0.0000259715 # combined sexes - weight (g) vs length (mm, TL) relationship parameters
+ln_lenwt_a <- NA # for log-log relationship
+lenwt_b <- 2.93 # combined sexes - weight (g) vs length (mm, TL) relationship parameters
+WLrel_Type <- 1 # 1=power, 2=log-log relationship
+EstWtAtLen <- data.frame(EstFemWtAtLen=NA,
+                         EstMalWtAtLen=NA) # weight at length, inputted as values in data frame
+ReprodScale <- 1 # 1=default (standard calculations for spawning biomass), 2=hyperallometric reproductive scaling with female mass (i.e. BOFFF effects)
+ReprodPattern <- 1 # 1 = gonochoristic (separate sexes), 2 = protogynous (female to male sex change), 3 = protandrous (male to female sex change)
+InitRatioFem <- 0.5 # Ratio of females to males at recruitment age/length
+FinalSex_L50 <- NA # Logistic sex change relationship parameters (inflection point)
+FinalSex_L95 <- NA # Logistic sex change relationship parameters (95% of max probability)
+EstSexRatioAtLen <- NA  # sex ratio at length inputted as vector
+EggFertParam <- NA # (NA or from ~0.2-1) NA = no effect, ~0.2 = direct effect of popn. sex ratio changes on egg fertilisation rates, 1 = no effects
+mat_L50 <- c(331, 324) # females, males - Logistic length (mm) at maturity relationship parameters
+mat_L95 <- c(509, 454) # females, males - Logistic length (mm) at maturity relationship parameters
+EstMatAtLen <- data.frame(EstFemMatAtLen=NA,
+                          EstMalMatAtLen=NA) # maturity at length, inputted as values in data frame
+sel_L50 <- c(350, 350) # females, males - Logistic length selectivity relationship parameters
+sel_L95 <- c(440, 440) # females, males - Logistic length selectivity relationship parameters
+EstGearSelAtLen <- data.frame(EstFemGearSelAtLen=NA,
+                              EstMalGearSelAtLen=NA)
+ret_Pmax <- c(1.0, 1.0) # maximum retention, values lower than 1 imply discarding of fish above MLL
+ret_L50 <- c(490, 490) # females, males - Logistic fish retention at length parameters
+ret_L95 <- c(510, 510) # females, males - Logistic fish retention at length parameters
+EstRetenAtLen <- data.frame(EstFemRetenAtLen=NA,
+                            EstMalRetenAtLen=NA)
+MLL <- NA
+DiscMort <- 0 # discard mortality (e.g. 50% released fish die = 0.5)
+Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
+SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
+NatMort <- 0.11 # natural mortality  (year-1)
+# Specify exploitation history - initial in increase F, reduction in F then stable F period
+nPeriods <- 3 # number of periods of mortality trends
+InitYr <- 1970 # first year of mortality
+PeriodEndYr <- c(1985,2000,2020) # periods when mortality changes
+InitYr_FMort <- 0.33*NatMort # initial mortality, at beginning of first period
+PeriodEndYr_FMort <- c(3*NatMort,0.67*NatMort,0.67*NatMort)
+
+# for checking model returns expected recruitment, relative biomass etc. at F=0 ***
+InitYr_FMort <- 0.00001 # initial mortality, at beginning of first period
+PeriodEndYr_FMort <- c(0.00001,0.00001,0.00001)
+
+# Deterministic F and recruitment
+randerr_sd <- 0 # annual fishing mortality variation
+autocorr <- 0 # annual fishing mortality autocorrelation
+lnSigmaR <- 0 # annual recruitment variation
+autocorr <- 0 # annual recruit autocorrelation
+
+# Variable recruitment and annual variation in F
+# lnSigmaR <- 0.6 # annual fishing mortality variation
+# autocorr <- 0.7 # annual fishing mortality autocorrelation
+# randerr_sd <- 0.01 # annual fishing mortality variation
+# autocorr <- 0.3 # annual fishing mortality autocorrelation
+# ***
+
+InitRec <- 1000 # initial recruitment level #1000s
+set.seed(123)
+
+res=SimExploitationHistory_DynMod(nPeriods, InitYr, PeriodEndYr, InitYr_FMort,
+                                  PeriodEndYr_FMort, autocorr, randerr_sd)
+# Get random age and length data
+nYears <- res$nYears
+FMortByYear <- res$rand_FMort
+SimAnnSampSize <- 1000
+res=SimLenAndAgeFreqData_DynMod_ALB(SimAnnSampSize, nYears, lnSigmaR, autocorr, InitRec,
+                                    MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
+                                    RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtLen,
+                                    ReprodScale, ReprodPattern, InitRatioFem, FinalSex_L50, FinalSex_L95, EstSexRatioAtLen,
+                                    EggFertParam, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+                                    ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, FMortByYear)
+
+
+names(res)
+names(res$ModelDiag)
+names(res$ResultsSummary)
+
+
+if (lnSigmaR == 0) FileName = "Determ_CatchDat.csv"
+if (lnSigmaR > 0) FileName = "Rand_CatchDat.csv"
+
+# # Save frequency data to csv file
+# # (females - retained catch)
+# temp = res$ResultsSummary$ObsRetCatchFreqAtLengthAndDecAge_Fem # year, age, lencl
+# new_arr <- aperm(temp, c(2, 3, 1)) # age, lencl, year
+# df <- as.data.frame.table(new_arr)
+# colnames(df) = c("Age", "LenCl", "Year", "Freq")
+# df$midpt <- midpt[df$LenCl]
+# df$Sex <- rep("Fem",length(df$LenCl))
+# df$CatchType <- rep("Ret",length(df$LenCl))
+# write.csv(df, FileName, row.names = FALSE)
+#
+# # (males - retained catch)
+# temp = res$ResultsSummary$ObsRetCatchFreqAtLengthAndDecAge_Mal # year, age, lencl
+# new_arr <- aperm(temp, c(2, 3, 1)) # age, lencl, year
+# df <- as.data.frame.table(new_arr)
+# colnames(df) = c("Age", "LenCl", "Year", "Freq")
+# df$midpt <- midpt[df$LenCl]
+# df$Sex <- rep("Mal",length(df$LenCl))
+# df$CatchType <- rep("Ret",length(df$LenCl))
+# write.table(df, FileName , append = TRUE, col.names = FALSE, row.names = FALSE, sep=",")
+#
+# # (females - discarded catch)
+# temp = res$ResultsSummary$ObsDiscCatchFreqAtLengthAndDecAge_Fem # year, age, lencl
+# new_arr <- aperm(temp, c(2, 3, 1)) # age, lencl, year
+# df <- as.data.frame.table(new_arr)
+# colnames(df) = c("Age", "LenCl", "Year", "Freq")
+# df$midpt <- midpt[df$LenCl]
+# df$Sex <- rep("Fem",length(df$LenCl))
+# df$CatchType <- rep("Disc",length(df$LenCl))
+# write.table(df, FileName , append = TRUE, col.names = FALSE, row.names = FALSE, sep=",")
+#
+# # (males - retained catch)
+# temp = res$ResultsSummary$ObsDiscCatchFreqAtLengthAndDecAge_Mal # year, age, lencl
+# new_arr <- aperm(temp, c(2, 3, 1)) # age, lencl, year
+# df <- as.data.frame.table(new_arr)
+# colnames(df) = c("Age", "LenCl", "Year", "Freq")
+# df$midpt <- midpt[df$LenCl]
+# df$Sex <- rep("Mal",length(df$LenCl))
+# df$CatchType <- rep("Disc",length(df$LenCl))
+# write.table(df, FileName , append = TRUE, col.names = FALSE, row.names = FALSE, sep=",")
+
+
+# *****************************
+# check biology and selectivity
+# *****************************
+
+par(mfrow=c(3,2))
+plot(1:MaxModelAge, res$ModelDiag$MeanSizeAtAge[1,], "l", ylim=c(0,1200), ylab="Length, mm", col="red") # females
+lines(1:MaxModelAge, res$ModelDiag$MeanSizeAtAge[2,], col="blue")
+plot(midpt, res$ModelDiag$FemWtAtLen, "l", col="red", xlim=c(0,1200), ylab="Weight, kg")
+lines(midpt, res$ModelDiag$MalWtAtLen, col="blue")
+plot(midpt, res$ModelDiag$FemPropMatAtLen, "l", col="red", xlim=c(0,1200), ylab="Prop mat")
+lines(midpt, res$ModelDiag$MalPropMatAtLen, col="blue")
+plot(midpt, res$ModelDiag$FemGearSelAtLen, "l", col="red", xlim=c(0,1200), ylab="Gear Sel")
+lines(midpt, res$ModelDiag$MalGearSelAtLen, col="blue")
+plot(midpt, res$ModelDiag$FemRetProbAtLen, "l", col="red", xlim=c(0,1200), ylab="Reten Prob")
+lines(midpt, res$ModelDiag$MalRetProbAtLen, col="blue")
+plot(midpt, res$ModelDiag$FemSelLandAtLen, "l", col="red", xlim=c(0,1200), ylab="Sel Land & Disc")
+lines(midpt, res$ModelDiag$MalSelLandAtLen, col="blue")
+lines(midpt, res$ModelDiag$FemSelDiscAtLen, col="red")
+lines(midpt, res$ModelDiag$MalSelDiscAtLen, col="blue")
+
+# *************************
+# check population dynamics
+# *************************
+par(mfrow=c(3,2))
+plot(1:nYears, res$ModelDiag$FMortByYear, "l", ylim=c(0,1.2*max(res$ModelDiag$FMortByYear)),
+     ylab="F") # fishing mortality
+abline(h=NatMort, col="blue")
+plot(1:nYears, res$ModelDiag$FemSpBiom, "l", ylim=c(0,1.2*max(res$ModelDiag$FemSpBiom)), ylab="Fem sp biom") # female spawning biomass
+plot(1:nYears, res$ModelDiag$RelSpBiom, "l", ylim=c(0,1.0), ylab="Rel fem sp biom") # female spawning biomass
+abline(h=0.4, col="green")
+abline(h=0.2, col="red")
+plot(seq(1,nYears+1,1), res$ModelDiag$AnnRecruit, "l", ylim=c(0,1.2*max(res$ModelDiag$AnnRecruit)), ylab="Ann Rec") # annual recruitment
+plot(seq(1,nYears,1), res$ModelDiag$RetCatch_Biom, "l", ylim=c(0,1.2*max(res$ModelDiag$RetCatch_Biom)), ylab="Ret catch biom") # annual recruitment
+plot(seq(1,nYears,1), res$ModelDiag$DiscCatch_Biom, "l", ylim=c(0,1.2*max(res$ModelDiag$DiscCatch_Biom)), ylab="Disc catch biom") # annual recruitment
+
+# Inspect randomly-generated data
+# age frequency data (final year) - females
+par(mfrow=c(2,2))
+plot(1:MaxModelAge,res$ResultsSummary$ObsRetCatchFreqAtDecAge[nYears,], "l")
+plot(1:MaxModelAge,res$ResultsSummary$ObsDiscCatchFreqAtDecAge[nYears,], "l", col="blue")
+
+# check total sample size (both sexes, retained plus discarded should equal user input sample size)
+sum(sum(res$ResultsSummary$ObsRetCatchFreqAtDecAge_Fem[nYears,])+
+      sum(res$ResultsSummary$ObsRetCatchFreqAtDecAge_Mal[nYears,])+
+      sum(res$ResultsSummary$ObsDiscCatchFreqAtDecAge_Fem[nYears,])+
+      sum(res$ResultsSummary$ObsDiscCatchFreqAtDecAge_Mal[nYears,]))
+
+# length frequency data (final year) - females
+# age frequency data (final year) - females
+plot(midpt,res$ResultsSummary$ObsRetCatchFreqAtLen_Fem[nYears,], "l")
+plot(midpt,res$ResultsSummary$ObsDiscCatchFreqAtLen_Fem[nYears,], "l", col="blue")
+
+# check total sample size (both sexes, retained plus discarded should equal user input sample size)
+sum(sum(res$ResultsSummary$ObsRetCatchFreqAtLen_Fem[nYears,])+
+      sum(res$ResultsSummary$ObsRetCatchFreqAtLen_Mal[nYears,])+
+      sum(res$ResultsSummary$ObsDiscCatchFreqAtLen_Fem[nYears,])+
+      sum(res$ResultsSummary$ObsDiscCatchFreqAtLen_Mal[nYears,]))
+
+# conditional length and age data (final year) - females
+par(mfrow=c(1,1))
+plot(res$ResultsSummary$ObsAgeClRetCatch_Fem[nYears,], res$ResultsSummary$ObsLenClRetCatchMidPt_Fem[nYears,],
+     ylim=c(0,MaxLen), xlim=c(0,MaxModelAge), ylab="Length, mm", xlab="Ages, y", col="red")
+points(res$ResultsSummary$ObsAgeClDiscCatch_Fem[nYears,], res$ResultsSummary$ObsLenClDiscCatchMidPt_Fem[nYears,], col="pink")
+points(res$ResultsSummary$ObsAgeClRetCatch_Mal[nYears,], res$ResultsSummary$ObsLenClRetCatchMidPt_Mal[nYears,], col="blue")
+points(res$ResultsSummary$ObsAgeClDiscCatch_Mal[nYears,], res$ResultsSummary$ObsLenClDiscCatchMidPt_Mal[nYears,], col="lightblue")
+
+# Get mortality estimates
+
+####
+# get age-based Z (and F estimates) (Chapman & Robson) (final year, retained catch data)
+####
+ObsAgeFreq = as.vector(unlist(res$ResultsSummary$ObsRetCatchFreqAtDecAge[nYears,]))
+Res=GetChapmanRobsonMortalityResults(RecAssump=1, SpecRecAge=NA, MinAge=1, MaxAge=MaxModelAge, ObsAgeFreq)
+# compare F estimate to specified F in final year
+res$ModelDiag$FMortByYear[nYears]
+Res$EstZMort-NatMort
+# plot catch curve results
+CatchCurveModel = 1 # Chapman Robson
+RecAssump = 1 # Chapman Robson
+MinFreq = NA # Chapman Robson
+PlotAgeBasedCatchCurveResults_NormalSpace(RecAssump, SpecRecAge=NA, MinFreq, MinAge=1, MaxAge=MaxModelAge, NatMort=NA,
+                                          ObsAgeFreq, CatchCurveModel, MainLabel=NA,
+                                          xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA,
+                                          ymax=NA, yint=NA, PlotCLs=T)
+
+
+####
+# get length-based F estimates (LBCC) (final year, retained catch data)
+####
+# note, as growth specified same for both sexes, specifying catch curve as single sex model,
+# fitted to data for combined sexes
+DistnType = 1 # 1 = Multinomial, 2 = Dirichlet multinomial
+MaxAge=MaxModelAge
+SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
+MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified
+SelectivityAtLen = NA # selectivity vector
+DiscMort = 0 # proportion of fish that die due to natural mortality
+PropReleased = NA # proportion of fish released, vector including mean and sd (option probably now obsolete)
+GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute
+GrowthParams = data.frame(Linf=Linf, vbK=vbK)
+CVSizeAtAge = c(0.06,0.06)
+ObsRetCatchFreqAtLen = as.vector(unlist(res$ResultsSummary$ObsRetCatchFreqAtLen_Fem[nYears,] + res$ResultsSummary$ObsRetCatchFreqAtLen_Mal[nYears,]))
+ObsDiscCatchFreqAtLen = NA # (or set to Res$ObsDiscCatchFreqAtLen)
+PropReleased = NA # proportion of fish released, vector including mean and sd (option probably now obsolete)
+InitFishMort = 0.1 # specify starting parameters
+InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform
+InitL50 = 420
+InitDelta = 10
+params = c(InitFishMort_logit, log(InitL50), log(InitDelta))
+FittedRes=GetLengthBasedCatchCurveResults(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
+                                          lbnd, ubnd, midpt, SelectivityAtLen, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
+# compare F estimate to specified F in final year
+res$ModelDiag$FMortByYear[nYears]
+FittedRes$ParamEst
+# plot catch curve results
+PlotLengthBasedCatchCurve_RetCatch(params, DistnType, MLL, SelectivityType, ObsRetCatchFreqAtLen, lbnd, ubnd, midpt,
+                                   SelectivityAtLen, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, GrowthCurveType, GrowthParams,
+                                   RefnceAges, MaxAge, NatMort, TimeStep, MainLabel=NA,
+                                   xaxis_lab=NA, yaxis_lab=NA, xmax=1500, xint=500,
+                                   ymax=0.15, yint=0.05, PlotCLs=TRUE, FittedRes, nReps=200)
+
+
+####
+# get age & length-based F estimates (ALBCC) (final year, retained catch data)
+####
+# note, as growth specified same for both sexes, specifying catch curve as single sex model,
+# fitted to data for combined sexes
+
+# get individual fish data
+dim(res$ResultsSummary$ObsDecAgeRetCatch)
+x = which(!is.na(res$ResultsSummary$ObsDecAgeRetCatch[nYears,]))
+
+FishAges = res$ResultsSummary$ObsDecAgeRetCatch[nYears,x] # ages for individual fish
+FishLengths = res$ResultsSummary$ObsLenClRetCatchMidPt[nYears,x] # length for individual fish
+# plot(FishAges, FishLengths)
+
+# LenInc = ubnd[1] - lbnd[1]
+# lbns = trunc(FishLengths/LenInc)*LenInc
+# ObsRetCatchFreqAtLen  = as.vector(table(factor(lbns, levels=lbnd)))
+# ObsRetCatchFreqAtLengthAndAge <- data.frame(matrix(nrow = MaxAge, ncol = length(lbnd)))
+# colnames(ObsRetCatchFreqAtLengthAndAge) <- lbnd
+# ObsRetCatchFreqAtLengthAndAge = as.matrix(table(factor(FishAges, levels=1:MaxAge),
+#                                                 factor(lbns, levels=c(lbnd))))
+
+# get individual fish data
+x = which(!is.na(res$ResultsSummary$ObsDecAgeRetCatch_Fem[nYears,]))
+xx = which(!is.na(res$ResultsSummary$ObsDecAgeRetCatch_Mal[nYears,]))
+FishAges = c(res$ResultsSummary$ObsDecAgeRetCatch_Fem[nYears,x], res$ResultsSummary$ObsDecAgeRetCatch_Mal[nYears,xx]) # ages for individual fish
+FishLengths = c(res$ResultsSummary$ObsLenClRetCatchMidPt_Fem[nYears,x], res$ResultsSummary$ObsLenClRetCatchMidPt_Mal[nYears,xx]) # length for individual fish
+lbns = trunc(FishLengths/LenInc)*LenInc
+FishSex = c(rep(1,length(x)), rep(2, length(xx)))
+LenInc = ubnd[1] - lbnd[1]
+
+# 2 sexes - get length frequency
+ObsRetCatchFreqAtLen <- data.frame(matrix(nrow = 2, ncol = length(midpt))) # 2 sex
+colnames(ObsRetCatchFreqAtLen) <- midpt
+ObsRetCatchFreqAtLen = as.matrix(table(factor(FishSex, levels=c(1:2)),
+                                       factor(lbns, levels=c(lbnd))))
+# 2 sexes - get frequencies in each length and age class
+DecAges = 1:MaxModelAge
+ObsRetCatchFreqAtLengthAndAge <- as.array(table(factor(FishAges, levels=DecAges),
+                                                factor(lbns, levels=c(lbnd)),
+                                                factor(FishSex, levels=c(1:2))))
+# fit model
+# get params - 2 sexes
+InitFishMort = 0.2 # specify starting parameters
+InitL50 = 400
+InitDelta = 50 # L95-L50
+InitLinf = c(1000,1100)
+InitvbK = c(0.12,0.12)
+InitCVSizeAtAge = 0.05
+InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform (so F is always between 0 and 1)
+params = c(InitFishMort_logit, log(c(InitL50, InitDelta, InitLinf, InitvbK, InitCVSizeAtAge)))
+
+MaxAge = MaxModelAge
+SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logist sel curve, 3=separate logist sel params, common growth
+SelectivityAtLen = NA # selectivity vector
+
+FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
+                                                lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep)
+# compare F estimate to specified F in final year
+res$ModelDiag$FMortByYear[nYears]
+FittedRes$ParamEst
+# plot catch curve results
+# growth curve (x 2 plots)
+PlotAgeLengthCatchCurve_Growth(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
+                               lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep, MainLabel=NA,
+                               xaxis_lab=NA, yaxis_lab=NA, xmax=40, xint=10,
+                               ymax=1400, yint=200, PlotCLs=TRUE, FittedRes, nReps=200, ShowLegend=TRUE)
+# marginal length (x 2 plots)
+PlotAgeLengthCatchCurve_MargLength(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
+                                   lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep, MainLabel=NA,
+                                   xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA,
+                                   ymax=0.10, yint=0.02, PlotCLs=TRUE, FittedRes, nReps=200)
+# conditional age at length - pearson residuals (x 2 plots)
+PlotAgeLengthCatchCurve_Pears_Resid(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
+                                    lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep, MainLabel=NA,
+                                    xaxis_lab=NA, yaxis_lab=NA, xmin=400, xmax=1000, xint=NA, ymin=0, ymax=60, yint=NA, CircleScale=5, MinLenClFreq=10, ShowLegend=T, FittedRes)
+
+
+
+
+# check relative biomass - dynamic model vs length-based extended per recruit model (LBEA),
+# using estimates for F, growth parameters and retention parameters from
+# length and age-based catch curve
+FMort = FittedRes$ParamEst[1,1] # get mortality estimate
+Linf = FittedRes$ParamEst[4:5,1]
+vbK = FittedRes$ParamEst[6:7,1]
+tzero = c(0,0)
+ret_L50 = rep(FittedRes$ParamEst[2,1],2)
+ret_L95 = rep(ret_L50 + FittedRes$ParamEst[3,1],2)
+
+GrowthParams = data.frame(Linf=Linf, vbK=vbK, tzero=tzero)
+Res=CalcYPRAndSPRForFMort_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
+                             RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtLen,
+                             ReprodScale, ReprodPattern, InitRatioFem, FinalSex_L50, FinalSex_L95, EstSexRatioAtLen,
+                             EggFertParam, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+                             ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, FMort)
+
+res$ModelDiag$RelSpBiom[nYears] # dynamic simulation model
+Res$Eq_FemRelSpBiom # estimate from LBEA
+
+
