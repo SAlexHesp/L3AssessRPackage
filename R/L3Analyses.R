@@ -8784,7 +8784,7 @@ PlotAgeLengthCatchCurve_Growth <- function(params, RefnceAges, MLL, GrowthCurveT
     }
     AddAxesAndTickLabelsToPlot(xmin=NA, xmax, xint, ymin=NA, ymax, yint, cexval=NA, cexaxisval=NA, lwdval=NA, lineval=NA, lasval=NA)
     if (ShowLegend == T) {
-      legend("bottomright", legend=c("low samples", "hi samples"), lty="solid", lwd=c(-1,-1),
+      legend("bottomright", legend=c("least samples", "most samples"), lty="solid", lwd=c(-1,-1),
              pch=c(16,16), col=c(rgb(1,0,0,0.1), rgb(1,0,0,1)), bty='n', cex=1.0)
     }
   } else {
@@ -8819,7 +8819,7 @@ PlotAgeLengthCatchCurve_Growth <- function(params, RefnceAges, MLL, GrowthCurveT
     }
     AddAxesAndTickLabelsToPlot(xmin=NA, xmax, xint, ymin=NA, ymax, yint, cexval=NA, cexaxisval=NA, lwdval=NA, lineval=NA, lasval=NA)
     if (ShowLegend == T) {
-      legend("bottomright", legend=c("low samples", "hi samples"), lty="solid", lwd=c(-1,-1), pch=c(16,16),
+      legend("bottomright", legend=c("least samples", "most samples"), lty="solid", lwd=c(-1,-1), pch=c(16,16),
              col=c(rgb(1,0,0,0.1), rgb(1,0,0,1)), bty='n', cex=1.0)
     }
     # males
@@ -8852,7 +8852,7 @@ PlotAgeLengthCatchCurve_Growth <- function(params, RefnceAges, MLL, GrowthCurveT
     }
     AddAxesAndTickLabelsToPlot(xmin=NA, xmax, xint, ymin=NA, ymax, yint, cexval=NA, cexaxisval=NA, lwdval=NA, lineval=NA, lasval=NA)
     if (ShowLegend == T) {
-      legend("bottomright", legend=c("low samples", "hi samples"), lty="solid", lwd=c(-1,-1),
+      legend("bottomright", legend=c("least samples", "most samples"), lty="solid", lwd=c(-1,-1),
              pch=c(16,16), col=c(rgb(0,0,1,0.1), rgb(0,0,1,1)), bty='n', cex=1.0)
     }
   }
