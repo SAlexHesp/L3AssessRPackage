@@ -96,8 +96,9 @@ UpdatePopnDynamics_DynSimMod_ALB(
 }
 \value{
 FemSpBiom, MalSpBiom, CombSexSpBiom, AnnRecruit, RetCatch_Num, RetCatch_Fem_yl, RetCatch_Mal_yl, RetCatch_CombSex_yl,
-RetCatch_Fem_yal, RetCatch_Mal_yal, RetCatch_CombSex_yal, RetCatch_Biom, DiscCatch_Num, DiscCatch_Fem_yl, DiscCatch_Mal_yl,
-DiscCatch_CombSex_yl, DiscCatch_Fem_yal, DiscCatch_Mal_yal, DiscCatch_CombSex_yal, DiscCatch_Biom
+RetCatch_Fem_yal, RetCatch_Mal_yal, RetCatch_CombSex_yal, DiscCatch_Num, RetCatchBiom_Fem, RetCatchBiom_Mal, RetCatchBiom_CombSex,
+DiscCatch_Fem_yl, DiscCatch_Mal_yl, DiscCatch_CombSex_yl, DiscCatch_Fem_yal, DiscCatch_Mal_yal, DiscCatch_CombSex_yal,
+DiscCatchBiom_Fem, DiscCatchBiom_Mal, DiscCatchBiom_CombSex
 }
 \description{
 Generates outputs from a dynamic age-based simulation model, using sex-specific length transition matrices
