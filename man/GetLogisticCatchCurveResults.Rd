@@ -49,7 +49,7 @@ ZMort = FMort + NatMort
 SelA50 = 6
 SelA95 = 8
 SampleSize = 1000 # required sample size. For 2 sex model, same sample size generated for each sex.
-Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
+Res=SimAgeFreqData_EqMod(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
 ObsAgeFreq = unlist(as.vector(Res$CatchSample)) # input as vector for single sex model
 # Specify catch curve model and required inputs for that model
 NatMort = 0.104 # Logistic selectivity
@@ -94,7 +94,7 @@ ZMort = FMort + NatMort
 SelA50 = c(6,6.5)
 SelA95 = c(8,8.5)
 SampleSize = 1000 # required sample size. For 2 sex model, same sample size generated for each sex.
-Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
+Res=SimAgeFreqData_EqMod(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
 ObsAgeFreq = Res$CatchSample
 # fit model (multinomial distribution - two sexes)
 Init_FMort = 0.2

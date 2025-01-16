@@ -351,14 +351,24 @@ of age data (assuming constant mortality and recruitment)</a></li>
 <li><a href="#simulation-of-length-and-age-data-assuming-constant-mortality-and-recruitment" id="toc-simulation-of-length-and-age-data-assuming-constant-mortality-and-recruitment">Simulation
 of length and age data (assuming constant mortality and
 recruitment)</a></li>
-<li><a href="#simulation-of-length-data-using-a-dynamic-length-structured-model" id="toc-simulation-of-length-data-using-a-dynamic-length-structured-model">Simulation
-of length data using a dynamic length-structured model</a>
+<li><a href="#simulation-of-age-data-using-a-dynamic-age-structured-model-with-age-based-selectivity" id="toc-simulation-of-age-data-using-a-dynamic-age-structured-model-with-age-based-selectivity">Simulation
+of age data using a dynamic age-structured model (with age-based
+selectivity)</a></li>
+<li><a href="#simulation-of-length-data-using-a-dynamic-length-structured-model-with-length-based-selectivity" id="toc-simulation-of-length-data-using-a-dynamic-length-structured-model-with-length-based-selectivity">Simulation
+of length data using a dynamic length-structured model (with
+length-based selectivity)</a></li>
+<li><a href="#simulation-of-length-data-using-a-dynamic-age-structured-model-with-length-based-selectivity" id="toc-simulation-of-length-data-using-a-dynamic-age-structured-model-with-length-based-selectivity">Simulation
+of length data using a dynamic age-structured model (with length-based
+selectivity)</a>
 <ul>
 <li><a href="#description-of-dynamic-length-structured-model-for-simulating-length-data" id="toc-description-of-dynamic-length-structured-model-for-simulating-length-data">Description
 of dynamic length-structured model for simulating length data</a></li>
 <li><a href="#generating-simulated-annual-length-compositions-from-the-dynamic-length-structured-model" id="toc-generating-simulated-annual-length-compositions-from-the-dynamic-length-structured-model">Generating
 (simulated) annual length compositions from the dynamic
 length-structured model</a></li>
+<li><a href="#description-of-dynamic-age-structured-model-with-length-based-selectivity-for-simulating-age-length-and-conditional-age-at-length-data" id="toc-description-of-dynamic-age-structured-model-with-length-based-selectivity-for-simulating-age-length-and-conditional-age-at-length-data">Description
+of dynamic age-structured model (with length-based selectivity) for
+simulating age, length and conditional age-at-length data</a></li>
 <li><a href="#apply-routines-for-simulating-length-andor-age-data" id="toc-apply-routines-for-simulating-length-andor-age-data">Apply
 routines for simulating length and/or age data</a></li>
 </ul></li>
@@ -369,8 +379,8 @@ routines for simulating length and/or age data</a></li>
 
 <div id="introduction" class="section level1">
 <h1>Introduction</h1>
-<div id="last-updated-january-2024-alex-hesp---dpird" class="section level4">
-<h4>Last updated January 2024 (Alex Hesp - DPIRD)</h4>
+<div id="last-updated-january-2025-alex-hesp---dpird" class="section level4">
+<h4>Last updated January 2025 (Alex Hesp - DPIRD)</h4>
 <p>This package is intended as a toolbox of methods with analyses for
 conducting “level 3” assessments in Western Australia. These methods are
 typically “equilibrium” approaches, used when size and/or age data are
@@ -403,7 +413,7 @@ biomass, from extended per recruit analysis) are used as a proxy for
 female spawning biomass.</p>
 <p>The estimates of ‘fishing mortality’, from catch curve analysis,
 female spawning potential ratio and relative female spawning biomass
-from per recruit analysis, may be compared against various standard
+from per recruit analysis, may be compared against various commonly-used
 points relating to fishing pressure (e.g. <span class="math inline">\(F_\mathrm{targ}=2/3\)</span>, <span class="math inline">\(F_\mathrm{thresh}=M\)</span>, <span class="math inline">\(F_\mathrm{lim}=3/2M\)</span>) and female spawning
 stock levels (<span class="math inline">\(B^\mathrm{rel}_\mathrm{targ}=0.4\)</span>, <span class="math inline">\(B^\mathrm{rel}_\mathrm{thresh}=0.3\)</span>, <span class="math inline">\(B^\mathrm{rel}_\mathrm{lim}=0.2\)</span>). The
 threshold levels are taken as proxies for long-term levels of fishing
@@ -417,8 +427,12 @@ need to be more conservative.</p>
 curve analysis, per recruit analysis, and an “extended” form of per
 recruit analysis with a stock-recruitment relationship. It also contains
 an analysis for calculating length-based selectivity given estimates of
-selectivity parameters for fish caught by gillnet fishing. The various R
-functions output a range of statistics and diagnostic plots.</p>
+selectivity parameters for fish caught by gillnet fishing.</p>
+<p>Several data simulation routines have been implemented for model
+testing. The include length and/or age generation from equilibrium
+population models, and more sophistiated dynamic modelling approaches,
+allowing for a specified history of exploitation and level of annual
+recruitment variation.</p>
 <p>Please note that this is a ‘trial version’ with testing of the
 various routines continuing. Please report any identified issues to Alex
 Hesp (<span class="math inline">\(\mathrm{Alex.Hesp@dpird.wa.gov.au}\)</span>).</p>
@@ -604,13 +618,9 @@ outputs.</p>
 <h3>Gillnet selectivity - Kirkwood and Walker (1986)</h3>
 <p>The Kirkwood &amp; Walker (1986) model describes selectivity as a
 function of fish length and two parameters for the probability density
-function of the gamma distribution, <span class="math inline">\(\theta_1\)</span> and <span class="math inline">\(\theta_2\)</span>. The routine implemented outputs
-length-based selectivity schedules (by mesh and overall), from inputted
-values for two gillnet selectivity parameters that, in turn, can be
-inputted into various routines for catch curve and per recruit analysis.
-The routine may be extended in future to estimate the two gillnet
-selectivity parameters from gillnet length data.</p>
-<p>The relative selectivity of a fish in length class <span class="math inline">\(j\)</span> caught in mesh size <span class="math inline">\(i\)</span> is calculated as <span class="math display">\[
+function of the gamma distribution, <span class="math inline">\(\theta_1\)</span> and <span class="math inline">\(\theta_2\)</span>.</p>
+<p>According to this model, the relative selectivity of a fish in length
+class <span class="math inline">\(j\)</span> caught in mesh size <span class="math inline">\(i\)</span> is calculated as <span class="math display">\[
 \begin{align}
     S_{ij}
 =\bigg(\frac{L_j}{\alpha_i\beta_i}\bigg)^{\alpha_i}\exp\bigg(\alpha-\frac{L_j}{\beta}
@@ -628,11 +638,12 @@ variance <span class="math inline">\((\theta_2)\)</span>, with <span class="math
 \begin{align}
     \beta_i=-0.5(\theta_1m_i-(\theta_2^2m_i^2+4\theta_2)^{0.5})
 \end{align}
-\]</span> Applying this model, estimates of the relative proportion of
-fish in the population from length class <span class="math inline">\(j\)</span> is calculated as</p>
+\]</span> An estimate of the relative proportion of fish in the
+population in length class <span class="math inline">\(j\)</span> may be
+calculated as</p>
 <p><span class="math display">\[
 \begin{align}
-    \mu_j=\frac{\sum_{i=1}^{I}n_{ij}}{\sum_{i=1}^{I}S_{ij}}
+    \hat\mu_j=\frac{\sum_{i=1}^{I}n_{ij}}{\sum_{i=1}^{I}S_{ij}}
 \end{align}
 \]</span> where <span class="math inline">\(n_ij\)</span> is the number
 of fish in length class <span class="math inline">\(j\)</span> caught in
@@ -643,23 +654,23 @@ selectivity of fish in the multi-mesh research gill net in length class
 \begin{align}
     P_j=\frac{\sum_{i=1}^{I}S_{ij}}{\max\sum_{i=1}^{I}S_{ij}}
 \end{align}
-\]</span> e.g. Hansen et al. (1997).</p>
-<p>The Kirkwood and Walker (1986) gillnet selectivity routines could be
-extended to estimate the values of <span class="math inline">\(\theta_1\)</span> and <span class="math inline">\(\theta_2\)</span>, which would involve by
-minimising the negative log-likelihood</p>
+\]</span> e.g. Hansen et al. (1997). The negative log-likelihood
+associated with the values of model parameters (<span class="math inline">\(\theta_1\)</span> and <span class="math inline">\(\theta_2\)</span>) and observed sample length
+frequency data (for each mesh), is</p>
 <p><span class="math display">\[
 \begin{align}
     \lambda=\sum_{i=1}^{I}\sum_{j=1}^{J}[n_{ij}\log_e(\mu_jS_{ij})-\mu_jS_{ij}]
 \end{align}
-\]</span> Note, an important assumption of this implementation of the
-Kirkwood &amp; Walker (1986) model is that, at the size of maximum
-selectivity, the different meshes to which the model is fitted have
-equal fishing power.</p>
+\]</span> An important assumption of this implementation of the Kirkwood
+&amp; Walker (1986) model is that, at the size of maximum selectivity,
+the different meshes to which the model is fitted have equal fishing
+power.</p>
 </div>
 <div id="apply-gillnet-selectivity---kirkwood-and-walker-1986" class="section level3">
 <h3>Apply gillnet selectivity - Kirkwood and Walker (1986)</h3>
 <p>Key functions relevant to applying this method are:<br />
 CalcGillnetSelectivity()<br />
+GetGillnetSelectivityResults()<br />
 Refer to help files and example code, showing function inputs and
 outputs.</p>
 </div>
@@ -677,7 +688,9 @@ growth curve or Schnute growth curve. The approach involves calculating
 expected survival and catches for each sex, per recruit, given specified
 values for natural mortality, growth parameters (and associated
 variation), weight-at-length parameters, and model parameters for
-selectivity and fishing mortality.</p>
+selectivity and fishing mortality. A mathematical description of this
+model, and results of simulation testing, are available Crisafulli et al
+(2025), and supplementary material for that paper.</p>
 <div id="growth-calculations---length-based-catch-curve" class="section level4">
 <h4>Growth calculations - length-based catch curve</h4>
 <p>Assuming a von Bertalanffy growth curve, the expected length of fish
@@ -953,9 +966,7 @@ length-based model, this model is also sex-structured, allowing growth
 to be estimated simultaneously for both sexes, whilst assuming common
 length-based selectivity and fully-selected fishing mortality. Single
 sex data can also be inputted, allowing for growth, selectivity and
-fishing mortality to be estimated separately for each sex. This
-mathematical description of this model is now also available in the
-supplementary material for Crisafulli et al (in review).</p>
+fishing mortality to be estimated separately for each sex.</p>
 <p>Following Piner et al. (2016), the distribution of ages for a given
 length class is assumed to follow a multinomial distribution. The
 log-likelihood for <span class="math inline">\({C}_{l,a}\)</span>, the
@@ -1763,37 +1774,60 @@ proportions at age, <span class="math inline">\(\hat{P_a}\)</span>, an
 age sample can be generated from a multinomial distribution, i.e. using
 the rmultinom() function in R. This method for simulating age frequency
 data is provided in code for several examples for applying age-based
-catch curves. Note that these data generated for a stock assumed to at
-equilibrium with respect to mortality and recruitment, assuming logistic
-age-based selectivity.</p>
+catch curves. Note that these data are generated for a stock assuming
+logistic age-based selectivity, and that the population is at
+equilibrium with respect to mortality and recruitment.</p>
 </div>
 <div id="simulation-of-length-and-age-data-assuming-constant-mortality-and-recruitment" class="section level2">
 <h2>Simulation of length and age data (assuming constant mortality and
 recruitment)</h2>
 <p>The function SimLenAndAgeFreqData() is provided for simulating length
 and age data, based on the equations and assumptions of the ‘length and
-age based catch curve model’. The function produces length frequency
-samples of a specified sample size, given the expected proportion of
-fish in each length class <span class="math inline">\(l\)</span>,
-i.e. <span class="math inline">\(\hat{P}_l\)</span>, using the
-rmultinom() function in R. An associated age frequency sample for each
-length class <span class="math inline">\(l\)</span> is generated from
-the expected, conditional age distributions for each length class, <span class="math inline">\(\hat{P}_{a|l}\)</span>, by applying the
+age based catch curve model (LACC)’. The function produces length
+frequency samples of a specified sample size, given the expected
+proportion of fish in each length class <span class="math inline">\(l\)</span>, i.e. <span class="math inline">\(\hat{P}_l\)</span>, using the rmultinom() function
+in R. An associated age frequency sample for each length class <span class="math inline">\(l\)</span> is generated from the expected,
+conditional age distributions for each length class, <span class="math inline">\(\hat{P}_{a|l}\)</span>, by applying the
 rmultinom() function from within R. Note that these data generated for a
 stock assumed to at equilibrium with respect to mortality and
 recruitment, assuming logistic length-based selectivity (and allowing
 for discarding, if specified).</p>
 </div>
-<div id="simulation-of-length-data-using-a-dynamic-length-structured-model" class="section level2">
-<h2>Simulation of length data using a dynamic length-structured
-model</h2>
-<p>The function SimLenAndAgeFreqData_DynMod() is available for
-simulating length data, allowing for constant or variable mortality,
-and/or constant or variable recruitment, using a dynamic
-length-structured model. This length-based uses outputs from the
-extended, length-based per recruit analyses to calculate the stock
-recruitment relationship and specify the initial population at fished
-equilibrium.</p>
+<div id="simulation-of-age-data-using-a-dynamic-age-structured-model-with-age-based-selectivity" class="section level2">
+<h2>Simulation of age data using a dynamic age-structured model (with
+age-based selectivity)</h2>
+<p>The function SimLenFreqData_DynMod_AB() simulates age composition
+data for a specified number of years, allowing for constant or variable
+mortality, and constant or variable recruitment, from a dynamic
+length-structured model. This analysis uses outputs from the extended
+length-based per recruit model (now termed length-based equilibrium
+analysis, LBEA) to calculate the stock recruitment relationship and
+specify the initial population at fished equilibrium. This model was
+used to test the length-based catch curve method (both described in
+Crisafulli et al., 2025)</p>
+</div>
+<div id="simulation-of-length-data-using-a-dynamic-length-structured-model-with-length-based-selectivity" class="section level2">
+<h2>Simulation of length data using a dynamic length-structured model
+(with length-based selectivity)</h2>
+<p>The function SimLenFreqData_DynMod_LB() simulates length composition
+data for a specified number of years, allowing for constant or variable
+mortality, and or constant or variable recruitment, from a dynamic
+length-structured model. This analysis uses outputs from the extended
+age-based per recruit model (now termed age-based equilibrium analysis,
+ABEA) to calculate the stock recruitment relationship and specify the
+initial population at fished equilibrium.</p>
+</div>
+<div id="simulation-of-length-data-using-a-dynamic-age-structured-model-with-length-based-selectivity" class="section level2">
+<h2>Simulation of length data using a dynamic age-structured model (with
+length-based selectivity)</h2>
+<p>The function SimLenAndAgeFreqData_DynMod_ALB() simulates age, length,
+and condition age-length composition data for a specified number of
+years, allowing for constant or variable mortality, and or constant or
+variable recruitment, from a dynamic age-structured model with
+length-based selectivity. This analysis uses outputs from the extended
+length-based per recruit model (now termed length-based equilibrium
+analysis, LBEA) to calculate the stock recruitment relationship and
+specify the initial population at fished equilibrium.</p>
 <div id="description-of-dynamic-length-structured-model-for-simulating-length-data" class="section level3">
 <h3>Description of dynamic length-structured model for simulating length
 data</h3>
@@ -1810,7 +1844,7 @@ retained catches have a multinomial distribution. Note that this
 analysis shares a number of equations with LBEA (e.g. growth and
 survival matrices and associated equations) not repeated here. This
 mathematical description of this model is now also available in the
-supplementary material for Crisafulli et al (in review).</p>
+supplementary material for Crisafulli et al (2025).</p>
 <p>The initial level of recruitment generated (by LBEA) based on
 equilibrium conditions with constant recruitment, mortality, and growth
 of sex <span class="math inline">\(s\)</span> in year <span class="math inline">\(y=0\)</span> and length class <span class="math inline">\(j\)</span> is</p>
@@ -1884,7 +1918,7 @@ follows.</p>
 <p><span class="math display">\[
 C_{s,y,k} = N_{s,y,k} \frac{F_{s,k}^R}{Z_{s,k}} \left( 1 -
 \exp(-Z_{s,k}) \right)
-\]</span> Note that, for the study of Crisafulli et al (2024), mortality
+\]</span> Note that, for the study of Crisafulli et al (2025), mortality
 was assumed to be constant. Alternatively, using the function
 SimExploitationHistory_DynMod(), a history of variable exploitation may
 be specified. As with annual recruitment deviations (see above), values
@@ -1900,16 +1934,26 @@ proportions of such fish in that year in each length class <span class="math inl
 function in R. The values of <span class="math inline">\(\hat{P_{t,l}}\)</span> are calculated as</p>
 <p><span class="math display">\[
 \hat{P}_{t,s,k}=C_{t,s,k}/\sum_{k=1}^{K}C_{t,s,k}
-\]</span></p>
+\]</span> ### Description of dynamic age-structured model (with
+age-based selectivity) for simulating age data In development.</p>
+</div>
+<div id="description-of-dynamic-age-structured-model-with-length-based-selectivity-for-simulating-age-length-and-conditional-age-at-length-data" class="section level3">
+<h3>Description of dynamic age-structured model (with length-based
+selectivity) for simulating age, length and conditional age-at-length
+data</h3>
+<p>In development.</p>
 </div>
 <div id="apply-routines-for-simulating-length-andor-age-data" class="section level3">
 <h3>Apply routines for simulating length and/or age data</h3>
-<p>Key functions relevant to applying this method are:
-SimAgeFreqData()<br />
-SimLenAndAgeFreqData()<br />
-PlotSimLenAndAgeFreqData()<br />
+<p>Key functions relevant to applying these methods are:
+SimAgeFreqData_EqMod()<br />
+SimLenAndAgeFreqData_EqMod()<br />
+PlotSimLenAndAgeFreqData_EqMod()
+SimLenFreqDat_DirMultDistn_EqMod()<br />
 SimExploitationHistory_DynMod()<br />
-SimLenAndAgeFreqData_DynMod()</p>
+SimLenFreqData_DynMod_LB()<br />
+SimAgeFreqData_DynMod_AB()<br />
+SimLenAndAgeFreqData_DynMod_ALB()</p>
 </div>
 </div>
 <div id="references" class="section level2">
@@ -1923,9 +1967,10 @@ Bulletin 106, 12-23.</p>
 <p>Chapman, D. G., and D. S. Robson. (1960). The analysis of a catch
 curve. Biometrics 16, 354-368.</p>
 <p>Crisafulli, B., Hesp, S. A., Afrifa-Yamoah, E., Mueller, U., Ryan,
-K., Fairclough, D., Hall, N. &amp; Lo, J. (in review). Accounting for
+K., Fairclough, D., Hall, N. &amp; Lo, J. (2025). Accounting for
 post-release mortality in data-limited, length-based assessments of four
-demersal fishes with varying life histories. Fisheries Research.</p>
+demersal fishes with varying life histories. Fisheries Research 281. Art
+107238.</p>
 <p>Die, D. J., Restrepo, V. R. &amp; Hoenig, J. M. (1988).
 Utility-per-recruit modeling: a neglected concept. Transactions of the
 American Fisheries Society 117, 274-281.</p>
@@ -1945,6 +1990,10 @@ ecosystem-based management framework. ICES Journal of Marine Science
 <p>Hamel, O. S. &amp; Cope, J. M. (2022). Development and considerations
 for application of a longevity-based prior for the natural mortality
 rate. Fisheries Research 256 (2022) 106477.</p>
+<p>Hansen, M. J., Madenjian, C. P., Selgeby, J. H., &amp; Helser, T. E.
+(1997). Gillnet selectivity for lake trout (Salvelinus namaycush) in
+Lake Superior. Canadian Journal of Fisheries and Aquatic Sciences, 54,
+2483–2490.</p>
 <p>Hoenig, J. M. (1983). Empirical use of longevity data to estimate
 mortality rates. Fishery Bulletin 82, 898–903.</p>
 <p>Kirkwood, G. P. &amp; Walker, T. I. (1986). Gill net mesh

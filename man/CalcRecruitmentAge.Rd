@@ -34,7 +34,7 @@ ZMort = FMort + NatMort
 SelA50 = 6
 SelA95 = 8
 SampleSize = 1000 # required sample size. For 2 sex model, same sample size generated for each sex.
-Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
+Res=SimAgeFreqData_EqMod(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
 ObsAgeFreq = Res$CatchSample
 CalcRecruitmentAge(RecAssump=0, Ages, ObsAgeFreq)
 }

@@ -1,16 +1,6 @@
 #' @useDynLib L3Assess, .registration = TRUE
 #' @importFrom Rcpp sourceCpp
  NULL
-# You can learn more about package authoring with RStudio at:
-#
-#   http://r-pkgs.had.co.nz/
-#
-# Some useful keyboard shortcuts for package authoring:
-#
-#   Install Package:           'Ctrl + Shift + B'
-#   Check Package:             'Ctrl + Shift + E'
-#   Test Package:              'Ctrl + Shift + T'
-#
 
 # Alex Hesp, last updated January 2025
 # Department of Primary Industries and Regional Development
@@ -124,9 +114,9 @@
 
  }
 
-# **************************
+# ****************
 # growth functions
-# **************************
+# ****************
 
  #' Schnute growth function
  #'
@@ -298,9 +288,9 @@
    return(ExpLen)
  }
 
-#******************************************
-# Catch curve analyses - size-based methods
-#******************************************
+ # ************************
+ # Selectivity calculations
+ # ************************
 
 #' Calculate gillnet selectivity using the method of Kirkwood and Walker (1986)
 #'
@@ -333,15 +323,15 @@ CalcGillnetSelectivity <- function(theta1, theta2, MeshSize_mm, nMeshes, nLenCl,
 
   # calculate alpha and beta parameters for selectivity schedule
   alpha_beta = rep(NA,nMeshes)
-  alpha_beta = MeshSize_mm * theta1
-  beta = -0.5 * (alpha_beta - sqrt(alpha_beta * alpha_beta + 4 * theta2))
+  alpha_beta = theta1 * MeshSize_mm  # KW eqn 6
+  beta = -0.5 * (alpha_beta - sqrt(alpha_beta * alpha_beta + 4 * theta2)) # KW eqn 7
   alpha = alpha_beta / beta
 
   SelAtLengthForMesh = data.frame(matrix(nrow=nMeshes, ncol=nLenCl))
   colnames(SelAtLengthForMesh) = midpt
 
   SumSelAtLengthForMesh = rep(0,nLenCl)
-  for (m in 1:nMeshes) {
+  for (m in 1:nMeshes) { # eqn 5
     SelAtLengthForMesh[m,] = ((midpt / alpha_beta[m]) ^ alpha[m]) *
       exp(alpha[m] - midpt / beta[m])
 
@@ -355,6 +345,271 @@ CalcGillnetSelectivity <- function(theta1, theta2, MeshSize_mm, nMeshes, nLenCl,
   return(SelectResults)
 
 }
+
+#' Gillnet selectivity calculations (Kirkwood and Walker, 1986 method), used in objective function
+#'
+#' Calculate gillnet selectivity at length, by mesh and overall (assuming equal fishing intensity
+#' among meshes) using the method of Kirkwood and Walker (1986), given model parameter values
+#' (theta1 and theta2)
+#'
+#' @keywords internal
+#'
+#' @param params theta and theta2 parameters of Kirkwood and Walker (1986) model
+#'
+#' @return RelNum_popn=RelNum_popn, Sel_ij, Comb_Sel, EstNum_ij, alpha_beta, alpha, beta
+GillnetSelectivity_Calcs <- function(params) {
+
+  # estimated parameters
+  theta1 = exp(params[1])
+  theta2 = exp(params[2])
+
+  alpha_beta = theta1 * MeshSize_mm # KW eqn 6
+  beta = -0.5*(alpha_beta - sqrt(alpha_beta * alpha_beta + 4.0 * theta2)) # KW eqn 7
+  alpha = alpha_beta / beta
+  Common_sd = sqrt((alpha+1) * beta * beta)
+
+  # relative selectivity at mid point of each length class, for each panel, Sel_ij
+  Sel_ij = data.frame(matrix(nrow=nMeshes,ncol=length(midpt)))
+  colnames(Sel_ij) = midpt
+  for (i in 1:nMeshes) {  # eqn 5
+    Sel_ij[i,] = ((midpt / alpha_beta[i]) ^ alpha[i]) * exp(alpha[i] - midpt / beta[i])
+  }
+  Sum_Sel_midpt = colSums(Sel_ij)
+  Comb_Sel = as.vector(Sum_Sel_midpt / max(Sum_Sel_midpt))
+
+  sum_ni = rowSums(ObsCatchLenFreqByMesh[1:nMeshes,])
+  sum_nj = colSums(ObsCatchLenFreqByMesh[1:nMeshes,])
+
+  # Relative proportion in population length class, mu_j
+  RelNum_popn = sum_nj / Sum_Sel_midpt # KW eqn 8
+  RelNum_popn[which(RelNum_popn<0.001)] = 0.001
+  RelProp_popn = RelNum_popn / sum(RelNum_popn)
+
+  # Estimated number of fish caught in each mesh at each length
+  EstNum_ij = data.frame(matrix(nrow=nMeshes,ncol=length(midpt)))
+  colnames(EstNum_ij) = midpt
+  for (i in 1:nMeshes) {
+    EstNum_ij[i,] = Sel_ij[i,] * RelProp_popn * sum_ni[i] / sum(Sel_ij[i,] * RelProp_popn)
+  }
+
+  Res = list(RelNum_popn=RelNum_popn,
+             Sel_ij=Sel_ij,
+             Comb_Sel=Comb_Sel,
+             EstNum_ij=EstNum_ij,
+             alpha_beta=alpha_beta,
+             alpha=alpha,
+             beta=beta)
+  return(Res)
+
+}
+
+#' Objective function for Kirkwood and Walker (1986) method
+#'
+#' Objective function for Kirkwood and Walker (1986) method, returns negative log-likelihood
+#'
+#' @param params theta and theta2 parameters of Kirkwood and Walker (1986) model
+#'
+#' @return NLL
+#' @export
+GillnetSelectivityObj_func <- function(params) {
+
+  Res=GillnetSelectivity_Calcs(params)
+  RelNum_popn = Res$RelNum_popn
+  Sel_ij = Res$Sel_ij
+
+  # calculate log likelihood
+  LL = data.frame(matrix(nrow=nMeshes,ncol=length(midpt)))
+  LL = ObsCatchLenFreqByMesh[1:nMeshes,] * log((RelNum_popn * Sel_ij) + 1E-4) - RelNum_popn * Sel_ij
+  NLL = -sum(LL)
+  cat("NLL",NLL,"params",exp(params), '\n')
+  return(NLL)
+}
+
+#' Fit Kirkwood & Walker (1986) gillnet selectivity model and get results
+#'
+#' Fit Kirkwood & Walker (1986) model to get estimates of gillnet selectivity at length,
+#' by mesh and overall (assuming equal fishing power of meshes), given input model parameter
+#' values (theta1 and theta2). Routine also provides various statistical outputs including
+#' convergence statistics, parameter estimates and associated 95 percent confidence limits
+#' and associated variance-covariance matrix, calculated using the MASS package.
+#'
+#' @param params theta and theta2 parameters of Kirkwood and Walker (1986) model
+#' @param MeshSize_mm vector of gillnet mesh sizes, in mm
+#' @param nMeshes number of gillnet meshes
+#' @param nLenCl number of length classes
+#' @param midpt mid points of length classes
+#' @param ObsCatchLenFreqByMesh observed length frequency data (by mesh)
+#'
+#' @return ParamEst, params, NLL, convergence, vcov.Params, ses, cor.Params, RelNum_popn,
+#'SelAtLengthForMesh, SelAtLength, EstCatchNum_ij, alpha_beta, alpha, beta
+#' @examples
+#' # Simulate fish length data for gillnet catches
+#' MaxModelAge <- 20 # maximum age considered by model, years
+#' TimeStep <- 1/4 # Model time step (y) (for shorter-lived species, might be appropriate to use a smaller time step)
+#' MaxLen = 600
+#' LenInc = 20
+#' lbnd = seq(0,MaxLen - LenInc, LenInc)
+#' ubnd = lbnd + LenInc
+#' midpt = lbnd + (LenInc/2)
+#' nLenCl = length(midpt)
+#' GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute
+#' Linf <- c(400, 400) # mm - von Bertalanffy growth model parameters - Females, males
+#' vbK <- c(0.3, 0.3) # year-1 - von Bertalanffy growth model parameters - Females, males
+#' tzero <- c(0, 0) # years - von Bertalanffy growth model parameters - Females, males
+#' GrowthParams = data.frame(Linf=Linf, vbK=vbK, tzero=tzero)
+#' RefnceAges = NA
+#' CVSizeAtAge = c(0.03,0.03)
+#' lenwt_a <- 0.000005 # combined sexes - weight (g) vs length (mm, TL) relationship parameters
+#' ln_lenwt_a <- NA # for log-log relationship
+#' lenwt_b <- 3 # combined sexes - weight (g) vs length (mm, TL) relationship parameters
+#' WLrel_Type <- 1 # 1=power, 2=log-log relationship
+#' EstWtAtLen <- data.frame(EstFemWtAtLen=NA,
+#'                          EstMalWtAtLen=NA) # weight at age, inputted as values in data frame
+#' ReprodScale <- 1 # 1=default (standard calculations for spawning biomass), 2=hyperallometric reproductive scaling with female mass (i.e. BOFFF effects)
+#' ReprodPattern <- 1 # 1 = gonochoristic (separate sexes), 2 = protogynous (female to male sex change), 3 = protandrous (male to female sex change)
+#' InitRatioFem <- 0.5 # Ratio of females to males at recruitment age/length
+#' FinalSex_L50 <- NA # Logistic sex change relationship parameters (inflection point)
+#' FinalSex_L95 <- NA # Logistic sex change relationship parameters (95% of max probability)
+#' EstSexRatioAtLen <- NA  # sex ratio at length inputted as vector
+#' EggFertParam <- NA # (NA or from ~0.2-1) NA = no effect, ~0.2 = direct effect of popn. sex ratio changes on egg fertilisation rates, 1 = no effects
+#' mat_L50 <- c(180, 180) # females, males - Logistic length (mm) at maturity relationship parameters
+#' mat_L95 <- c(200, 200) # females, males - Logistic length (mm) at maturity relationship parameters
+#' EstMatAtLen <- data.frame(EstFemMatAtLen=NA,
+#'                           EstMalMatAtLen=NA) # maturity at length, inputted as values in data frame
+#' sel_L50 <- c(180, 180) # females, males - Logistic length selectivity relationship parameters
+#' sel_L95 <- c(200, 200) # females, males - Logistic length selectivity relationship parameters
+#' EstGearSelAtLen <- data.frame(EstFemGearSelAtLen=NA,
+#'                               EstMalGearSelAtLen=NA)
+#' ret_Pmax <- c(1.0, 1.0) # maximum retention, values lower than 1 imply discarding of fish above MLL
+#' ret_L50 <- c(240, 240) # females, males - Logistic fish retention at length parameters
+#' ret_L95 <- c(250, 250) # females, males - Logistic fish retention at length parameters
+#' EstRetenAtLen <- data.frame(EstFemRetenAtLen=NA,
+#'                             EstMalRetenAtLen=NA)
+#' DiscMort <- 0 # discard mortality (e.g. 50% released fish die = 0.5)
+#' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
+#' SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
+#' NatMort = 4.22 / MaxModelAge # natural mortality  (year-1)
+#' FMort = 2 * NatMort
+#' Res=CalcYPRAndSPRForFMort_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
+#'                              RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtLen,
+#'                              ReprodScale, ReprodPattern, InitRatioFem, FinalSex_L50, FinalSex_L95, EstSexRatioAtLen,
+#'                              EggFertParam, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
+#'                              ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, FMort)
+#' # get proportions of fish at length in population
+#' N = Res$ModelDiag$Fish_FemNPerRecLen + Res$ModelDiag$Fish_MalNPerRecLen
+#' mu = N / sum(N)
+#' # draw random sample of fish lengths from the population
+#' nSamples = 5000
+#' RandFishLenFreq = as.vector(rmultinom(1, nSamples, mu))
+#' RandFishLen = rep(midpt,RandFishLenFreq)
+#' # Get length-based selectivity by mesh and overall using Kirkwood & Walker (1986) method
+#' MeshSize_mm = c(38, 51, 63, 76, 89, 102, 115, 102)
+#' nMeshes = length(MeshSize_mm)
+#' theta1 = 3
+#' theta2 = 2000
+#' Res=CalcGillnetSelectivity(theta1, theta2, MeshSize_mm, nMeshes, nLenCl, midpt)
+#' SelAtLengthForMesh=Res$SelAtLengthForMesh
+#' SelAtLength=Res$SelAtLength
+#' # for (i in 1:nMeshes) {
+#' #   if (i==1) plot(midpt,Res$SelAtLengthForMesh[i,], "l", ylab="Selectivity")
+#' #   if (i>1) lines(midpt,Res$SelAtLengthForMesh[i,])
+#' # }
+#' # lines(midpt,Res$SelAtLength,"l",col="blue")
+#' # Get a random sample of fish lengths from gillnet catches
+#' ObsCatchLenFreqByMesh = data.frame(matrix(nrow=nMeshes,ncol=length(midpt)))
+#' colnames(ObsCatchLenFreqByMesh) = midpt
+#' ObsCatchLenFreqByMesh[1:nMeshes,1:length(midpt)] = 0
+#' set.seed(123)
+#' for (k in 1:nSamples) {
+#'   FishLen = RandFishLen[k]
+#'   FishLenCl = trunc(FishLen/LenInc) + 1 # get fish length class
+#'   FishLenClMidpt = midpt[FishLenCl] # get length class midpt
+#'   RandMesh = sample(1:nMeshes,1) # select random gillnet mesh (assume fish have equal change of encontering any mesh)
+#'   ProbCapt = SelAtLengthForMesh[RandMesh,FishLenCl] # get selectivity for that fish
+#'   RandNum = runif(1,0,1) # random number between 0 and 1
+#'   if (RandNum < ProbCapt) { # accept fish as being caught by mesh if RandNum < ProbCapt
+#'     ObsCatchLenFreqByMesh[RandMesh,FishLenCl] = ObsCatchLenFreqByMesh[RandMesh,FishLenCl] + 1
+#'   }
+#' }
+#' CatchSampLenFreq = rep(0,length(midpt)) # plot overall length frequency
+#' for (i in 1:nMeshes) { CatchSampLenFreq = CatchSampLenFreq + ObsCatchLenFreqByMesh[i,] }
+#' # par(mfcol=c(1,1)) # plot random catch data by mesh
+#' # for (i in 1:nMeshes) {
+#' #   if (i==1) plot(midpt,ObsCatchLenFreqByMesh[i,],"l", ylim=c(0,max(ObsCatchLenFreqByMesh[,])))
+#' #   if (i>1) lines(midpt,ObsCatchLenFreqByMesh[i,], col=i)
+#' # }
+#' # plot(midpt,CatchSampLenFreq,"l")
+#' # fit K & W method to data to see if params can be recovered
+#' theta1 = 5
+#' theta2 = 1500
+#' params = log(c(theta1, theta2))
+#' res=GetGillnetSelectivityResults(params, MeshSize_mm, nMeshes, midpt, ObsCatchLenFreqByMesh)
+#' # estimates of selectivity (by mesh and overall)
+#' # par(mfrow=c(1,1))
+#' # for (i in 1:nMeshes) {
+#' #   if (i==1) {
+#' #     plot(midpt,res$SelAtLengthForMesh[i,],"l")
+#' #   } else {
+#' #     lines(midpt,res$SelAtLengthForMesh[i,])
+#' #   }
+#' # }
+#' # lines(midpt, res$SelAtLength, col="blue")
+#' # # observed vs expected catches by mesh
+#' # par(mfcol=c(3,2))
+#' # for (i in 1:nMeshes) {
+#' #   plottitle = paste0("mesh=",i," n=",sum(ObsCatchLenFreqByMesh[i,]))
+#' #   plot(midpt, ObsCatchLenFreqByMesh[i,],"l", main=plottitle)
+#' #   lines(midpt, res$EstCatchNum_ij[i,], col="blue")
+#' # }
+#' @export
+GetGillnetSelectivityResults <- function(params, MeshSize_mm, nMeshes, midpt, ObsCatchLenFreqByMesh) {
+
+  # fit model
+  nlmb <- nlminb(params, GillnetSelectivityObj_func, gradient = NULL, hessian = TRUE, control=list(trace=1, rel.tol=0.000001))
+  convergence_firstpass = nlmb$convergence
+  NLL_firstpass = nlmb$objective
+
+  # re-fit to improve robustness of fit
+  params = nlmb$par
+  nlmb <- nlminb(params, GillnetSelectivityObj_func, gradient = NULL, hessian = TRUE, control=list(trace=1, rel.tol=0.000001))
+  convergence_finalpass = nlmb$convergence
+  NLL_finalpass = nlmb$objective
+
+  # get estimates of uncertainty, parameter correlations
+  hess.out = optimHess(nlmb$par, GillnetSelectivityObj_func)
+  vcov.Params = solve(hess.out)
+  ses = sqrt(diag(vcov.Params))
+  temp = diag(1/sqrt(diag(vcov.Params)))
+  cor.Params=temp %*% vcov.Params %*% temp
+
+  # Get Z estimate and 95 percent confidence limits
+  EstTheta1 = exp(c(nlmb$par[1], nlmb$par[1] + c(-1.96, 1.96) * ses[1]))
+  EstTheta2 = exp(c(nlmb$par[2], nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
+  ParamEst = t(data.frame(EstTheta1 = round(EstTheta1, 3), EstTheta2 = round(EstTheta2, 3)))
+  colnames(ParamEst) = c("Est","Low95","Up95")
+
+  # get key outputs of interest from selectivity analysis
+  Res=GillnetSelectivity_Calcs(params)
+
+  Results = list(ParamEst = ParamEst,
+                 params = nlmb$par,
+                 NLL_firstpass = NLL_firstpass,
+                 NLL_finalpass = NLL_finalpass,
+                 convergence_firstpass = convergence_firstpass,
+                 convergence_finalpass = convergence_finalpass,
+                 vcov.Params = vcov.Params,
+                 ses = ses,
+                 cor.Params = cor.Params,
+                 RelNum_popn=Res$RelNum_popn,
+                 SelAtLengthForMesh=Res$Sel_ij,
+                 SelAtLength=Res$Comb_Sel,
+                 EstCatchNum_ij=Res$EstNum_ij,
+                 alpha_beta=Res$alpha_beta,
+                 alpha=Res$alpha,
+                 beta=Res$beta)
+
+}
+
 
 #' Calculate logistic length-based selectivity (or retention)
 #'
@@ -777,7 +1032,7 @@ VisualiseGrowthApplyingLTM <- function (nFish, TimeStep, MaxAge, Growth_params, 
 #' ExpPropAtLen = Res$ModelDiag$ExpRetCatchPropAtLen_Fem
 #' # plot(midpt, Res$ModelDiag$ExpRetCatchPropAtLen_Fem, "l")
 #' # lines(midpt, Res$ModelDiag$ExpRetCatchPropAtLen_Mal, col="blue") # check that same for both sexes (as single sex model)
-#' res=SimLenFreqDat_DirMultDistn(nSampEvents, nFishPerSampEvent, theta_val, midpt, ExpPropAtLen)
+#' res=SimLenFreqDat_DirMultDistn_EqMod(nSampEvents, nFishPerSampEvent, theta_val, midpt, ExpPropAtLen)
 #' plot(res$midpt, res$simLenFreq, "o")
 #' # Fit length-based catch curve, assuming Dirichlet multinomial distribution
 #' ObsRetCatchFreqAtLen = res$simLenFreq
@@ -2912,10 +3167,10 @@ CalcExpRetCatchPropLengthGivenIntAge <- function(MinAge, MaxAge, midpt, RetCatch
 #' # SelA50 = c(6,5.5)
 #' # SelA95 = c(8,7.5)
 #' SampleSize = 1000 # required sample size. For 2 sex model, same sample size generated for each sex.
-#' Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
+#' Res=SimAgeFreqData_EqMod(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
 #' ObsAgeFreq = Res$CatchSample
 #' @export
-SimAgeFreqData <- function(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort) {
+SimAgeFreqData_EqMod <- function(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort) {
 
   Ages = MinAge:MaxAge
 
@@ -4051,10 +4306,10 @@ GetExpCatchResults <- function(MaxAge, TimeStep, nTimeSteps, midpt, nLenCl, Sele
 #' theta_val = 0.3
 #' midpt = Res$midpt
 #' ExpPropAtLen = Res$ModelDiag$ExpRetCatchPropAtLen
-#' res=SimLenFreqDat_DirMultDistn(nSampEvents, nFishPerSampEvent, theta_val, midpt, ExpPropAtLen)
+#' res=SimLenFreqDat_DirMultDistn_EqMod(nSampEvents, nFishPerSampEvent, theta_val, midpt, ExpPropAtLen)
 #' plot(res$midpt, res$simLenFreq, "o")
 #' @export
-SimLenFreqDat_DirMultDistn <- function(nSampEvents, nFishPerSampEvent, theta_val, midpt, ExpPropAtLen) {
+SimLenFreqDat_DirMultDistn_EqMod <- function(nSampEvents, nFishPerSampEvent, theta_val, midpt, ExpPropAtLen) {
 
   # Simulate length data from a Dirichlet multinomial distribution
   # J = number of fish sampling events
@@ -5990,10 +6245,10 @@ SimAgeFreqData_DynMod_AB <- function(SimAnnSampSize, nYears, lnSigmaR, autocorr,
                                EstGearSelAtAge, Land_sel_A50, Land_sel_A95, EstLandSelAtAge, ret_Pmax,
                                ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness, SRrel_Type, NatMort, FMort)
 
+  FemLenAtAge = res$ModelDiag$FemLenAtAge; MalLenAtAge = res$ModelDiag$MalLenAtAge
   FemWtAtAge = res$ModelDiag$FemWtAtAge; MalWtAtAge = res$ModelDiag$MalWtAtAge
   UnfishFemSurvAtAge = res$ModelDiag$UnfishFemSurvAtAge; UnfishMalSurvAtAge = res$ModelDiag$UnfishMalSurvAtAge
   FishFemSurvAtAge = res$ModelDiag$FishFemSurvAtAge; FishMalSurvAtAge = res$ModelDiag$FishMalSurvAtAge
-
   Unfish_FemSpBiomPerRec = sum(res$ModelDiag$UnfishFemSpBiomAtAge)
   Fish_FemSpBiomPerRec = sum(res$ModelDiag$FishFemSpBiomAtAge)
   Unfish_CombSexSpBiomPerRec = sum(res$ModelDiag$UnfishFemSpBiomAtAge) + sum(res$ModelDiag$UnfishMalSpBiomAtAge)
@@ -6029,6 +6284,10 @@ SimAgeFreqData_DynMod_AB <- function(SimAnnSampSize, nYears, lnSigmaR, autocorr,
   FemSpBiom=res$FemSpBiom; MalSpBiom=res$MalSpBiom; CombSexSpBiom=res$CombSexSpBiom; AnnRecruit=res$AnnRecruit
   Catch_Fem=res$Catch_Fem; Catch_Mal=res$Catch_Mal; Catch_CombSex=res$Catch_CombSex; Catch_Biom=res$Catch_Biom
 
+  # calculate relative female spawning biomass by year
+  if (ReprodPattern == 1 | ReprodPattern == 3) RelSpBiom = FemSpBiom / Unfish_SpBiom # gonochoristic or protandrous species
+  if (ReprodPattern == 2) RelSpBiom = CombSexSpBiom / Unfish_SpBiom # protogynous species
+
   # Get sample random length frequency data, for retained catches for each year,
   # given expected length distributions for each year, assuming a multinomial distribution
   res=GenerateRandomAgeFreqData_DynSimMod(nYears, SimAnnSampSize, MaxModelAge, Catch_Fem, Catch_Mal, Catch_CombSex)
@@ -6036,6 +6295,23 @@ SimAgeFreqData_DynMod_AB <- function(SimAnnSampSize, nYears, lnSigmaR, autocorr,
 
   # calculate mean lengths for each year and associated 95% CLs
   MeanAgeStats = GetMeanAgeStats_DynSimMod(nYears, MaxModelAge, RandObsCatchAgeFreq_Fem, RandObsCatchAgeFreq_Mal)
+
+  ModelDiag = list(Ages = seq(0,MaxModelAge,1),
+                   FemLenAtAge = FemLenAtAge,
+                   MalLenAtAge = MalLenAtAge,
+                   FemWtAtAge = FemWtAtAge,
+                   MalWtAtAge = MalWtAtAge,
+                   PropFemAtAge = PropFemAtAge,
+                   FemPropMatAtAge = FemPropMatAtAge,
+                   MalPropMatAtAge = MalPropMatAtAge,
+                   FemGearSelAtAge = FemGearSelAtAge,
+                   MalGearSelAtAge = MalGearSelAtAge,
+                   FemRetProbAtAge = FemRetProbAtAge,
+                   MalRetProbAtAge = MalRetProbAtAge,
+                   FemSelLandAtAge = FemSelLandAtAge,
+                   MalSelLandAtAge = MalSelLandAtAge,
+                   FemSelDiscAtAge = FemSelDiscAtAge,
+                   MalSelDiscAtAge = MalSelDiscAtAge)
 
   res=list(FMortByYear = FMortByYear,
            Catch_Fem = Catch_Fem,
@@ -6045,6 +6321,7 @@ SimAgeFreqData_DynMod_AB <- function(SimAnnSampSize, nYears, lnSigmaR, autocorr,
            FemSpBiom = FemSpBiom,
            MalSpBiom = MalSpBiom,
            CombSexSpBiom = CombSexSpBiom,
+           RelSpBiom = RelSpBiom,
            AnnRecruit = AnnRecruit,
            random_dev = random_dev,
            AnnSimSampSize_Fem = res$AnnSimSampSize_Fem,
@@ -6052,8 +6329,8 @@ SimAgeFreqData_DynMod_AB <- function(SimAnnSampSize, nYears, lnSigmaR, autocorr,
            RandObsCatchAgeFreq_Fem = res$RandObsCatchAgeFreq_Fem,
            RandObsCatchAgeFreq_Mal = res$RandObsCatchAgeFreq_Mal,
            RandObsCatchAgeFreq_CombSex = res$RandObsCatchAgeFreq_CombSex,
-           Ages = seq(0,MaxModelAge,1),
-           MeanAgeStats = MeanAgeStats)
+           MeanAgeStats = MeanAgeStats,
+           ModelDiag = ModelDiag)
 
   return(res)
 
@@ -6512,7 +6789,7 @@ SimLenAndAgeFreqData_DynMod_ALB <- function(SimAnnSampSize, nYears, lnSigmaR, au
 
   # calculate relative female spawning biomass by year
   if (ReprodPattern == 1 | ReprodPattern == 3) RelSpBiom = FemSpBiom / Unfish_SpBiom # gonochoristic or protandrous species
-  if (ReprodPattern == 2) UnfishSpBiomPerRec = RelSpBiom = CombSexSpBiom / Unfish_SpBiom # protogynous species
+  if (ReprodPattern == 2) RelSpBiom = CombSexSpBiom / Unfish_SpBiom # protogynous species
 
   # get length composition samples by year
 
@@ -10351,7 +10628,7 @@ PlotLenConvCatchCurveResults <- function(MaxAge, ModelType, GrowthParams, Refnce
 #' SelA50 = 6
 #' SelA95 = 8
 #' SampleSize = 1000 # required sample size. For 2 sex model, same sample size generated for each sex.
-#' Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
+#' Res=SimAgeFreqData_EqMod(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
 #' ObsAgeFreq = Res$CatchSample
 #' CalcRecruitmentAge(RecAssump=0, Ages, ObsAgeFreq)
 CalcRecruitmentAge <- function(RecAssump, Ages, ObsAgeFreq) {
@@ -10402,7 +10679,7 @@ CalcRecruitmentAge <- function(RecAssump, Ages, ObsAgeFreq) {
 #' SelA50 = 6
 #' SelA95 = 8
 #' SampleSize = 1000 # required sample size. For 2 sex model, same sample size generated for each sex.
-#' Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
+#' Res=SimAgeFreqData_EqMod(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
 #' ObsAgeFreq = Res$CatchSample
 #' RecAge = CalcRecruitmentAge(RecAssump=0, Ages, ObsAgeFreq)
 #' CalcLastAgeForLinearCatchCurve(MinFreq=1, RecAge, Ages, ObsAgeFreq)
@@ -10459,7 +10736,7 @@ CalcLastAgeForLinearCatchCurve <- function (MinFreq, RecAge, Ages, ObsAgeFreq)
 #' SelA50 = 6
 #' SelA95 = 8
 #' SampleSize = 1000 # required sample size. For 2 sex model, same sample size generated for each sex.
-#' Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
+#' Res=SimAgeFreqData_EqMod(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
 #' ObsAgeFreq = as.vector(unlist(Res$CatchSample))
 #' res=GetLinearCatchCurveResults(RecAssump=0, SpecRecAge=NA, MinFreq=1, Ages, ObsAgeFreq)
 #' @export
@@ -10576,7 +10853,7 @@ GetLinearCatchCurveResults <- function(RecAssump, SpecRecAge, MinFreq, Ages, Obs
 #' SelA50 = 6
 #' SelA95 = 8
 #' SampleSize = 1000 # required sample size. For 2 sex model, same sample size generated for each sex.
-#' Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
+#' Res=SimAgeFreqData_EqMod(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
 #' ObsAgeFreq = as.vector(unlist(Res$CatchSample))
 #' res=GetChapmanRobsonMortalityResults(RecAssump=1, SpecRecAge=NA, MinAge, MaxAge, ObsAgeFreq)
 #' @export
@@ -11129,7 +11406,7 @@ CalcDirMultNLL_LogisticCatchCurve <- function(params, nSexes, Ages, ObsAgeFreq, 
 #' SelA50 = 6
 #' SelA95 = 8
 #' SampleSize = 1000 # required sample size. For 2 sex model, same sample size generated for each sex.
-#' Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
+#' Res=SimAgeFreqData_EqMod(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
 #' ObsAgeFreq = unlist(as.vector(Res$CatchSample)) # input as vector for single sex model
 #' # Specify catch curve model and required inputs for that model
 #' NatMort = 0.104 # Logistic selectivity
@@ -11174,7 +11451,7 @@ CalcDirMultNLL_LogisticCatchCurve <- function(params, nSexes, Ages, ObsAgeFreq, 
 #' SelA50 = c(6,6.5)
 #' SelA95 = c(8,8.5)
 #' SampleSize = 1000 # required sample size. For 2 sex model, same sample size generated for each sex.
-#' Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
+#' Res=SimAgeFreqData_EqMod(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
 #' ObsAgeFreq = Res$CatchSample
 #' # fit model (multinomial distribution - two sexes)
 #' Init_FMort = 0.2
@@ -11329,7 +11606,7 @@ GetLogisticCatchCurveResults <- function (params, NatMort, Ages, ObsAgeFreq)
 #' SelA50 = 6
 #' SelA95 = 8
 #' SampleSize = 1000 # required sample size. For 2 sex model, same sample size generated for each sex.
-#' Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
+#' Res=SimAgeFreqData_EqMod(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
 #' ObsAgeFreq = unlist(as.vector(Res$CatchSample)) # input as vector for single sex model
 #' # Specify catch curve model and required inputs for that model
 #' # CatchCurveModel = 1 # Chapman Robson
@@ -11396,7 +11673,7 @@ GetLogisticCatchCurveResults <- function (params, NatMort, Ages, ObsAgeFreq)
 #' SelA50 = c(6,6.5)
 #' SelA95 = c(8,8.5)
 #' SampleSize = 1000 # required sample size. For 2 sex model, same sample size generated for each sex.
-#' Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
+#' Res=SimAgeFreqData_EqMod(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
 #' ObsAgeFreq = Res$CatchSample
 #' # fit model (multinomial distribution - two sexes)
 #' Init_FMort = 0.2
@@ -11637,7 +11914,7 @@ PlotAgeBasedCatchCurveResults_NormalSpace <- function(RecAssump, SpecRecAge, Min
 #' SelA50 = 6
 #' SelA95 = 8
 #' SampleSize = 1000 # required sample size. For 2 sex model, same sample size generated for each sex.
-#' Res=SimAgeFreqData(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
+#' Res=SimAgeFreqData_EqMod(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
 #' ObsAgeFreq = unlist(as.vector(Res$CatchSample)) # input as vector for single sex model
 #' # Specify catch curve model and required inputs for that model
 #' # CatchCurveModel = 1 # Chapman Robson
@@ -12372,7 +12649,7 @@ CalcSelectivityAndRetentionAtAge <- function(EstGearSelAtAge, EstRetenAtAge, Age
 #' SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
 #' NatMort = 0.2 # natural mortality  (year-1)
 #' FMort <- 0.4 # estimate of fishing mortality, e.g. from catch curve analysis
-#' Res=CalcYPRAndSPRForFMort_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
+#' Res=(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
 #'                             lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale,
 #'                             ReprodPattern, InitRatioFem, FinalSex_A50, FinalSex_A95, EstSexRatioAtAge,
 #'                             EggFertParam, mat_A50, mat_A95, EstMatAtAge, Gear_sel_A50, Gear_sel_A95,

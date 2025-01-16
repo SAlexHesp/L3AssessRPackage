@@ -269,7 +269,7 @@ midpt = Res$midpt
 ExpPropAtLen = Res$ModelDiag$ExpRetCatchPropAtLen_Fem
 # plot(midpt, Res$ModelDiag$ExpRetCatchPropAtLen_Fem, "l")
 # lines(midpt, Res$ModelDiag$ExpRetCatchPropAtLen_Mal, col="blue") # check that same for both sexes (as single sex model)
-res=SimLenFreqDat_DirMultDistn(nSampEvents, nFishPerSampEvent, theta_val, midpt, ExpPropAtLen)
+res=SimLenFreqDat_DirMultDistn_EqMod(nSampEvents, nFishPerSampEvent, theta_val, midpt, ExpPropAtLen)
 plot(res$midpt, res$simLenFreq, "o")
 # Fit length-based catch curve, assuming Dirichlet multinomial distribution
 ObsRetCatchFreqAtLen = res$simLenFreq
