@@ -167,6 +167,10 @@ params = c(InitFishMort_logit, log(c(InitL50, InitDelta, InitLinf, InitvbK, Init
 # params = c(InitFishMort_logit, log(c(InitL50, InitDelta, InitLinf, InitvbK, InitCVSizeAtAge)))
 FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
                                                 lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep)
+PlotAgeLengthCatchCurve_Selectivity(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
+                                    lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep, MainLabel=NA,
+                                    xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA,
+                                    ymax=NA, yint=NA, PlotCLs=TRUE, FittedRes, nReps=200)
 # Example with specified selectivity vector
 # Simulate data
 SelectivityType=1 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve

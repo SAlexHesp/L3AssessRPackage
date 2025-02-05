@@ -15,3 +15,4 @@ NLL
 \description{
 Objective function for Kirkwood and Walker (1986) method, returns negative log-likelihood
 }
+\keyword{internal}
