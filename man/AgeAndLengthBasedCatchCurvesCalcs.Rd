@@ -7,6 +7,12 @@
 AgeAndLengthBasedCatchCurvesCalcs(
   params,
   DistnType,
+  lbnd,
+  ubnd,
+  midpt,
+  MaxAge,
+  NatMort,
+  TimeStep,
   GrowthCurveType,
   GrowthParams,
   RefnceAges,
@@ -14,20 +20,27 @@ AgeAndLengthBasedCatchCurvesCalcs(
   CatchCurveType,
   MLL,
   SelectivityType,
-  lbnd,
-  ubnd,
-  midpt,
   SelectivityAtLen,
-  DiscMort,
-  MaxAge,
-  NatMort,
-  TimeStep
+  RetenAtLen,
+  DiscMort
 )
 }
 \arguments{
 \item{params}{vector of model parameters in log space (params) to be estimated}
 
 \item{DistnType}{1 = Multinomial, 2 = Dirichlet multinomial}
+
+\item{lbnd}{lower bounds of length classes}
+
+\item{ubnd}{upper bounds of length classes}
+
+\item{midpt}{mid points of length classes}
+
+\item{MaxAge}{maximum age considered in model}
+
+\item{NatMort}{natural mortality}
+
+\item{TimeStep}{model timestep (e.g. 1 = annual, 1/12 = monthly)}
 
 \item{GrowthCurveType}{1 = von Bertalanffy, 2 = Schnute}
 
@@ -42,21 +55,11 @@ both sexes von Bertalanffy, or c(y1, y2, a, b) single sex Schnute, or data.frame
 
 \item{SelectivityType}{1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve}
 
-\item{lbnd}{lower bounds of length classes}
-
-\item{ubnd}{upper bounds of length classes}
-
-\item{midpt}{mid points of length classes}
-
 \item{SelectivityAtLen}{selectivity at length}
 
+\item{RetenAtLen}{retention at length}
+
 \item{DiscMort}{proportion of fish that die following catch and release}
-
-\item{MaxAge}{maximum age considered in model}
-
-\item{NatMort}{natural mortality}
-
-\item{TimeStep}{model timestep (e.g. 1 = annual, 1/12 = monthly)}
 }
 \value{
 gear selectivity at length (SelAtLength), selectivity of landings at length (SelLandAtLength),

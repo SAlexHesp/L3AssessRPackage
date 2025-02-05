@@ -5,7 +5,6 @@
 \title{Get selectivity parameter values for age and length based catch curve}
 \usage{
 GetSelectParams_AgeAndLengthBasedCatchCurvesCalcs(
-  Res,
   params,
   CatchCurveType,
   SelectivityType

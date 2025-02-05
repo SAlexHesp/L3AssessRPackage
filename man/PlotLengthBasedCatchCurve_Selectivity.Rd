@@ -14,7 +14,7 @@ PlotLengthBasedCatchCurve_Selectivity(
   ubnd,
   midpt,
   SelectivityAtLen,
-  PropReleased,
+  RetenAtLen,
   ObsDiscCatchFreqAtLen,
   DiscMort,
   GrowthCurveType,
@@ -52,7 +52,7 @@ PlotLengthBasedCatchCurve_Selectivity(
 
 \item{SelectivityAtLen}{selectivity at length}
 
-\item{PropReleased}{proportion of fish that are released}
+\item{RetenAtLen}{retention at length}
 
 \item{ObsDiscCatchFreqAtLen}{mean lenght of released fish}
 
@@ -159,7 +159,7 @@ Res=SimLenAndAgeFreqData_EqMod(SampleSize, MaxAge, TimeStep, NatMort, FishMort, 
                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen
 ObsDiscCatchFreqAtLen = NA # (or set to Res$ObsDiscCatchFreqAtLen)
-PropReleased = NA # proportion of fish released, vector including mean and sd (option probably now obsolete)
+RetenAtLen = NA # retention at length
 midpt=Res$midpt
 lbnd=Res$lbnd
 ubnd=Res$ubnd
@@ -170,9 +170,9 @@ InitL50 = 400
 InitDelta = 100
 params = c(InitFishMort_logit, log(InitL50), log(InitDelta))
 FittedRes=GetLengthBasedCatchCurveResults(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
-                                    lbnd, ubnd, midpt, SelectivityAtLen, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
+                                    lbnd, ubnd, midpt, SelectivityAtLen, RetenAtLen, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
 PlotLengthBasedCatchCurve_Selectivity(params, DistnType, MLL, SelectivityType, ObsRetCatchFreqAtLen, lbnd, ubnd, midpt, SelectivityAtLen,
-                                      PropReleased, ObsDiscCatchFreqAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges,
+                                      RetenAtLen, ObsDiscCatchFreqAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges,
                                       MaxAge, NatMort, TimeStep, MainLabel=NA, xaxis_lab=NA, yaxis_lab=NA, xmax=1200, xint=200,
                                       ymax=1.0, yint=0.2, PlotCLs=TRUE, FittedRes, nReps=200)
 }

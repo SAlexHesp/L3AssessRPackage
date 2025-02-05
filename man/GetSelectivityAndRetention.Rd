@@ -9,6 +9,7 @@ GetSelectivityAndRetention(
   SelectivityType,
   SelParams,
   SelectivityAtLen,
+  RetenAtLen,
   RetenParams,
   MLL
 )
@@ -20,7 +21,9 @@ GetSelectivityAndRetention(
 
 \item{SelParams}{params for gear selectivity}
 
-\item{SelectivityAtLen}{inputted selectivity at length vector}
+\item{SelectivityAtLen}{inputted selectivity as length vector}
+
+\item{RetenAtLen}{inputted retention as length vector}
 
 \item{RetenParams}{params for fish retention}
 

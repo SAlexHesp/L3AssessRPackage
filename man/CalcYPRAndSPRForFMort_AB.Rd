@@ -181,7 +181,7 @@ Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitme
 SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
 NatMort = 0.2 # natural mortality  (year-1)
 FMort <- 0.4 # estimate of fishing mortality, e.g. from catch curve analysis
-Res=(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
+Res=CalcYPRAndSPRForFMort_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
                             lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale,
                             ReprodPattern, InitRatioFem, FinalSex_A50, FinalSex_A95, EstSexRatioAtAge,
                             EggFertParam, mat_A50, mat_A95, EstMatAtAge, Gear_sel_A50, Gear_sel_A95,

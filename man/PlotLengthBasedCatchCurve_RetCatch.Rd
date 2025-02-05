@@ -14,7 +14,7 @@ PlotLengthBasedCatchCurve_RetCatch(
   ubnd,
   midpt,
   SelectivityAtLen,
-  PropReleased,
+  RetenAtLen,
   ObsDiscCatchFreqAtLen,
   DiscMort,
   GrowthCurveType,
@@ -52,7 +52,7 @@ PlotLengthBasedCatchCurve_RetCatch(
 
 \item{SelectivityAtLen}{selectivity at length}
 
-\item{PropReleased}{proportion of fish that are released}
+\item{RetenAtLen}{retention at length}
 
 \item{ObsDiscCatchFreqAtLen}{Mean length of fish that are released}
 
@@ -163,7 +163,7 @@ Res=SimLenAndAgeFreqData_EqMod(SampleSize, MaxAge, TimeStep, NatMort, FishMort, 
                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen
 ObsDiscCatchFreqAtLen = NA # (or set to Res$ObsDiscCatchFreqAtLen)
-PropReleased = NA # proportion of fish released, vector including mean and sd (option probably now obsolete)
+RetenAtLen = NA # retention at length
 midpt=Res$midpt
 lbnd=Res$lbnd
 ubnd=Res$ubnd
@@ -173,9 +173,9 @@ InitL50 = 400
 InitDelta = 100
 params = c(InitFishMort_logit, log(InitL50), log(InitDelta))
 FittedRes=GetLengthBasedCatchCurveResults(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
-                                         lbnd, ubnd, midpt, SelectivityAtLen, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
+                                         lbnd, ubnd, midpt, SelectivityAtLen, RetenAtLen, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
 PlotLengthBasedCatchCurve_RetCatch(params, DistnType, MLL, SelectivityType, ObsRetCatchFreqAtLen, lbnd, ubnd, midpt,
-                                   SelectivityAtLen, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, GrowthCurveType, GrowthParams,
+                                   SelectivityAtLen, RetenAtLen, ObsDiscCatchFreqAtLen, DiscMort, GrowthCurveType, GrowthParams,
                                    RefnceAges, MaxAge, NatMort, TimeStep, MainLabel=NA,
                                    xaxis_lab=NA, yaxis_lab=NA, xmax=1500, xint=500,
                                    ymax=0.15, yint=0.05, PlotCLs=TRUE, FittedRes, nReps=200)

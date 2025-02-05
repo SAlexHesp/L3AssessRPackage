@@ -17,7 +17,7 @@ GetLengthBasedCatchCurveResults(
   ubnd,
   midpt,
   SelectivityAtLen,
-  PropReleased,
+  RetenAtLen,
   ObsDiscCatchFreqAtLen,
   DiscMort,
   CVSizeAtAge,
@@ -52,7 +52,7 @@ both sexes von Bertalanffy, or c(y1, y2, a, b) single sex Schnute, or data.frame
 
 \item{SelectivityAtLen}{selectivity at length}
 
-\item{PropReleased}{proportion of fish that are released}
+\item{RetenAtLen}{proportion of fish that are retained}
 
 \item{ObsDiscCatchFreqAtLen}{proportion of fish that are released}
 
@@ -162,7 +162,7 @@ Res=SimLenAndAgeFreqData_EqMod(SampleSize, MaxAge, TimeStep, NatMort, FishMort, 
                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 ObsRetCatchFreqAtLen = Res$ObsRetCatchFreqAtLen
 ObsDiscCatchFreqAtLen = NA # (or set to Res$ObsDiscCatchFreqAtLen)
-PropReleased = NA # proportion of fish released, vector including mean and sd (option probably now obsolete)
+RetenAtLen = NA # specify vector to fix, otherwise set to NA
 midpt=Res$midpt
 lbnd=Res$lbnd
 ubnd=Res$ubnd
@@ -176,7 +176,7 @@ params = c(InitFishMort_logit, log(InitL50), log(InitDelta))
 # InitDeltaRet = 60
 # params = c(InitFishMort_logit, log(InitL50), log(InitDelta), log(InitL50Ret), log(InitDeltaRet))
 FittedRes=GetLengthBasedCatchCurveResults(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
-                                    lbnd, ubnd, midpt, SelectivityAtLen, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
+                                    lbnd, ubnd, midpt, SelectivityAtLen, RetenAtLen, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
 
 # Example with selectivity specified as a vector
 # Simulate data
@@ -213,7 +213,7 @@ SimRes=SimLenAndAgeFreqData_EqMod(SampleSize, MaxAge, TimeStep, NatMort, FishMor
                             SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 ObsRetCatchFreqAtLen = SimRes$ObsRetCatchFreqAtLen
 ObsDiscCatchFreqAtLen = NA # (or set to Res$ObsDiscCatchFreqAtLen)
-PropReleased = NA # proportion of fish released, vector including mean and sd (option probably now obselete)
+RetenAtLen = NA # specify vector to fix, otherwise set to NA
 midpt=SimRes$midpt
 lbnd=SimRes$lbnd
 ubnd=SimRes$ubnd
@@ -233,7 +233,7 @@ InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform
 # params = c(InitFishMort_logit, log(InitL50), log(InitDelta))
 params = c(InitFishMort_logit)
 FittedRes=GetLengthBasedCatchCurveResults(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
-                                          lbnd, ubnd, midpt, SelectivityAtLen, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
+                                          lbnd, ubnd, midpt, SelectivityAtLen, RetenAtLen, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
 
 # Fit length-based catch curve to length-frequency data generated from Dirchlet multinomial distribution.
 # First, use SimLenAndAgeFreqData_EqMod function to calculate expected proportions at length
@@ -274,7 +274,7 @@ plot(res$midpt, res$simLenFreq, "o")
 # Fit length-based catch curve, assuming Dirichlet multinomial distribution
 ObsRetCatchFreqAtLen = res$simLenFreq
 ObsDiscCatchFreqAtLen = NA # (or set to Res$ObsDiscCatchFreqAtLen)
-PropReleased = NA # proportion of fish released, vector including mean and sd (option probably now obsolete)
+RetenAtLen = NA # specify vector to fix, otherwise set to NA
 midpt=Res$midpt
 lbnd=Res$lbnd
 ubnd=Res$ubnd
@@ -287,7 +287,7 @@ InitTheta = 0.3 # specify starting parameters
 InitTheta_logit = log(InitTheta/(1-InitTheta)) # logit transform
 params = c(InitFishMort_logit, log(InitL50), log(InitDelta),InitTheta_logit)
 FittedRes=GetLengthBasedCatchCurveResults(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
-                                          lbnd, ubnd, midpt, SelectivityAtLen, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
+                                          lbnd, ubnd, midpt, SelectivityAtLen, RetenAtLen, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
 
 # Fit model using growth outputs from an analysis of tag-recapture data
 library(WAFishBiology)
@@ -360,7 +360,7 @@ DistnType = 1 # 1 = Multinomial, 2 = Dirichlet multinomial
 GrowthCurveType = 3 # 1 = von Bertalanffy, 2 = Schnute, 3 = any model with annual mean length increment input
 ObsRetCatchFreqAtLen = SimRes$ObsRetCatchFreqAtLen
 ObsDiscCatchFreqAtLen = NA # (or set to Res$ObsDiscCatchFreqAtLen)
-PropReleased = NA # proportion of fish released, vector including mean and sd (option probably now obsolete)
+RetenAtLen = NA # specify vector to fix, otherwise set to NA
 midpt=SimRes$midpt
 lbnd=SimRes$lbnd
 ubnd=SimRes$ubnd
@@ -370,5 +370,5 @@ InitL50 = 400
 InitDelta = 100
 params = c(InitFishMort_logit, log(InitL50), log(InitDelta))
 FittedRes=GetLengthBasedCatchCurveResults(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
-                                          lbnd, ubnd, midpt, SelectivityAtLen, PropReleased, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
+                                          lbnd, ubnd, midpt, SelectivityAtLen, RetenAtLen, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
 }
