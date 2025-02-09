@@ -191,12 +191,11 @@ sel_L50 <- c(350, 350) # females, males - Logistic length selectivity relationsh
 sel_L95 <- c(400, 400) # females, males - Logistic length selectivity relationship parameters
 EstGearSelAtLen <- data.frame(EstFemGearSelAtLen=NA,
                               EstMalGearSelAtLen=NA)
-ret_Pmax <- c(1.0, 1.0) # maximum retention, values lower than 1 imply discarding of fish above MLL
+ret_Pmax <- c(1.0, 1.0) # maximum retention, values lower than 1 imply discarding of fish at large sizes
 ret_L50 <- c(490, 490) # females, males - Logistic fish retention at length parameters
 ret_L95 <- c(510, 510) # females, males - Logistic fish retention at length parameters
 EstRetenAtLen <- data.frame(EstFemRetenAtLen=NA,
                             EstMalRetenAtLen=NA)
-MLL <- NA
 DiscMort <- 0.5 # discard mortality (e.g. 50\% released fish die = 0.5)
 Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
 SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
