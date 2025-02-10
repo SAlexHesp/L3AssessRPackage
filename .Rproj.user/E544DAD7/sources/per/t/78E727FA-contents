@@ -1142,7 +1142,8 @@ GetLengthBasedCatchCurveResults <- function (params, DistnType, GrowthCurveType,
   nlmb <- nlminb(params, CalcObjFunc_LengthBasedCatchCurve,
                  gradient = NULL, hessian = TRUE)
   hess.out = optimHess(nlmb$par, CalcObjFunc_LengthBasedCatchCurve)
-  vcov.Params = solve(hess.out)
+  vcov.Params = MASS::ginv(hess.out)
+  # vcov.Params = solve(hess.out)
   ses = sqrt(diag(vcov.Params))
 
   # compute parameter correlation matrix
@@ -2768,18 +2769,33 @@ GetAgeAndLengthBasedCatchCurveResults <- function (params, RefnceAges, MLL, Grow
                  gradient = NULL, hessian = TRUE, control=list(eval.max=1000, iter.max=1000))
 
   hess.out = optimHess(nlmb$par, CalcObjFunc_AgeAndLengthBasedCatchCurve)
-  vcov.Params = solve(hess.out)
-  ses = sqrt(diag(vcov.Params))
-  temp = diag(1/sqrt(diag(vcov.Params)))  # compute parameter correlation matrix
-  cor.Params=temp %*% vcov.Params %*% temp
+  vcov.Params = NA
+  ses = NA
+  cor.Params = NA
+  ParamEst = NA
+  hess.err = F
 
-  # Get estimates of parameters and their 95 percent confidence limits
-  ParamEst = GetParamRes_AgeAndLengthBasedCatchCurve(GrowthCurveType, SelectivityType, params, nlmb, ses)
+  tryCatch( {
+  # vcov.Params = solve(hess.out)
+  vcov.Params = MASS::ginv(hess.out)
+  }, warning = function(w) {
+    hess.err = T
+    print("Error in LACC fit")
+  })
 
-  if (nlmb$convergence == 1) {
-    EstFMort_se = NA
-  } else {
-    EstFMort_se = ((ParamEst[1,3]-ParamEst[1,2])/2)/1.96
+  if (hess.err==F) {
+    ses = sqrt(diag(vcov.Params))
+    temp = diag(1/sqrt(diag(vcov.Params)))  # compute parameter correlation matrix
+    cor.Params=temp %*% vcov.Params %*% temp
+
+    # Get estimates of parameters and their 95 percent confidence limits
+    ParamEst = GetParamRes_AgeAndLengthBasedCatchCurve(GrowthCurveType, SelectivityType, params, nlmb, ses)
+
+    if (nlmb$convergence == 1) {
+      EstFMort_se = NA
+    } else {
+      EstFMort_se = ((ParamEst[1,3]-ParamEst[1,2])/2)/1.96
+    }
   }
 
   # store some diagnostic outputs from model
