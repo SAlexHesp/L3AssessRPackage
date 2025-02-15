@@ -2,7 +2,7 @@
 % Please edit documentation in R/L3Analyses.R
 \name{PlotRiskMatrix_CatchCurve_FishMort}
 \alias{PlotRiskMatrix_CatchCurve_FishMort}
-\title{Produces WA risk matrix for fishing mortality from catch curve analysis, and probabilities}
+\title{Produce WA risk matrix for fishing mortality from catch curve analysis, and probabilities}
 \usage{
 PlotRiskMatrix_CatchCurve_FishMort(
   EstFMort,

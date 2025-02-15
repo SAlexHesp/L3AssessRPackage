@@ -2770,14 +2770,17 @@ GetAgeAndLengthBasedCatchCurveResults <- function (params, RefnceAges, MLL, Grow
   hess.out = optimHess(nlmb$par, CalcObjFunc_AgeAndLengthBasedCatchCurve)
   vcov.Params = solve(hess.out)
   ses = sqrt(diag(vcov.Params))
-
-  # compute parameter correlation matrix
-  temp = diag(1/sqrt(diag(vcov.Params)))
+  temp = diag(1/sqrt(diag(vcov.Params)))  # compute parameter correlation matrix
   cor.Params=temp %*% vcov.Params %*% temp
-
 
   # Get estimates of parameters and their 95 percent confidence limits
   ParamEst = GetParamRes_AgeAndLengthBasedCatchCurve(GrowthCurveType, SelectivityType, params, nlmb, ses)
+
+  if (nlmb$convergence == 1) {
+    EstFMort_se = NA
+  } else {
+    EstFMort_se = ((ParamEst[1,3]-ParamEst[1,2])/2)/1.96
+  }
 
   # store some diagnostic outputs from model
   DistnType=1 # multinomial
@@ -2871,7 +2874,7 @@ GetAgeAndLengthBasedCatchCurveResults <- function (params, RefnceAges, MLL, Grow
 
   Results = list(ParamEst = ParamEst,
                  EstFMort = ParamEst[1,1],
-                 EstFMort_se = ((ParamEst[1,3]-ParamEst[1,2])/2)/1.96,
+                 EstFMort_se = EstFMort_se,
                  convergence = nlmb$convergence,
                  nll = nlmb$objective,
                  SampleSize = sum(ObsRetCatchFreqAtLen),
@@ -4783,9 +4786,9 @@ GetRecruitmentDeviations_DynSimMod <- function(nYears, lnSigmaR, autocorr) {
   # with specified level of variation, for simulating data.
 
   err_normdist_sd1 <- sqrt(1 + autocorr * autocorr) * lnSigmaR
-  lnrandom_dev <- rep(0,nYears)
+  lnrandom_dev <- rep(0,nYears+1)
   lnrandom_dev[1] <- rnorm(1,0,err_normdist_sd1)
-  for (j in 2:nYears) {
+  for (j in seq(2,nYears+1,1)) {
     lnrandom_dev[j] <- autocorr * lnrandom_dev[j-1] +
       rnorm(1,0,err_normdist_sd1)
     random_dev = exp(lnrandom_dev - 0.5*lnSigmaR*lnSigmaR)
@@ -4846,9 +4849,8 @@ UpdatePopnDynamics_DynSimMod_AB <- function(nYears, MaxModelAge, NatMort, Reprod
   Catch_Mal = Catch_Fem; Catch_CombSex = N_Fem
 
   AnnRecruit = rep(0,nYears+1)
-  FemSpBiom = rep(0,nYears); MalSpBiom = rep(0,nYears); CombSexSpBiom = rep(0,nYears)
-  SpBiom = rep(0,nYears) # spawning biomass measure, whether gonochoristic or hermaphroditic, for calculating recruitment
-  VulnPopnBiom = rep(0, nYears)
+  FemSpBiom = rep(0,nYears+1); MalSpBiom = rep(0,nYears+1); CombSexSpBiom = rep(0,nYears+1)
+  SpBiom = rep(0,nYears+1) # spawning biomass measure, whether gonochoristic or hermaphroditic, for calculating recruitment
   TotCatch = rep(0,nYears)
   Catch_Biom = rep(0,nYears)
   TotAnnCatchBiom = rep(0,nYears)
@@ -4865,7 +4867,7 @@ UpdatePopnDynamics_DynSimMod_AB <- function(nYears, MaxModelAge, NatMort, Reprod
     if (t == 1) {
 
       # recruitment, for initial, equilibrium fished population, 1000s. Recruitment is at age zero.
-      AnnRecruit[t] = (FishSpBiomPerRec - BH_SRRa) / (BH_SRRb * FishSpBiomPerRec)
+      AnnRecruit[t] = (FishSpBiomPerRec - BH_SRRa) / (BH_SRRb * FishSpBiomPerRec) * random_dev[t]
 
       # get initial numbers at age
       N_Fem[t,] = AnnRecruit[t] * FishFemSurvAtAge # 1000s
@@ -4878,7 +4880,7 @@ UpdatePopnDynamics_DynSimMod_AB <- function(nYears, MaxModelAge, NatMort, Reprod
     FemZAtAge = NatMort + FemFAtAge
     MalZAtAge = NatMort + MalFAtAge
 
-    # calculate survival from ages 1 to MaxModelAge
+    # calculate survival from ages 1 to MaxModelAge for timestep t+1
     for (a in seq(1,nAges-1,1)) {
       if (a < nAges-1) {
 
@@ -4905,17 +4907,17 @@ UpdatePopnDynamics_DynSimMod_AB <- function(nYears, MaxModelAge, NatMort, Reprod
       } # a
     } # reproductive pattern
 
-    # calculate spawning biomass
-    FemSpBiom[t] = sum(N_Fem[t,] * FemPropMatAtAge * FemWtAtAge) # tonnes
-    MalSpBiom[t] = sum(N_Mal[t,] * MalPropMatAtAge * MalWtAtAge) # tonnes
-    CombSexSpBiom[t] = FemSpBiom[t] + MalSpBiom[t]
+    # calculate spawning biomass ### prev t
+    FemSpBiom[t+1] = sum(N_Fem[t+1,] * FemPropMatAtAge * FemWtAtAge) # tonnes
+    MalSpBiom[t+1] = sum(N_Mal[t+1,] * MalPropMatAtAge * MalWtAtAge) # tonnes
+    CombSexSpBiom[t+1] = FemSpBiom[t+1] + MalSpBiom[t+1]
 
-    # get spawning biomass
-    if (ReprodPattern == 1 | ReprodPattern == 3) SpBiom[t] = FemSpBiom[t] # gonochoristic or protandrous species
-    if (ReprodPattern == 3) SpBiom[t] = CombSexSpBiom[t] # hermaphroditic species
+    # get spawning biomass ### prev t
+    if (ReprodPattern == 1 | ReprodPattern == 3) SpBiom[t+1] = FemSpBiom[t+1] # gonochoristic or protandrous species
+    if (ReprodPattern == 3) SpBiom[t+1] = CombSexSpBiom[t+1] # hermaphroditic species
 
     # annual recruitment
-    AnnRecruit[t+1] = (SpBiom[t] / (BH_SRRa + BH_SRRb * SpBiom[t])) * random_dev[t]
+    AnnRecruit[t+1] = (SpBiom[t+1] / (BH_SRRa + BH_SRRb * SpBiom[t+1])) * random_dev[t+1]
 
     # add 0+ recruits
     N_Fem[t+1,1] = AnnRecruit[t+1] * InitRatioFem
@@ -5699,11 +5701,13 @@ GenerateCatchFreqData_DynSimMod_ALB <- function(nYears, TimeStep, nTimeSteps, mi
       ObsRetCatchFreqAtLengthAndDecAge_Mal[t,,i] = rmultinom(1, ObsRetCatchFreqAtLen_Mal[t,i], ExpRetCatchPropDecAgeGivenLength_Mal[t,,i])
       ObsRetCatchFreqAtLengthAndDecAge[t,,i] = ObsRetCatchFreqAtLengthAndDecAge_Fem[t,,i] + ObsRetCatchFreqAtLengthAndDecAge_Mal[t,,i]
 
-      if (!(is.na(MLL)) | !(is.na(ret_L50[1]))) {
+      if (!(is.na(ret_L50[1]))) {
         # discarded catches
-        ObsDiscCatchFreqAtLengthAndDecAge_Fem[t,,i] = rmultinom(1, ObsDiscCatchFreqAtLen_Fem[t,i], ExpDiscCatchPropDecAgeGivenLength_Fem[t,,i])
-        ObsDiscCatchFreqAtLengthAndDecAge_Mal[t,,i] = rmultinom(1, ObsDiscCatchFreqAtLen_Mal[t,i], ExpDiscCatchPropDecAgeGivenLength_Mal[t,,i])
-        ObsDiscCatchFreqAtLengthAndDecAge[t,,i] = ObsDiscCatchFreqAtLengthAndDecAge_Fem[t,,i] + ObsDiscCatchFreqAtLengthAndDecAge_Mal[t,,i]
+        if (sum(DiscSampleSize)>=1) {
+          ObsDiscCatchFreqAtLengthAndDecAge_Fem[t,,i] = rmultinom(1, ObsDiscCatchFreqAtLen_Fem[t,i], ExpDiscCatchPropDecAgeGivenLength_Fem[t,,i])
+          ObsDiscCatchFreqAtLengthAndDecAge_Mal[t,,i] = rmultinom(1, ObsDiscCatchFreqAtLen_Mal[t,i], ExpDiscCatchPropDecAgeGivenLength_Mal[t,,i])
+          ObsDiscCatchFreqAtLengthAndDecAge[t,,i] = ObsDiscCatchFreqAtLengthAndDecAge_Fem[t,,i] + ObsDiscCatchFreqAtLengthAndDecAge_Mal[t,,i]
+        }
       }
     }
   }
@@ -5720,32 +5724,14 @@ GenerateCatchFreqData_DynSimMod_ALB <- function(nYears, TimeStep, nTimeSteps, mi
   ObsDecAgeRetCatch_Mal = res$ObsAgeRetCatch
   ObsLenClRetCatchMidPt_Mal = res$ObsLenRetCatch
 
-  if (is.na(ret_L50[1])) {
-    ObsDecAgeDiscCatch_Fem = NA; ObsDecAgeDiscCatch_Mal = NA; ObsDecAgeDiscCatch = NA
-    ObsAgeClDiscCatch_Fem = NA; ObsAgeClDiscCatch_Mal = NA; ObsAgeClDiscCatch = NA
-    ObsLenClDiscCatchMidPt_Fem = NA; ObsLenClDiscCatchMidPt_Mal = NA; ObsLenClDiscCatchMidPt = NA
-
-  } else {
-
-    # females - discarded catch
-    res = GetRandomAgesAndLengths_DynSimMod_ALB(nYears, TimeStep, nTimeSteps, midpt, nLenCl, SimAnnSampSize, ObsDiscCatchFreqAtLengthAndDecAge_Fem)
-    ObsDecAgeDiscCatch_Fem = res$ObsAgeRetCatch
-    ObsLenClDiscCatchMidPt_Fem = res$ObsLenRetCatch
-
-    # males - discarded catch
-    res = GetRandomAgesAndLengths_DynSimMod_ALB(nYears, TimeStep, nTimeSteps, midpt, nLenCl, SimAnnSampSize, ObsDiscCatchFreqAtLengthAndDecAge_Mal)
-    ObsDecAgeDiscCatch_Mal = res$ObsAgeRetCatch
-    ObsLenClDiscCatchMidPt_Mal = res$ObsLenRetCatch
-
-    # values for individual fish, for both sexes
-    ObsDecAgeRetCatch = ObsDecAgeRetCatch_Fem
-    ObsLenClRetCatchMidPt = ObsLenClRetCatchMidPt_Fem
-    for (t in 1:nYears) {
-      x=max(which(!is.na(ObsDecAgeRetCatch_Fem[t,])))+1
-      xx=max(which(!is.na(ObsDecAgeRetCatch_Mal[t,])))
-      ObsDecAgeRetCatch[t,seq(x,x+xx-1,1)] = ObsDecAgeRetCatch_Mal[t,1:xx]
-      ObsLenClRetCatchMidPt[t,seq(x,x+xx-1,1)] = ObsLenClRetCatchMidPt_Mal[t,1:xx]
-    }
+  # get values for individual fish, for each of the sexes added
+  ObsDecAgeRetCatch = ObsDecAgeRetCatch_Fem
+  ObsLenClRetCatchMidPt = ObsLenClRetCatchMidPt_Fem
+  for (t in 1:nYears) {
+    x=max(which(!is.na(ObsDecAgeRetCatch_Fem[t,])))+1
+    xx=max(which(!is.na(ObsDecAgeRetCatch_Mal[t,])))
+    ObsDecAgeRetCatch[t,seq(x,x+xx-1,1)] = ObsDecAgeRetCatch_Mal[t,1:xx]
+    ObsLenClRetCatchMidPt[t,seq(x,x+xx-1,1)] = ObsLenClRetCatchMidPt_Mal[t,1:xx]
   }
 
   # get random age class retained catch frequencies
@@ -5766,8 +5752,28 @@ GenerateCatchFreqData_DynSimMod_ALB <- function(nYears, TimeStep, nTimeSteps, mi
     }
   }
 
+
+  if (is.na(ret_L50[1]) | sum(DiscSampleSize)<1) {
+    ObsDecAgeDiscCatch_Fem = NA; ObsDecAgeDiscCatch_Mal = NA; ObsDecAgeDiscCatch = NA
+    ObsAgeClDiscCatch_Fem = NA; ObsAgeClDiscCatch_Mal = NA; ObsAgeClDiscCatch = NA
+    ObsLenClDiscCatchMidPt_Fem = NA; ObsLenClDiscCatchMidPt_Mal = NA; ObsLenClDiscCatchMidPt = NA
+
+  } else {
+
+    # females - discarded catch
+    res = GetRandomAgesAndLengths_DynSimMod_ALB(nYears, TimeStep, nTimeSteps, midpt, nLenCl, SimAnnSampSize, ObsDiscCatchFreqAtLengthAndDecAge_Fem)
+    ObsDecAgeDiscCatch_Fem = res$ObsAgeRetCatch
+    ObsLenClDiscCatchMidPt_Fem = res$ObsLenRetCatch
+
+    # males - discarded catch
+    res = GetRandomAgesAndLengths_DynSimMod_ALB(nYears, TimeStep, nTimeSteps, midpt, nLenCl, SimAnnSampSize, ObsDiscCatchFreqAtLengthAndDecAge_Mal)
+    ObsDecAgeDiscCatch_Mal = res$ObsAgeRetCatch
+    ObsLenClDiscCatchMidPt_Mal = res$ObsLenRetCatch
+  }
+
+
   # discard data
-  if (is.na(ret_L50[1])) {
+  if (is.na(ret_L50[1]) | sum(DiscSampleSize)<1) {
     ObsAgeClDiscCatch_Fem = NA; ObsAgeClDiscCatch_Mal = NA; ObsAgeClDiscCatch = NA
     ObsDecAgeDiscCatch = NA; ObsLenClDiscCatchMidPt = NA
     ObsDiscCatchFreqAtDecAge_Fem <- NA; ObsDiscCatchFreqAtDecAge_Mal <- NA
@@ -5804,7 +5810,6 @@ GenerateCatchFreqData_DynSimMod_ALB <- function(nYears, TimeStep, nTimeSteps, mi
       }
     }
   }
-
 
   Results = list(ObsRetCatchFreqAtLengthAndDecAge_Fem = ObsRetCatchFreqAtLengthAndDecAge_Fem,
                  ObsRetCatchFreqAtLengthAndDecAge_Mal = ObsRetCatchFreqAtLengthAndDecAge_Mal,
@@ -6580,6 +6585,7 @@ SimLenFreqData_DynMod_LB <- function(SimAnnSampSize, nYears, lnSigmaR, autocorr,
   DiscCatch_Fem=res$DiscCatch_Fem; DiscCatch_Mal=res$DiscCatch_Mal; DiscCatch_CombSex=res$DiscCatch_CombSex; DiscCatch_Biom=res$DiscCatch_Biom
   RetCatch_Num=res$RetCatch_Num; DiscCatch_Num=res$DiscCatch_Num
 
+
   # Get sample random length frequency data, for retained catches for each year
   RetCatchAnnSampSize = (RetCatch_Num /  (RetCatch_Num + DiscCatch_Num)) * SimAnnSampSize
   res=GenerateRandomLengthFreqData_DynSimMod(nYears, RetCatchAnnSampSize, lbnd, midpt, ubnd, RetCatch_Fem, RetCatch_Mal, RetCatch_CombSex)
@@ -6727,12 +6733,11 @@ SimLenFreqData_DynMod_LB <- function(SimAnnSampSize, nYears, lnSigmaR, autocorr,
 #' sel_L95 <- c(400, 400) # females, males - Logistic length selectivity relationship parameters
 #' EstGearSelAtLen <- data.frame(EstFemGearSelAtLen=NA,
 #'                               EstMalGearSelAtLen=NA)
-#' ret_Pmax <- c(1.0, 1.0) # maximum retention, values lower than 1 imply discarding of fish above MLL
+#' ret_Pmax <- c(1.0, 1.0) # maximum retention, values lower than 1 imply discarding of fish at large sizes
 #' ret_L50 <- c(490, 490) # females, males - Logistic fish retention at length parameters
 #' ret_L95 <- c(510, 510) # females, males - Logistic fish retention at length parameters
 #' EstRetenAtLen <- data.frame(EstFemRetenAtLen=NA,
 #'                             EstMalRetenAtLen=NA)
-#' MLL <- NA
 #' DiscMort <- 0.5 # discard mortality (e.g. 50% released fish die = 0.5)
 #' Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
 #' SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
@@ -6798,6 +6803,7 @@ SimLenAndAgeFreqData_DynMod_ALB <- function(SimAnnSampSize, nYears, lnSigmaR, au
   FemRetProbAtLen = res$ModelDiag$FemRetProbAtLen; MalRetProbAtLen = res$ModelDiag$MalRetProbAtLen
   FemSelLandAtLen = res$ModelDiag$FemSelLandAtLen; MalSelLandAtLen = res$ModelDiag$MalSelLandAtLen
   FemSelDiscAtLen = res$ModelDiag$FemSelDiscAtLen; MalSelDiscAtLen = res$ModelDiag$MalSelDiscAtLen
+
   Unfish_FemNPerRecLen = res$ModelDiag$Unfish_FemNPerRecLen; Unfish_MalNPerRecLen = res$ModelDiag$Unfish_MalNPerRecLen
   Fish_FemNPerRecLen = res$ModelDiag$Fish_FemNPerRecLen; Fish_MalNPerRecLen = res$ModelDiag$Fish_MalNPerRecLen
   FemPropMatAtLen = res$ModelDiag$FemPropMatAtLen; MalPropMatAtLen = res$ModelDiag$MalPropMatAtLen
@@ -6838,7 +6844,8 @@ SimLenAndAgeFreqData_DynMod_ALB <- function(SimAnnSampSize, nYears, lnSigmaR, au
   Catch_Fem=result$RetCatch_Fem_yl; Catch_Mal=result$RetCatch_Mal_yl
   Catch_CombSex=result$RetCatch_CombSex_yl
   RetCatch_Num=result$RetCatch_Num; DiscCatch_Num=result$DiscCatch_Num
-  RetCatchAnnSampSize = (RetCatch_Num /  (RetCatch_Num + DiscCatch_Num)) * SimAnnSampSize
+  RetCatchAnnSampSize = round((RetCatch_Num /  (RetCatch_Num + DiscCatch_Num)) * SimAnnSampSize,0)
+
   res=GenerateRandomLengthFreqData_DynSimMod(nYears, RetCatchAnnSampSize, lbnd, midpt, ubnd, Catch_Fem, Catch_Mal, Catch_CombSex)
   ObsRetCatchFreqAtLen_Fem = res$RandObsCatchLenFreq_Fem; ObsRetCatchFreqAtLen_Mal = res$RandObsCatchLenFreq_Mal
   SampleSize_Fem = res$AnnSimSampSize_Fem; SampleSize_Mal = res$AnnSimSampSize_Mal; SampleSize = SampleSize_Fem + SampleSize_Mal
@@ -6846,7 +6853,8 @@ SimLenAndAgeFreqData_DynMod_ALB <- function(SimAnnSampSize, nYears, lnSigmaR, au
   # discarded catches
   Catch_Fem=result$DiscCatch_Fem_yl; Catch_Mal=result$DiscCatch_Mal_yl
   Catch_CombSex=result$DiscCatch_CombSex_yl
-  DiscCatchAnnSampSize = (DiscCatch_Num /  (RetCatch_Num + DiscCatch_Num)) * SimAnnSampSize
+  DiscCatchAnnSampSize = round((DiscCatch_Num /  (RetCatch_Num + DiscCatch_Num)) * SimAnnSampSize,0)
+
   res=GenerateRandomLengthFreqData_DynSimMod(nYears, DiscCatchAnnSampSize, lbnd, midpt, ubnd, Catch_Fem, Catch_Mal, Catch_CombSex)
   ObsDiscCatchFreqAtLen_Fem = res$RandObsCatchLenFreq_Fem; ObsDiscCatchFreqAtLen_Mal = res$RandObsCatchLenFreq_Mal
   DiscSampleSize_Fem = res$AnnSimSampSize_Fem; DiscSampleSize_Mal = res$AnnSimSampSize_Mal; DiscSampleSize = DiscSampleSize_Fem + DiscSampleSize_Mal
@@ -6861,7 +6869,6 @@ SimLenAndAgeFreqData_DynMod_ALB <- function(SimAnnSampSize, nYears, lnSigmaR, au
   ExpRetCatchPropLengthGivenDecAge_Mal = Res$ExpRetCatchPropLengthGivenDecAge_Mal
   ExpDiscCatchPropLengthGivenDecAge_Fem = Res$ExpDiscCatchPropLengthGivenDecAge_Fem
   ExpDiscCatchPropLengthGivenDecAge_Mal = Res$ExpDiscCatchPropLengthGivenDecAge_Mal
-
   res = CalcCatchPropAtDecAge_DynSimMod_ALB(nYears, nTimeSteps, Ages, RetCatch_Fem_yal, RetCatch_Mal_yal,
                                             DiscCatch_Fem_yal, DiscCatch_Mal_yal)
 
@@ -6869,7 +6876,6 @@ SimLenAndAgeFreqData_DynMod_ALB <- function(SimAnnSampSize, nYears, lnSigmaR, au
   DiscCatchAtDecAge_Fem = res$DiscCatchAtDecAge_Fem; DiscCatchAtDecAge_Mal = res$DiscCatchAtDecAge_Mal
   ExpRetCatchPropAtDecAge_Fem = res$ExpRetCatchPropAtDecAge_Fem; ExpRetCatchPropAtDecAge_Mal = res$ExpRetCatchPropAtDecAge_Mal
   ExpDiscCatchPropAtDecAge_Fem = res$ExpDiscCatchPropAtDecAge_Fem; ExpDiscCatchPropAtDecAge_Mal = res$ExpDiscCatchPropAtDecAge_Mal
-
   res=CalcCatchAgePropGivenLen_DynSimMod_ALB(nYears, nTimeSteps, nLenCl, midpt,
                                              ExpRetCatchPropLengthGivenDecAge_Fem, ExpRetCatchPropAtDecAge_Fem,
                                              ExpRetCatchPropLengthGivenDecAge_Mal, ExpRetCatchPropAtDecAge_Mal,
