@@ -2820,8 +2820,10 @@ GetAgeAndLengthBasedCatchCurveResults <- function (params, RefnceAges, MLL, Grow
 
     if (nlmb$convergence == 1) {
       EstFMort_se = NA
+      EstFMort = NA
     } else {
       EstFMort_se = ((ParamEst[1,3]-ParamEst[1,2])/2)/1.96
+      EstFMort = 1/(1+exp(-nlmb$par[1]))
     }
   }
 
@@ -2916,7 +2918,7 @@ GetAgeAndLengthBasedCatchCurveResults <- function (params, RefnceAges, MLL, Grow
                    MalCV_LenAtMaxAge=CV_LenAtMaxAge_Results$MalCV_LenAtMaxAge)
 
   Results = list(ParamEst = ParamEst,
-                 EstFMort = ParamEst[1,1],
+                 EstFMort = EstFMort,
                  EstFMort_se = EstFMort_se,
                  convergence = nlmb$convergence,
                  nll = nlmb$objective,

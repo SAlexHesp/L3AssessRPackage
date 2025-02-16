@@ -1148,10 +1148,10 @@ GetLengthBasedCatchCurveResults <- function (params, DistnType, GrowthCurveType,
       vcov.Params = solve(hess.out)
     },
     warning = function(w) {
-      print("Issue with LBCC associated with solve function for hessian")
+      print("Issue with LACC associated with solve function for hessian")
     },
     error = function(e) {
-      print("Error with LBCC - can't apply solve function to hessian")
+      print("Error with LACC - can't apply solve function to hessian")
       NA
     }
   )
@@ -2820,8 +2820,10 @@ GetAgeAndLengthBasedCatchCurveResults <- function (params, RefnceAges, MLL, Grow
 
     if (nlmb$convergence == 1) {
       EstFMort_se = NA
+      EstFMort = NA
     } else {
       EstFMort_se = ((ParamEst[1,3]-ParamEst[1,2])/2)/1.96
+      EstFMort = 1/(1+exp(-nlmb$par[1]))
     }
   }
 
@@ -2916,7 +2918,7 @@ GetAgeAndLengthBasedCatchCurveResults <- function (params, RefnceAges, MLL, Grow
                    MalCV_LenAtMaxAge=CV_LenAtMaxAge_Results$MalCV_LenAtMaxAge)
 
   Results = list(ParamEst = ParamEst,
-                 EstFMort = ParamEst[1,1],
+                 EstFMort = EstFMort,
                  EstFMort_se = EstFMort_se,
                  convergence = nlmb$convergence,
                  nll = nlmb$objective,
@@ -4910,7 +4912,7 @@ UpdatePopnDynamics_DynSimMod_AB <- function(nYears, MaxModelAge, NatMort, Reprod
     if (t == 1) {
 
       # recruitment, for initial, equilibrium fished population, 1000s. Recruitment is at age zero.
-      AnnRecruit[t] = (FishSpBiomPerRec - BH_SRRa) / (BH_SRRb * FishSpBiomPerRec) * random_dev[t]
+      AnnRecruit[t] = (FishSpBiomPerRec - BH_SRRa) / (BH_SRRb * FishSpBiomPerRec)
 
       # get initial numbers at age
       N_Fem[t,] = AnnRecruit[t] * FishFemSurvAtAge # 1000s
