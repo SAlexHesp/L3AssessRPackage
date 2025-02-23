@@ -2818,13 +2818,12 @@ GetAgeAndLengthBasedCatchCurveResults <- function (params, RefnceAges, MLL, Grow
     # Get estimates of parameters and their 95 percent confidence limits
     ParamEst = GetParamRes_AgeAndLengthBasedCatchCurve(GrowthCurveType, SelectivityType, params, nlmb, ses)
 
-    if (nlmb$convergence == 1) {
-      EstFMort_se = NA
-      EstFMort = NA
-    } else {
-      EstFMort_se = ((ParamEst[1,3]-ParamEst[1,2])/2)/1.96
-      EstFMort = 1/(1+exp(-nlmb$par[1]))
-    }
+    EstFMort_se = ((ParamEst[1,3]-ParamEst[1,2])/2)/1.96
+    EstFMort = 1/(1+exp(-nlmb$par[1]))
+
+  } else {
+    EstFMort_se = NA
+    EstFMort = NA
   }
 
   # store some diagnostic outputs from model
@@ -5740,10 +5739,15 @@ GenerateCatchFreqData_DynSimMod_ALB <- function(nYears, TimeStep, nTimeSteps, mi
   ObsDiscCatchFreqAtLengthAndDecAge = EmptyFrame
 
   for (t in 1:nYears) {
+
     for (i in 1:nLenCl) {
       # retained catches
-      ObsRetCatchFreqAtLengthAndDecAge_Fem[t,,i] = rmultinom(1, ObsRetCatchFreqAtLen_Fem[t,i], ExpRetCatchPropDecAgeGivenLength_Fem[t,,i])
-      ObsRetCatchFreqAtLengthAndDecAge_Mal[t,,i] = rmultinom(1, ObsRetCatchFreqAtLen_Mal[t,i], ExpRetCatchPropDecAgeGivenLength_Mal[t,,i])
+      if (ObsRetCatchFreqAtLen_Fem[t,i] > 0) {
+        ObsRetCatchFreqAtLengthAndDecAge_Fem[t,,i] = rmultinom(1, ObsRetCatchFreqAtLen_Fem[t,i], ExpRetCatchPropDecAgeGivenLength_Fem[t,,i])
+      }
+      if (ObsRetCatchFreqAtLen_Fem[t,i] > 0) {
+        ObsRetCatchFreqAtLengthAndDecAge_Mal[t,,i] = rmultinom(1, ObsRetCatchFreqAtLen_Mal[t,i], ExpRetCatchPropDecAgeGivenLength_Mal[t,,i])
+      }
       ObsRetCatchFreqAtLengthAndDecAge[t,,i] = ObsRetCatchFreqAtLengthAndDecAge_Fem[t,,i] + ObsRetCatchFreqAtLengthAndDecAge_Mal[t,,i]
 
       if (!(is.na(ret_L50[1]))) {
@@ -6633,6 +6637,7 @@ SimLenFreqData_DynMod_LB <- function(SimAnnSampSize, nYears, lnSigmaR, autocorr,
 
   # Get sample random length frequency data, for retained catches for each year
   RetCatchAnnSampSize = (RetCatch_Num /  (RetCatch_Num + DiscCatch_Num)) * SimAnnSampSize
+  # cat("RetCatchAnnSampSize",RetCatchAnnSampSize,'\n')
   res=GenerateRandomLengthFreqData_DynSimMod(nYears, RetCatchAnnSampSize, lbnd, midpt, ubnd, RetCatch_Fem, RetCatch_Mal, RetCatch_CombSex)
   RandRetCatchLenFreq_Fem = res$RandObsCatchLenFreq_Fem; RandRetCatchLenFreq_Mal = res$RandObsCatchLenFreq_Mal; RandRetCatchLenFreq_CombSex = res$RandObsCatchLenFreq_CombSex
   AnnRetCatchSimSampSize_Fem = res$AnnSimSampSize_Fem; AnnRetCatchSimSampSize_Mal = res$AnnSimSampSize_Mal
@@ -6642,12 +6647,20 @@ SimLenFreqData_DynMod_LB <- function(SimAnnSampSize, nYears, lnSigmaR, autocorr,
 
   # Get sample random length frequency data, for discarded catches for each year
   DiscCatchAnnSampSize = (DiscCatch_Num /  (RetCatch_Num + DiscCatch_Num)) * SimAnnSampSize
-  res=GenerateRandomLengthFreqData_DynSimMod(nYears, DiscCatchAnnSampSize, lbnd, midpt, ubnd, DiscCatch_Fem, DiscCatch_Mal, DiscCatch_CombSex)
-  RandDiscCatchLenFreq_Fem = res$RandObsCatchLenFreq_Fem; RandDiscCatchLenFreq_Mal = res$RandObsCatchLenFreq_Mal; RandDiscCatchLenFreq_CombSex = res$RandObsCatchLenFreq_CombSex
-  AnnDiscCatchSimSampSize_Fem = res$AnnSimSampSize_Fem; AnnDiscCatchSimSampSize_Mal = res$AnnSimSampSize_Mal
+  # cat("DiscCatchAnnSampSize",DiscCatchAnnSampSize,'\n')
+  if (DiscCatchAnnSampSize[1] > 0) {
+    res=GenerateRandomLengthFreqData_DynSimMod(nYears, DiscCatchAnnSampSize, lbnd, midpt, ubnd, DiscCatch_Fem, DiscCatch_Mal, DiscCatch_CombSex)
+    RandDiscCatchLenFreq_Fem = res$RandObsCatchLenFreq_Fem; RandDiscCatchLenFreq_Mal = res$RandObsCatchLenFreq_Mal; RandDiscCatchLenFreq_CombSex = res$RandObsCatchLenFreq_CombSex
+    AnnDiscCatchSimSampSize_Fem = res$AnnSimSampSize_Fem; AnnDiscCatchSimSampSize_Mal = res$AnnSimSampSize_Mal
 
-  # calculate mean lengths for each year and associated 95% CLs for discarded catches
-  DiscCatchMeanLengthStats = GetMeanLengthStats_DynSimMod(nYears, RandDiscCatchLenFreq_Fem, RandDiscCatchLenFreq_Mal)
+    # calculate mean lengths for each year and associated 95% CLs for discarded catches
+    DiscCatchMeanLengthStats = GetMeanLengthStats_DynSimMod(nYears, RandDiscCatchLenFreq_Fem, RandDiscCatchLenFreq_Mal)
+  } else {
+    RandDiscCatchLenFreq_Fem = NA; RandDiscCatchLenFreq_Mal = NA; RandDiscCatchLenFreq_CombSex = NA
+    AnnDiscCatchSimSampSize_Fem = NA; AnnDiscCatchSimSampSize_Mal = NA
+    DiscCatchMeanLengthStats = NA
+  }
+
 
   res=list(RetCatch_Fem = RetCatch_Fem,
            RetCatch_Mal = RetCatch_Mal,
@@ -6891,6 +6904,7 @@ SimLenAndAgeFreqData_DynMod_ALB <- function(SimAnnSampSize, nYears, lnSigmaR, au
   RetCatch_Num=result$RetCatch_Num; DiscCatch_Num=result$DiscCatch_Num
   RetCatchAnnSampSize = round((RetCatch_Num /  (RetCatch_Num + DiscCatch_Num)) * SimAnnSampSize,0)
 
+  # cat("RetCatchAnnSampSize",RetCatchAnnSampSize,'\n')
   res=GenerateRandomLengthFreqData_DynSimMod(nYears, RetCatchAnnSampSize, lbnd, midpt, ubnd, Catch_Fem, Catch_Mal, Catch_CombSex)
   ObsRetCatchFreqAtLen_Fem = res$RandObsCatchLenFreq_Fem; ObsRetCatchFreqAtLen_Mal = res$RandObsCatchLenFreq_Mal
   SampleSize_Fem = res$AnnSimSampSize_Fem; SampleSize_Mal = res$AnnSimSampSize_Mal; SampleSize = SampleSize_Fem + SampleSize_Mal
@@ -6900,9 +6914,16 @@ SimLenAndAgeFreqData_DynMod_ALB <- function(SimAnnSampSize, nYears, lnSigmaR, au
   Catch_CombSex=result$DiscCatch_CombSex_yl
   DiscCatchAnnSampSize = round((DiscCatch_Num /  (RetCatch_Num + DiscCatch_Num)) * SimAnnSampSize,0)
 
-  res=GenerateRandomLengthFreqData_DynSimMod(nYears, DiscCatchAnnSampSize, lbnd, midpt, ubnd, Catch_Fem, Catch_Mal, Catch_CombSex)
-  ObsDiscCatchFreqAtLen_Fem = res$RandObsCatchLenFreq_Fem; ObsDiscCatchFreqAtLen_Mal = res$RandObsCatchLenFreq_Mal
-  DiscSampleSize_Fem = res$AnnSimSampSize_Fem; DiscSampleSize_Mal = res$AnnSimSampSize_Mal; DiscSampleSize = DiscSampleSize_Fem + DiscSampleSize_Mal
+  # cat("DiscCatchAnnSampSize",DiscCatchAnnSampSize,'\n')
+  if (DiscCatchAnnSampSize[1] > 0) {
+    res=GenerateRandomLengthFreqData_DynSimMod(nYears, DiscCatchAnnSampSize, lbnd, midpt, ubnd, Catch_Fem, Catch_Mal, Catch_CombSex)
+    ObsDiscCatchFreqAtLen_Fem = res$RandObsCatchLenFreq_Fem; ObsDiscCatchFreqAtLen_Mal = res$RandObsCatchLenFreq_Mal
+    DiscSampleSize_Fem = res$AnnSimSampSize_Fem; DiscSampleSize_Mal = res$AnnSimSampSize_Mal; DiscSampleSize = DiscSampleSize_Fem + DiscSampleSize_Mal
+  } else {
+    ObsDiscCatchFreqAtLen_Fem = NA; ObsDiscCatchFreqAtLen_Mal = NA
+    DiscSampleSize_Fem = 0; DiscSampleSize_Mal = 0; DiscSampleSize = 0
+  }
+
 
   # get marginal age and conditional age-at-length composition samples by year
   Ages <- seq(TimeStep,MaxModelAge, TimeStep)
@@ -18988,7 +19009,7 @@ VarRecCC_ObjFunc <- function(params) {
 
   # selectivity of landings
   SelAtAge <- rep(1,nAges)
-  SelAtAge[seq(0,AgeAtFullRecruit,1)] <- 0.0001
+  SelAtAge[seq(1,AgeAtFullRecruit,1)] <- 0.0001
   SelAtAge <- RTMB::AD(SelAtAge)
 
   # Mortality at age
@@ -19007,7 +19028,6 @@ VarRecCC_ObjFunc <- function(params) {
   x=which(RecruitYrs <= LastRecDevYr & RecruitYrs >= FirstRecDevYr)
   Recruit[x] = RecDevs - (0.5 * SigmaR * SigmaR)
 
-  print("ObjFunc:here1")
   # calculate numbers at age for the first year
   # age < 0 < A
   NumAtAge = matrix(nrow=nAges, ncol=nSampYrs)
