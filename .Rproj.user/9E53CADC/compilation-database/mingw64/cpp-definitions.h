@@ -1,5 +1,9 @@
 #include <bits/c++config.h>
 
+#ifndef __SSE2_MATH__
+# define __SSE2_MATH__ 1
+#endif
+
 #ifndef __DBL_MIN_EXP__
 # define __DBL_MIN_EXP__ (-1021)
 #endif
@@ -658,10 +662,6 @@
 
 #ifndef __FLT16_DECIMAL_DIG__
 # define __FLT16_DECIMAL_DIG__ 5
-#endif
-
-#ifndef __SSE2_MATH__
-# define __SSE2_MATH__ 1
 #endif
 
 #ifndef __ATOMIC_HLE_RELEASE

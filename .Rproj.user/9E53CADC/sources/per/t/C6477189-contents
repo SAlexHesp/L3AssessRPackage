@@ -1285,6 +1285,9 @@ GetLengthBasedCatchCurveResults <- function (params, DistnType, GrowthCurveType,
                    ExpDiscCatchPropInLenClass = res$ExpDiscCatchPropInLenClass,
                    ExpDiscCatchPropInLenClass_Fem = res$ExpDiscCatchPropInLenClass_Fem,
                    ExpDiscCatchPropInLenClass_Mal = res$ExpDiscCatchPropInLenClass_Mal,
+                   ExpTotCatchPropInLenClass = res$ExpTotCatchPropInLenClass,
+                   ExpTotCatchPropInLenClass_Fem = res$ExpTotCatchPropInLenClass_Fem,
+                   ExpTotCatchPropInLenClass_Mal = res$ExpTotCatchPropInLenClass_Mal,
                    ExpRetCatchPropLengthGivenIntAge = res$ExpRetCatchPropLengthGivenIntAge,
                    ExpRetCatchPropLengthGivenIntAge_Fem = res$ExpRetCatchPropLengthGivenIntAge_Fem,
                    ExpRetCatchPropLengthGivenIntAge_Mal = res$ExpRetCatchPropLengthGivenIntAge_Mal,
@@ -1302,13 +1305,16 @@ GetLengthBasedCatchCurveResults <- function (params, DistnType, GrowthCurveType,
                    FAtLenReten_Mal = res$FAtLenReten_Mal,
                    FAtLenDisc = res$FAtLenDisc,
                    FAtLenDisc_Fem = res$FAtLenDisc_Fem,
-                   FAtLenDisc_Mal = res$FAtLenDisc_Mal)
+                   FAtLenDisc_Mal = res$FAtLenDisc_Mal,
+                   ObsTotCatchAtLen = ObsTotCatchAtLen,
+                   ObsRetCatchFreqAtLen = ObsRetCatchFreqAtLen,
+                   ObsDiscCatchFreqAtLen = ObsDiscCatchFreqAtLen)
 
   ResultsSummary = list(ParamEst = ParamEst,
                         convergence = nlmb$convergence,
                         nll = nlmb$objective,
                         RetCatch_SampleSize = sum(ObsRetCatchFreqAtLen),
-                        DiscCatch_SampleSize = sum(ObsRetCatchFreqAtLen),
+                        DiscCatch_SampleSize = sum(ObsDiscCatchFreqAtLen),
                         RetCatch_EffSampleSize = RetCatch_EffSampleSize,
                         DiscCatch_EffSampleSize = DiscCatch_EffSampleSize,
                         ObsPropRetFish = ObsPropRetFish,
@@ -1334,11 +1340,10 @@ GetLengthBasedCatchCurveResults <- function (params, DistnType, GrowthCurveType,
 
 #' Get NLL for length based catch curve
 #'
-#' @keywords internal
-#'
 #' @param params estimated parameters, including fishing mortality and logistic selectivity parameters when estimated
 #'
 #' @return negative log-likelihood (NLL)
+#' @export
 CalcObjFunc_LengthBasedCatchCurve <- function(params) {
   # get NLL for length based catch curve, for optimisation
 
@@ -1394,7 +1399,7 @@ CalcObjFunc_LengthBasedCatchCurve <- function(params) {
   NLL = NLL_RetCatch + NLL_DiscCatch + Res$L50_Pen + Res$L95_Pen
 
   cat("NLL", NLL, " NLL_DiscCatch ", NLL_DiscCatch, " FMort", 1/(1+exp(-params[1])),
-      " L50_Pen ", Res$L50_Pen, " L95_Pen " ,Res$L95_Pen, '\n')
+      "sel params",exp(params[2:length(params)])," L50_Pen ", Res$L50_Pen, " L95_Pen " ,Res$L95_Pen, '\n')
 
   return(NLL)
 
@@ -2107,12 +2112,10 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, DistnType, lbnd, ubnd, mi
       # fishing mortality and total mortality at length
       FAtLen = CatchCurveResults$FAtLen
       ZAtLen = CatchCurveResults$ZAtLen
-      FAtLenCapt = CatchCurveResults$FAtLenCapt
       FAtLenReten = CatchCurveResults$FAtLenReten
       FAtLenDisc = CatchCurveResults$FAtLenDisc
       FAtLen_Fem = NA; FAtLen_Mal = NA
       ZAtLen_Fem = NA; ZAtLen_Mal = NA
-      FAtLenCapt_Fem = NA; FAtLenCapt_Mal = NA
       FAtLenReten_Fem = NA; FAtLenReten_Mal = NA
       FAtLenDisc_Fem = NA; FAtLenDisc_Mal = NA
 
@@ -2204,17 +2207,14 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, DistnType, lbnd, ubnd, mi
     # fishing mortality and total mortality at length
     FAtLen_Fem = CatchCurveResults_Fem$FAtLen
     ZAtLen_Fem = CatchCurveResults_Fem$ZAtLen
-    FAtLenCapt_Fem = CatchCurveResults_Fem$FAtLenCapt
     FAtLenReten_Fem = CatchCurveResults_Fem$FAtLenReten
     FAtLenDisc_Fem = CatchCurveResults_Fem$FAtLenDisc
     FAtLen_Mal = CatchCurveResults_Mal$FAtLen
     ZAtLen_Mal = CatchCurveResults_Mal$ZAtLen
-    FAtLenCapt_Mal = CatchCurveResults_Mal$FAtLenCapt
     FAtLenReten_Mal = CatchCurveResults_Mal$FAtLenReten
     FAtLenDisc_Mal = CatchCurveResults_Mal$FAtLenDisc
     FAtLen = NA
     ZAtLen = NA
-    FAtLenCapt = NA
     FAtLenReten = NA
     FAtLenDisc = NA
 
@@ -2342,9 +2342,6 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, DistnType, lbnd, ubnd, mi
                  ZAtLen = ZAtLen,
                  ZAtLen_Fem = ZAtLen_Fem,
                  ZAtLen_Mal = ZAtLen_Mal,
-                 FAtLenCapt = FAtLenCapt,
-                 FAtLenCapt_Fem = FAtLenCapt_Fem,
-                 FAtLenCapt_Mal = FAtLenCapt_Mal,
                  FAtLenReten = FAtLenReten,
                  FAtLenReten_Fem = FAtLenReten_Fem,
                  FAtLenReten_Mal = FAtLenReten_Mal,
@@ -2901,9 +2898,6 @@ GetAgeAndLengthBasedCatchCurveResults <- function (params, RefnceAges, MLL, Grow
                    ZAtLen = res$ZAtLen,
                    ZAtLen_Fem = res$ZAtLen_Fem,
                    ZAtLen_Mal = res$ZAtLen_Mal,
-                   FAtLenCapt = res$FAtLenCapt,
-                   FAtLenCapt_Fem = res$FAtLenCapt_Fem,
-                   FAtLenCapt_Mal = res$FAtLenCapt_Mal,
                    FAtLenReten = res$FAtLenReten,
                    FAtLenReten_Fem = res$FAtLenReten_Fem,
                    FAtLenReten_Mal = res$FAtLenReten_Mal,
@@ -4136,10 +4130,9 @@ GetReqdSampleSizesForRandData <- function(MLL, RetenParams, SampleSize, RetCatch
       # calculate expected proportion of catch that is discarded, then set total discard sample size to
       # this proportion of specified sample size for retained catch
       DiscSampleSize = SampleSize * ((sum(DiscCatchAtLen_Fem) + sum(DiscCatchAtLen_Mal)) /
-                                    ((sum(RetCatchAtLen_Fem) + sum(RetCatchAtLen_Mal)) +
-                                    (sum(DiscCatchAtLen_Fem) + sum(DiscCatchAtLen_Mal))))
+                                    (sum(RetCatchAtLen_Fem) + sum(RetCatchAtLen_Mal)))
+
       DiscSampleSize = round(DiscSampleSize,0)
-      # DiscSampleSize = SampleSize # set discarded fish sample size equal to retained fish sample size
 
     }
     DiscSampleSize_Fem = DiscSampleSize * (sum(DiscCatchAtLen_Fem) / (sum(DiscCatchAtLen_Fem) + sum(DiscCatchAtLen_Mal)))
@@ -4286,7 +4279,6 @@ GetExpCatchResults <- function(MaxAge, TimeStep, nTimeSteps, midpt, nLenCl, Sele
                  SelDiscAtLength = CatchResults_Fem$SelDiscAtLength,
                  FAtLen = CatchResults_Fem$FAtLen,
                  ZAtLen = CatchResults_Fem$ZAtLen,
-                 FAtLenCapt = CatchResults_Fem$FAtLenCapt,
                  FAtLenReten = CatchResults_Fem$FAtLenReten,
                  FAtLenDisc = CatchResults_Fem$FAtLenDisc,
                  RetCatchAtLen_Fem=RetCatchAtLen_Fem,
@@ -4691,7 +4683,6 @@ SimLenAndAgeFreqData_EqMod <- function(SampleSize, MaxAge, TimeStep, NatMort, Fi
                    SelDiscAtLength=ExpCatchRes$SelDiscAtLength,
                    FAtLen = ExpCatchRes$FAtLen,
                    ZAtLen = ExpCatchRes$ZAtLen,
-                   FAtLenCapt = ExpCatchRes$FAtLenCapt,
                    FAtLenReten = ExpCatchRes$FAtLenReten,
                    FAtLenDisc = ExpCatchRes$FAtLenDisc,
                    RetCatchAtDecAge_Fem = ExpCatchRes$RetCatchAtDecAge_Fem,

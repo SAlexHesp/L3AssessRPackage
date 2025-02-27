@@ -80,7 +80,6 @@ List CalcCatches_AgeAndLengthBasedCatchCurves_cpp(NumericVector params, const do
   NumericVector SelLandAtLength(nLenCl);
   NumericVector SelDiscAtLength(nLenCl);
   NumericVector FAtLen(nLenCl); // fishing mortality at length associated with landings and discards
-  NumericVector FAtLenCapt(nLenCl); // fishing mortality at length associated with all fish captures
   NumericVector FAtLenReten(nLenCl); // fishing mortality at length associated with all fish captures
   NumericVector FAtLenDisc(nLenCl); // fishing mortality at length associated with all fish captures
   NumericVector ZAtLen(nLenCl);
@@ -116,9 +115,6 @@ List CalcCatches_AgeAndLengthBasedCatchCurves_cpp(NumericVector params, const do
     // total mortality at length
     ZAtLen(i) = NatMort + FAtLen(i);
 
-    // fishing mortality used to calculate total numbers of fish caught
-    FAtLenCapt(i) = SelAtLength(i) * FishMort;
-
     // fishing mortality used to calculate numbers of fish caught and retained
     FAtLenReten(i) = SelLandAtLength(i) * FishMort;
 
@@ -136,8 +132,10 @@ List CalcCatches_AgeAndLengthBasedCatchCurves_cpp(NumericVector params, const do
     DiscCatchAtLen(i) = DiscCatchAtLen(i) + DiscCatchAtDecAgeLen(0,i);
 
     // approximate total catches (caught + released)  (in numbers)
-    TotCatchAtDecAgeLen(0,i) = Fish_NPerRecAtDecAgeLen(0,i) * (FAtLenCapt(i) / ZAtLen(i)) *
-                                   (1 - exp(-ZAtLen(i)*TimeStep));
+    //TotCatchAtDecAgeLen(0,i) = Fish_NPerRecAtDecAgeLen(0,i) * (FAtLenCapt(i) / ZAtLen(i)) *
+    //                               (1 - exp(-ZAtLen(i)*TimeStep));
+    TotCatchAtDecAgeLen(0,i) = RetCatchAtDecAgeLen(0,i) + DiscCatchAtDecAgeLen(0,i);
+
     TotCatchAtLen(i) = TotCatchAtLen(i) + TotCatchAtDecAgeLen(0,i);
     //std::cout << " i " << i << " RecLenDist " << RecLenDist(i) <<
     //  " SelAtLength " << SelAtLength(i) <<" FAtLen " << FAtLen(i) << std::endl;
@@ -168,6 +166,7 @@ List CalcCatches_AgeAndLengthBasedCatchCurves_cpp(NumericVector params, const do
     for (i=0; i<nLenCl; i++) {
       // add numbers per recruit at length, over timesteps to get marginal length distribution
       Fish_NPerRec(i) = Fish_NPerRec(i) + Fish_NPerRecAtDecAgeLen(t,i);
+
       // calculate catch at length for timestep (in numbers)
       RetCatchAtDecAgeLen(t,i) = Fish_NPerRecAtDecAgeLen(t,i) * (FAtLenReten(i) / ZAtLen(i)) *
                                    (1 - exp(-ZAtLen(i)*TimeStep));
@@ -179,8 +178,7 @@ List CalcCatches_AgeAndLengthBasedCatchCurves_cpp(NumericVector params, const do
       DiscCatchAtLen(i) = DiscCatchAtLen(i) + DiscCatchAtDecAgeLen(t,i);
 
       // total catches (caught + released)
-      TotCatchAtDecAgeLen(t,i) = Fish_NPerRecAtDecAgeLen(t,i) * (FAtLenCapt(i) / ZAtLen(i)) *
-                                  (1 - exp(-ZAtLen(i)*TimeStep));
+      TotCatchAtDecAgeLen(t,i) = RetCatchAtDecAgeLen(t,i) + DiscCatchAtDecAgeLen(t,i);
       TotCatchAtLen(i) = TotCatchAtLen(i) + TotCatchAtDecAgeLen(t,i);
     } // i
   } // t
@@ -196,7 +194,6 @@ List CalcCatches_AgeAndLengthBasedCatchCurves_cpp(NumericVector params, const do
                       Named("Fish_NPerRec") = Fish_NPerRec,
                       Named("FAtLen") = FAtLen,
                       Named("ZAtLen") = ZAtLen,
-                      Named("FAtLenCapt") = FAtLenCapt,
                       Named("FAtLenReten") = FAtLenReten,
                       Named("FAtLenDisc") = FAtLenDisc);
 
