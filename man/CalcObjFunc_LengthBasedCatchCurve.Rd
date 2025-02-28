@@ -15,3 +15,4 @@ negative log-likelihood (NLL)
 \description{
 Get NLL for length based catch curve
 }
+\keyword{internal}

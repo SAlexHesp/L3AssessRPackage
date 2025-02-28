@@ -1340,10 +1340,11 @@ GetLengthBasedCatchCurveResults <- function (params, DistnType, GrowthCurveType,
 
 #' Get NLL for length based catch curve
 #'
+#' @keywords internal
+#'
 #' @param params estimated parameters, including fishing mortality and logistic selectivity parameters when estimated
 #'
 #' @return negative log-likelihood (NLL)
-#' @export
 CalcObjFunc_LengthBasedCatchCurve <- function(params) {
   # get NLL for length based catch curve, for optimisation
 

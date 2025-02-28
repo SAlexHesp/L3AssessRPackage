@@ -23,7 +23,7 @@ Fig_Path = "C:/~/L3AssessPackage/vignettes/"
 ```
 
 # Introduction
-#### Last updated January 2025 (Alex Hesp - DPIRD)
+#### Last updated February 2025 (Alex Hesp - DPIRD)
 
 This package is intended as a toolbox of methods with analyses for conducting "level 3" assessments in Western Australia. These methods are typically "equilibrium" approaches, used when size and/or age data are available, together with information on various biological attributes of species, such as estimates of natural mortality, growth and maturity.  
 
@@ -145,7 +145,7 @@ $$
 
 The model is fitted by minimising the negative log-likelihood using nlminb in R, by estimating the fully-selected fishing mortality $F$, and selectivity parameters, $A_{50,s}$ and $A_{95,s}$. Estimates of asymptotic standard errors, $\sigma$, for each of the model parameters, are derived from the variance-covariance matrix (i.e. from the inverted Hessian matrix produced by nlminb). Approximate 95% confidence intervals for the estimated parameters are calculated as $1.96\sigma$. 
 
-For visualisation, model estimates of the frequency of fish at each age, with associated 95% confidence intervals, are calculated using a parametric resampling approach, assuming the estimated model parameters conform to a multivariate normal distribution. The mvrnorm function within the MASS package is used together with the values of the estimated model parameters and associated variance-covariance matrix to generate 500 random values of each of the model parameters. These, in turn, are used to produce 500 sets of model estimates for the frequency of fish at each age, $\tilde{f_a}$, calculated as
+For visualisation, model estimates of the frequency of fish at each age, with associated 95% confidence intervals, are calculated using a parametric resampling approach, assuming the estimated model parameters conform to a multivariate normal distribution. The mvrnorm function within the MASS R package (Venables and Ripley, 2002) is used together with the values of the estimated model parameters and associated variance-covariance matrix to generate 500 random values of each of the model parameters. These, in turn, are used to produce 500 sets of model estimates for the frequency of fish at each age, $\tilde{f_a}$, calculated as
 
 $$
 \tilde{f_a}=\tilde{\pi}_an
@@ -161,6 +161,72 @@ GetLogisticCatchCurveResults()
 PlotAgeBasedCatchCurveResults_NormalSpace()  
 PlotAgeBasedCatchCurveResults_LogSpace()  
 Refer to help files and example code, showing function inputs and outputs.
+
+### Multi-year catch curve analysis allowing for variable recruitment
+
+This catch curve model allows estimation of fishing mortality from age composition data whilst accounting for recruitment variation. A minimum of two years of age data (consecutive 'biological' years or not far apart) is required. This model, based on the 'relative abundance analysis' described by Deriso et al. (1985), has been used in multiple fish biological studies and assessments in Western Australia (e.g. Coulson et al., 2009; Fairclough et al., 2014; Smith et al., 2024). Mortality is assumed to be constant. The model is fitted to estimate fishing mortality and annual recruitment deviations for specified year classes. As, potentially, a substantial number of parameters is estimated, this model uses RTMB for optimisation, available with the R package RTMB (Kristensen, 2025). The current implementation assumes knife edge selectivity.
+
+Applying this model, the expected number of fish $\hat{N}_{a,t}$ of year class $y$ of age $a$ years at the beginning of the first biological year (i.e. typically defined as mean birth date of one year to the next), $t1$, is calculated as
+
+$$
+\begin{align}
+    \hat{N}_{a,t} = R_{t_1} && \text{if a=0}\\
+    \hat{N}_{a,t} = R_{t_1}\exp\bigg[-\sum_{j=0}^{a-1}Z_{j,t_1-a+j} \bigg] && \text{if a<0<A}\\
+    \hat{N}_{a,t} = \bar{R}\exp\bigg[-\sum_{j=0}^{A-1}Z_{j,t_1-A+j} \bigg] /(1-\exp[-Z_{A,t_1}]) && \text{if a=A}\\
+\end{align}
+$$
+where $Z$ denotes total mortality, $j$ is an index of age (where $0 ≤ j ≤ A$), $R_{t_1}$ is the number of zero year old fish recruiting to the population in year $t_1$, $\bar{R}$ is the average recruitment level (i.e. 1, in normal space). $A$ is a plus group containing all fish of age $A$ years or older. In following biological years
+
+$$
+\begin{align}
+    \hat{N}_{a,t} = R_{t} && \text{if a=0}\\
+    \hat{N}_{a,t} = \hat{N}_{a-1,t-1}\exp[-Z_{a-1,t-1}] && \text{if a<0<A}\\
+    \hat{N}_{a,t} = \hat{N}_{a-1,t-1}\exp[-Z_{a-1,t-1}] + \hat{N}_{A,t-1}\exp[-Z_{A,t-1}] && \text{if a=A}\\
+\end{align}
+$$
+$R_y$, the number of age zero recruits in year class $y$, is calculated as
+
+$$
+\begin{align}
+    \hat{R}_y = \bar{R}\exp\big[\epsilon_y-\frac{\sigma_R^2}{2} \big] && \text{for estimated y}\\
+    \hat{R}_y = \bar{R} && {\text{for } y\leq{t_1}-A} \text{ and } y>t_1 \\
+\end{align}
+$$
+Above, $\epsilon_y$ refers to the estimated ‘recruitment deviation’ for year class $y$. $\epsilon_y~N(o,\sigma^2_R)$ , where $\sigma^2_R$ is the variance of the natural logarithms of the recruitment deviations, estimated as model parameters. The expected catches at age $a$ in year $t$ are calculated from the Baranov catch equation, i.e. 
+
+$$
+\hat{C}_{a,t}=\frac{F_{a,t}}{Z_{a,t}}\big[1-\exp(-Z_{a,t})\big]\hat{N}_{a,t}
+$$
+
+$\hat{P}_{a,t}$, the expected proportion of fish of age $a$ in the catch in year $t$ is calculated as
+
+$$
+\hat{P}_{a,t}=\hat{C}_{a,t}/\sum_{j=0}^{A}\hat{C}_{a,t}
+$$
+The multinomial likelihood associated with the age composition data is calculated as
+
+$$
+\lambda_1=\sum_{t=t_1}^T\sum_{a=a_1}^Ap_{a,t}\ln{\hat{P}_{a,t}}
+$$
+where $\hat{P}_{a,t}$ is the observed proportion of fish in the catch at age $a$ in year $t$.
+
+The log-likelihood associated with the annual recruitment deviations, is
+
+$$
+\lambda_2=\frac{1}{2\pi\sigma^2_R}\sum_y\epsilon^2_y
+$$
+
+The overall model likelihood, $\lambda$ is thus
+
+$$
+\lambda = \lambda_1 + \lambda_2
+$$
+The default value for $\epsilon^2_y$ is 0.6, as commonly assumed in many stock assessments. A penalty is also imposed to ensure the recruitment deviations sum to zero, to help prevent confounding between trends in recruitment deviations and fishing mortality. 
+
+Key functions in L3Assess relevant to applying this method are:  
+GetVarRecCatchCurveRes()  
+Refer to help files and example code, showing function inputs and outputs.
+
 
 ## Length-based selectivity analysis
 
@@ -193,7 +259,7 @@ $$
     \hat\mu_j=\frac{\sum_{i=1}^{I}n_{ij}}{\sum_{i=1}^{I}S_{ij}}
 \end{align}
 $$
-where $n_ij$ is the number of fish in length class $j$ caught in mesh size $i$. The relative selectivity of fish in the multi-mesh research gill net in length class $j$ is estimated as
+where $n_ij$ is the number of fish in length class $j$ caught in mesh size $i$. The relative selectivity of fish in the multimesh research gill net in length class $j$ is estimated as
 
 $$
 \begin{align}
@@ -1112,15 +1178,23 @@ Beverton, R. J. H. & Holt, S. J. (1957). On the Dynamics of Exploited Fish Popul
 
 Brooks, E. N., Shertzer, K. W., Gedamke, T. & Vaughan, D. S. (2008). Stock assessment of protogynous fish: evaluating measures of spawning biomass used to estimate biological reference points. Fisheries Bulletin 106, 12-23.
 
+Coulson, P. G., Hesp, S. A., Hall, N. G. & Potter, I. C. (2009). The western blue groper (Achoerodus gouldii),
+a protogynous hermaphroditic labrid with exceptional longevity, late maturity, slow growth, and both late maturation
+and sex change. Fishery Bulletin 107, 57–75.
+
 Chapman, D. G., and D. S. Robson. (1960). The analysis of a catch curve. Biometrics 16, 354-368.
 
 Crisafulli, B., Hesp, S. A., Afrifa-Yamoah, E., Mueller, U., Ryan, K., Fairclough, D., Hall, N. & Lo, J. (2025). Accounting for post-release mortality in data-limited, length-based assessments of four demersal fishes with varying life histories. Fisheries Research 281. Art 107238.
+
+Deriso R. B., Quinn T. J. & Neal, P. R. (1985) Catch-age analysis with auxiliary information. Canadian Journal of Fisheries and Aquatic Sciences 42, 815–824. doi:10.1139/f85-104
 
 Die, D. J., Restrepo, V. R. & Hoenig, J. M. (1988). Utility-per-recruit modeling: a neglected concept. Transactions of the American Fisheries Society 117, 274-281.
 
 Evans-Powell, R. T., Hesp, S. A., Denham, A. & Beckley, L. E. (2024). Implications of big, old, fat, fecund, female fish (BOFFFFs) for the reproductive potential of a demersal teleost stock. Fisheries Research 272. Art. 106934.
 
-Fairclough, D.V., Hesp, S.A., Denham, A., Fisher, E.A., Marks, R., Ryan, K.L., Lek, E., Allen, R. & Crisafulli, B.M. 2021. 2021 assessment of the status of the West Coast Demersal Scalefish Resource. Fisheries Research Report No. 316 Department of Primary Industries and Regional Development, Western Australia. 158 pp.
+Fairclough, D. V., Molony, B. W., Crisafulli, B. M., Keay, I. S., Hesp, S. A., & Marriott, R. J. (2014) Status of demersal finfish stocks on the west coast of Australia. Fisheries Research Report Number 253, Department of Fisheries, Perth, WA, Australia.
+
+Fairclough, D.  V., Hesp, S. A., Denham, A., Fisher, E.A., Marks, R., Ryan, K.L., Lek, E., Allen, R. & Crisafulli, B. M. 2021. 2021 assessment of the status of the West Coast Demersal Scalefish Resource. Fisheries Research Report No. 316 Department of Primary Industries and Regional Development, Western Australia. 158 pp.
 
 Fletcher, W. J. (2015). Review and refinement of an existing qualitative risk assessment method for application within an ecosystem-based management framework. ICES Journal of Marine Science (2015), 72(3), 1043–1056. doi:10.1093/icesjms/fsu142.
 
@@ -1130,6 +1204,8 @@ for the natural mortality rate. Fisheries Research 256 (2022) 106477.
 Hansen, M. J., Madenjian, C. P., Selgeby, J. H., & Helser, T. E. (1997). Gillnet selectivity for lake trout (Salvelinus namaycush) in Lake Superior. Canadian Journal of Fisheries and Aquatic Sciences, 54, 2483–2490.
 
 Hoenig, J. M. (1983). Empirical use of longevity data to estimate mortality rates. Fishery Bulletin 82, 898–903.
+
+Kristensen, K. (2025). RTMB: 'R' Bindings for 'TMB'. R package version 1.7. https://CRAN.R-project.org/package=RTMB.
 
 Kirkwood, G. P. & Walker, T. I. (1986). Gill net mesh selectivities for gummy shark, Mustelus antarcticus Günther, taken in south-eastern Australia. Australian Journal of Marine and Freshwater Research, 37, 689-697.Kurup, R. G., & Hamilton, D. P. (2002).
 
@@ -1151,9 +1227,14 @@ Shertzer, K.W., Williams, E.H. & Sagarese, S.R. (2022). Modeling discards in sto
 
 Smith, M. W., Then, A. Y., Wor, C., Ralph, G., Pollock, K. H. & Hoenig, J. M. (2012) Recommendations for Catch-Curve Analysis, North American Journal of Fisheries Management, 32(5), 956-967.
 
+Smith, K. A., Hesp, S. A.. & Coulson, P. G. 2024. Variations in life-history traits in exploited and unexploited populations of Perth herring (Nematalosa vlaminghi): evidence for density-dependent growth? Marine and Freshwater Research 75. https://doi.org/10.1071/MF23134.
+
 Thorson, J. T., Johnson, K. F., Methot, R. D. & Taylor, I. G. Model-based estimates of effective sample size in stock assessment models using the Dirichlet-multinomial distribution. Fisheries Research 192, 84-93. http://dx.doi.org/10.1016/j.fishres.2016.06.005.
 
 Wakefield, C. B., Williams, A. J., Fisher, E. A., Hall, N. G., Hesp, S. A., Halafihi, T., Kaltavara, J., Vourey, E., Taylor, B. M., O’Malley, J. M., Nicol, S. J., Wise, B. W. & Newman, S. J. (2020). Variations in life history characteristics of the deep-water giant ruby snapper (Etelis sp.) between the Indian and Pacific Oceans and application of a data-poor assessment. Fisheries Research 230.  Art. 105651. 
+
+Venables, W. N. & Ripley, B. D. (2002). Modern Applied Statistics with S. Fourth Edition. Springer, New
+  York. ISBN 0-387-95457-0.
 
 Zhai, L. & Pauly, D. (2019). Yield-per-Recruit, Utility-per-Recruit, and Relative Biomass of 21 Exploited Fish Species in China's Coastal Seas. Frontiers of Marine Science,  6. Art. 724. https://doi.org/10.3389/fmars.2019.00724.
 

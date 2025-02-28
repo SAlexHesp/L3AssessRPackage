@@ -2,7 +2,6 @@
 
 export(AgeAndLengthBasedCatchCurvesCalcs)
 export(CalcGillnetSelectivity)
-export(CalcObjFunc_LengthBasedCatchCurve)
 export(CalcYPRAndSPRForFMort_AB)
 export(CalcYPRAndSPRForFMort_LB)
 export(GetAgeAndLengthBasedCatchCurveResults)
