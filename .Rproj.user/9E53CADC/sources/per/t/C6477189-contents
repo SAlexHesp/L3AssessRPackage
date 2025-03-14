@@ -11365,72 +11365,94 @@ GetResampResults_LogisticCatchCurve <- function(params, vcov.params, nSexes, Age
 #' @return negative log-likelihood (NLL)
 Calculate_NLL_LogisticCatchCurve <- function(params) {
 
-# calculate survival and catches
-FMort = exp(params[1])
-if (length(params)<5) {
-  SelA50 = exp(params[2]) # single sex
-  SelDelta = exp(params[3])
-  SelA95 = SelA50 + SelDelta # single sex
-} else {
-  SelA50 = exp(params[2:3]) # two sexes
-  SelDelta = exp(params[4:5])
-  SelA95 = SelA50 + SelDelta
-}
-
-Ages = MinAge:MaxAge
-if (length(SelA50)==1) nSexes = 1
-if (length(SelA50)==2) nSexes = 2
-EmptyFrame <- data.frame(matrix(nrow = nSexes, ncol = length(Ages)))
-colnames(EmptyFrame) <- Ages;
-SelAtAge <- EmptyFrame; FAtAge <- EmptyFrame; ZAtAge <- EmptyFrame; N <- EmptyFrame;
-CatchAtAge <- EmptyFrame; CatchSample <- EmptyFrame
-
-for (s in 1:nSexes) {
-  k=1
-  N[s,1] = 1;
-  SelAtAge[s,] = 1 / (1 + exp(-log(19) * (Ages - SelA50[s]) / (SelA95[s] - SelA50[s])))
-  FAtAge[s,] = SelAtAge[s,] * FMort
-  ZAtAge[s,] = NatMort + FAtAge[s,]
-  CatchAtAge[s,k] = N[s,k] * (FAtAge[s,k] / ZAtAge[s,k]) * (1 - exp(-ZAtAge[s,k])) # catch at age
-
-  i=MinAge+1
-  for (i in seq(MinAge+1,MaxAge,1)) {
-    k=k+1
-    if (i < MaxAge) {
-      N[s,k] = N[s,k-1] * exp(-ZAtAge[s,k-1])
-    } else {
-      N[s,k] = N[s,k-1] * exp(-ZAtAge[s,k-1] / (1 - exp(-ZAtAge[s,k])))
-    }
-    CatchAtAge[s,k] = N[s,k] * (FAtAge[s,k] / ZAtAge[s,k]) * (1 - exp(-ZAtAge[s,k])) # catch at age
+  # calculate survival and catches
+  FMort = exp(params[1])
+  if (length(params)<5) {
+    SelA50 = exp(params[2]) # single sex
+    SelDelta = exp(params[3])
+    SelA95 = SelA50 + SelDelta # single sex
+  } else {
+    SelA50 = exp(params[2:3]) # two sexes
+    SelDelta = exp(params[4:5])
+    SelA95 = SelA50 + SelDelta
   }
-}
-ExpPropAtAge = CatchAtAge / sum(CatchAtAge)
 
-# calculate F penalty
-F_Pen = 0
-if (FMort > 2.0) {
-  F_Pen = 1000 * (FMort - 2.0)^2
-}
+  Ages = MinAge:MaxAge
+  if (length(SelA50)==1) nSexes = 1
+  if (length(SelA50)==2) nSexes = 2
 
-# calculate multinomial negative log-likelihood
-if (length(params)==3 | length(params)==5) {
-  NLL = -sum(ObsAgeFreq * log(ExpPropAtAge + 1E-4)) + F_Pen
-}
+  if (nSexes==1) TotObsAgeFreq = ObsAgeFreq
+  if (nSexes==2) {
+    ObsAgeFreq_Fem = as.vector(unlist(ObsAgeFreq[1,]))
+    ObsAgeFreq_Mal = as.vector(unlist(ObsAgeFreq[2,]))
+    TotObsAgeFreq = ObsAgeFreq[1,] + ObsAgeFreq[2,]
+  }
 
-# calculate Dirichlet multinomial negative log-likelihood
-if (length(params)==4 | length(params)==6) {
-  res = CalcDirMultNLL_LogisticCatchCurve(params, nSexes, Ages, ObsAgeFreq, ExpPropAtAge, F_Pen)
-  NLL = res$NLL; DM_theta = res$DM_theta; ObsAgeFreq = res$ObsAgeFreq
-}  # calc Dirich mult
+  EmptyFrame <- data.frame(matrix(nrow = nSexes, ncol = length(Ages)))
+  colnames(EmptyFrame) <- Ages;
+  SelAtAge <- EmptyFrame; FAtAge <- EmptyFrame; ZAtAge <- EmptyFrame; N <- EmptyFrame;
+  CatchAtAge <- EmptyFrame; CatchSample <- EmptyFrame; ExpPropAtAge <- EmptyFrame
+  TotCatchAtAge <- rep(0,length(Ages))
+  for (s in 1:nSexes) {
+    k=1
+    if (nSexes==1) {
+      N[s,1] = 1.0
+    } else {
+      N[s,1] = 0.5
+    }
+    SelAtAge[s,] = 1 / (1 + exp(-log(19) * (Ages - SelA50[s]) / (SelA95[s] - SelA50[s])))
+    FAtAge[s,] = SelAtAge[s,] * FMort
+    ZAtAge[s,] = NatMort + FAtAge[s,]
+    CatchAtAge[s,k] = N[s,k] * (FAtAge[s,k] / ZAtAge[s,k]) * (1 - exp(-ZAtAge[s,k])) # catch at age
 
-if (length(params)==3 | length(params)==5) {
-  cat("NLL",NLL,"F_Pen",F_Pen,"params",exp(params),'\n')
-}
-if (length(params)==4 | length(params)==6) {
-  cat("NLL",NLL,"F_Pen",F_Pen,"params",c(FMort, SelA50, SelA95, DM_theta),'\n')
-}
+    i=MinAge+1
+    for (i in seq(MinAge+1,MaxAge,1)) {
+      k=k+1
+      if (i < MaxAge) {
+        N[s,k] = N[s,k-1] * exp(-ZAtAge[s,k-1])
+      } else {
+        N[s,k] = N[s,k-1] * exp(-ZAtAge[s,k-1] / (1 - exp(-ZAtAge[s,k])))
+      }
+      CatchAtAge[s,k] = N[s,k] * (FAtAge[s,k] / ZAtAge[s,k]) * (1 - exp(-ZAtAge[s,k])) # catch at age
+      TotCatchAtAge[k] = TotCatchAtAge[k] + CatchAtAge[s,k]
+    }
+  }
+  ExpPropAtAge = TotCatchAtAge / sum(TotCatchAtAge)
+  ExpPropAtAge_Fem = as.vector(unlist(CatchAtAge[1,] / sum(CatchAtAge[1,])))
+  ExpPropAtAge_Mal = as.vector(unlist(CatchAtAge[2,] / sum(CatchAtAge[2,])))
 
-return(NLL)
+  # calculate F penalty
+  F_Pen = 0
+  if (FMort > 2.0) {
+    F_Pen = 1000 * (FMort - 2.0)^2
+  }
+
+  # calculate multinomial negative log-likelihood
+  if (length(params)==3 | length(params)==5) {
+    if (nSexes==1) {
+      NLL = -sum(TotObsAgeFreq * log(ExpPropAtAge + 1E-4)) + F_Pen
+    } else {
+      NLL_Fem = -sum(ObsAgeFreq_Fem * log(ExpPropAtAge_Fem + 1E-4))
+      NLL_Mal = -sum(ObsAgeFreq_Mal * log(ExpPropAtAge_Mal + 1E-4))
+      NLL = NLL_Fem + NLL_Mal + F_Pen
+    }
+
+  }
+
+  # calculate Dirichlet multinomial negative log-likelihood
+  if (length(params)==4 | length(params)==6) {
+    res = CalcDirMultNLL_LogisticCatchCurve(params, nSexes, Ages, ObsAgeFreq, ExpPropAtAge, F_Pen)
+    NLL = res$NLL; DM_theta = res$DM_theta; ObsAgeFreq = res$ObsAgeFreq
+  }  # calc Dirich mult
+
+  if (length(params)==3 | length(params)==5) {
+    cat("NLL",NLL,"F_Pen",F_Pen,"params",exp(params),'\n')
+  }
+  if (length(params)==4 | length(params)==6) {
+    cat("NLL",NLL,"F_Pen",F_Pen,"params",c(FMort, SelA50, SelA95, DM_theta),'\n')
+  }
+
+  return(NLL)
 
 }
 
