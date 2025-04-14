@@ -3191,13 +3191,11 @@ CalcExpRetCatchPropLengthGivenIntAge <- function(MinAge, MaxAge, midpt, RetCatch
   colnames(ExpRetCatchPropLengthGivenIntAge) <- midpt
   ExpRetCatchPropLengthGivenIntAge = as.matrix(ExpRetCatchPropLengthGivenIntAge)
 
-  x = 0
-  for (t in seq(MinAge,MaxAge,1)) {
-    x = x + 1
-    if (RetCatchAtIntAge[x]==0) {
-      ExpRetCatchPropLengthGivenIntAge[x,] = 0
+  for (t in 1:nAgeCl) {
+    if (RetCatchAtIntAge[t]==0) {
+      ExpRetCatchPropLengthGivenIntAge[t,] = 0
     } else {
-      ExpRetCatchPropLengthGivenIntAge[x,] = RetCatchAtIntAgeLen[x,] / RetCatchAtIntAge[x]
+      ExpRetCatchPropLengthGivenIntAge[t,] = RetCatchAtIntAgeLen[t,] / RetCatchAtIntAge[t]
     }
   }
 
@@ -4278,6 +4276,8 @@ GetExpCatchResults <- function(MaxAge, TimeStep, nTimeSteps, midpt, nLenCl, Sele
                  RetAtLength = RetAtLength,
                  SelLandAtLength = CatchResults_Fem$SelLandAtLength,
                  SelDiscAtLength = CatchResults_Fem$SelDiscAtLength,
+                 Fish_NPerRecAtDecAgeLen_Fem = CatchResults_Fem$Fish_NPerRecAtDecAgeLen,
+                 Fish_NPerRecAtDecAgeLen_Mal = CatchResults_Mal$Fish_NPerRecAtDecAgeLen,
                  FAtLen = CatchResults_Fem$FAtLen,
                  ZAtLen = CatchResults_Fem$ZAtLen,
                  FAtLenReten = CatchResults_Fem$FAtLenReten,
@@ -4686,6 +4686,8 @@ SimLenAndAgeFreqData_EqMod <- function(SampleSize, MaxAge, TimeStep, NatMort, Fi
                    ZAtLen = ExpCatchRes$ZAtLen,
                    FAtLenReten = ExpCatchRes$FAtLenReten,
                    FAtLenDisc = ExpCatchRes$FAtLenDisc,
+                   Fish_NPerRecAtDecAgeLen_Fem = ExpCatchRes$Fish_NPerRecAtDecAgeLen_Fem,
+                   Fish_NPerRecAtDecAgeLen_Mal = ExpCatchRes$Fish_NPerRecAtDecAgeLen_Mal,
                    RetCatchAtDecAge_Fem = ExpCatchRes$RetCatchAtDecAge_Fem,
                    RetCatchAtDecAge_Mal = ExpCatchRes$RetCatchAtDecAge_Mal,
                    RetCatchAtDecAge = ExpCatchRes$RetCatchAtDecAge,
@@ -9611,9 +9613,11 @@ GetInputsForPlotting_Cond_AL <- function(params, RefnceAges, MLL, GrowthCurveTyp
     # calculate observed proportions at age, for each length class
     if (TimeStep == 1) { # annual time step
       ObsRetCatchFreqAtLengthAndIntAge = ObsRetCatchFreqAtLengthAndAge
+      dim(ObsRetCatchFreqAtLengthAndAge)
     } else { # shorter time step than annual
       ObsRetCatchFreqAtLengthAndIntAge = ConvertObsDataFromDecAgesToIntegerAges(TimeStep, MaxAge, nLenCl, ObsRetCatchFreqAtLengthAndAge)
     }
+
     for (i in 1:nLenCl) {
       if (sum(ObsRetCatchFreqAtLengthAndIntAge[,i])==0) {
         ObsCatchPropAgeAtLength[,i] = 0
@@ -9840,6 +9844,7 @@ PlotAgeLengthCatchCurve_Cond_AL <- function(params, RefnceAges, MLL, GrowthCurve
   # get required inputs for plotting
   Res = GetInputsForPlotting_Cond_AL(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
                                      lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep, FittedRes)
+
 
   # calculate expected proportions at age, for each length class
   # single sex
@@ -10140,7 +10145,6 @@ PlotAgeLengthCatchCurve_Pears_Resid <- function(params, RefnceAges, MLL, GrowthC
 
   # calculate the Pearson residuals (for a multinomial distribution)
   # single sex - Pearson residuals
-
   if (is.vector(ObsRetCatchFreqAtLen)) {
     PearResid <- data.frame(matrix(nrow = nAgeCl, ncol = nLenCl))
     colnames(PearResid) <- midpt
@@ -19264,7 +19268,7 @@ VarRecCC_ObjFunc <- function(params) {
 #' params <- list(lnFMort=log(0.1),
 #'                lnRecDevs=rep(0,nRecDevs))
 #' # Fit catch curve model with RTMB
-#' FittedRes=GetVarRecCatchCurveRes(dat, params)
+#' FittedRes=GetVarRecCatchCurveResults(dat, params)
 #' FMortByYear[nYears] # True F
 #' FittedRes$SummaryRes$EstFMort # Est F
 #' # plot fit of catch curve to observed data
@@ -19280,7 +19284,7 @@ VarRecCC_ObjFunc <- function(params) {
 #' lines(FittedRes$RTMBReport$EstRecDevYrs, FittedRes$SummaryRes$EstRecDevs[,2], "l", col="pink")
 #' lines(FittedRes$RTMBReport$EstRecDevYrs, FittedRes$SummaryRes$EstRecDevs[,3], "l", col="pink")
 #' @export
-GetVarRecCatchCurveRes <- function(dat, params) {
+GetVarRecCatchCurveResults <- function(dat, params) {
 
   # set up for RTMB
   obj <- RTMB::MakeADFun(VarRecCC_ObjFunc, params)
@@ -19323,5 +19327,4 @@ GetVarRecCatchCurveRes <- function(dat, params) {
   return(Results)
 
 }
-
 

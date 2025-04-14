@@ -16,7 +16,7 @@ NumericMatrix CalcExpCatchPropIntAgeGivenLength_cpp(const int nLenCl, const int 
   NumericMatrix ExpRetCatchPropAgeGivenLength(nAgeCl, nLenCl);
 
   for (i=0; i<nLenCl; i++) {
-    for (t=1; t<nAgeCl; t++) {
+    for (t=0; t<nAgeCl; t++) {
       FractDenom(i) = FractDenom(i) + (ExpRetCatchPropLengthGivenIntAge(t,i) * ExpRetCatchPropAtIntAge(t));
     } // t
 
@@ -26,7 +26,7 @@ NumericMatrix CalcExpCatchPropIntAgeGivenLength_cpp(const int nLenCl, const int 
     }
 
 
-    for (t=1; t<nAgeCl; t++) {
+    for (t=0; t<nAgeCl; t++) {
       ExpRetCatchPropAgeGivenLength(t,i) = (ExpRetCatchPropLengthGivenIntAge(t,i) * ExpRetCatchPropAtIntAge(t))
       / FractDenom(i);
     } // t
@@ -185,6 +185,7 @@ List CalcCatches_AgeAndLengthBasedCatchCurves_cpp(NumericVector params, const do
 
   return List::create(Named("SelLandAtLength") = SelLandAtLength,
                       Named("SelDiscAtLength") = SelDiscAtLength,
+                      Named("Fish_NPerRecAtDecAgeLen") = Fish_NPerRecAtDecAgeLen,
                       Named("RetCatchAtDecAgeLen") = RetCatchAtDecAgeLen,
                       Named("DiscCatchAtDecAgeLen") = DiscCatchAtDecAgeLen,
                       Named("TotCatchAtDecAgeLen") = TotCatchAtDecAgeLen,
