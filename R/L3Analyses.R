@@ -1746,7 +1746,7 @@ GetGrowthInputsForLengthTransitionMatrices <- function(MaxAge, TimeStep, nLenCl,
       MeanSizeAtAge = Linf * (1 - exp (-vbK * Ages))
       MeanEndingLength = midpt + (Linf - midpt) * (1 - exp(-vbK*TimeStep))
       TimestepGrowthSizeInc = MeanEndingLength-midpt # amount of annual growth with respect to initial length
-    } else {
+    } else { # 2 selectivities
       MeanSizeAtAge <- data.frame(matrix(nrow = 2, ncol = length(Ages)))
       colnames(MeanSizeAtAge) <- Ages
       MeanEndingLength <- data.frame(matrix(nrow = 2, ncol = nLenCl))
@@ -2143,12 +2143,20 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, DistnType, lbnd, ubnd, mi
       RetCatchAtIntAgeLen = TotCatchAtIntAgeLen
       DiscCatchAtIntAgeLen = TotCatchAtIntAgeLen
 
-      for (t in 1:nTimeSteps) {
-        if (AgeCl[1]<1) {
-          x = AgeCl[t]+1
-        } else {
-          x = AgeCl[t]
-        }
+      # for (t in 1:nTimeSteps) {
+      #   if (AgeCl[1]<1) {
+      #     x = AgeCl[t]+1
+      #   } else {
+      #     x = AgeCl[t]
+      #   }
+
+        for (t in 1:nTimeSteps) {
+          if (TimeStep == 1) {
+            x = AgeCl[t]
+          }
+          if (TimeStep < 1) {
+            x = AgeCl[t]+1 # as first age class is zero, with is first position in vector
+          }
 
         TotCatchAtIntAgeLen[x,] = TotCatchAtIntAgeLen[x,] + CatchCurveResults$TotCatchAtDecAgeLen[t,]
         RetCatchAtIntAgeLen[x,] = RetCatchAtIntAgeLen[x,] + CatchCurveResults$RetCatchAtDecAgeLen[t,]
@@ -2259,12 +2267,19 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, DistnType, lbnd, ubnd, mi
     RetCatchAtIntAge_Fem = rep(0,nAgeCl)
     RetCatchAtIntAge_Mal = rep(0,nAgeCl)
 
-    for (t in 1:nTimeSteps) {
-      if (AgeCl[1]<1) {
-        x = AgeCl[t]+1
-      } else {
-        x = AgeCl[t]
-      }
+    # for (t in 1:nTimeSteps) {
+    #   if (AgeCl[1]<1) {
+    #     x = AgeCl[t]+1
+    #   } else {
+    #     x = AgeCl[t]
+    #   }
+      for (t in 1:nTimeSteps) {
+        if (TimeStep == 1) {
+          x = AgeCl[t]
+        }
+        if (TimeStep < 1) {
+          x = AgeCl[t]+1 # as first age class is zero, with is first position in vector
+        }
       TotCatchAtIntAgeLen_Fem[x,] = TotCatchAtIntAgeLen_Fem[x,] + CatchCurveResults_Fem$TotCatchAtDecAgeLen[t,]
       TotCatchAtIntAgeLen_Mal[x,] = TotCatchAtIntAgeLen_Mal[x,] + CatchCurveResults_Mal$TotCatchAtDecAgeLen[t,]
       RetCatchAtIntAgeLen_Fem[x,] = RetCatchAtIntAgeLen_Fem[x,] + CatchCurveResults_Fem$RetCatchAtDecAgeLen[t,]
@@ -2352,8 +2367,6 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, DistnType, lbnd, ubnd, mi
 
   return(Results)
 }
-
-
 
 
 #' Get results for a fitted age and length-based catch curve
@@ -3149,21 +3162,29 @@ GetParamRes_AgeAndLengthBasedCatchCurve <- function (GrowthCurveType, Selectivit
 ConvertObsDataFromDecAgesToIntegerAges <- function(TimeStep, MaxAge, nLenCl, ObsRetCatchFreqAtLengthAndAge) {
 
   Ages = seq(TimeStep,MaxAge,TimeStep)
-  nTimeSteps = length(Ages)
   AgeCl = floor(round(Ages,6))
+  MinAge = min(AgeCl)
   nAgeCl = length(unique(AgeCl))
+  nTimeSteps = length(Ages)
 
-  ObsRetCatchFreqAtLengthAndIntAge <- data.frame(matrix(0, nrow = nAgeCl, ncol = nLenCl))
+  ObsRetCatchFreqAtLengthAndIntAge <- data.frame(matrix(0, nrow = length(MinAge:MaxAge), ncol = nLenCl))
   colnames(ObsRetCatchFreqAtLengthAndIntAge) <- midpt
   ObsRetCatchFreqAtLengthAndIntAge = as.matrix(ObsRetCatchFreqAtLengthAndIntAge)
 
-  for (t in 1:nTimeSteps) {
-    if (AgeCl[1]<1) {
-      x = AgeCl[t]+1
-    } else {
-      x = AgeCl[t]
-    }
+  # for (t in 1:nTimeSteps) {
+  #   if (AgeCl[1]<1) {
+  #     x = AgeCl[t]+1
+  #   } else {
+  #     x = AgeCl[t]
+  #   }
 
+  for (t in 1:nTimeSteps) {
+    if (TimeStep == 1) {
+    x = AgeCl[t]
+    }
+    if (TimeStep < 1) {
+    x = AgeCl[t]+1 # as first age class is zero, with is first position in vector
+    }
     ObsRetCatchFreqAtLengthAndIntAge[x,] = ObsRetCatchFreqAtLengthAndIntAge[x,] + ObsRetCatchFreqAtLengthAndAge[t,]
   }
 
@@ -3365,13 +3386,16 @@ CalcCatchLenPropGivenAge <- function(nTimeSteps, nLenCl, midpt, RetCatchAtDecAge
 #' @param ExpDiscCatchPropAtDecAge_Fem expected female discarded catches at decimal age
 #' @param ExpDiscCatchPropLengthGivenDecAge_Mal expected male discarded catches at length given decimal age
 #' @param ExpDiscCatchPropAtDecAge_Mal expected male discarded catches at decimal age
+#' @param MLL minimum legal length
+#' @param RetenParams retention parameters
 #'
 #' @return ExpRetCatchPropDecAgeGivenLength_Fem, ExpRetCatchPropDecAgeGivenLength_Mal, ExpDiscCatchPropDecAgeGivenLength_Fem,
 #' ExpDiscCatchPropDecAgeGivenLength_Mal
 CalcCatchAgePropGivenLen <- function(nTimeSteps, nLenCl, midpt, ExpRetCatchPropLengthGivenDecAge_Fem, ExpRetCatchPropAtDecAge_Fem,
                                      ExpRetCatchPropLengthGivenDecAge_Mal, ExpRetCatchPropAtDecAge_Mal,
                                      ExpDiscCatchPropLengthGivenDecAge_Fem, ExpDiscCatchPropAtDecAge_Fem,
-                                     ExpDiscCatchPropLengthGivenDecAge_Mal, ExpDiscCatchPropAtDecAge_Mal) {
+                                     ExpDiscCatchPropLengthGivenDecAge_Mal, ExpDiscCatchPropAtDecAge_Mal,
+                                     MLL, RetenParams) {
 
   EmptyFrame <- data.frame(matrix(nrow = nTimeSteps, ncol = nLenCl))
   colnames(EmptyFrame) <- midpt; EmptyFrame = as.matrix(EmptyFrame)
@@ -4177,21 +4201,31 @@ GetExpCatchResults <- function(MaxAge, TimeStep, nTimeSteps, midpt, nLenCl, Sele
   RetAtLength = SelRes$RetAtLength
 
   # get expected landed and discarded catches, and selectivity of landings and discards (retention function approach)
-  if (is.vector(SelectivityAtLen)) { # single selectivity curve for combined sexes
-    RecLenDist_Fem = RecLenDist; RecLenDist_Mal = RecLenDist
-    SelAtLength = SelectivityAtLen
+  if (is.vector(RecLenDist)) { # single selectivity curve for combined sexes
+    RecLenDist_Fem = RecLenDist
   } else { # separate sex
     RecLenDist_Fem = as.vector(unlist(RecLenDist[1,]))
-    RecLenDist_Mal = as.vector(unlist(RecLenDist[2,]))
+  }
+  if (is.vector(SelectivityAtLen)) { # single selectivity curve for combined sexes
+    SelAtLength = SelectivityAtLen
+  } else { # separate sex
     SelAtLength = as.vector(unlist(SelectivityAtLen[1,]))
   }
+
   CatchResults_Fem = CalcCatches_AgeAndLengthBasedCatchCurves_cpp(FishMort_logit, NatMort, RecLenDist_Fem, InitRecNumber, MaxAge, TimeStep, nTimeSteps,
                                                                   nLenCl, midpt, RetAtLength, SelAtLength, DiscMort, LTM_Fem)
+
+  if (is.vector(RecLenDist)) { # single selectivity curve for combined sexes
+    RecLenDist_Mal = RecLenDist
+  } else { # separate sex
+    RecLenDist_Mal = as.vector(unlist(RecLenDist[2,]))
+  }
   if (is.vector(SelectivityAtLen)) { # single selectivity curve for combined sexes
     SelAtLength = as.vector(unlist(SelectivityAtLen))
   } else { # separate sex
     SelAtLength = as.vector(unlist(SelectivityAtLen[2,]))
   }
+
   CatchResults_Mal = CalcCatches_AgeAndLengthBasedCatchCurves_cpp(FishMort_logit, NatMort, RecLenDist_Mal, InitRecNumber, MaxAge, TimeStep, nTimeSteps,
                                                                   nLenCl, midpt, RetAtLength, SelAtLength, DiscMort, LTM_Mal)
 
@@ -4266,7 +4300,7 @@ GetExpCatchResults <- function(MaxAge, TimeStep, nTimeSteps, midpt, nLenCl, Sele
   CatchAgePropRes = CalcCatchAgePropGivenLen(nTimeSteps, nLenCl, midpt, ExpRetCatchPropLengthGivenDecAge_Fem, ExpRetCatchPropAtDecAge_Fem,
                                        ExpRetCatchPropLengthGivenDecAge_Mal, ExpRetCatchPropAtDecAge_Mal,
                                        ExpDiscCatchPropLengthGivenDecAge_Fem, ExpDiscCatchPropAtDecAge_Fem,
-                                       ExpDiscCatchPropLengthGivenDecAge_Mal, ExpDiscCatchPropAtDecAge_Mal)
+                                       ExpDiscCatchPropLengthGivenDecAge_Mal, ExpDiscCatchPropAtDecAge_Mal, MLL, RetenParams)
   ExpRetCatchPropDecAgeGivenLength_Fem = CatchAgePropRes$ExpRetCatchPropDecAgeGivenLength_Fem
   ExpRetCatchPropDecAgeGivenLength_Mal = CatchAgePropRes$ExpRetCatchPropDecAgeGivenLength_Mal
   ExpDiscCatchPropDecAgeGivenLength_Fem = CatchAgePropRes$ExpDiscCatchPropDecAgeGivenLength_Fem
@@ -4674,7 +4708,9 @@ SimLenAndAgeFreqData_EqMod <- function(SampleSize, MaxAge, TimeStep, NatMort, Fi
                       ObsMeanAgeDiscFish_sd_Mal = DiscStats$ObsMeanAgeDiscFish_sd_Mal,
                       ObsMeanAgeDiscFish_sd = DiscStats$ObsMeanAgeDiscFish_sd)
 
-  ModelDiag = list(DecAges = DecAges,
+  ModelDiag = list(InitRecNumber = InitRecNumber,
+                   nTimeSteps = nTimeSteps,
+                   DecAges = DecAges,
                    AgeCl = AgeCl,
                    RecLenDist = RecLenDist,
                    MeanSizeAtAge = MeanSizeAtAge,
@@ -4705,6 +4741,12 @@ SimLenAndAgeFreqData_EqMod <- function(SampleSize, MaxAge, TimeStep, NatMort, Fi
                    ExpRetCatchPropAtLen_Mal = ExpCatchRes$ExpRetCatchPropAtLen_Mal,
                    ExpDiscCatchPropAtLen_Fem = ExpCatchRes$ExpDiscCatchPropAtLen_Fem,
                    ExpDiscCatchPropAtLen_Mal = ExpCatchRes$ExpDiscCatchPropAtLen_Mal,
+                   RetCatchAtDecAgeLen_Fem = ExpCatchRes$RetCatchAtDecAgeLen_Fem,
+                   RetCatchAtDecAgeLen_Mal = ExpCatchRes$RetCatchAtDecAgeLen_Mal,
+                   RetCatchAtDecAgeLen = ExpCatchRes$RetCatchAtDecAgeLen,
+                   ExpRetCatchPropAtDecAge_Fem = ExpCatchRes$ExpRetCatchPropAtDecAge_Fem,
+                   ExpRetCatchPropAtDecAge_Mal = ExpCatchRes$ExpRetCatchPropAtDecAge_Mal,
+                   ExpRetCatchPropAtDecAge = ExpCatchRes$ExpRetCatchPropAtDecAge,
                    ExpRetCatchPropDecAgeGivenLength_Fem = ExpCatchRes$ExpRetCatchPropDecAgeGivenLength_Fem,
                    ExpRetCatchPropDecAgeGivenLength_Mal = ExpCatchRes$ExpRetCatchPropDecAgeGivenLength_Mal,
                    ExpDiscCatchPropDecAgeGivenLength_Fem = ExpCatchRes$ExpDiscCatchPropDecAgeGivenLength_Fem,
@@ -5559,13 +5601,15 @@ CalcCatchPropAtDecAge_DynSimMod_ALB <- function(nYears, nTimeSteps, Ages, RetCat
 #' @param ExpDiscCatchPropAtDecAge_Fem Expected female discarded catch proportions at age
 #' @param ExpDiscCatchPropLengthGivenDecAge_Mal Expected male discarded catch proportions at length given age
 #' @param ExpDiscCatchPropAtDecAge_Mal Expected male discarded catch proportions at age
+#' @param ret_L50 length at 50 percent retention
+#'
 #' @return ExpRetCatchPropDecAgeGivenLength_Fem, ExpRetCatchPropDecAgeGivenLength_Mal,
 #' ExpDiscCatchPropDecAgeGivenLength_Fem, ExpDiscCatchPropDecAgeGivenLength_Mal
 CalcCatchAgePropGivenLen_DynSimMod_ALB <- function(nYears, nTimeSteps, nLenCl, midpt,
                                                    ExpRetCatchPropLengthGivenDecAge_Fem, ExpRetCatchPropAtDecAge_Fem,
                                                    ExpRetCatchPropLengthGivenDecAge_Mal, ExpRetCatchPropAtDecAge_Mal,
                                                    ExpDiscCatchPropLengthGivenDecAge_Fem, ExpDiscCatchPropAtDecAge_Fem,
-                                                   ExpDiscCatchPropLengthGivenDecAge_Mal, ExpDiscCatchPropAtDecAge_Mal) {
+                                                   ExpDiscCatchPropLengthGivenDecAge_Mal, ExpDiscCatchPropAtDecAge_Mal, ret_L50) {
 
   EmptyFrame <- array(0, dim=(c(nYears, nTimeSteps, nLenCl)), dimnames = list(seq(1,nYears,1), 1:nTimeSteps, 1:nLenCl))
   ExpRetCatchPropDecAgeGivenLength_Fem = EmptyFrame; ExpRetCatchPropDecAgeGivenLength_Mal = EmptyFrame
@@ -6938,7 +6982,7 @@ SimLenAndAgeFreqData_DynMod_ALB <- function(SimAnnSampSize, nYears, lnSigmaR, au
                                              ExpRetCatchPropLengthGivenDecAge_Fem, ExpRetCatchPropAtDecAge_Fem,
                                              ExpRetCatchPropLengthGivenDecAge_Mal, ExpRetCatchPropAtDecAge_Mal,
                                              ExpDiscCatchPropLengthGivenDecAge_Fem, ExpDiscCatchPropAtDecAge_Fem,
-                                             ExpDiscCatchPropLengthGivenDecAge_Mal, ExpDiscCatchPropAtDecAge_Mal)
+                                             ExpDiscCatchPropLengthGivenDecAge_Mal, ExpDiscCatchPropAtDecAge_Mal, ret_L50)
 
   ExpRetCatchPropDecAgeGivenLength_Fem = res$ExpRetCatchPropDecAgeGivenLength_Fem
   ExpRetCatchPropDecAgeGivenLength_Mal = res$ExpRetCatchPropDecAgeGivenLength_Mal
@@ -9858,7 +9902,14 @@ PlotAgeLengthCatchCurve_Cond_AL <- function(params, RefnceAges, MLL, GrowthCurve
     ExpRetCatchPropIntAgeGivenLength_Mal = Res$ExpRetCatchPropIntAgeGivenLength_Mal
   }
 
-  if (is.na(xaxis_lab)) xaxis_lab = "AgeClass (y)"
+  if (is.na(xaxis_lab)) {
+    if (TimeStep == 1) {
+      xaxis_lab = "AgeClass (y)"
+    }
+    if (TimeStep < 1) {
+      xaxis_lab = "Age (y)"
+    }
+  }
   if (is.na(yaxis_lab)) yaxis_lab = "Proportion"
   xlims = Get_xaxis_scale(AgeClasses)
   if (is.na(xmax)) xmax = xlims$xmax
@@ -9875,11 +9926,10 @@ PlotAgeLengthCatchCurve_Cond_AL <- function(params, RefnceAges, MLL, GrowthCurve
       if (sum(ObsCatchPropAgeAtLength[,i]>0)) {
         k=k+1
         if (k==10) k=1
-
-        plot(1:nAgeCl, ObsCatchPropAgeAtLength[,i], "p", main='', cex.main=1.0,
+        plot(AgeClasses, ObsCatchPropAgeAtLength[,i], "p", main='', cex.main=1.0,
              pch=16, cex=0.8, cex.main=0.8, xaxt = "n", yaxt = "n", xlab=NA,
              ylab=NA, frame=F, xlim=c(0,xmax), ylim=c(0,ymax), col="black")
-        lines(1:nAgeCl, ExpRetCatchPropIntAgeGivenLength[,i], col="red")
+        lines(AgeClasses, ExpRetCatchPropIntAgeGivenLength[,i], col="red")
         axis(1, at = seq(0, xmax, xint), line = 0.2, labels = F)
         axis(2, at = seq(0, ymax, yint), line = 0.2, labels = F)
         if (k==1 | k==2 | k==3) {
@@ -13964,7 +14014,6 @@ CalcYPRAndSPRForFMort_LB<- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nL
   # to allow calculations associated with expected catch size distribtion, i.e. from a survey
 
   # number of model time steps
-  # nTimeSteps <- 1 + (MaxModelAge / TimeStep)
   Ages <- seq(TimeStep,MaxModelAge, TimeStep)
   nTimeSteps <- length(Ages)
 

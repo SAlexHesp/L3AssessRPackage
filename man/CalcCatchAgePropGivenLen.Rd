@@ -15,7 +15,9 @@ CalcCatchAgePropGivenLen(
   ExpDiscCatchPropLengthGivenDecAge_Fem,
   ExpDiscCatchPropAtDecAge_Fem,
   ExpDiscCatchPropLengthGivenDecAge_Mal,
-  ExpDiscCatchPropAtDecAge_Mal
+  ExpDiscCatchPropAtDecAge_Mal,
+  MLL,
+  RetenParams
 )
 }
 \arguments{
@@ -40,6 +42,10 @@ CalcCatchAgePropGivenLen(
 \item{ExpDiscCatchPropLengthGivenDecAge_Mal}{expected male discarded catches at length given decimal age}
 
 \item{ExpDiscCatchPropAtDecAge_Mal}{expected male discarded catches at decimal age}
+
+\item{MLL}{minimum legal length}
+
+\item{RetenParams}{retention parameters}
 }
 \value{
 ExpRetCatchPropDecAgeGivenLength_Fem, ExpRetCatchPropDecAgeGivenLength_Mal, ExpDiscCatchPropDecAgeGivenLength_Fem,

@@ -16,7 +16,8 @@ CalcCatchAgePropGivenLen_DynSimMod_ALB(
   ExpDiscCatchPropLengthGivenDecAge_Fem,
   ExpDiscCatchPropAtDecAge_Fem,
   ExpDiscCatchPropLengthGivenDecAge_Mal,
-  ExpDiscCatchPropAtDecAge_Mal
+  ExpDiscCatchPropAtDecAge_Mal,
+  ret_L50
 )
 }
 \arguments{
@@ -43,6 +44,8 @@ CalcCatchAgePropGivenLen_DynSimMod_ALB(
 \item{ExpDiscCatchPropLengthGivenDecAge_Mal}{Expected male discarded catch proportions at length given age}
 
 \item{ExpDiscCatchPropAtDecAge_Mal}{Expected male discarded catch proportions at age}
+
+\item{ret_L50}{length at 50 percent retention}
 }
 \value{
 ExpRetCatchPropDecAgeGivenLength_Fem, ExpRetCatchPropDecAgeGivenLength_Mal,
