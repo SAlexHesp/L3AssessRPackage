@@ -18894,10 +18894,10 @@ PlotRiskMatrix_CatchCurve_FishMort <- function(EstFMort, EstFMort_se, Sim_FVals,
   Prob_Major = round(length(which(Sim_FVals > F_lim)) / nReps,2) #B<lim
 
   F_likelihoods <- data.frame(Prob_Minor=Prob_Minor,
-                                 Prob_Moderate=Prob_Moderate,
-                                 Prob_High=Prob_High,
-                                 Prob_Major=Prob_Major,
-                                 nReps=nReps)
+                              Prob_Moderate=Prob_Moderate,
+                              Prob_High=Prob_High,
+                              Prob_Major=Prob_Major,
+                              nReps=nReps)
 
   plot(1:6,1:6,cex=0,ylab=NA,xlab=NA,xaxt='n',yaxt='n',bty='n', xlim=c(1,6), ylim=c(1,6))
   for (i in 1:5) {
@@ -18910,9 +18910,9 @@ PlotRiskMatrix_CatchCurve_FishMort <- function(EstFMort, EstFMort_se, Sim_FVals,
   text(1.5,1.7,"Major", cex=0.8)
   text(1.5,1.3,"F>Lim", cex=0.8)
   text(1.5,2.7,"High", cex=0.8)
-  text(1.5,2.3,"Lim<F<Thresh", cex=0.8)
+  text(1.5,2.3,"Lim>F>Thresh", cex=0.8)
   text(1.5,3.7,"Moderate", cex=0.8)
-  text(1.5,3.3,"Thresh<F<Targ", cex=0.8)
+  text(1.5,3.3,"Thresh>F>Targ", cex=0.8)
   text(1.5,4.7,"Minor", cex=0.8)
   text(1.5,4.3,"F<Targ", cex=0.8)
   text(2.5,5.7,"Remote", cex=0.8)
@@ -19028,9 +19028,9 @@ PlotRiskMatrix_CatchCurve_FishMort <- function(EstFMort, EstFMort_se, Sim_FVals,
   }
 
   F_risks <- data.frame(Risk_Minor=Risk_Minor,
-                           Risk_Moderate=Risk_Moderate,
-                           Risk_High=Risk_High,
-                           Risk_Major=Risk_Major)
+                        Risk_Moderate=Risk_Moderate,
+                        Risk_High=Risk_High,
+                        Risk_Major=Risk_Major)
 
   if (length(which(F_risks=="Severe")>0)) {
     RiskOverall = "Severe"
