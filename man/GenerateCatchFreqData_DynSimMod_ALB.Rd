@@ -11,6 +11,7 @@ GenerateCatchFreqData_DynSimMod_ALB(
   midpt,
   nLenCl,
   ret_L50,
+  SimAnnSampSize,
   SampleSize_Fem,
   SampleSize_Mal,
   SampleSize,
@@ -39,6 +40,8 @@ GenerateCatchFreqData_DynSimMod_ALB(
 \item{nLenCl}{number of length classes}
 
 \item{ret_L50}{user input retention parameters}
+
+\item{SimAnnSampSize}{user input annual sample sizes to be simulated}
 
 \item{SampleSize_Fem}{annual sample sizes for retained females}
 

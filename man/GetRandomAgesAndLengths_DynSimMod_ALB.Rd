@@ -25,9 +25,9 @@ GetRandomAgesAndLengths_DynSimMod_ALB(
 
 \item{nLenCl}{number of length classes}
 
-\item{SimAnnSampSize}{User specified overall annual sample sizes to be simulated}
-
 \item{ObsRetCatchFreqLenAndAge}{random age at length distributions, from simulation model}
+
+\item{FishSampSize}{annual sample size for data to be simulated (depends on sex and retn vs disc)}
 }
 \value{
 ObsAgeRetCatch, ObsLenRetCatch

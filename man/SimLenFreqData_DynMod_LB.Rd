@@ -196,35 +196,35 @@ DiscMort <- 0.5 # discard mortality (e.g. 50\% released fish die = 0.5)
 Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
 SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
 NatMort <- 4.22 / 41 # natural mortality  (year-1)
+InitRec <- 1000
+lnSigmaR <- 0.6
+autocorr <- 0.3
 # example exploitation history - initial in increase F, reduction in F then stable F period
 nPeriods <- 3 # number of periods of mortality trends
 InitYr <- 1970 # first year of mortality
 PeriodEndYr <- c(1995,2000,2020) # periods when mortality changes
 InitYr_FMort <- 0.33*NatMort # initial mortality, at beginning of first period
 PeriodEndYr_FMort <- c(3*NatMort,0.67*NatMort,0.67*NatMort)
-autocorr <- 0.2
-randerr_sd <- 0.1
+F_autocorr <- 0.2
+F_randerr_sd <- 0.1
 set.seed(123)
 res=SimExploitationHistory_DynMod(nPeriods, InitYr, PeriodEndYr, InitYr_FMort,
-                                  PeriodEndYr_FMort, autocorr, randerr_sd)
+                                  PeriodEndYr_FMort, F_autocorr, F_randerr_sd)
 # # example exploitation history -  stable F with no error
 # nPeriods = 1 # number of periods of mortality trends
 # InitYr = 1970 # first year of mortality
 # InitYr_FMort = NatMort # initial mortality, at beginning of first period
 # PeriodEndYr_FMort = NatMort
 # FMort_SD = 0
-# autocorr = 0
-# randerr_sd = 0
+# F_autocorr = 0
+# F_randerr_sd = 0
 # set.seed(123)
 res=SimExploitationHistory_DynMod(nPeriods, InitYr, PeriodEndYr, InitYr_FMort,
-                                  PeriodEndYr_FMort, autocorr, randerr_sd)
+                                  PeriodEndYr_FMort, F_autocorr, F_randerr_sd)
 # Get random length data
 nYears <- res$nYears
 FMortByYear <- res$rand_FMort
 SimAnnSampSize <- 1000
-lnSigmaR <- 0.6
-autocorr <- 0.3
-InitRec <- 1000
 Res=SimLenFreqData_DynMod_LB(SimAnnSampSize, nYears, lnSigmaR, autocorr, InitRec,
                                 MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                 RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtLen,

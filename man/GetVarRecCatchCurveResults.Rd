@@ -34,11 +34,11 @@ PeriodEndYr_FMort <- c(0.67*NatMort,0.67*NatMort,0.67*NatMort)
 # # Specifying initial in increase F, reduction in F then stable F period
 #InitYr_FMort <- 1.5*NatMort # initial mortality, at beginning of first period
 #PeriodEndYr_FMort <- c(1.5*NatMort,1.5*NatMort,1.5*NatMort)
-autocorr <- 0
-randerr_sd <- 0
+F_autocorr <- 0
+F_randerr_sd <- 0
 set.seed(1975)
 res=SimExploitationHistory_DynMod(nPeriods, InitYr, PeriodEndYr, InitYr_FMort,
-                                  PeriodEndYr_FMort, autocorr, randerr_sd)
+                                  PeriodEndYr_FMort, F_autocorr, F_randerr_sd)
 Years = res$Years
 nYears <- res$nYears
 FMortByYear <- res$rand_FMort

@@ -200,20 +200,20 @@ DiscMort <- 0.5 # discard mortality (e.g. 50\% released fish die = 0.5)
 Steepness <- 0.75 # steepness parameter of the Beverton and Holt stock-recruitment relationship
 SRrel_Type <- 1 # 1 = Beverton-Holt, 2=Ricker
 NatMort <- 4.22 / 41 # natural mortality  (year-1)
+InitRec <- 1000 # initial recruitment level
+lnSigmaR <- 0.0 # annual recruitment variation
+autocorr <- 0.0 # annual recruit autocorrelation
 # Specify exploitation history - initial in increase F, reduction in F then stable F period
 nPeriods <- 3 # number of periods of mortality trends
 InitYr <- 1970 # first year of mortality
 PeriodEndYr <- c(1985,1995,2020) # periods when mortality changes
 InitYr_FMort <- 0.33*NatMort # initial mortality, at beginning of first period
 PeriodEndYr_FMort <- c(3*NatMort,0.67*NatMort,0.67*NatMort)
-randerr_sd <- 0.01 # annual fishing mortality variation
-autocorr <- 0.3 # annual fishing mortality autocorrelation
-lnSigmaR <- 0.0 # annual recruitment variation
-autocorr <- 0.0 # annual recruit autocorrelation
-InitRec <- 1000 # initial recruitment level
+F_autocorr <- 0.0 # annual fishing mortality autocorrelation
+F_randerr_sd <- 0.01 # annual fishing mortality variation
 set.seed(123)
 res=SimExploitationHistory_DynMod(nPeriods, InitYr, PeriodEndYr, InitYr_FMort,
-                                  PeriodEndYr_FMort, autocorr, randerr_sd)
+                                  PeriodEndYr_FMort, F_autocorr, F_randerr_sd)
 # Get random age and length data
 nYears <- res$nYears
 FMortByYear <- res$rand_FMort
