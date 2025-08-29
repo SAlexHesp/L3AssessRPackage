@@ -4162,7 +4162,7 @@ GetRandFishLengths_DynMod_ALB <- function(nYears, midpt, ObsLenClRetCatchMidPt_F
     ObsRandLenRetCatch_Fem[i,1:SampleSize_Fem[i]] = round(ObsLenClRetCatchMidPt_Fem[i,1:SampleSize_Fem[i]] + runif(SampleSize_Fem[i],-LenInterv, LenInterv),0)
     ObsRandLenRetCatch_Mal[i,1:SampleSize_Mal[i]] = round(ObsLenClRetCatchMidPt_Mal[i,1:SampleSize_Mal[i]] + runif(SampleSize_Mal[i],-LenInterv, LenInterv),0)
 
-    if (sum(c(DiscSampleSize_Fem[i],DiscSampleSize_Mal[i])) < 1) {
+    if (sum(c(DiscSampleSize_Fem[1],DiscSampleSize_Mal[1])) < 1) {
       ObsRandLenDiscCatch_Fem[i,] = NA
       ObsRandLenDiscCatch_Mal[i,] = NA
       ObsRandLenDiscCatch[i,] = NA
