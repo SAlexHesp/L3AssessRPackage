@@ -5851,7 +5851,7 @@ GenerateCatchFreqData_DynSimMod_ALB <- function(nYears, TimeStep, nTimeSteps, mi
       if (ObsRetCatchFreqAtLen_Fem[t,i] > 0) {
         ObsRetCatchFreqAtLengthAndDecAge_Fem[t,,i] = rmultinom(1, ObsRetCatchFreqAtLen_Fem[t,i], ExpRetCatchPropDecAgeGivenLength_Fem[t,,i])
       }
-      if (ObsRetCatchFreqAtLen_Fem[t,i] > 0) {
+      if (ObsRetCatchFreqAtLen_Mal[t,i] > 0) {
         ObsRetCatchFreqAtLengthAndDecAge_Mal[t,,i] = rmultinom(1, ObsRetCatchFreqAtLen_Mal[t,i], ExpRetCatchPropDecAgeGivenLength_Mal[t,,i])
       }
       ObsRetCatchFreqAtLengthAndDecAge[t,,i] = ObsRetCatchFreqAtLengthAndDecAge_Fem[t,,i] + ObsRetCatchFreqAtLengthAndDecAge_Mal[t,,i]
@@ -7103,8 +7103,6 @@ SimLenAndAgeFreqData_DynMod_ALB <- function(SimAnnSampSize, nYears, lnSigmaR, au
                         ObsRandLenDiscCatch_Fem = RandCatchLenRes$ObsRandLenDiscCatch_Fem,
                         ObsRandLenDiscCatch_Mal = RandCatchLenRes$ObsRandLenDiscCatch_Mal)
 
-
-
   ModelDiag = list(MeanSizeAtAge = MeanSizeAtAge,
                    FemWtAtLen = FemWtAtLen,
                    MalWtAtLen = MalWtAtLen,
@@ -7150,7 +7148,23 @@ SimLenAndAgeFreqData_DynMod_ALB <- function(SimAnnSampSize, nYears, lnSigmaR, au
                    SampleSize = SampleSize,
                    DiscSampleSize_Fem = DiscSampleSize_Fem,
                    DiscSampleSize_Mal = DiscSampleSize_Mal,
-                   DiscSampleSize = DiscSampleSize)
+                   DiscSampleSize = DiscSampleSize,
+                   ExpRetCatchPropLengthGivenDecAge_Fem = ExpRetCatchPropLengthGivenDecAge_Fem,
+                   ExpRetCatchPropLengthGivenDecAge_Mal = ExpRetCatchPropLengthGivenDecAge_Mal,
+                   ExpDiscCatchPropLengthGivenDecAge_Fem = ExpDiscCatchPropLengthGivenDecAge_Fem,
+                   ExpDiscCatchPropLengthGivenDecAge_Mal = ExpDiscCatchPropLengthGivenDecAge_Mal,
+                   RetCatchAtDecAge_Fem = RetCatchAtDecAge_Fem,
+                   RetCatchAtDecAge_Mal = RetCatchAtDecAge_Mal,
+                   DiscCatchAtDecAge_Fem = DiscCatchAtDecAge_Fem,
+                   DiscCatchAtDecAge_Mal = DiscCatchAtDecAge_Mal,
+                   ExpRetCatchPropAtDecAge_Fem = ExpRetCatchPropAtDecAge_Fem,
+                   ExpRetCatchPropAtDecAge_Mal = ExpRetCatchPropAtDecAge_Mal,
+                   ExpDiscCatchPropAtDecAge_Fem = ExpDiscCatchPropAtDecAge_Fem,
+                   ExpDiscCatchPropAtDecAge_Mal = ExpDiscCatchPropAtDecAge_Mal,
+                   ExpRetCatchPropDecAgeGivenLength_Fem = ExpRetCatchPropDecAgeGivenLength_Fem,
+                   ExpRetCatchPropDecAgeGivenLength_Mal = ExpRetCatchPropDecAgeGivenLength_Mal,
+                   ExpDiscCatchPropDecAgeGivenLength_Fem = ExpDiscCatchPropDecAgeGivenLength_Fem,
+                   ExpDiscCatchPropDecAgeGivenLength_Mal = ExpDiscCatchPropDecAgeGivenLength_Mal)
 
   results = list(ResultsSummary = ResultsSummary,
                  ModelDiag = ModelDiag)
