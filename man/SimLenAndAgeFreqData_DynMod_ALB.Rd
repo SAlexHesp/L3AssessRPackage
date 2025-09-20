@@ -224,4 +224,19 @@ res=SimLenAndAgeFreqData_DynMod_ALB(SimAnnSampSize, nYears, lnSigmaR, autocorr, 
                                     ReprodScale, ReprodPattern, InitRatioFem, FinalSex_L50, FinalSex_L95, EstSexRatioAtLen,
                                     EggFertParam, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
                                     ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, FMortByYear)
+# Generate some random cpue data
+set.seed(123)
+q <- 0.001
+cv <- 0.2
+ExpCPUE <- q * res$ModelDiag$CombSexVulnBiom
+log_sd <- sqrt(log(1 + cv^2))
+RandCPUE <- ExpCPUE * exp(rnorm(length(ExpCPUE), mean = 0, sd = log_sd))
+RandCPUElw <- RandCPUE * exp(-1.96 * log_sd)
+RandCPUEup <- RandCPUE * exp(1.96 * log_sd)
+# plot randomly-generated cpue data
+par(mfrow=c(1,1))
+plot(1:nYears, RandCPUE, "p", pch = 16, ylim = c(0, 1.2*max(RandCPUEup)), bty='n',
+     xlab = "Year", ylab = "CPUE", main = "Rand CPUE")
+arrows(1:nYears, RandCPUElw, 1:nYears,RandCPUEup, angle = 90, code = 3, length = 0.05)
+lines(1:nYears, ExpCPUE, col = "blue", lty = 2, lwd = 2)
 }

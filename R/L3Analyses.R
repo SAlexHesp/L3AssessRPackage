@@ -5347,11 +5347,11 @@ UpdatePopnDynamics_DynSimMod_ALB <- function(nYears, TimeStep, MaxModelAge, nLen
   DiscCatch_Fem_yal <- RetCatch_Fem_yal; DiscCatch_Mal_yal <-  RetCatch_Fem_yal; DiscCatch_CombSex_yal <- RetCatch_Fem_yal
 
   AnnRecruit = rep(0,nYears+1)
-  FemSpBiom = rep(0,nYears)
-  MalSpBiom = rep(0,nYears)
-  CombSexSpBiom = rep(0,nYears); SpBiom = rep(0,nYears) # spawning biomass measure, whether gonochoristic or hermaphroditic, for calculating recruitment
+  FemSpBiom = rep(0,nYears); MalSpBiom = rep(0,nYears); CombSexSpBiom = rep(0,nYears)
+  SpBiom = rep(0,nYears) # spawning biomass measure, whether gonochoristic or hermaphroditic, for calculating recruitment
+  FemVulnBiom = rep(0,nYears); MalVulnBiom = rep(0,nYears); CombSexVulnBiom = rep(0,nYears)
   RetCatch_Num = rep(0,nYears);  DiscCatch_Num = rep(0,nYears)
-  RetCatchBiom_Fem = rep(0,nYears); RetCatchBiom_Mal = rep(0,nYears); RetCatchBiom_CombSex = rep(0,nYears);
+  RetCatchBiom_Fem = rep(0,nYears); RetCatchBiom_Mal = rep(0,nYears); RetCatchBiom_CombSex = rep(0,nYears)
   DiscCatchBiom_Fem = rep(0,nYears); DiscCatchBiom_Mal = rep(0,nYears); DiscCatchBiom_CombSex = rep(0,nYears)
 
   if (ReprodPattern == 1 | ReprodPattern == 3) { # gonochoristic or protandrous species
@@ -5432,6 +5432,13 @@ UpdatePopnDynamics_DynSimMod_ALB <- function(nYears, TimeStep, MaxModelAge, nLen
     CombSexSpBiom[t] = FemSpBiom[t] + MalSpBiom[t]
 
 
+    # calculate vulnerable biomass (for outputting, e.g. to generate cpue data)
+    for (a in 1:nTimeSteps) {
+      FemVulnBiom[t] = FemVulnBiom[t] + sum(FemSelLandAtLen * N_Fem_yal[t,a,] * FemWtAtLen)
+      MalVulnBiom[t] = MalVulnBiom[t] + sum(MalSelLandAtLen * N_Mal_yal[t,a,] * MalWtAtLen)
+    }
+    CombSexVulnBiom[t] = FemVulnBiom[t] + MalVulnBiom[t]
+
     # get spawning biomass
     if (ReprodPattern == 1 | ReprodPattern == 3) SpBiom[t] = FemSpBiom[t] # gonochoristic or protandrous species
     if (ReprodPattern == 2) SpBiom[t] = CombSexSpBiom[t] # protogynous species
@@ -5453,6 +5460,7 @@ UpdatePopnDynamics_DynSimMod_ALB <- function(nYears, TimeStep, MaxModelAge, nLen
     MalDiscCatchFAtLen = FMortByYear[t] * MalSelDiscAtLen
 
     for (a in 1:nTimeSteps) {
+
       # calculate retained and discarded catches at length and age for timestep (in numbers)
       RetCatch_Fem_yal[t,a,] = N_Fem_yal[t,a,] * (FemLandFAtLen / FemZAtLen) * (1 - exp(-FemZAtLen))
       RetCatch_Mal_yal[t,a,] = N_Mal_yal[t,a,] * (MalLandFAtLen / MalZAtLen) * (1 - exp(-MalZAtLen))
@@ -5491,6 +5499,9 @@ UpdatePopnDynamics_DynSimMod_ALB <- function(nYears, TimeStep, MaxModelAge, nLen
   Results = list(FemSpBiom=FemSpBiom,
                  MalSpBiom=MalSpBiom,
                  CombSexSpBiom=CombSexSpBiom,
+                 FemVulnBiom=FemVulnBiom,
+                 MalVulnBiom=MalVulnBiom,
+                 CombSexVulnBiom=CombSexVulnBiom,
                  AnnRecruit=AnnRecruit,
                  RetCatch_Num=RetCatch_Num,
                  RetCatch_Fem_yl=RetCatch_Fem_yl,
@@ -6913,6 +6924,21 @@ SimLenFreqData_DynMod_LB <- function(SimAnnSampSize, nYears, lnSigmaR, autocorr,
 #'                                     ReprodScale, ReprodPattern, InitRatioFem, FinalSex_L50, FinalSex_L95, EstSexRatioAtLen,
 #'                                     EggFertParam, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
 #'                                     ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, SRrel_Type, NatMort, FMortByYear)
+#' # Generate some random cpue data
+#' set.seed(123)
+#' q <- 0.001
+#' cv <- 0.2
+#' ExpCPUE <- q * res$ModelDiag$CombSexVulnBiom
+#' log_sd <- sqrt(log(1 + cv^2))
+#' RandCPUE <- ExpCPUE * exp(rnorm(length(ExpCPUE), mean = 0, sd = log_sd))
+#' RandCPUElw <- RandCPUE * exp(-1.96 * log_sd)
+#' RandCPUEup <- RandCPUE * exp(1.96 * log_sd)
+#' # plot randomly-generated cpue data
+#' par(mfrow=c(1,1))
+#' plot(1:nYears, RandCPUE, "p", pch = 16, ylim = c(0, 1.2*max(RandCPUEup)), bty='n',
+#'      xlab = "Year", ylab = "CPUE", main = "Rand CPUE")
+#' arrows(1:nYears, RandCPUElw, 1:nYears,RandCPUEup, angle = 90, code = 3, length = 0.05)
+#' lines(1:nYears, ExpCPUE, col = "blue", lty = 2, lwd = 2)
 #' @export
 SimLenAndAgeFreqData_DynMod_ALB <- function(SimAnnSampSize, nYears, lnSigmaR, autocorr, InitRec,
                                       MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
@@ -6977,6 +7003,7 @@ SimLenAndAgeFreqData_DynMod_ALB <- function(SimAnnSampSize, nYears, lnSigmaR, au
   RetCatch_Fem_yal = result$RetCatch_Fem_yal; RetCatch_Mal_yal = result$RetCatch_Mal_yal
   DiscCatch_Fem_yal = result$DiscCatch_Fem_yal; DiscCatch_Mal_yal = result$DiscCatch_Mal_yal
   FemSpBiom = result$FemSpBiom; MalSpBiom = result$MalSpBiom; CombSexSpBiom = result$CombSexSpBiom
+  FemVulnBiom = result$FemVulnBiom; MalVulnBiom = result$MalVulnBiom; CombSexVulnBiom = result$CombSexVulnBiom
   AnnRecruit = result$AnnRecruit
   RetCatchBiom_Fem=result$RetCatchBiom_Fem; RetCatchBiom_Mal=result$RetCatchBiom_Mal; RetCatchBiom_CombSex=result$RetCatchBiom_CombSex
   DiscCatchBiom_Fem=result$DiscCatchBiom_Fem; DiscCatchBiom_Mal=result$DiscCatchBiom_Mal; DiscCatchBiom_CombSex=result$DiscCatchBiom_CombSex
@@ -7118,6 +7145,9 @@ SimLenAndAgeFreqData_DynMod_ALB <- function(SimAnnSampSize, nYears, lnSigmaR, au
                    FemSelDiscAtLen = FemSelDiscAtLen,
                    MalSelDiscAtLen = MalSelDiscAtLen,
                    FMortByYear = FMortByYear,
+                   FemVulnBiom=FemVulnBiom,
+                   MalVulnBiom=MalVulnBiom,
+                   CombSexVulnBiom=CombSexVulnBiom,
                    random_dev = random_dev,
                    FemSpBiom=FemSpBiom,
                    MalSpBiom=MalSpBiom,
@@ -19442,6 +19472,7 @@ GetVarRecCatchCurveResults <- function(dat, params) {
 
   EstFMort = c(param_est$FMort, param_est$FMort - 1.96 * params_sd$FMort,
                param_est$FMort + 1.96 * params_sd$FMort)
+  colnames(EstFMort) = c("Estimate","lw_95%CL","up_95%CL")
   EstRecDevs = data.frame(param_est$RecDevs, param_est$RecDevs - 1.96 * params_sd$RecDevs,
                           param_est$RecDevs + 1.96 * params_sd$RecDevs)
   colnames(EstRecDevs) = c("Estimate","lw_95%CL","up_95%CL")
