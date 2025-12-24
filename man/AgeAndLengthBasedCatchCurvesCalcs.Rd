@@ -11,7 +11,9 @@ AgeAndLengthBasedCatchCurvesCalcs(
   ubnd,
   midpt,
   MaxAge,
+  NatMortType,
   NatMort,
+  NatMort_sd,
   TimeStep,
   GrowthCurveType,
   GrowthParams,
@@ -38,7 +40,11 @@ AgeAndLengthBasedCatchCurvesCalcs(
 
 \item{MaxAge}{maximum age considered in model}
 
+\item{NatMortType}{1 = fixed, 2 = estimated with prior to allow for uncertainty}
+
 \item{NatMort}{natural mortality}
+
+\item{NatMort_sd}{standard deviation for natural mortality in log space. Set to NA if NatMortType = 1}
 
 \item{TimeStep}{model timestep (e.g. 1 = annual, 1/12 = monthly)}
 
@@ -53,7 +59,7 @@ both sexes von Bertalanffy, or c(y1, y2, a, b) single sex Schnute, or data.frame
 
 \item{MLL}{minimum legal length (for setting knife edge retention, set to NA if not assumed)}
 
-\item{SelectivityType}{1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve}
+\item{SelectivityType}{1=selectivity inputted as vector, 2=logistic selectivity params,  3=logistic selectivity + retention params}
 
 \item{SelectivityAtLen}{selectivity at length}
 

@@ -6,6 +6,7 @@
 \usage{
 GetSelectParams_AgeAndLengthBasedCatchCurvesCalcs(
   params,
+  NatMortType,
   CatchCurveType,
   SelectivityType
 )
@@ -13,9 +14,11 @@ GetSelectParams_AgeAndLengthBasedCatchCurvesCalcs(
 \arguments{
 \item{params}{estimated model parameters (varies, depending on growth curve type, selectivity type and catch curve type)}
 
+\item{NatMortType}{1 = fixed, 2 = estimated with prior to allow for uncertainty}
+
 \item{CatchCurveType}{1=length based, 2=age and length based}
 
-\item{SelectivityType}{1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve}
+\item{SelectivityType}{1=selectivity inputted as vector, 2=logistic selectivity params,  3=logistic selectivity + retention params}
 }
 \value{
 values of growth parameters given specified catch curve, growth and selectivity model option

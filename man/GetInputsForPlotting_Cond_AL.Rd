@@ -18,7 +18,9 @@ GetInputsForPlotting_Cond_AL(
   SelectivityAtLen,
   DiscMort,
   MaxAge,
+  NatMortType,
   NatMort,
+  NatMort_sd,
   TimeStep,
   FittedRes
 )
@@ -32,7 +34,7 @@ GetInputsForPlotting_Cond_AL(
 
 \item{GrowthCurveType}{1=von Bertalanffy, 2=Schnute}
 
-\item{SelectivityType}{1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve}
+\item{SelectivityType}{1=selectivity inputted as vector, 2=logistic selectivity params,  3=logistic selectivity + retention params}
 
 \item{ObsRetCatchFreqAtLen}{observed frequencies in length classes}
 
@@ -50,7 +52,11 @@ GetInputsForPlotting_Cond_AL(
 
 \item{MaxAge}{maximum age considered in model}
 
-\item{NatMort}{natural mortality}
+\item{NatMortType}{1 = fixed, 2 = estimated with prior to allow for uncertainty}
+
+\item{NatMort}{natural mortality, in normal space. If NatMortType = 2, this is expected value of this parameter in normal space}
+
+\item{NatMort_sd}{standard deviation for natural mortality in log space. Set to NA if NatMortType = 1}
 
 \item{TimeStep}{model timestep (e.g. 1 = annual, 1/12 = monthly)}
 

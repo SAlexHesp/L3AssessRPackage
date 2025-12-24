@@ -14,7 +14,6 @@ GetLengthTransitionMatrices(
   midpt,
   ubnd,
   nLenCl,
-  SelectivityType,
   CVSizeAtAge
 )
 }
@@ -36,8 +35,6 @@ GetLengthTransitionMatrices(
 \item{ubnd}{upper bounds of length classes}
 
 \item{nLenCl}{number of length classes}
-
-\item{SelectivityType}{1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve}
 
 \item{CVSizeAtAge}{growth variation}
 }

@@ -294,7 +294,7 @@ FishMort = 1.5 * NatMort # 0.225
 MaxLen = 250
 LenInc = 2
 MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified
-SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
+SelectivityType=2 # 1=selectivity inputted as vector, 2=logistic selectivity params
 SelectivityAtLen = NA # selectivity vector
 SelParams = c(60, 20) # L50, L95-L50 for gear selectivity (somewhere around size when abalone emerge from inside caves to being accessible to fishers)
 RetenParams = c(150, 10) # L50, L95-L50 for retention

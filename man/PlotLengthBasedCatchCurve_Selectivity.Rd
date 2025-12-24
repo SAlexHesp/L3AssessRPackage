@@ -21,7 +21,9 @@ PlotLengthBasedCatchCurve_Selectivity(
   GrowthParams,
   RefnceAges,
   MaxAge,
+  NatMortType,
   NatMort,
+  NatMort_sd,
   TimeStep,
   MainLabel,
   xaxis_lab,
@@ -40,7 +42,7 @@ PlotLengthBasedCatchCurve_Selectivity(
 
 \item{MLL}{minimum legal length (for setting knife edge retention, set to NA if not assumed)}
 
-\item{SelectivityType}{1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve}
+\item{SelectivityType}{1=selectivity inputted as vector, 2=logistic selectivity params,  3=logistic selectivity + retention params}
 
 \item{ObsRetCatchFreqAtLen}{observed frequencies in length classes}
 
@@ -67,7 +69,11 @@ c(y1, y2, a, b) single sex Schnute, or data.frame(y1=y1, y2=y2, a=a, b=b) separa
 
 \item{MaxAge}{maximum age considered in model}
 
-\item{NatMort}{natural mortality}
+\item{NatMortType}{1 = fixed, 2 = estimated with prior to allow for uncertainty}
+
+\item{NatMort}{natural mortality, in normal space. If NatMortType = 2, this is expected value of this parameter in normal space}
+
+\item{NatMort_sd}{standard deviation for natural mortality in log space. Set to NA if NatMortType = 1.}
 
 \item{TimeStep}{model timestep (e.g. 1 = annual, 1/12 = monthly)}
 
@@ -103,12 +109,14 @@ SampleSize=5000 # sample size for retained catches (and same number for released
 set.seed(123)
 MaxAge = 30
 TimeStep = 1 # model timestep (e.g. 1 = annual, 1/12 = monthly)
-NatMort = 4.22/MaxAge
+NatMortType = 1 # 1 = fixed, 2 = estimated with prior to allow for uncertainty
+NatMort = 4.22/MaxAge # natural mortality, in normal space. If NatMortType = 2, this is expected value of this parameter in normal space
+NatMort_sd = NA # standard deviation for natural mortality in log space. Set to NA if NatMortType = 1.
 FishMort = 0.2
 MaxLen = 1200
 LenInc = 20
 MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified
-SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
+SelectivityType=2 # 1=selectivity inputted as vector, 2=logistic selectivity params
 SelectivityAtLen = NA # selectivity vector
 SelParams = c(300, 50) # L50, L95-L50 for gear selectivity
 RetenParams = c(NA, NA) # L50, L95-L50 for retention
@@ -169,10 +177,10 @@ InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform
 InitL50 = 400
 InitDelta = 100
 params = c(InitFishMort_logit, log(InitL50), log(InitDelta))
-FittedRes=GetLengthBasedCatchCurveResults(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen,
-                                    lbnd, ubnd, midpt, SelectivityAtLen, RetenAtLen, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMort, TimeStep)
+FittedRes=GetLengthBasedCatchCurveResults(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen, lbnd, ubnd, midpt,
+                                          SelectivityAtLen, RetenAtLen, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMortType, NatMort, NatMort_sd, TimeStep)
 PlotLengthBasedCatchCurve_Selectivity(params, DistnType, MLL, SelectivityType, ObsRetCatchFreqAtLen, lbnd, ubnd, midpt, SelectivityAtLen,
                                       RetenAtLen, ObsDiscCatchFreqAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges,
-                                      MaxAge, NatMort, TimeStep, MainLabel=NA, xaxis_lab=NA, yaxis_lab=NA, xmax=1200, xint=200,
+                                      MaxAge, NatMortType, NatMort, NatMort_sd, TimeStep, MainLabel=NA, xaxis_lab=NA, yaxis_lab=NA, xmax=1200, xint=200,
                                       ymax=1.0, yint=0.2, PlotCLs=TRUE, FittedRes, nReps=200)
 }

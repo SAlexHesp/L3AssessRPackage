@@ -12,8 +12,7 @@ GetGrowthInputsForLengthTransitionMatrices(
   GrowthCurveType,
   GrowthModelType,
   GrowthParams,
-  RefnceAges,
-  SelectivityType
+  RefnceAges
 )
 }
 \arguments{
@@ -33,8 +32,6 @@ GetGrowthInputsForLengthTransitionMatrices(
 \item{GrowthParams}{growth parameters or list with tag-model growth outputs}
 
 \item{RefnceAges}{Schnute reference ages}
-
-\item{SelectivityType}{1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve}
 }
 \value{
 mean size at age from growth curve (MeanSizeAtAge), estimated length after one year for each length class

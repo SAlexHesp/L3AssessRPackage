@@ -23,7 +23,7 @@ CalcSelectivityPenalties(
 
 \item{GrowthParams}{input growth parameters}
 
-\item{SelectivityType}{1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve}
+\item{SelectivityType}{1=selectivity inputted as vector, 2=logistic selectivity params,  3=logistic selectivity + retention params}
 
 \item{SelParams}{selectivity parameters L50, L95-L50}
 

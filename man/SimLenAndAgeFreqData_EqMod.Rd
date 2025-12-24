@@ -43,7 +43,7 @@ retention. Can also specify vector, e.g. SampleSize=c(10000, 2000) produces 1000
 
 \item{MLL}{minimum legal length (for setting knife edge retention, set to NA if not assumed)}
 
-\item{SelectivityType}{1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve}
+\item{SelectivityType}{1=selectivity inputted as vector, 2=logistic selectivity params}
 
 \item{SelectivityAtLen}{selectivity at length, set to NA if selectivity parameters inputted}
 
@@ -83,7 +83,7 @@ FishMort = 0.2
 MaxLen = 1200
 LenInc = 20
 MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified
-SelectivityType=2 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
+SelectivityType=2 # 1=selectivity inputted as vector, 2=logistic selectivity params
 SelectivityAtLen = NA # selectivity vector
 SelParams = c(300, 50) # L50, L95-L50 for gear selectivity
 RetenParams = c(NA, NA) # L50, L95-L50 for retention
@@ -143,7 +143,7 @@ FishMort = 0.2
 MaxLen = 1200
 LenInc = 20
 MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified
-SelectivityType=1 # 1=selectivity inputted as vector, 2=asymptotic logistic selectivity curve
+SelectivityType=1 # 1=selectivity inputted as vector, 2=logistic selectivity params
 lbnd = seq(0,MaxLen - LenInc, LenInc)
 midpt = lbnd + (LenInc/2)
 # # single sex selectivity input

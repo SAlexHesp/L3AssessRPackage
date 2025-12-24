@@ -17,7 +17,7 @@ GetSelectivityAndRetention(
 \arguments{
 \item{midpt}{mid points of length classes}
 
-\item{SelectivityType}{1=inputted as vector, 2= inputted as params}
+\item{SelectivityType}{1=selectivity inputted as vector, 2=logistic selectivity params,  3=logistic selectivity + retention params}
 
 \item{SelParams}{params for gear selectivity}
 
