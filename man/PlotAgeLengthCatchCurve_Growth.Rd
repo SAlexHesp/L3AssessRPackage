@@ -210,6 +210,5 @@ FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, RefnceAges, MLL, GrowthC
                                                 lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMortType, NatMort, NatMort_sd, TimeStep)
 PlotAgeLengthCatchCurve_Growth(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
                                lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMortType, NatMort, NatMort_sd, TimeStep, MainLabel=NA,
-                               xaxis_lab=NA, yaxis_lab=NA, xmax=40, xint=10,
-                               ymax=1000, yint=200, PlotCLs=TRUE, FittedRes, nReps=200, ShowLegend=TRUE)
+                               xaxis_lab=NA, yaxis_lab=NA, xmax=40, xint=10,ymax=1000, yint=200, PlotCLs=TRUE, FittedRes, nReps=200, ShowLegend=TRUE)
 }

@@ -6,25 +6,28 @@
 \usage{
 GetParamRes_AgeAndLengthBasedCatchCurve(
   NatMortType,
-  GrowthCurveType,
+  GrowthModelType,
   SelectivityType,
-  params,
   nlmb,
-  ses
+  params,
+  ses,
+  sims
 )
 }
 \arguments{
 \item{NatMortType}{1 = fixed, 2 = estimated with prior to allow for uncertainty}
 
-\item{GrowthCurveType}{1=von Bertalaffy, 2=Schnute}
+\item{GrowthModelType}{# 1 = von Bert single sex, 2 = von Bert, 2 sexes, 3 = Schnute - single sex, 4 = Schunte 2 sexes}
 
 \item{SelectivityType}{1=selectivity inputted as vector, 2=logistic selectivity params,  3=logistic selectivity + retention params}
 
-\item{params}{estimated parameters, varying depending on growth model type, selectivity type and number of sexes}
-
 \item{nlmb}{output from nlminb optimisation}
 
+\item{params}{estimated parameters, varying depending on growth model type, selectivity type and number of sexes}
+
 \item{ses}{estimates of standard errors for estimated parameters}
+
+\item{sims}{random values of estimated parameters drawn from multivariate normal distribution}
 }
 \value{
 ParamEst

@@ -1221,28 +1221,29 @@ GetLengthBasedCatchCurveResults <- function (params, DistnType, GrowthCurveType,
       cor.Params=temp %*% vcov.Params %*% temp
     }
 
+    # get standard errors for estimated parameters
     ses = sqrt(diag(vcov.Params))
 
+    # using parametric resampling to get multiple random estimates of estimated parameters
+    # assuming the estimated values conform to a multivariate normal distribution
+    params = nlmb$par
+    sims = data.frame(MASS::mvrnorm(n = 1000, params, vcov.Params))
+
     # get parameter estimates and associated 95 percent confidence limits, depending on model type
-    Results = GetParamRes_LengthBasedCatchCurve(NatMortType, SelectivityType, params, nlmb, ses)
-    ParamEst = Results$ParamEst; RetCatch_EffSampleSize = Results$RetCatch_EffSampleSize
+    Results = GetParamRes_LengthBasedCatchCurve(NatMortType, DistnType, SelectivityType, nlmb, params, ses, sims)
+    ParamEst = Results$ParamEst; RetCatch_EffSampleSize = Results$RetCatch_EffSampleSize; ParamSims = Results$ParamSims
 
     temp = c(nlmb$par[1], nlmb$par[1] + c(-1.96, 1.96) * ses[1]) # logit space
     EstFMort = 1/(1+exp(-temp)) # inverse logit transformed value
     EstFMort_se = ((EstFMort[3]-EstFMort[2])/2)/1.96
 
-    # using parametric resampling to get multiple random estimates of F, M and selectivity parameters
-    # assuming the estimated values conform to a multivariate normal distribution
-    params = nlmb$par
-    sims.Params = data.frame(MASS::mvrnorm(n = 1000, params, vcov.Params))
-
   } else { # is.matrix(vcov.Params)
 
     ParamEst = NA
+    ParamSims= NA
     EstFMort = NA
     EstFMort_se = NA
     cor.Params = NA
-    sims.Params = NA
   }
 
   # store some diagnostic outputs from model
@@ -1257,8 +1258,8 @@ GetLengthBasedCatchCurveResults <- function (params, DistnType, GrowthCurveType,
   CV_LenAtMaxAge_Results = GetMaxLenAtAgeCV_AgeAndLengthBasedCatchCurve(TimeStep, res, MaxAge, SelectivityType)
 
   # get Laplace approximate to posterior estimate for mean of M, when estimated with a prior
-  NatMort_PostMeanLaplaceApprox = NA
-  if (NatMortType == 2) NatMort_PostMeanLaplaceApprox = exp(params[2] + 0.5 * ses[2]^2)
+  NatMort_PosteriorMeanLaplaceApprox = NA
+  if (NatMortType == 2) NatMort_PosteriorMeanLaplaceApprox = exp(params[2] + 0.5 * ses[2]^2)
 
   # get proportion and associated sd for randomly-generated data for retained fish
   if (!is.na(ObsDiscCatchFreqAtLen[1])) {
@@ -1313,8 +1314,7 @@ GetLengthBasedCatchCurveResults <- function (params, DistnType, GrowthCurveType,
                    ObsDiscCatchFreqAtLen = ObsDiscCatchFreqAtLen)
 
   ResultsSummary = list(ParamEst = ParamEst,
-                        NatMort_PostMeanLaplaceApprox = NatMort_PostMeanLaplaceApprox,
-                        sims.Params = sims.Params,
+                        NatMort_PosteriorMeanLaplaceApprox = NatMort_PosteriorMeanLaplaceApprox,
                         convergence = nlmb$convergence,
                         nll = nlmb$objective,
                         RetCatch_SampleSize = sum(ObsRetCatchFreqAtLen),
@@ -1323,6 +1323,7 @@ GetLengthBasedCatchCurveResults <- function (params, DistnType, GrowthCurveType,
                         ObsPropRetFish_sd = ObsPropRetFish_sd)
 
   Results = list(ParamEst = ParamEst,
+                 ParamSims = ParamSims,
                  EstFMort = EstFMort,
                  EstFMort_se = EstFMort_se,
                  params = nlmb$par,
@@ -1348,136 +1349,158 @@ GetLengthBasedCatchCurveResults <- function (params, DistnType, GrowthCurveType,
 #' @keywords internal
 #'
 #' @param NatMortType 1 = fixed, 2 = estimated with prior to allow for uncertainty
+#' @param DistnType 1 = multinomial, 2=Dirichlet multinomial
 #' @param SelectivityType 1=selectivity inputted as vector, 2=logistic selectivity params,  3=logistic selectivity + retention params
-#' @param params estimated parameters, varying depending on growth model type, selectivity type and number of sexes
 #' @param nlmb output from nlminb optimisation
+#' @param params estimated parameters, varying depending on growth model type, selectivity type and number of sexes
 #' @param ses estimates of standard errors for estimated parameters
+#' @param sims random values of estimated parameters drawn from multivariate normal distribution
 #'
 #' @return ParamEst
-GetParamRes_LengthBasedCatchCurve <- function (NatMortType, SelectivityType, params, nlmb, ses)
+GetParamRes_LengthBasedCatchCurve <- function (NatMortType, DistnType, SelectivityType, nlmb, params, ses, sims)
 {
 
   # Get Z estimate and 95 percent confidence limits
   temp = c(nlmb$par[1], nlmb$par[1] + c(-1.96, 1.96) * ses[1]) # logit space
   EstFMort = 1/(1+exp(-temp)) # inverse logit transformed value
+  F.sim = 1/(1+exp(-sims[,1])) # inverse logit transform
+  EstTheta = NA; RetCatch_EffSampleSize = NA
 
   if (NatMortType == 1) { # fixed natural mortality
-    if (DistnType == 1) { # multinomial distribution
-      EstTheta = NA; RetCatch_EffSampleSize = NA
-      if (SelectivityType == 1) { # inputted as specified selectivity vector
+    if (SelectivityType == 1) { # inputted as specified selectivity vector
+      if (DistnType == 1) { # Multinomial distribution
         ParamEst = t(data.frame(FMort = round(EstFMort, 3)))
+        ParamSims = data.frame(F.sim=F.sim)
       }
-      if (SelectivityType == 2) { # selectivity only (length(params)==3)
-        EstL50_sel = exp(c(nlmb$par[2], nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
-        EstDelta_sel = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
-        ParamEst = t(data.frame(FMort = round(EstFMort, 3), L50_sel = round(EstL50_sel, 3), Delta_sel = round(EstDelta_sel, 3)))
-      }
-      if (SelectivityType == 3) { # selectivity + retention (length(params)==5)
-        EstL50_sel = exp(c(nlmb$par[2], nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
-        EstDelta_sel = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
-        EstL50_ret = exp(c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4]))
-        EstDelta_ret = exp(c(nlmb$par[5], nlmb$par[5] + c(-1.96, 1.96) * ses[5]))
-        ParamEst = t(data.frame(FMort = round(EstFMort, 3), L50_sel = round(EstL50_sel, 3), Delta_sel = round(EstDelta_sel, 3),
-                                L50_ret = round(EstL50_ret, 3), Delta_ret = round(EstDelta_ret, 3)))
-      }
-    } # multinomial distribution
-    if (DistnType == 2) { # Dirichlet multinomial distribution
-      if (SelectivityType == 1) { # inputted as specified selectivity vector
+      if (DistnType == 2) { # Dirichlet multinomial distribution
         temp = c(nlmb$par[2], nlmb$par[2] + c(-1.96, 1.96) * ses[2])
-        EstTheta = 1/(1+exp(-temp));
+        EstTheta = 1/(1+exp(-temp))
         ParamEst = t(data.frame(FMort = round(EstFMort, 2), Theta = round(EstTheta, 3)))
+        theta.sim = sims[,2]
+        ParamSims = data.frame(F.sim=F.sim, theta.sim=theta.sim)
       }
-      if (SelectivityType == 2) { # selectivity only (length(params)==4)
-        EstL50_sel = exp(c(nlmb$par[2], nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
-        EstDelta_sel = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
+    }
+    if (SelectivityType == 2) { # selectivity only (length(params)==3)
+      EstL50_sel = exp(c(nlmb$par[2], nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
+      EstDelta_sel = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
+      if (DistnType == 1) { # Multinomial distribution
+        ParamEst = t(data.frame(FMort = round(EstFMort, 3), L50_sel = round(EstL50_sel, 3), Delta_sel = round(EstDelta_sel, 3)))
+        L50Sel.sim = exp(sims[,2]); L95Sel.sim = exp(sims[,2]) + exp(sims[,3])
+        ParamSims = data.frame(F.sim=F.sim, L50Sel.sim=L50Sel.sim, L95Sel.sim=L95Sel.sim)
+      }
+      if (DistnType == 2) { # Dirichlet multinomial distribution
         temp = c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4])
         EstTheta = 1/(1+exp(-temp));
         ParamEst = t(data.frame(FMort = round(EstFMort, 3), L50_sel = round(EstL50_sel, 3),
                                 Delta_sel = round(EstDelta_sel, 3), Theta = round(EstTheta, 3)))
+        L50Sel.sim = exp(sims[,2]); L95Sel.sim = exp(sims[,2]) + exp(sims[,3]); theta.sim = sims[,4]
+        ParamSims = data.frame(F.sim=F.sim, L50Sel.sim=L50Sel.sim, L95Sel.sim=L95Sel.sim, theta.sim=theta.sim)
       }
-      if (SelectivityType == 3) { # selectivity + retention (length(params)==6)
-        EstL50_sel = exp(c(nlmb$par[2], nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
-        EstDelta_sel = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
-        EstL50_ret = exp(c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4]))
-        EstDelta_ret = exp(c(nlmb$par[5], nlmb$par[5] + c(-1.96, 1.96) * ses[5]))
+    }
+
+    if (SelectivityType == 3) { # selectivity + retention (length(params)==5)
+      EstL50_sel = exp(c(nlmb$par[2], nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
+      EstDelta_sel = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
+      EstL50_ret = exp(c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4]))
+      EstDelta_ret = exp(c(nlmb$par[5], nlmb$par[5] + c(-1.96, 1.96) * ses[5]))
+      if (DistnType == 1) { # Multinomial distribution
+        ParamEst = t(data.frame(FMort = round(EstFMort, 3), L50_sel = round(EstL50_sel, 3), Delta_sel = round(EstDelta_sel, 3),
+                                L50_ret = round(EstL50_ret, 3), Delta_ret = round(EstDelta_ret, 3)))
+        L50Sel.sim = exp(sims[,2]); L95Sel.sim = exp(sims[,2]) + exp(sims[,3])
+        L50Ret.sim = exp(sims[,4]); L95Ret.sim = exp(sims[,4]) + exp(sims[,5])
+        ParamSims = data.frame(F.sim=F.sim, L50Sel.sim=L50Sel.sim, L95Sel.sim=L95Sel.sim,
+                               L50Ret.sim=L50Ret.sim, L95Ret.sim=L95Ret.sim)
+      }
+      if (DistnType == 2) { # Dirichlet multinomial distribution
         temp = c(nlmb$par[6], nlmb$par[6] + c(-1.96, 1.96) * ses[6])
         EstTheta = 1/(1+exp(-temp));
         ParamEst = t(data.frame(FMort = round(EstFMort, 3), L50_sel = round(EstL50_sel, 3), Delta_sel = round(EstDelta_sel, 3),
                                 L50_ret = round(EstL50_ret, 3), Delta_ret = round(EstDelta_ret, 3), Theta = round(EstTheta, 3)))
+        L50Sel.sim = exp(sims[,2]); L95Sel.sim = exp(sims[,2]) + exp(sims[,3])
+        L50Ret.sim = exp(sims[,4]); L95Ret.sim = exp(sims[,4]) + exp(sims[,5])
+        theta.sim = sims[,6]
+        ParamSims = data.frame(F.sim=F.sim, L50Sel.sim=L50Sel.sim, L95Sel.sim=L95Sel.sim,
+                               L50Ret.sim=L50Ret.sim, L95Ret.sim=L95Ret.sim, theta.sim=theta.sim)
       }
-
-      # Dirichlet multinomial effective sample size - retained catch
-      temp = ((1+(EstTheta*sum(ObsRetCatchFreqAtLen))) / (1 + EstTheta))
-      RetCatch_EffSampleSize <- t(data.frame(RetCatch_EffSampleSize = temp))
-      colnames(RetCatch_EffSampleSize) = c("Estimate", "lw_95%CL", "up_95%CL")
-
-    } # Dirichlet multinomial distribution
-  }
+    }
+  } # NatMortType
 
   if (NatMortType == 2) { # natural mortality estimated with prior
-    if (DistnType == 1) { # multinomial distribution
-      EstTheta = NA; RetCatch_EffSampleSize = NA
-      if (SelectivityType == 1) { # inputted as specified selectivity vector
-        EstNatMort = exp(c(nlmb$par[2], nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
+    EstNatMort = exp(c(nlmb$par[2], nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
+    NatMort.sim = exp(sims[,2])
+    if (SelectivityType == 1) { # inputted as specified selectivity vector
+      if (DistnType == 1) { # multinomial distribution
         ParamEst = t(data.frame(FMort = round(EstFMort, 3), NatMort = round(EstNatMort, 3)))
+        ParamSims = data.frame(F.sim=F.sim, NatMort.sim=NatMort.sim)
       }
-      if (SelectivityType == 2) { # selectivity only (length(params)==4)
-        EstNatMort = exp(c(nlmb$par[2], nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
-        EstL50_sel = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
-        EstDelta_sel = exp(c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4]))
-        ParamEst = t(data.frame(FMort = round(EstFMort, 3), NatMort = round(EstNatMort, 3),
-                                L50_sel = round(EstL50_sel, 3), Delta_sel = round(EstDelta_sel, 3)))
-      }
-      if (SelectivityType == 3) { # selectivity + retention (length(params)==6)
-        EstNatMort = exp(c(nlmb$par[2], nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
-        EstL50_sel = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
-        EstDelta_sel = exp(c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4]))
-        EstL50_ret = exp(c(nlmb$par[5], nlmb$par[5] + c(-1.96, 1.96) * ses[5]))
-        EstDelta_ret = exp(c(nlmb$par[6], nlmb$par[6] + c(-1.96, 1.96) * ses[6]))
-        ParamEst = t(data.frame(FMort = round(EstFMort, 3), NatMort = round(EstNatMort, 3), L50_sel = round(EstL50_sel, 3),
-                                Delta_sel = round(EstDelta_sel, 3), L50_ret = round(EstL50_ret, 3), Delta_ret = round(EstDelta_ret, 3)))
-      }
-    } # multinomial distribution
-    if (DistnType == 2) { # Dirichlet multinomial distribution
-      if (SelectivityType == 1) { # inputted as specified selectivity vector
-        EstNatMort = exp(c(nlmb$par[2], nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
+      if (DistnType == 2) { # Dirichlet multinomial distribution
         temp = c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3])
         EstTheta = 1/(1+exp(-temp));
         ParamEst = t(data.frame(FMort = round(EstFMort, 2), Theta = round(EstTheta, 3)))
+        theta.sim = sims[,3]
+        ParamSims = data.frame(F.sim=F.sim, NatMort.sim=NatMort.sim, theta.sim=theta.sim)
       }
-      if (SelectivityType == 2) { # selectivity only (length(params)==5)
-        EstNatMort = exp(c(nlmb$par[2], nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
-        EstL50_sel = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
-        EstDelta_sel = exp(c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4]))
+    }
+
+    if (SelectivityType == 2) { # selectivity only (length(params)==4)
+      EstL50_sel = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
+      EstDelta_sel = exp(c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4]))
+      if (DistnType == 1) { # multinomial distribution
+        ParamEst = t(data.frame(FMort = round(EstFMort, 3), NatMort = round(EstNatMort, 3),
+                                L50_sel = round(EstL50_sel, 3), Delta_sel = round(EstDelta_sel, 3)))
+        L50Sel.sim = exp(sims[,3]); L95Sel.sim = exp(sims[,3]) + exp(sims[,4])
+        ParamSims = data.frame(F.sim=F.sim, NatMort.sim=NatMort.sim, L50Sel.sim=L50Sel.sim, L95Sel.sim=L95Sel.sim)
+      }
+      if (DistnType == 2) { # Dirichlet multinomial distribution
         temp = c(nlmb$par[5], nlmb$par[5] + c(-1.96, 1.96) * ses[5])
         EstTheta = 1/(1+exp(-temp));
         ParamEst = t(data.frame(FMort = round(EstFMort, 3), NatMort = round(EstNatMort, 3), L50_sel = round(EstL50_sel, 3),
                                 Delta_sel = round(EstDelta_sel, 3), Theta = round(EstTheta, 3)))
+        L50Sel.sim = exp(sims[,3]); L95Sel.sim = exp(sims[,3]) + exp(sims[,4])
+        theta.sim = sims[,5]
+        ParamSims = data.frame(F.sim=F.sim, NatMort.sim=NatMort.sim, L50Sel.sim=L50Sel.sim, L95Sel.sim=L95Sel.sim, theta.sim=theta.sim)
       }
-      if (SelectivityType == 3) { # selectivity + retention (length(params)==7)
-        EstNatMort = exp(c(nlmb$par[2], nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
-        EstL50_sel = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
-        EstDelta_sel = exp(c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4]))
-        EstL50_ret = exp(c(nlmb$par[5], nlmb$par[5] + c(-1.96, 1.96) * ses[5]))
-        EstDelta_ret = exp(c(nlmb$par[6], nlmb$par[6] + c(-1.96, 1.96) * ses[6]))
+    }
+
+    if (SelectivityType == 3) { # selectivity + retention (length(params)==6)
+      EstL50_sel = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
+      EstDelta_sel = exp(c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4]))
+      EstL50_ret = exp(c(nlmb$par[5], nlmb$par[5] + c(-1.96, 1.96) * ses[5]))
+      EstDelta_ret = exp(c(nlmb$par[6], nlmb$par[6] + c(-1.96, 1.96) * ses[6]))
+      if (DistnType == 1) { # multinomial distribution
+
+        ParamEst = t(data.frame(FMort = round(EstFMort, 3), NatMort = round(EstNatMort, 3), L50_sel = round(EstL50_sel, 3),
+                                Delta_sel = round(EstDelta_sel, 3), L50_ret = round(EstL50_ret, 3), Delta_ret = round(EstDelta_ret, 3)))
+        L50Sel.sim = exp(sims[,3]); L95Sel.sim = exp(sims[,3]) + exp(sims[,4])
+        L50Ret.sim = exp(sims[,5]); L95Ret.sim = exp(sims[,5]) + exp(sims[,6])
+        ParamSims = data.frame(F.sim=F.sim, NatMort.sim=NatMort.sim, L50Sel.sim=L50Sel.sim, L95Sel.sim=L95Sel.sim,
+                               L50Ret.sim=L50Ret.sim, L95Ret.sim=L95Ret.sim)
+      }
+      if (DistnType == 2) { # Dirichlet multinomial distribution
         temp = c(nlmb$par[7], nlmb$par[7] + c(-1.96, 1.96) * ses[7])
         EstTheta = 1/(1+exp(-temp));
         ParamEst = t(data.frame(FMort = round(EstFMort, 3), NatMort = round(EstNatMort, 3), L50_sel = round(EstL50_sel, 3),
                                 Delta_sel = round(EstDelta_sel, 3), L50_ret = round(EstL50_ret, 3), Delta_ret = round(EstDelta_ret, 3),
                                 Theta = round(EstTheta, 3)))
+        L50Sel.sim = exp(sims[,3]); L95Sel.sim = exp(sims[,3]) + exp(sims[,4])
+        L50Ret.sim = exp(sims[,5]); L95Ret.sim = exp(sims[,5]) + exp(sims[,6])
+        theta.sim = sims[,7]
+        ParamSims = data.frame(F.sim=F.sim, NatMort.sim=NatMort.sim, L50Sel.sim=L50Sel.sim, L95Sel.sim=L95Sel.sim,
+                               L50Ret.sim=L50Ret.sim, L95Ret.sim=L95Ret.sim, theta.sim=theta.sim)
       }
-
-      # Dirichlet multinomial effective sample size - retained catch
-      temp = ((1+(EstTheta*sum(ObsRetCatchFreqAtLen))) / (1 + EstTheta))
-      RetCatch_EffSampleSize <- t(data.frame(RetCatch_EffSampleSize = temp))
-      colnames(RetCatch_EffSampleSize) = c("Estimate", "lw_95%CL", "up_95%CL")
-
-    } # Dirichlet multinomial distribution
-  }
-
+    } # SelectivityType
+  } # NatMortType
   colnames(ParamEst) = c("Estimate", "lw_95%CL", "up_95%CL")
 
+  # Dirichlet multinomial effective sample size - retained catch
+  if (DistnType == 2) {
+    temp = ((1+(EstTheta*sum(ObsRetCatchFreqAtLen))) / (1 + EstTheta))
+    RetCatch_EffSampleSize <- t(data.frame(RetCatch_EffSampleSize = temp))
+    colnames(RetCatch_EffSampleSize) = c("Estimate", "lw_95%CL", "up_95%CL")
+  }
+
   Results = list(ParamEst = ParamEst,
+                 ParamSims=ParamSims,
                  RetCatch_EffSampleSize = RetCatch_EffSampleSize)
 
   return(Results)
@@ -1504,16 +1527,15 @@ CalcObjFunc_LengthBasedCatchCurve <- function(params) {
   ExpRetCatchPropInLenClass = Res$ExpRetCatchPropInLenClass
   ExpDiscCatchPropInLenClass = Res$ExpDiscCatchPropInLenClass
 
-  if (DistnType==1) { # multinomial distribution
+  NLL_DiscCatch = 0; NLL_RetCatch = 0; NLL_NatMort = 0
 
+  if (DistnType==1) { # multinomial distribution
     if (!is.na(RetenAtLen[1])) {
     # if retention specified, and catch distribution includes all sizes of fish selected by gear
-    NLL_DiscCatch = 0
     NLL_RetCatch = CalcMultNLLMargLengthComposition(ObsRetCatchFreqAtLen, ExpTotCatchPropInLenClass)
     }
     if (is.na(RetenAtLen[1])) {
       NLL_RetCatch = CalcMultNLLMargLengthComposition(ObsRetCatchFreqAtLen, ExpRetCatchPropInLenClass)
-      NLL_DiscCatch = 0
       if (!is.na(ObsDiscCatchFreqAtLen[1])) {
         NLL_DiscCatch = CalcMultNLLMargLengthComposition(ObsDiscCatchFreqAtLen, ExpDiscCatchPropInLenClass)
       }
@@ -1521,30 +1543,23 @@ CalcObjFunc_LengthBasedCatchCurve <- function(params) {
   }
 
   if (DistnType==2) { # Dirichlet multinomial distribution
-
     if (SelectivityType == 1) { # inputted as specified selectivity vector
-      temp = params[2]
-      DM_theta = 1/(1+exp(-temp))
+      DM_theta = 1/(1+exp(-params[2]))
     }
-    if (SelectivityType == 2) { # include estimates for logistic gear selectivity parameters
-      if (length(params)==4) {
-        temp = params[4]
-        DM_theta = 1/(1+exp(-temp))
-      }
-      if (length(params)==6) { # include estimates for logistic retention parameters
-        temp = params[6]
-        DM_theta = 1/(1+exp(-temp))
-      }
+    if (SelectivityType == 2) { # gear selectivity parameters
+      DM_theta = 1/(1+exp(-params[4]))
     }
+    if (SelectivityType == 3) { # gear selectivity and retention parameters
+      DM_theta = 1/(1+exp(-params[6]))
+    }
+
     cat("CalcObjFunc_LengthBasedCatchCurve: DM_theta",DM_theta,'\n')
     NLL_RetCatch = CalcDirMultNLLMargLengthComposition(ObsRetCatchFreqAtLen, ExpRetCatchPropInLenClass, DM_theta)
-    NLL_DiscCatch = 0
     if (!is.na(ObsDiscCatchFreqAtLen[1])) {
       NLL_DiscCatch = CalcDirMultNLLMargLengthComposition(ObsDiscCatchFreqAtLen, ExpDiscCatchPropInLenClass, DM_theta)
     }
   }
 
-  NLL_NatMort = 0
   if (NatMortType == 2) { # natural mortality estimated with a prior
     Meanlog_NatMort <- log(NatMort) - 0.5 * NatMort_sd^2
     Estlog_NatMort = params[2]
@@ -3074,10 +3089,7 @@ GetAgeAndLengthBasedCatchCurveResults <- function (params, RefnceAges, MLL, Grow
                  gradient = NULL, hessian = TRUE, control=list(eval.max=1000, iter.max=1000))
 
   hess.out = optimHess(nlmb$par, CalcObjFunc_AgeAndLengthBasedCatchCurve)
-  vcov.Params = NA
-  ses = NA
-  cor.Params = NA
-  ParamEst = NA
+  vcov.Params = NA; ses = NA; cor.Params = NA; ParamEst = NA
 
   tryCatch(
     {
@@ -3097,21 +3109,24 @@ GetAgeAndLengthBasedCatchCurveResults <- function (params, RefnceAges, MLL, Grow
     temp = diag(1/sqrt(diag(vcov.Params)))  # compute parameter correlation matrix
     cor.Params=temp %*% vcov.Params %*% temp
 
-    # Get estimates of parameters and their 95 percent confidence limits
-    ParamEst = GetParamRes_AgeAndLengthBasedCatchCurve(NatMortType, GrowthCurveType, SelectivityType, params, nlmb, ses)
-
-    EstFMort_se = ((ParamEst[1,3]-ParamEst[1,2])/2)/1.96
-    EstFMort = 1/(1+exp(-nlmb$par[1]))
-
-    # using parametric resampling to get multiple random estimates of F, M and selectivity parameters
+    # using parametric resampling to get multiple random estimates of estimated parameters
     # assuming the estimated values conform to a multivariate normal distribution
     params = nlmb$par
-    sims.Params = data.frame(MASS::mvrnorm(n = 1000, params, vcov.Params))
+    sims = data.frame(MASS::mvrnorm(n = 1000, params, vcov.Params))
+
+    res=GetGrowthParams_AgeAndLengthBasedCatchCurvesCalcs(params, NatMortType, GrowthCurveType, SelectivityType)
+    GrowthModelType = res$GrowthModelType # 1 = von Bert single sex, 2 = von Bert, 2 sexes,
+    # 3 = Schnute - single sex, 4 = Schunte 2 sexes
+
+    # Get estimates of parameters and their 95 percent confidence limits
+    Result = GetParamRes_AgeAndLengthBasedCatchCurve(NatMortType, GrowthModelType, SelectivityType, nlmb, params, ses, sims)
+    ParamEst = Result$ParamEst; ParamSims = Result$ParamSims
+    EstFMort_se = ((ParamEst[1,3]-ParamEst[1,2])/2)/1.96
+    EstFMort = 1/(1+exp(-nlmb$par[1]))
 
   } else {
     EstFMort_se = NA
     EstFMort = NA
-    sims.Params = NA
   }
 
   # store some diagnostic outputs from model
@@ -3129,12 +3144,11 @@ GetAgeAndLengthBasedCatchCurveResults <- function (params, RefnceAges, MLL, Grow
   CV_LenAtMaxAge_Results = GetMaxLenAtAgeCV_AgeAndLengthBasedCatchCurve(TimeStep, res, MaxAge, SelectivityType)
 
   # get Laplace approximate to posterior estimate for mean of M, when estimated with a prior
-  NatMort_PostMeanLaplaceApprox = NA
-  if (NatMortType == 2) NatMort_PostMeanLaplaceApprox = exp(params[2] + 0.5 * ses[2]^2)
+  NatMort_PosteriorMeanLaplaceApprox = NA
+  if (NatMortType == 2) NatMort_PosteriorMeanLaplaceApprox = exp(params[2] + 0.5 * ses[2]^2)
 
   ResultsSummary = list(ParamEst = ParamEst,
-                        NatMort_PostMeanLaplaceApprox = NatMort_PostMeanLaplaceApprox,
-                        sims.Params = sims.Params,
+                        NatMort_PosteriorMeanLaplaceApprox = NatMort_PosteriorMeanLaplaceApprox,
                         convergence = nlmb$convergence,
                         nll = nlmb$objective,
                         SampleSize = sum(ObsRetCatchFreqAtLen))
@@ -3211,6 +3225,7 @@ GetAgeAndLengthBasedCatchCurveResults <- function (params, RefnceAges, MLL, Grow
   Results = list(ParamEst = ParamEst,
                  EstFMort = EstFMort,
                  EstFMort_se = EstFMort_se,
+                 ParamSims = ParamSims,
                  convergence = nlmb$convergence,
                  nll = nlmb$objective,
                  SampleSize = sum(ObsRetCatchFreqAtLen),
@@ -3295,243 +3310,330 @@ GetMaxLenAtAgeCV_AgeAndLengthBasedCatchCurve <- function (TimeStep, res, MaxAge,
 #' @keywords internal
 #'
 #' @param NatMortType 1 = fixed, 2 = estimated with prior to allow for uncertainty
-#' @param GrowthCurveType 1=von Bertalaffy, 2=Schnute
+#' @param GrowthModelType # 1 = von Bert single sex, 2 = von Bert, 2 sexes, 3 = Schnute - single sex, 4 = Schunte 2 sexes
 #' @param SelectivityType 1=selectivity inputted as vector, 2=logistic selectivity params,  3=logistic selectivity + retention params
-#' @param params estimated parameters, varying depending on growth model type, selectivity type and number of sexes
 #' @param nlmb output from nlminb optimisation
+#' @param params estimated parameters, varying depending on growth model type, selectivity type and number of sexes
 #' @param ses estimates of standard errors for estimated parameters
+#' @param sims random values of estimated parameters drawn from multivariate normal distribution
 #'
 #' @return ParamEst
-GetParamRes_AgeAndLengthBasedCatchCurve <- function (NatMortType, GrowthCurveType, SelectivityType, params, nlmb, ses)
+GetParamRes_AgeAndLengthBasedCatchCurve <- function (NatMortType, GrowthModelType, SelectivityType, nlmb, params, ses, sims)
 {
 
   # estimate of fishing mortality in logit space
   temp = c(nlmb$par[1], nlmb$par[1] + c(-1.96, 1.96) * ses[1])
-
-  # inverse logit transformed value
-  EstFMort = 1/(1+exp(-temp));
+  EstFMort = 1/(1+exp(-temp)) # inverse logit transformed value
+  F.sim = 1/(1+exp(-sims[,1]))
 
   if (NatMortType == 1) { # fixed natural mortality
-    if (GrowthCurveType == 1) { # von Bertalanffy
-      if (SelectivityType == 1 & length(params)==4) { # selectivity vector input, single sex growth
-        EstLinf = exp(c(nlmb$par[2], nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
-        Estk = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
-        EstCV = exp(c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) *  ses[4]))
-        ParamEst = t(data.frame(FMort = round(EstFMort, 3), Linf = round(EstLinf, 3),
-                                vbK = round(Estk, 3), CV = round(EstCV, 3)))
-      }
-      if (SelectivityType == 2 & length(params)==6) { # logistic selectivity, single sex growth
-        EstL50 = exp(c(nlmb$par[2], nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
-        EstDelta = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
-        EstLinf = exp(c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4]))
-        Estk = exp(c(nlmb$par[5], nlmb$par[5] + c(-1.96, 1.96) * ses[5]))
-        EstCV = exp(c(nlmb$par[6], nlmb$par[6] + c(-1.96, 1.96) * ses[6]))
-        ParamEst = t(data.frame(FMort = round(EstFMort, 3), SelL50 = round(EstL50, 3), Delta = round(EstDelta, 3),
-                                Linf = round(EstLinf, 3), vbK = round(Estk, 3), CV = round(EstCV, 3)))
-      }
-      if (SelectivityType == 1 & length(params)==6) {   # selectivity vector input, separate sex growth
-        EstLinf_F = exp(c(nlmb$par[2], nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
-        EstLinf_M = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
-        Estk_F = exp(c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4]))
-        Estk_M = exp(c(nlmb$par[5], nlmb$par[5] + c(-1.96, 1.96) * ses[5]))
-        EstCV = exp(c(nlmb$par[6], nlmb$par[6] + c(-1.96, 1.96) *  ses[6]))
-        ParamEst = t(data.frame(FMort = round(EstFMort, 3), Linf_F = round(EstLinf_F, 3), Linf_M = round(EstLinf_M, 3),
-                                vbK_F = round(Estk_F, 3), vbK_M = round(Estk_M, 3), CV = round(EstCV, 3)))
-      }
-      if (SelectivityType == 2 & length(params)==8) { # logistic selectivity, separate sex growth
-        EstL50 = exp(c(nlmb$par[2], nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
-        EstDelta = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
-        EstLinf_F = exp(c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4]))
-        EstLinf_M = exp(c(nlmb$par[5], nlmb$par[5] + c(-1.96, 1.96) * ses[5]))
-        Estk_F = exp(c(nlmb$par[6], nlmb$par[6] + c(-1.96, 1.96) * ses[6]))
-        Estk_M = exp(c(nlmb$par[7], nlmb$par[7] + c(-1.96, 1.96) * ses[7]))
-        EstCV = exp(c(nlmb$par[8], nlmb$par[8] + c(-1.96, 1.96) * ses[8]))
-        ParamEst = t(data.frame(FMort = round(EstFMort, 3), SelL50 = round(EstL50, 3), Delta = round(EstDelta, 3),
-                                Linf_F = round(EstLinf_F, 3), Linf_M = round(EstLinf_M, 3),
-                                vbK_F = round(Estk_F, 3), vbK_M = round(Estk_M, 3), CV = round(EstCV, 3)))
-      }
+    if (SelectivityType == 1 & GrowthModelType == 1) { # selectivity vector input, single sex growth
+      EstLinf = exp(c(nlmb$par[2], nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
+      Estk = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
+      EstCV = exp(c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) *  ses[4]))
+      ParamEst = t(data.frame(FMort = round(EstFMort, 3), Linf = round(EstLinf, 3),
+                              vbK = round(Estk, 3), CV = round(EstCV, 3)))
+      Linf.sim = exp(sims[,2]); vbK.sim = exp(sims[,3]); CV.sim = exp(sims[,4])
+      ParamSims = data.frame(F.sim=F.sim, Linf.sim=Linf.sim, vbK.sim=vbK.sim, CV.sim=CV.sim)
+    }
+    if (SelectivityType == 2 & GrowthModelType == 1) { # logistic selectivity, single sex growth
+      EstL50 = exp(c(nlmb$par[2], nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
+      EstDelta = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
+      EstLinf = exp(c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4]))
+      Estk = exp(c(nlmb$par[5], nlmb$par[5] + c(-1.96, 1.96) * ses[5]))
+      EstCV = exp(c(nlmb$par[6], nlmb$par[6] + c(-1.96, 1.96) * ses[6]))
+      ParamEst = t(data.frame(FMort = round(EstFMort, 3), SelL50 = round(EstL50, 3), Delta = round(EstDelta, 3),
+                              Linf = round(EstLinf, 3), vbK = round(Estk, 3), CV = round(EstCV, 3)))
+      L50Sel.sim = exp(sims[,2]); L95Sel.sim = exp(sims[,2]) + exp(sims[,3])
+      Linf.sim = exp(sims[,4]); vbK.sim = exp(sims[,5]); CV.sim = exp(sims[,6])
+      ParamSims = data.frame(F.sim=F.sim, L50Sel.sim=L50Sel.sim, L95Sel.sim=L95Sel.sim,
+                             Linf.sim=Linf.sim, vbK.sim=vbK.sim, CV.sim=CV.sim)
+    }
+    if (SelectivityType == 3 & GrowthModelType == 1) { # logistic selectivity, single sex growth
+      EstL50_1 = exp(c(nlmb$par[2], nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
+      EstL50_2 = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
+      EstDelta_1 = exp(c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4]))
+      EstDelta_2 = exp(c(nlmb$par[5], nlmb$par[5] + c(-1.96, 1.96) * ses[5]))
+      EstLinf = exp(c(nlmb$par[6], nlmb$par[6] + c(-1.96, 1.96) * ses[6]))
+      Estk = exp(c(nlmb$par[7], nlmb$par[7] + c(-1.96, 1.96) * ses[7]))
+      EstCV = exp(c(nlmb$par[8], nlmb$par[8] + c(-1.96, 1.96) * ses[8]))
+      ParamEst = t(data.frame(FMort = round(EstFMort, 3), L50_1 = round(EstL50_1, 3), L50_2 = round(EstL50_2, 3),
+                              Delta_1 = round(EstDelta_1, 3), Delta_2 = round(EstDelta_2, 3), Linf = round(EstLinf, 3),
+                              vbK = round(Estk, 3), CV = round(EstCV, 3)))
+      L50Sel.sim = exp(sims[,2]); L95Sel.sim = exp(sims[,2]) + exp(sims[,4])
+      L50Ret.sim = exp(sims[,3]); L95Ret.sim = exp(sims[,3]) + exp(sims[,5])
+      Linf.sim = exp(sims[,4]); vbK.sim = exp(sims[,5]); CV.sim = exp(sims[,6])
+      ParamSims = data.frame(F.sim=F.sim, L50Sel.sim=L50Sel.sim, L95Sel.sim=L95Sel.sim, L50Ret.sim=L50Ret.sim,
+                             L95Ret.sim=L95Ret.sim, Linf.sim=Linf.sim, vbK.sim=vbK.sim, CV.sim=CV.sim)
+    }
+    if (SelectivityType == 1 & GrowthModelType == 2) {   # selectivity vector input, separate sex growth
+      EstLinf_F = exp(c(nlmb$par[2], nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
+      EstLinf_M = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
+      Estk_F = exp(c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4]))
+      Estk_M = exp(c(nlmb$par[5], nlmb$par[5] + c(-1.96, 1.96) * ses[5]))
+      EstCV = exp(c(nlmb$par[6], nlmb$par[6] + c(-1.96, 1.96) *  ses[6]))
+      ParamEst = t(data.frame(FMort = round(EstFMort, 3), Linf_F = round(EstLinf_F, 3), Linf_M = round(EstLinf_M, 3),
+                              vbK_F = round(Estk_F, 3), vbK_M = round(Estk_M, 3), CV = round(EstCV, 3)))
 
-      if (SelectivityType == 2 & length(params)==10) { # logistic selectivity + retention, separate sex growth
-        EstL50_1 = exp(c(nlmb$par[2], nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
-        EstL50_2 = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
-        EstDelta_1 = exp(c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4]))
-        EstDelta_2 = exp(c(nlmb$par[5], nlmb$par[5] + c(-1.96, 1.96) * ses[5]))
-        EstLinf_F = exp(c(nlmb$par[6], nlmb$par[6] + c(-1.96, 1.96) * ses[6]))
-        EstLinf_M = exp(c(nlmb$par[7], nlmb$par[7] + c(-1.96, 1.96) * ses[7]))
-        Estk_F = exp(c(nlmb$par[8], nlmb$par[8] + c(-1.96, 1.96) * ses[8]))
-        Estk_M = exp(c(nlmb$par[9], nlmb$par[9] + c(-1.96, 1.96) * ses[9]))
-        EstCV = exp(c(nlmb$par[10], nlmb$par[10] + c(-1.96, 1.96) * ses[10]))
-        ParamEst = t(data.frame(FMort = round(EstFMort, 3), L50_1 = round(EstL50_1, 3), L50_2 = round(EstL50_2, 3),
-                                Delta_1 = round(EstDelta_1, 3), Delta_2 = round(EstDelta_2, 3),
-                                Linf_F = round(EstLinf_F, 3), Linf_M = round(EstLinf_M, 3),
-                                vbK_F = round(Estk_F, 3), vbK_M = round(Estk_M, 3), CV = round(EstCV, 3)))
-      }
+      Linf_F.sim = exp(sims[,2]); Linf_M.sim = exp(sims[,3]); vbK_F.sim = exp(sims[,4]); vbK_M.sim = exp(sims[,5])
+      CV.sim = exp(sims[,6])
+      ParamSims = data.frame(F.sim=F.sim, Linf_F.sim=Linf_F.sim, Linf_M.sim=Linf_M.sim, vbK_F.sim=vbK_F.sim,
+                             vbK_M.sim=vbK_M.sim, CV.sim=CV.sim)
+    }
+    if (SelectivityType == 2 & GrowthModelType == 2) { # logistic selectivity, separate sex growth
+      EstL50 = exp(c(nlmb$par[2], nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
+      EstDelta = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
+      EstLinf_F = exp(c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4]))
+      EstLinf_M = exp(c(nlmb$par[5], nlmb$par[5] + c(-1.96, 1.96) * ses[5]))
+      Estk_F = exp(c(nlmb$par[6], nlmb$par[6] + c(-1.96, 1.96) * ses[6]))
+      Estk_M = exp(c(nlmb$par[7], nlmb$par[7] + c(-1.96, 1.96) * ses[7]))
+      EstCV = exp(c(nlmb$par[8], nlmb$par[8] + c(-1.96, 1.96) * ses[8]))
+      ParamEst = t(data.frame(FMort = round(EstFMort, 3), SelL50 = round(EstL50, 3), Delta = round(EstDelta, 3),
+                              Linf_F = round(EstLinf_F, 3), Linf_M = round(EstLinf_M, 3),
+                              vbK_F = round(Estk_F, 3), vbK_M = round(Estk_M, 3), CV = round(EstCV, 3)))
+      L50Sel.sim = exp(sims[,2]); L95Sel.sim = exp(sims[,2]) + exp(sims[,3])
+      Linf_F.sim = exp(sims[,4]); Linf_M.sim = exp(sims[,5]); vbK_F.sim = exp(sims[,6]); vbK_M.sim = exp(sims[,7])
+      CV.sim = exp(sims[,8])
+      ParamSims = data.frame(F.sim=F.sim, L50Sel.sim=L50Sel.sim, L95Sel.sim=L95Sel.sim,
+                             Linf_F.sim=Linf_F.sim, Linf_M.sim=Linf_M.sim, vbK_F.sim=vbK_F.sim,
+                             vbK_M.sim=vbK_M.sim, CV.sim=CV.sim)
     }
 
-    if (GrowthCurveType == 2) { # Schnute
-      if (SelectivityType == 1 & length(params)==5) { # selectivity vector input, single sex growth
-        Esty2 = exp(c(nlmb$par[2], nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
-        Esta = c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3])
-        Estb = c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4])
-        EstCV = exp(c(nlmb$par[5], nlmb$par[5] + c(-1.96, 1.96) *  ses[5]))
-        ParamEst = t(data.frame(FMort = round(EstFMort, 3), y2 = round(Esty2, 3),
-                                a = round(Esta, 3), b = round(Estb, 3), CV = round(EstCV, 3)))
-      }
-      if (SelectivityType == 2 & length(params)==7) { # logistic selectivity, single sex growth
-        EstL50 = exp(c(nlmb$par[2], nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
-        EstDelta = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
-        Esty2 = exp(c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4]))
-        Esta = c(nlmb$par[5], nlmb$par[5] + c(-1.96, 1.96) * ses[5])
-        Estb = c(nlmb$par[6], nlmb$par[6] + c(-1.96, 1.96) * ses[6])
-        EstCV = exp(c(nlmb$par[7], nlmb$par[7] + c(-1.96, 1.96) *  ses[7]))
-        ParamEst = t(data.frame(FMort = round(EstFMort, 3), SelL50 = round(EstL50, 3), Delta = round(EstDelta, 3),
-                                y2 = round(Esty2, 3), a = round(Esta, 3), b = round(Estb, 3), CV = round(EstCV, 3)))
-      }
-      if (SelectivityType == 1 & length(params)==8) {   # selectivity vector input, separate sex growth
-        Esty2_F = exp(c(nlmb$par[2], nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
-        Esty2_M = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
-        Esta_F = c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4])
-        Esta_M = c(nlmb$par[5], nlmb$par[5] + c(-1.96, 1.96) * ses[5])
-        Estb_F = c(nlmb$par[6], nlmb$par[6] + c(-1.96, 1.96) * ses[6])
-        Estb_M = c(nlmb$par[7], nlmb$par[7] + c(-1.96, 1.96) * ses[7])
-        EstCV = exp(c(nlmb$par[8], nlmb$par[8] + c(-1.96, 1.96) *  ses[8]))
-        ParamEst = t(data.frame(FMort = round(EstFMort, 3), y2_F = round(Esty2_F, 3), y2_M = round(Esty2_M, 3),
-                                a_F = round(Esta_F, 3), a_M = round(Esta_M, 3), b_F = round(Estb_F, 3), b_M = round(Estb_M, 3),
-                                CV = round(EstCV, 3)))
-      }
-      if (SelectivityType == 2 & length(params)==10) { # logistic selectivity, separate sex growth
-        EstL50 = exp(c(nlmb$par[2], nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
-        EstDelta = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
-        Esty2_F = exp(c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4]))
-        Esty2_M = exp(c(nlmb$par[5], nlmb$par[5] + c(-1.96, 1.96) * ses[5]))
-        Esta_F = c(nlmb$par[6], nlmb$par[6] + c(-1.96, 1.96) * ses[6])
-        Esta_M = c(nlmb$par[7], nlmb$par[7] + c(-1.96, 1.96) * ses[7])
-        Estb_F = c(nlmb$par[8], nlmb$par[8] + c(-1.96, 1.96) * ses[8])
-        Estb_M = c(nlmb$par[9], nlmb$par[9] + c(-1.96, 1.96) * ses[9])
-        EstCV = exp(c(nlmb$par[10], nlmb$par[10] + c(-1.96, 1.96) *  ses[10]))
-        ParamEst = t(data.frame(FMort = round(EstFMort, 3), SelL50 = round(EstL50, 3), Delta = round(EstDelta, 3),
-                                y2_F = round(Esty2_F, 3), y2_M = round(Esty2_M, 3), a_F = round(Esta_F, 3), a_M = round(Esta_M, 3),
-                                b_F = round(Estb_F, 3), b_M = round(Estb_M, 3), CV = round(EstCV, 3)))
-      }
+    if (SelectivityType == 3 & GrowthModelType == 2) { # logistic selectivity + retention, separate sex growth
+      EstL50_1 = exp(c(nlmb$par[2], nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
+      EstL50_2 = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
+      EstDelta_1 = exp(c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4]))
+      EstDelta_2 = exp(c(nlmb$par[5], nlmb$par[5] + c(-1.96, 1.96) * ses[5]))
+      EstLinf_F = exp(c(nlmb$par[6], nlmb$par[6] + c(-1.96, 1.96) * ses[6]))
+      EstLinf_M = exp(c(nlmb$par[7], nlmb$par[7] + c(-1.96, 1.96) * ses[7]))
+      Estk_F = exp(c(nlmb$par[8], nlmb$par[8] + c(-1.96, 1.96) * ses[8]))
+      Estk_M = exp(c(nlmb$par[9], nlmb$par[9] + c(-1.96, 1.96) * ses[9]))
+      EstCV = exp(c(nlmb$par[10], nlmb$par[10] + c(-1.96, 1.96) * ses[10]))
+      ParamEst = t(data.frame(FMort = round(EstFMort, 3), L50_1 = round(EstL50_1, 3), L50_2 = round(EstL50_2, 3),
+                              Delta_1 = round(EstDelta_1, 3), Delta_2 = round(EstDelta_2, 3),
+                              Linf_F = round(EstLinf_F, 3), Linf_M = round(EstLinf_M, 3),
+                              vbK_F = round(Estk_F, 3), vbK_M = round(Estk_M, 3), CV = round(EstCV, 3)))
+      L50Sel.sim = exp(sims[,2]); L95Sel.sim = exp(sims[,2]) + exp(sims[,4])
+      L50Ret.sim = exp(sims[,3]); L95Ret.sim = exp(sims[,3]) + exp(sims[,5])
+      Linf_F.sim = exp(sims[,6]); Linf_M.sim = exp(sims[,7]); vbK_F.sim = exp(sims[,8]); vbK_M.sim = exp(sims[,9])
+      CV.sim = exp(sims[,10])
+      ParamSims = data.frame(F.sim=F.sim, L50Sel.sim=L50Sel.sim, L95Sel.sim=L95Sel.sim, L50Ret.sim=L50Ret.sim,
+                             L95Ret.sim=L95Ret.sim, Linf_F.sim=Linf_F.sim, Linf_M.sim=Linf_M.sim, vbK_F.sim=vbK_F.sim,
+                             vbK_M.sim=vbK_M.sim, CV.sim=CV.sim)
     }
-  }
+
+    if (SelectivityType == 1 & GrowthModelType == 3) { # selectivity vector input, single sex growth
+      Esty2 = exp(c(nlmb$par[2], nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
+      Esta = c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3])
+      Estb = c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4])
+      EstCV = exp(c(nlmb$par[5], nlmb$par[5] + c(-1.96, 1.96) *  ses[5]))
+      ParamEst = t(data.frame(FMort = round(EstFMort, 3), y2 = round(Esty2, 3),
+                              a = round(Esta, 3), b = round(Estb, 3), CV = round(EstCV, 3)))
+      y2.sim = exp(sims[,2]); a.sim = exp(sims[,3]); b.sim = exp(sims[,4]); CV.sim = exp(sims[,5])
+      ParamSims = data.frame(F.sim=F.sim, y2.sim=y2.sim, a.sim=a.sim, b.sim=b.sim, CV.sim=CV.sim)
+    }
+    if (SelectivityType == 2 & GrowthModelType == 3) { # logistic selectivity, single sex growth
+      EstL50 = exp(c(nlmb$par[2], nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
+      EstDelta = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
+      Esty2 = exp(c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4]))
+      Esta = c(nlmb$par[5], nlmb$par[5] + c(-1.96, 1.96) * ses[5])
+      Estb = c(nlmb$par[6], nlmb$par[6] + c(-1.96, 1.96) * ses[6])
+      EstCV = exp(c(nlmb$par[7], nlmb$par[7] + c(-1.96, 1.96) *  ses[7]))
+      ParamEst = t(data.frame(FMort = round(EstFMort, 3), SelL50 = round(EstL50, 3), Delta = round(EstDelta, 3),
+                              y2 = round(Esty2, 3), a = round(Esta, 3), b = round(Estb, 3), CV = round(EstCV, 3)))
+      L50Sel.sim = exp(sims[,2]); L95Sel.sim = exp(sims[,2]) + exp(sims[,3])
+      y2.sim = exp(sims[,4]); a.sim = exp(sims[,5]); b.sim = exp(sims[,6]); CV.sim = exp(sims[,7])
+      ParamSims = data.frame(F.sim=F.sim, L50Sel.sim=L50Sel.sim, L95Sel.sim=L95Sel.sim,
+                             y2.sim=y2.sim, a.sim=a.sim, b.sim=b.sim, CV.sim=CV.sim)
+    }
+    if (SelectivityType == 1 & GrowthModelType == 4) {   # selectivity vector input, separate sex growth
+      Esty2_F = exp(c(nlmb$par[2], nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
+      Esty2_M = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
+      Esta_F = c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4])
+      Esta_M = c(nlmb$par[5], nlmb$par[5] + c(-1.96, 1.96) * ses[5])
+      Estb_F = c(nlmb$par[6], nlmb$par[6] + c(-1.96, 1.96) * ses[6])
+      Estb_M = c(nlmb$par[7], nlmb$par[7] + c(-1.96, 1.96) * ses[7])
+      EstCV = exp(c(nlmb$par[8], nlmb$par[8] + c(-1.96, 1.96) *  ses[8]))
+      ParamEst = t(data.frame(FMort = round(EstFMort, 3), y2_F = round(Esty2_F, 3), y2_M = round(Esty2_M, 3),
+                              a_F = round(Esta_F, 3), a_M = round(Esta_M, 3), b_F = round(Estb_F, 3), b_M = round(Estb_M, 3),
+                              CV = round(EstCV, 3)))
+      y2_F.sim = exp(sims[,2]); y2_M.sim = exp(sims[,3]); a.sim_F = exp(sims[,4]); a.sim_M = exp(sims[,5]);
+      b.sim_F = exp(sims[,6]); b.sim_M = exp(sims[,7]); CV.sim = exp(sims[,8])
+      ParamSims = data.frame(F.sim=F.sim, y2_F.sim=y2_F.sim, y2_M.sim=y2_M.sim, a.sim_F=a.sim_F, a.sim_M=a.sim_M,
+                             b.sim_F=b.sim_F, b.sim_M=b.sim_M, CV.sim=CV.sim)
+    }
+    if (SelectivityType == 2 & GrowthModelType == 4) { # logistic selectivity, separate sex growth
+      EstL50 = exp(c(nlmb$par[2], nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
+      EstDelta = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
+      Esty2_F = exp(c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4]))
+      Esty2_M = exp(c(nlmb$par[5], nlmb$par[5] + c(-1.96, 1.96) * ses[5]))
+      Esta_F = c(nlmb$par[6], nlmb$par[6] + c(-1.96, 1.96) * ses[6])
+      Esta_M = c(nlmb$par[7], nlmb$par[7] + c(-1.96, 1.96) * ses[7])
+      Estb_F = c(nlmb$par[8], nlmb$par[8] + c(-1.96, 1.96) * ses[8])
+      Estb_M = c(nlmb$par[9], nlmb$par[9] + c(-1.96, 1.96) * ses[9])
+      EstCV = exp(c(nlmb$par[10], nlmb$par[10] + c(-1.96, 1.96) *  ses[10]))
+      ParamEst = t(data.frame(FMort = round(EstFMort, 3), SelL50 = round(EstL50, 3), Delta = round(EstDelta, 3),
+                              y2_F = round(Esty2_F, 3), y2_M = round(Esty2_M, 3), a_F = round(Esta_F, 3), a_M = round(Esta_M, 3),
+                              b_F = round(Estb_F, 3), b_M = round(Estb_M, 3), CV = round(EstCV, 3)))
+      L50Sel.sim = exp(sims[,2]); L95Sel.sim = exp(sims[,2]) + exp(sims[,3])
+      y2_F.sim = exp(sims[,4]); y2_M.sim = exp(sims[,5]); a.sim_F = exp(sims[,6]); a.sim_M = exp(sims[,7]);
+      b.sim_F = exp(sims[,8]); b.sim_M = exp(sims[,9]); CV.sim = exp(sims[,10])
+      ParamSims = data.frame(F.sim=F.sim, L50Sel.sim=L50Sel.sim, L95Sel.sim=L95Sel.sim,
+                             y2_F.sim=y2_F.sim, y2_M.sim=y2_M.sim, a.sim_F=a.sim_F, a.sim_M=a.sim_M,
+                             b.sim_F=b.sim_F, b.sim_M=b.sim_M, CV.sim=CV.sim)
+    }
+  } # NatMortType = 1
+
 
   if (NatMortType == 2) { # natural mortality estimated with informative prior
-    if (GrowthCurveType == 1) { # von Bertalanffy
-      if (SelectivityType == 1 & length(params)==5) { # selectivity vector input, single sex growth
-        EstNatMort = exp(c(nlmb$par[2], nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
-        EstLinf = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
-        Estk = exp(c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4]))
-        EstCV = exp(c(nlmb$par[5], nlmb$par[5] + c(-1.96, 1.96) *  ses[5]))
-        ParamEst = t(data.frame(FMort = round(EstFMort, 3), NatMort = round(EstNatMort, 3), Linf = round(EstLinf, 3),
-                                vbK = round(Estk, 3), CV = round(EstCV, 3)))
-      }
-      if (SelectivityType == 2 & length(params)==7) { # logistic selectivity, single sex growth
-        EstNatMort = exp(c(nlmb$par[2], nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
-        EstL50 = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
-        EstDelta = exp(c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4]))
-        EstLinf = exp(c(nlmb$par[5], nlmb$par[5] + c(-1.96, 1.96) * ses[5]))
-        Estk = exp(c(nlmb$par[6], nlmb$par[6] + c(-1.96, 1.96) * ses[6]))
-        EstCV = exp(c(nlmb$par[7], nlmb$par[7] + c(-1.96, 1.96) * ses[7]))
-        ParamEst = t(data.frame(FMort = round(EstFMort, 3), NatMort = round(EstNatMort, 3), SelL50 = round(EstL50, 3), Delta = round(EstDelta, 3),
-                                Linf = round(EstLinf, 3), vbK = round(Estk, 3), CV = round(EstCV, 3)))
-      }
-      if (SelectivityType == 1 & length(params)==7) {   # selectivity vector input, separate sex growth
-        EstNatMort = exp(c(nlmb$par[2], nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
-        EstLinf_F = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
-        EstLinf_M = exp(c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4]))
-        Estk_F = exp(c(nlmb$par[5], nlmb$par[5] + c(-1.96, 1.96) * ses[5]))
-        Estk_M = exp(c(nlmb$par[6], nlmb$par[6] + c(-1.96, 1.96) * ses[6]))
-        EstCV = exp(c(nlmb$par[7], nlmb$par[7] + c(-1.96, 1.96) *  ses[7]))
-        ParamEst = t(data.frame(FMort = round(EstFMort, 3), NatMort = round(EstNatMort, 3), Linf_F = round(EstLinf_F, 3), Linf_M = round(EstLinf_M, 3),
-                                vbK_F = round(Estk_F, 3), vbK_M = round(Estk_M, 3), CV = round(EstCV, 3)))
-      }
-      if (SelectivityType == 2 & length(params)==9) { # logistic selectivity, separate sex growth
-        EstNatMort = exp(c(nlmb$par[2], nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
-        EstL50 = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
-        EstDelta = exp(c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4]))
-        EstLinf_F = exp(c(nlmb$par[5], nlmb$par[5] + c(-1.96, 1.96) * ses[5]))
-        EstLinf_M = exp(c(nlmb$par[6], nlmb$par[6] + c(-1.96, 1.96) * ses[6]))
-        Estk_F = exp(c(nlmb$par[7], nlmb$par[7] + c(-1.96, 1.96) * ses[7]))
-        Estk_M = exp(c(nlmb$par[8], nlmb$par[8] + c(-1.96, 1.96) * ses[8]))
-        EstCV = exp(c(nlmb$par[9], nlmb$par[9] + c(-1.96, 1.96) * ses[9]))
-        ParamEst = t(data.frame(FMort = round(EstFMort, 3), NatMort = round(EstNatMort, 3), SelL50 = round(EstL50, 3), Delta = round(EstDelta, 3),
-                                Linf_F = round(EstLinf_F, 3), Linf_M = round(EstLinf_M, 3),
-                                vbK_F = round(Estk_F, 3), vbK_M = round(Estk_M, 3), CV = round(EstCV, 3)))
-      }
-      if (SelectivityType == 2 & length(params)==11) { # logistic selectivity + retention, separate sex growth
-        EstNatMort = exp(c(nlmb$par[2], nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
-        EstL50_1 = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
-        EstL50_2 = exp(c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4]))
-        EstDelta_1 = exp(c(nlmb$par[5], nlmb$par[5] + c(-1.96, 1.96) * ses[5]))
-        EstDelta_2 = exp(c(nlmb$par[6], nlmb$par[6] + c(-1.96, 1.96) * ses[6]))
-        EstLinf_F = exp(c(nlmb$par[7], nlmb$par[7] + c(-1.96, 1.96) * ses[7]))
-        EstLinf_M = exp(c(nlmb$par[8], nlmb$par[8] + c(-1.96, 1.96) * ses[8]))
-        Estk_F = exp(c(nlmb$par[9], nlmb$par[9] + c(-1.96, 1.96) * ses[9]))
-        Estk_M = exp(c(nlmb$par[10], nlmb$par[10] + c(-1.96, 1.96) * ses[10]))
-        EstCV = exp(c(nlmb$par[11], nlmb$par[11] + c(-1.96, 1.96) * ses[11]))
-        ParamEst = t(data.frame(FMort = round(EstFMort, 3), NatMort = round(EstNatMort, 3), L50_1 = round(EstL50_1, 3), L50_2 = round(EstL50_2, 3),
-                                Delta_1 = round(EstDelta_1, 3), Delta_2 = round(EstDelta_2, 3),
-                                Linf_F = round(EstLinf_F, 3), Linf_M = round(EstLinf_M, 3),
-                                vbK_F = round(Estk_F, 3), vbK_M = round(Estk_M, 3), CV = round(EstCV, 3)))
-      }
+    EstNatMort = exp(c(nlmb$par[2], nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
+    NatMort.sim = exp(sims[,2])
+
+    if (SelectivityType == 1 & GrowthModelType == 1) { # selectivity vector input, single sex growth
+      EstLinf = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
+      Estk = exp(c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4]))
+      EstCV = exp(c(nlmb$par[5], nlmb$par[5] + c(-1.96, 1.96) *  ses[5]))
+      ParamEst = t(data.frame(FMort = round(EstFMort, 3), NatMort = round(EstNatMort, 3), Linf = round(EstLinf, 3),
+                              vbK = round(Estk, 3), CV = round(EstCV, 3)))
+      Linf.sim = exp(sims[,3]); vbK.sim = exp(sims[,4]); CV.sim = exp(sims[,5])
+      ParamSims = data.frame(F.sim=F.sim, NatMort.sim=NatMort.sim, Linf.sim=Linf.sim, vbK.sim=vbK.sim, CV.sim=CV.sim)
+    }
+    if (SelectivityType == 2 & GrowthModelType == 1) { # logistic selectivity, single sex growth
+      EstL50 = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
+      EstDelta = exp(c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4]))
+      EstLinf = exp(c(nlmb$par[5], nlmb$par[5] + c(-1.96, 1.96) * ses[5]))
+      Estk = exp(c(nlmb$par[6], nlmb$par[6] + c(-1.96, 1.96) * ses[6]))
+      EstCV = exp(c(nlmb$par[7], nlmb$par[7] + c(-1.96, 1.96) * ses[7]))
+      ParamEst = t(data.frame(FMort = round(EstFMort, 3), NatMort = round(EstNatMort, 3), SelL50 = round(EstL50, 3), Delta = round(EstDelta, 3),
+                              Linf = round(EstLinf, 3), vbK = round(Estk, 3), CV = round(EstCV, 3)))
+      L50Sel.sim = exp(sims[,3]); L95Sel.sim = exp(sims[,3]) + exp(sims[,4])
+      Linf.sim = exp(sims[,5]); vbK.sim = exp(sims[,6]); CV.sim = exp(sims[,7])
+      ParamSims = data.frame(F.sim=F.sim, NatMort.sim=NatMort.sim, L50Sel.sim=L50Sel.sim, L95Sel.sim=L95Sel.sim,
+                             Linf.sim=Linf.sim, vbK.sim=vbK.sim, CV.sim=CV.sim)
+    }
+    if (SelectivityType == 1 & GrowthModelType == 2) {   # selectivity vector input, separate sex growth
+      EstLinf_F = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
+      EstLinf_M = exp(c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4]))
+      Estk_F = exp(c(nlmb$par[5], nlmb$par[5] + c(-1.96, 1.96) * ses[5]))
+      Estk_M = exp(c(nlmb$par[6], nlmb$par[6] + c(-1.96, 1.96) * ses[6]))
+      EstCV = exp(c(nlmb$par[7], nlmb$par[7] + c(-1.96, 1.96) *  ses[7]))
+      ParamEst = t(data.frame(FMort = round(EstFMort, 3), NatMort = round(EstNatMort, 3), Linf_F = round(EstLinf_F, 3), Linf_M = round(EstLinf_M, 3),
+                              vbK_F = round(Estk_F, 3), vbK_M = round(Estk_M, 3), CV = round(EstCV, 3)))
+      Linf_F.sim = exp(sims[,3]); Linf_M.sim = exp(sims[,4]); vbK_F.sim = exp(sims[,5]); vbK_M.sim = exp(sims[,7])
+      CV.sim = exp(sims[,7])
+      ParamSims = data.frame(F.sim=F.sim, NatMort.sim=NatMort.sim, Linf_F.sim=Linf_F.sim, Linf_M.sim=Linf_M.sim, vbK_F.sim=vbK_F.sim,
+                             vbK_M.sim=vbK_M.sim, CV.sim=CV.sim)
+    }
+    if (SelectivityType == 2 & GrowthModelType == 2) { # logistic selectivity, separate sex growth
+      EstL50 = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
+      EstDelta = exp(c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4]))
+      EstLinf_F = exp(c(nlmb$par[5], nlmb$par[5] + c(-1.96, 1.96) * ses[5]))
+      EstLinf_M = exp(c(nlmb$par[6], nlmb$par[6] + c(-1.96, 1.96) * ses[6]))
+      Estk_F = exp(c(nlmb$par[7], nlmb$par[7] + c(-1.96, 1.96) * ses[7]))
+      Estk_M = exp(c(nlmb$par[8], nlmb$par[8] + c(-1.96, 1.96) * ses[8]))
+      EstCV = exp(c(nlmb$par[9], nlmb$par[9] + c(-1.96, 1.96) * ses[9]))
+      ParamEst = t(data.frame(FMort = round(EstFMort, 3), NatMort = round(EstNatMort, 3), SelL50 = round(EstL50, 3), Delta = round(EstDelta, 3),
+                              Linf_F = round(EstLinf_F, 3), Linf_M = round(EstLinf_M, 3),
+                              vbK_F = round(Estk_F, 3), vbK_M = round(Estk_M, 3), CV = round(EstCV, 3)))
+      L50Sel.sim = exp(sims[,3]); L95Sel.sim = exp(sims[,3]) + exp(sims[,4])
+      Linf_F.sim = exp(sims[,5]); Linf_M.sim = exp(sims[,6]); vbK_F.sim = exp(sims[,7]); vbK_M.sim = exp(sims[,8])
+      CV.sim = exp(sims[,9])
+      ParamSims = data.frame(F.sim=F.sim, NatMort.sim=NatMort.sim, L50Sel.sim=L50Sel.sim, L95Sel.sim=L95Sel.sim,
+                             Linf_F.sim=Linf_F.sim, Linf_M.sim=Linf_M.sim, vbK_F.sim=vbK_F.sim,
+                             vbK_M.sim=vbK_M.sim, CV.sim=CV.sim)
+    }
+    if (SelectivityType == 3 & GrowthModelType == 2) { # logistic selectivity + retention, separate sex growth
+      EstL50_1 = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
+      EstL50_2 = exp(c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4]))
+      EstDelta_1 = exp(c(nlmb$par[5], nlmb$par[5] + c(-1.96, 1.96) * ses[5]))
+      EstDelta_2 = exp(c(nlmb$par[6], nlmb$par[6] + c(-1.96, 1.96) * ses[6]))
+      EstLinf_F = exp(c(nlmb$par[7], nlmb$par[7] + c(-1.96, 1.96) * ses[7]))
+      EstLinf_M = exp(c(nlmb$par[8], nlmb$par[8] + c(-1.96, 1.96) * ses[8]))
+      Estk_F = exp(c(nlmb$par[9], nlmb$par[9] + c(-1.96, 1.96) * ses[9]))
+      Estk_M = exp(c(nlmb$par[10], nlmb$par[10] + c(-1.96, 1.96) * ses[10]))
+      EstCV = exp(c(nlmb$par[11], nlmb$par[11] + c(-1.96, 1.96) * ses[11]))
+      ParamEst = t(data.frame(FMort = round(EstFMort, 3), NatMort = round(EstNatMort, 3), L50_1 = round(EstL50_1, 3), L50_2 = round(EstL50_2, 3),
+                              Delta_1 = round(EstDelta_1, 3), Delta_2 = round(EstDelta_2, 3),
+                              Linf_F = round(EstLinf_F, 3), Linf_M = round(EstLinf_M, 3),
+                              vbK_F = round(Estk_F, 3), vbK_M = round(Estk_M, 3), CV = round(EstCV, 3)))
+      L50Sel.sim = exp(sims[,3]); L95Sel.sim = exp(sims[,3]) + exp(sims[,5])
+      L50Ret.sim = exp(sims[,4]); L95Ret.sim = exp(sims[,4]) + exp(sims[,6])
+      Linf_F.sim = exp(sims[,7]); Linf_M.sim = exp(sims[,8]); vbK_F.sim = exp(sims[,9]); vbK_M.sim = exp(sims[,10])
+      CV.sim = exp(sims[,11])
+      ParamSims = data.frame(F.sim=F.sim, NatMort.sim=NatMort.sim, L50Sel.sim=L50Sel.sim, L95Sel.sim=L95Sel.sim,
+                             L50Ret.sim=L50Ret.sim, L95Ret.sim=L95Ret.sim, Linf_F.sim=Linf_F.sim, Linf_M.sim=Linf_M.sim,
+                             vbK_F.sim=vbK_F.sim, vbK_M.sim=vbK_M.sim, CV.sim=CV.sim)
     }
 
-    if (GrowthCurveType == 2) { # Schnute
-      if (SelectivityType == 1 & length(params)==6) { # selectivity vector input, single sex growth
-        EstNatMort = exp(c(nlmb$par[2], nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
-        Esty2 = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
-        Esta = c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4])
-        Estb = c(nlmb$par[5], nlmb$par[5] + c(-1.96, 1.96) * ses[5])
-        EstCV = exp(c(nlmb$par[6], nlmb$par[6] + c(-1.96, 1.96) *  ses[6]))
-        ParamEst = t(data.frame(FMort = round(EstFMort, 3), NatMort = round(EstNatMort, 3), y2 = round(Esty2, 3),
-                                a = round(Esta, 3), b = round(Estb, 3), CV = round(EstCV, 3)))
-      }
-      if (SelectivityType == 2 & length(params)==8) { # logistic selectivity, single sex growth
-        EstNatMort = exp(c(nlmb$par[2], nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
-        EstL50 = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
-        EstDelta = exp(c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4]))
-        Esty2 = exp(c(nlmb$par[5], nlmb$par[5] + c(-1.96, 1.96) * ses[5]))
-        Esta = c(nlmb$par[6], nlmb$par[6] + c(-1.96, 1.96) * ses[6])
-        Estb = c(nlmb$par[7], nlmb$par[7] + c(-1.96, 1.96) * ses[7])
-        EstCV = exp(c(nlmb$par[8], nlmb$par[8] + c(-1.96, 1.96) *  ses[8]))
-        ParamEst = t(data.frame(FMort = round(EstFMort, 3), NatMort = round(EstNatMort, 3), SelL50 = round(EstL50, 3), Delta = round(EstDelta, 3),
-                                y2 = round(Esty2, 3), a = round(Esta, 3), b = round(Estb, 3), CV = round(EstCV, 3)))
-      }
-      if (SelectivityType == 1 & length(params)==9) {   # selectivity vector input, separate sex growth
-        EstNatMort = exp(c(nlmb$par[2], nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
-        Esty2_F = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
-        Esty2_M = exp(c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4]))
-        Esta_F = c(nlmb$par[5], nlmb$par[5] + c(-1.96, 1.96) * ses[5])
-        Esta_M = c(nlmb$par[6], nlmb$par[6] + c(-1.96, 1.96) * ses[6])
-        Estb_F = c(nlmb$par[7], nlmb$par[7] + c(-1.96, 1.96) * ses[7])
-        Estb_M = c(nlmb$par[8], nlmb$par[8] + c(-1.96, 1.96) * ses[8])
-        EstCV = exp(c(nlmb$par[9], nlmb$par[9] + c(-1.96, 1.96) *  ses[9]))
-        ParamEst = t(data.frame(FMort = round(EstFMort, 3), NatMort = round(EstNatMort, 3), y2_F = round(Esty2_F, 3), y2_M = round(Esty2_M, 3),
-                                a_F = round(Esta_F, 3), a_M = round(Esta_M, 3), b_F = round(Estb_F, 3), b_M = round(Estb_M, 3),
-                                CV = round(EstCV, 3)))
-      }
-      if (SelectivityType == 2 & length(params)==11) { # logistic selectivity, separate sex growth
-        EstNatMort = exp(c(nlmb$par[2], nlmb$par[2] + c(-1.96, 1.96) * ses[2]))
-        EstL50 = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
-        EstDelta = exp(c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4]))
-        Esty2_F = exp(c(nlmb$par[5], nlmb$par[5] + c(-1.96, 1.96) * ses[5]))
-        Esty2_M = exp(c(nlmb$par[6], nlmb$par[6] + c(-1.96, 1.96) * ses[6]))
-        Esta_F = c(nlmb$par[7], nlmb$par[7] + c(-1.96, 1.96) * ses[7])
-        Esta_M = c(nlmb$par[8], nlmb$par[8] + c(-1.96, 1.96) * ses[8])
-        Estb_F = c(nlmb$par[9], nlmb$par[9] + c(-1.96, 1.96) * ses[9])
-        Estb_M = c(nlmb$par[10], nlmb$par[10] + c(-1.96, 1.96) * ses[10])
-        EstCV = exp(c(nlmb$par[11], nlmb$par[11] + c(-1.96, 1.96) *  ses[11]))
-        ParamEst = t(data.frame(FMort = round(EstFMort, 3), NatMort = round(EstNatMort, 3), SelL50 = round(EstL50, 3), Delta = round(EstDelta, 3),
-                                y2_F = round(Esty2_F, 3), y2_M = round(Esty2_M, 3), a_F = round(Esta_F, 3), a_M = round(Esta_M, 3),
-                                b_F = round(Estb_F, 3), b_M = round(Estb_M, 3), CV = round(EstCV, 3)))
-      }
+    if (SelectivityType == 1 & GrowthModelType == 3) { # selectivity vector input, single sex growth
+      Esty2 = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
+      Esta = c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4])
+      Estb = c(nlmb$par[5], nlmb$par[5] + c(-1.96, 1.96) * ses[5])
+      EstCV = exp(c(nlmb$par[6], nlmb$par[6] + c(-1.96, 1.96) *  ses[6]))
+      ParamEst = t(data.frame(FMort = round(EstFMort, 3), NatMort = round(EstNatMort, 3), y2 = round(Esty2, 3),
+                              a = round(Esta, 3), b = round(Estb, 3), CV = round(EstCV, 3)))
+      y2.sim = exp(sims[,3]); a.sim = exp(sims[,4]); b.sim = exp(sims[,5]); CV.sim = exp(sims[,6])
+      ParamSims = data.frame(F.sim=F.sim, NatMort.sim=NatMort.sim, y2.sim=y2.sim, a.sim=a.sim, b.sim=b.sim, CV.sim=CV.sim)
+    }
+    if (SelectivityType == 2 & GrowthModelType == 3) { # logistic selectivity, single sex growth
+      EstL50 = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
+      EstDelta = exp(c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4]))
+      Esty2 = exp(c(nlmb$par[5], nlmb$par[5] + c(-1.96, 1.96) * ses[5]))
+      Esta = c(nlmb$par[6], nlmb$par[6] + c(-1.96, 1.96) * ses[6])
+      Estb = c(nlmb$par[7], nlmb$par[7] + c(-1.96, 1.96) * ses[7])
+      EstCV = exp(c(nlmb$par[8], nlmb$par[8] + c(-1.96, 1.96) *  ses[8]))
+      ParamEst = t(data.frame(FMort = round(EstFMort, 3), NatMort = round(EstNatMort, 3), SelL50 = round(EstL50, 3), Delta = round(EstDelta, 3),
+                              y2 = round(Esty2, 3), a = round(Esta, 3), b = round(Estb, 3), CV = round(EstCV, 3)))
+
+      L50Sel.sim = exp(sims[,3]); L95Sel.sim = exp(sims[,3]) + exp(sims[,4])
+      y2.sim = exp(sims[,5]); a.sim = exp(sims[,6]); b.sim = exp(sims[,7]); CV.sim = exp(sims[,8])
+      ParamSims = data.frame(F.sim=F.sim, NatMort.sim=NatMort.sim, L50Sel.sim=L50Sel.sim, L95Sel.sim=L95Sel.sim,
+                             y2.sim=y2.sim, a.sim=a.sim, b.sim=b.sim, CV.sim=CV.sim)
+    }
+    if (SelectivityType == 1 & GrowthModelType == 4) {   # selectivity vector input, separate sex growth
+      Esty2_F = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
+      Esty2_M = exp(c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4]))
+      Esta_F = c(nlmb$par[5], nlmb$par[5] + c(-1.96, 1.96) * ses[5])
+      Esta_M = c(nlmb$par[6], nlmb$par[6] + c(-1.96, 1.96) * ses[6])
+      Estb_F = c(nlmb$par[7], nlmb$par[7] + c(-1.96, 1.96) * ses[7])
+      Estb_M = c(nlmb$par[8], nlmb$par[8] + c(-1.96, 1.96) * ses[8])
+      EstCV = exp(c(nlmb$par[9], nlmb$par[9] + c(-1.96, 1.96) *  ses[9]))
+      ParamEst = t(data.frame(FMort = round(EstFMort, 3), NatMort = round(EstNatMort, 3), y2_F = round(Esty2_F, 3), y2_M = round(Esty2_M, 3),
+                              a_F = round(Esta_F, 3), a_M = round(Esta_M, 3), b_F = round(Estb_F, 3), b_M = round(Estb_M, 3),
+                              CV = round(EstCV, 3)))
+      y2_F.sim = exp(sims[,3]); y2_M.sim = exp(sims[,4]); a.sim_F = exp(sims[,5]); a.sim_M = exp(sims[,6]);
+      b.sim_F = exp(sims[,7]); b.sim_M = exp(sims[,8]); CV.sim = exp(sims[,9])
+      ParamSims = data.frame(F.sim=F.sim, NatMort.sim=NatMort.sim, y2_F.sim=y2_F.sim, y2_M.sim=y2_M.sim,
+                             a.sim_F=a.sim_F, a.sim_M=a.sim_M, b.sim_F=b.sim_F, b.sim_M=b.sim_M, CV.sim=CV.sim)
+    }
+    if (SelectivityType == 2 & GrowthModelType == 4) { # logistic selectivity, separate sex growth
+      EstL50 = exp(c(nlmb$par[3], nlmb$par[3] + c(-1.96, 1.96) * ses[3]))
+      EstDelta = exp(c(nlmb$par[4], nlmb$par[4] + c(-1.96, 1.96) * ses[4]))
+      Esty2_F = exp(c(nlmb$par[5], nlmb$par[5] + c(-1.96, 1.96) * ses[5]))
+      Esty2_M = exp(c(nlmb$par[6], nlmb$par[6] + c(-1.96, 1.96) * ses[6]))
+      Esta_F = c(nlmb$par[7], nlmb$par[7] + c(-1.96, 1.96) * ses[7])
+      Esta_M = c(nlmb$par[8], nlmb$par[8] + c(-1.96, 1.96) * ses[8])
+      Estb_F = c(nlmb$par[9], nlmb$par[9] + c(-1.96, 1.96) * ses[9])
+      Estb_M = c(nlmb$par[10], nlmb$par[10] + c(-1.96, 1.96) * ses[10])
+      EstCV = exp(c(nlmb$par[11], nlmb$par[11] + c(-1.96, 1.96) *  ses[11]))
+      ParamEst = t(data.frame(FMort = round(EstFMort, 3), NatMort = round(EstNatMort, 3), SelL50 = round(EstL50, 3), Delta = round(EstDelta, 3),
+                              y2_F = round(Esty2_F, 3), y2_M = round(Esty2_M, 3), a_F = round(Esta_F, 3), a_M = round(Esta_M, 3),
+                              b_F = round(Estb_F, 3), b_M = round(Estb_M, 3), CV = round(EstCV, 3)))
+      L50Sel.sim = exp(sims[,3]); L95Sel.sim = exp(sims[,3]) + exp(sims[,4])
+      y2_F.sim = exp(sims[,5]); y2_M.sim = exp(sims[,6]); a.sim_F = exp(sims[,7]); a.sim_M = exp(sims[,8]);
+      b.sim_F = exp(sims[,9]); b.sim_M = exp(sims[,10]); CV.sim = exp(sims[,11])
+      ParamSims = data.frame(F.sim=F.sim, NatMort.sim=NatMort.sim, L50Sel.sim=L50Sel.sim, L95Sel.sim=L95Sel.sim,
+                             y2_F.sim=y2_F.sim, y2_M.sim=y2_M.sim, a.sim_F=a.sim_F, a.sim_M=a.sim_M,
+                             b.sim_F=b.sim_F, b.sim_M=b.sim_M, CV.sim=CV.sim)
     }
   }
 
 
   colnames(ParamEst) = c("Estimate", "lw_95%CL", "up_95%CL")
-  return(ParamEst)
+  result = list(ParamEst = ParamEst,
+                ParamSims = ParamSims)
+
+  return(result)
 
 }
 
@@ -3559,13 +3661,6 @@ ConvertObsDataFromDecAgesToIntegerAges <- function(TimeStep, MaxAge, nLenCl, Obs
   ObsRetCatchFreqAtLengthAndIntAge <- data.frame(matrix(0, nrow = length(MinAge:MaxAge), ncol = nLenCl))
   colnames(ObsRetCatchFreqAtLengthAndIntAge) <- midpt
   ObsRetCatchFreqAtLengthAndIntAge = as.matrix(ObsRetCatchFreqAtLengthAndIntAge)
-
-  # for (t in 1:nTimeSteps) {
-  #   if (AgeCl[1]<1) {
-  #     x = AgeCl[t]+1
-  #   } else {
-  #     x = AgeCl[t]
-  #   }
 
   for (t in 1:nTimeSteps) {
     if (TimeStep == 1) {
@@ -9697,8 +9792,7 @@ GetResampLengthsAtAge_AgeLengthCatchCurve_Growth <- function(nReps, nTimeSteps, 
 #'                                                 lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMortType, NatMort, NatMort_sd, TimeStep)
 #' PlotAgeLengthCatchCurve_Growth(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
 #'                                lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMortType, NatMort, NatMort_sd, TimeStep, MainLabel=NA,
-#'                                xaxis_lab=NA, yaxis_lab=NA, xmax=40, xint=10,
-#'                                ymax=1000, yint=200, PlotCLs=TRUE, FittedRes, nReps=200, ShowLegend=TRUE)
+#'                                xaxis_lab=NA, yaxis_lab=NA, xmax=40, xint=10,ymax=1000, yint=200, PlotCLs=TRUE, FittedRes, nReps=200, ShowLegend=TRUE)
 #' @export
 PlotAgeLengthCatchCurve_Growth <- function(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
                                            lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMortType, NatMort, NatMort_sd, TimeStep, MainLabel,
@@ -10371,11 +10465,11 @@ GetInputsForPlotting_Cond_AL <- function(params, RefnceAges, MLL, GrowthCurveTyp
 #' FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
 #'                                                 lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMortType, NatMort, NatMort_sd, TimeStep)
 #' PlotAgeLengthCatchCurve_Cond_AL(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
-#'                                 lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep, MainLabel=NA,
+#'                                 lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMortType, NatMort, NatMort_sd, TimeStep, MainLabel=NA,
 #'                                 xaxis_lab=NA, yaxis_lab=NA, xmax=40, xint=10, ymax=NA, yint=NA, FittedRes)
 #' @export
 PlotAgeLengthCatchCurve_Cond_AL <- function(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
-                                            lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep, MainLabel,
+                                            lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMortType, NatMort, NatMort_sd, TimeStep, MainLabel,
                                             xaxis_lab, yaxis_lab, xmax, xint, ymax, yint, FittedRes) {
 
   .pardefault <- par(no.readonly = TRUE) # store current par settings

@@ -18,7 +18,9 @@ PlotAgeLengthCatchCurve_Cond_AL(
   SelectivityAtLen,
   DiscMort,
   MaxAge,
+  NatMortType,
   NatMort,
+  NatMort_sd,
   TimeStep,
   MainLabel,
   xaxis_lab,
@@ -57,7 +59,11 @@ PlotAgeLengthCatchCurve_Cond_AL(
 
 \item{MaxAge}{maximum age considered in model}
 
+\item{NatMortType}{1 = fixed, 2 = estimated with prior to allow for uncertainty}
+
 \item{NatMort}{natural mortality, in normal space. If NatMortType = 2, this is expected value of this parameter in normal space}
+
+\item{NatMort_sd}{standard deviation for natural mortality in log space. Set to NA if NatMortType = 1}
 
 \item{TimeStep}{model timestep (e.g. 1 = annual, 1/12 = monthly)}
 
@@ -76,10 +82,6 @@ PlotAgeLengthCatchCurve_Cond_AL(
 \item{yint}{y axis interval}
 
 \item{FittedRes}{saved results from GetAgeAndLengthBasedCatchCurveResults function (model will be refitted if set to NA)}
-
-\item{NatMortType}{1 = fixed, 2 = estimated with prior to allow for uncertainty}
-
-\item{NatMort_sd}{standard deviation for natural mortality in log space. Set to NA if NatMortType = 1}
 }
 \value{
 Plot of fitted age and length-based catch curve to age at length data
@@ -196,6 +198,6 @@ params = c(InitFishMort_logit, log(c(InitLinf, InitvbK, InitCVSizeAtAge)))
 FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
                                                 lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMortType, NatMort, NatMort_sd, TimeStep)
 PlotAgeLengthCatchCurve_Cond_AL(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
-                                lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMort, TimeStep, MainLabel=NA,
+                                lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMortType, NatMort, NatMort_sd, TimeStep, MainLabel=NA,
                                 xaxis_lab=NA, yaxis_lab=NA, xmax=40, xint=10, ymax=NA, yint=NA, FittedRes)
 }
