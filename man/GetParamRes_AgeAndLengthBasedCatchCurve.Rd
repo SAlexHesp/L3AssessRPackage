@@ -6,6 +6,7 @@
 \usage{
 GetParamRes_AgeAndLengthBasedCatchCurve(
   NatMortType,
+  DistnType,
   GrowthModelType,
   SelectivityType,
   nlmb,
@@ -16,6 +17,8 @@ GetParamRes_AgeAndLengthBasedCatchCurve(
 }
 \arguments{
 \item{NatMortType}{1 = fixed, 2 = estimated with prior to allow for uncertainty}
+
+\item{DistnType}{1 = Multinomial, 2 = Dirichlet multinomial (for marginal length comp)}
 
 \item{GrowthModelType}{# 1 = von Bert single sex, 2 = von Bert, 2 sexes, 3 = Schnute - single sex, 4 = Schunte 2 sexes}
 

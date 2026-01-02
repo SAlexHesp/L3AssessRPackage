@@ -30,7 +30,7 @@ AgeAndLengthBasedCatchCurvesCalcs(
 \arguments{
 \item{params}{vector of model parameters in log space (params) to be estimated}
 
-\item{DistnType}{1 = Multinomial, 2 = Dirichlet multinomial}
+\item{DistnType}{1 = Multinomial, 2 = Dirichlet multinomial  (for marginal length comp)}
 
 \item{lbnd}{lower bounds of length classes}
 

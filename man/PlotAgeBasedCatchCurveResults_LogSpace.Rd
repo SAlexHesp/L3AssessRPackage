@@ -21,7 +21,8 @@ PlotAgeBasedCatchCurveResults_LogSpace(
   xint,
   ymax,
   yint,
-  PlotCLs
+  PlotCLs,
+  CCResults
 )
 }
 \arguments{
@@ -56,6 +57,8 @@ PlotAgeBasedCatchCurveResults_LogSpace(
 \item{yint}{y axis interval}
 
 \item{PlotCLs}{logical (TRUE=plot 95 percent confidence limits for lines)}
+
+\item{CCResults}{results of applied catch curve model 1, 2 or 3. Can set to NA.}
 }
 \value{
 plot of expected vs observed proportions at age
@@ -97,5 +100,5 @@ params = log(c(Init_FMort, Init_SelA50, SelA95))
 PlotAgeBasedCatchCurveResults_LogSpace(RecAssump, SpecRecAge=NA, MinFreq, MinAge, MaxAge, NatMort,
                                        ObsAgeFreq, CatchCurveModel, MainLabel=NA,
                                        xaxis_lab=NA, yaxis_lab=NA, ymin=NA, xmax=NA, xint=NA,
-                                       ymax=NA, yint=NA, PlotCLs=T)
+                                       ymax=NA, yint=NA, PlotCLs=T, CCResults=NA)
 }

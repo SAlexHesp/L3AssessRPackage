@@ -31,7 +31,7 @@ GetLengthBasedCatchCurveResults(
 \arguments{
 \item{params}{vector of model parameters in log space (params) to be estimated}
 
-\item{DistnType}{1 = Multinomial, 2 = Dirichlet multinomial}
+\item{DistnType}{1 = Multinomial, 2 = Dirichlet multinomial  (for marginal length comp)}
 
 \item{GrowthCurveType}{1 = von Bertalanffy, 2 = Schnute}
 

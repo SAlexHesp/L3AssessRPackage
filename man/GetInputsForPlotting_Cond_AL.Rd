@@ -8,6 +8,8 @@ GetInputsForPlotting_Cond_AL(
   params,
   RefnceAges,
   MLL,
+  DistnType,
+  nSexes,
   GrowthCurveType,
   SelectivityType,
   ObsRetCatchFreqAtLen,
@@ -31,6 +33,10 @@ GetInputsForPlotting_Cond_AL(
 \item{RefnceAges}{Reference ages for Schnute growth curve (set to NA for von Bertalanffy growth curve)}
 
 \item{MLL}{minimum legal length (for setting knife edge retention, set to NA if not assumed)}
+
+\item{DistnType}{1 = Multinomial, 2 = Dirichlet multinomial  (for marginal length comp)}
+
+\item{nSexes}{1 or 2 (for estimating growth parameters)}
 
 \item{GrowthCurveType}{1=von Bertalanffy, 2=Schnute}
 

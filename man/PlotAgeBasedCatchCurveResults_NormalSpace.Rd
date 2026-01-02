@@ -20,7 +20,8 @@ PlotAgeBasedCatchCurveResults_NormalSpace(
   xint,
   ymax,
   yint,
-  PlotCLs
+  PlotCLs,
+  CCResults
 )
 }
 \arguments{
@@ -55,6 +56,8 @@ PlotAgeBasedCatchCurveResults_NormalSpace(
 \item{yint}{y axis interval}
 
 \item{PlotCLs}{logical (TRUE=plot 95 percent confidence limits for lines)}
+
+\item{CCResults}{results of applied catch curve model 1, 2 or 3. Can set to NA.}
 }
 \value{
 plot of expected vs observed proportions at age
@@ -93,12 +96,12 @@ Init_FMort = 0.2
 Init_SelA50 = 5
 Init_SelDelta = 2
 params = log(c(Init_FMort, Init_SelA50, Init_SelDelta))
-res=GetLogisticCatchCurveResults(params, NatMort, Ages, ObsAgeFreq)
-res$ParamEst
+CCResults=GetLogisticCatchCurveResults(params, NatMort, Ages, ObsAgeFreq)
+CCResults$ParamEst
 PlotAgeBasedCatchCurveResults_NormalSpace(RecAssump, SpecRecAge=NA, MinFreq, MinAge, MaxAge, NatMort,
                                           ObsAgeFreq, CatchCurveModel, MainLabel=NA,
                                           xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA,
-                                          ymax=NA, yint=NA, PlotCLs=T)
+                                          ymax=NA, yint=NA, PlotCLs=T, CCResults)
 
 # Simulate data from Dirichlet multinomial distribution (single sex)
 library(dirmult)
@@ -121,13 +124,13 @@ Init_SelDelta = 2
 Init_theta = 0.35
 Init_theta_logit = log(Init_theta/(1-Init_theta)) # logit transform (so theta is always between 0 and 1)
 params = c(log(Init_FMort), log(Init_SelA50), log(Init_SelDelta), Init_theta_logit)
-res=GetLogisticCatchCurveResults(params, NatMort, Ages, ObsAgeFreq)
-res$ParamEst
-res$EffSampSize
+CCResults=GetLogisticCatchCurveResults(params, NatMort, Ages, ObsAgeFreq)
+CCResults$ParamEst
+CCResults$EffSampSize
 PlotAgeBasedCatchCurveResults_NormalSpace(RecAssump, SpecRecAge=NA, MinFreq, MinAge, MaxAge, NatMort,
                                           ObsAgeFreq, CatchCurveModel, MainLabel=NA,
                                           xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA,
-                                          ymax=NA, yint=NA, PlotCLs=T)
+                                          ymax=NA, yint=NA, PlotCLs=T, CCResults)
 
 # Simulate data from Multinomial distribution (two sexes)
 set.seed(123)
@@ -148,12 +151,12 @@ Init_FMort = 0.2
 Init_SelA50 = c(5,5)
 Init_SelDelta = c(2,2.5)
 params = log(c(Init_FMort, Init_SelA50, Init_SelDelta))
-res=GetLogisticCatchCurveResults(params, NatMort, Ages, ObsAgeFreq)
-res$ParamEst
+CCResults=GetLogisticCatchCurveResults(params, NatMort, Ages, ObsAgeFreq)
+CCResults$ParamEst
 PlotAgeBasedCatchCurveResults_NormalSpace(RecAssump, SpecRecAge=NA, MinFreq, MinAge, MaxAge, NatMort,
                                           ObsAgeFreq, CatchCurveModel, MainLabel=NA,
                                           xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA,
-                                          ymax=NA, yint=NA, PlotCLs=T)
+                                          ymax=NA, yint=NA, PlotCLs=T, CCResults)
 
 # Simulate data from Dirichlet multinomial distribution (two sexes)
 # two sexes
@@ -178,11 +181,11 @@ Init_SelDelta = c(2.5,2.5)
 Init_theta = 0.3
 Init_theta_logit = log(Init_theta/(1-Init_theta)) # logit transform (so theta is always between 0 and 1)
 params = c(log(Init_FMort), log(Init_SelA50), log(Init_SelDelta), Init_theta_logit)
-res=GetLogisticCatchCurveResults(params, NatMort, Ages, ObsAgeFreq)
-res$ParamEst
-res$EffSampSize
+CCResults=GetLogisticCatchCurveResults(params, NatMort, Ages, ObsAgeFreq)
+CCResults$ParamEst
+CCResults$EffSampSize
 PlotAgeBasedCatchCurveResults_NormalSpace(RecAssump, SpecRecAge=NA, MinFreq, MinAge, MaxAge, NatMort,
                                           ObsAgeFreq, CatchCurveModel, MainLabel=NA,
                                           xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA,
-                                          ymax=NA, yint=NA, PlotCLs=T)
+                                          ymax=NA, yint=NA, PlotCLs=T, CCResults)
 }

@@ -8,6 +8,8 @@ PlotAgeLengthCatchCurve_MargLength(
   params,
   RefnceAges,
   MLL,
+  DistnType,
+  nSexes,
   GrowthCurveType,
   SelectivityType,
   ObsRetCatchFreqAtLen,
@@ -40,6 +42,10 @@ PlotAgeLengthCatchCurve_MargLength(
 \item{RefnceAges}{Reference ages for Schnute growth curve (set to NA for von Bertalanffy growth curve)}
 
 \item{MLL}{minimum legal length (for setting knife edge retention, set to NA if not assumed)}
+
+\item{DistnType}{1 = Multinomial, 2 = Dirichlet multinomial  (for marginal length comp)}
+
+\item{nSexes}{1 or 2 (for estimating growth parameters)}
 
 \item{GrowthCurveType}{1=von Bertalanffy, 2=Schnute}
 
@@ -123,6 +129,7 @@ SelectivityAtLen = NA # selectivity vector
 SelParams = c(300, 50) # L50, L95-L50 for gear selectivity
 RetenParams = c(NA, NA) # L50, L95-L50 for retention
 DiscMort = 0
+DistnType = 1 # 1 = Multinomial, 2 = Dirichlet multinomial (for marginal length comp)
 # single sex, von Bertalanffy
 GrowthCurveType = 1 # 1 = von Bertalanffy
 Linf = 800
@@ -134,6 +141,7 @@ Res=SimLenAndAgeFreqData_EqMod(SampleSize, MaxAge, TimeStep, NatMort, FishMort, 
                          SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
 # 2 sexes, von Bertalanffy
 # GrowthCurveType = 1 # 1 = von Bertalanffy
+# DistnType = 1 # 1 = Multinomial, 2 = Dirichlet multinomial (for marginal length comp)
 # Linf = c(700,850)
 # vbK = c(0.25,0.2)
 # CVSizeAtAge = c(0.05,0.05)
@@ -156,6 +164,7 @@ ObsRetCatchFreqAtLengthAndAge = as.matrix(Res$ObsRetCatchFreqAtLengthAndDecAge) 
 #                                       c(nTimeSteps, length(midpt), 2), dimnames=list(rownames(Res$ObsRetCatchFreqAtLengthAndDecAge_Fem),
 #                                                                                      colnames(Res$ObsRetCatchFreqAtLengthAndDecAge_Fem)))
 # get params - 1 sex
+nSexes = 1
 InitFishMort = 0.3 # specify starting parameters
 InitL50 = 320
 InitDelta = 50 # L95-L50
@@ -173,7 +182,7 @@ params = c(InitFishMort_logit, log(c(InitL50, InitDelta, InitLinf, InitvbK, Init
 # InitCVSizeAtAge = 0.05
 # InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform (so F is always between 0 and 1)
 # params = c(InitFishMort_logit, log(c(InitL50, InitDelta, InitLinf, InitvbK, InitCVSizeAtAge)))
-FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
+FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, RefnceAges, MLL, DistnType, nSexes, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
                                                 lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMortType, NatMort, NatMort_sd, TimeStep)
 # Example with specified selectivity vector
 # Simulate data
@@ -182,6 +191,7 @@ SelectivityAtLen = 1 / (1 + exp(-log(19)*(midpt-400)/(500-400)))
 SelParams = c(NA, NA) # L50, L95-L50 for gear selectivity
 RetenParams = c(NA, NA) # L50, L95-L50 for retention
 DiscMort = 0
+DistnType = 1 # 1 = Multinomial, 2 = Dirichlet multinomial (for marginal length comp)
 # single sex, von Bertalanffy
 GrowthCurveType = 1 # 1 = von Bertalanffy
 Linf = 800
@@ -198,16 +208,16 @@ ubnd=Res$ubnd
 ObsRetCatchFreqAtLen = as.vector(Res$ObsRetCatchFreqAtLen) # 1 sex
 ObsRetCatchFreqAtLengthAndAge = as.matrix(Res$ObsRetCatchFreqAtLengthAndDecAge) # 1 sex
 # get params - 1 sex
+nSexes = 1
 InitFishMort = 0.3 # specify starting parameters
 InitLinf = 800
 InitvbK = 0.2
 InitCVSizeAtAge = 0.05
 InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform (so F is always between 0 and 1)
 params = c(InitFishMort_logit, log(c(InitLinf, InitvbK, InitCVSizeAtAge)))
-FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
+FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, RefnceAges, MLL, DistnType, nSexes, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
                                                 lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMortType, NatMort, NatMort_sd, TimeStep)
-PlotAgeLengthCatchCurve_MargLength(params, RefnceAges, MLL, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
+PlotAgeLengthCatchCurve_MargLength(params, RefnceAges, MLL, DistnType, nSexes, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
                                   lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMortType, NatMort, NatMort_sd, TimeStep, MainLabel=NA,
-                                  xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA,
-                                  ymax=0.10, yint=0.02, PlotCLs=TRUE, FittedRes, nReps=200)
+                                  xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA, ymax=0.10, yint=0.02, PlotCLs=TRUE, FittedRes, nReps=200)
 }
