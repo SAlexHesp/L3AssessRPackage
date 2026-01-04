@@ -6,6 +6,7 @@
 \usage{
 GetSelAndMortAtAge_LogisticCatchCurve(
   params,
+  nSexes,
   EstFMort,
   Ages,
   EstSelA50,
@@ -19,6 +20,8 @@ GetSelAndMortAtAge_LogisticCatchCurve(
 \arguments{
 \item{params}{model parameters log(c(FMort, SelA50, SelDelta) for multinomial NLL or
 log(c(FMort, SelA50, SelDelta, theta) for Dirichlet multinomial NLL}
+
+\item{nSexes}{number of sexes}
 
 \item{EstFMort}{estimated fishing mortality}
 

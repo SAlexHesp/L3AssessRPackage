@@ -258,7 +258,8 @@ InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform (so F 
 params = c(InitFishMort_logit, log(c(InitL50, InitDelta, InitLinf, InitvbK, InitCVSizeAtAge)))
 FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, RefnceAges, MLL, DistnType, nSexes, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
                                                 lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMortType, NatMort, NatMort_sd, TimeStep)
-# Examples below for when data are available in 'raw' form, i.e. as lengths and ages for individual fish
+
+# Examples for when data are available in 'raw' form, i.e. as lengths and ages for individual fish
 # Simulate data
 set.seed(123)
 SampleSize=5000
@@ -517,4 +518,66 @@ legend("topright",
        legend = c("Prior density", "Prior median", "Posterior density", "Posterior median", "Posterior 95\% CI"),
        col = c("blue", "blue", "red", "red", "darkgreen"),
        lty = c(1,2,1,2,3), lwd = c(2,1,2,1,1), bty='n', cex=0.8)
+
+# Fit model assuming marginal length distribution conforms to a Dirichlet multinomial distribution
+# Simulate data
+set.seed(123)
+SampleSize=1000
+MaxAge = 26
+TimeStep = 1 # model timestep (e.g. 1 = annual, 1/12 = monthly)
+MinAge = floor(TimeStep)
+nAgeCl = length(MinAge:MaxAge)
+nTimeSteps = length(seq(TimeStep,MaxAge,TimeStep))
+NatMortType = 1 # 1 = fixed, 2 = estimated with prior to allow for uncertainty
+NatMort = 4.22/MaxAge # natural mortality, in normal space. If NatMortType = 2, this is expected value of this parameter in normal space
+NatMort_sd = NA # standard deviation for natural mortality in log space. Set to NA if NatMortType = 1.
+FishMort = 0.2
+MaxLen = 1200
+LenInc = 20
+MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified is knife-edged at MLL
+SelectivityType=2 # 1=selectivity inputted as vector, 2=logistic selectivity params
+SelectivityAtLen = NA # selectivity vector
+SelParams = c(300, 50) # L50, L95-L50 for gear selectivity
+RetenParams = c(NA, NA) # L50, L95-L50 for retention
+DiscMort = 0
+DistnType = 2 # 1 = Multinomial, 2 = Dirichlet multinomial (for marginal length comp)
+# single sex, von Bertalanffy
+GrowthCurveType = 1 # 1 = von Bertalanffy
+Linf = 800
+vbK = 0.2
+CVSizeAtAge = 0.05
+RefnceAges = NA
+GrowthParams = c(Linf, vbK, CVSizeAtAge)
+Res=SimLenAndAgeFreqData_EqMod(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
+                               SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+lbnd=Res$lbnd
+midpt=Res$midpt
+ubnd=Res$ubnd
+ObsRetCatchFreqAtLengthAndAge = as.matrix(Res$ObsRetCatchFreqAtLengthAndDecAge) # 1 sex
+# Now simulate marginal length-frequency data from Dirchlet multinomial distribution.
+nSampEvents = 50
+nFishPerSampEvent = 20
+theta_val = 0.3
+midpt = Res$midpt
+ExpPropAtLen = Res$ModelDiag$ExpRetCatchPropAtLen_Fem
+# plot(midpt, Res$ModelDiag$ExpRetCatchPropAtLen_Fem, "l")
+# lines(midpt, Res$ModelDiag$ExpRetCatchPropAtLen_Mal, col="blue") # check that same for both sexes (as single sex model)
+res=SimLenFreqDat_DirMultDistn_EqMod(nSampEvents, nFishPerSampEvent, theta_val, midpt, ExpPropAtLen)
+plot(res$midpt, Res$ObsRetCatchFreqAtLen, "o")
+lines(res$midpt, res$simLenFreq, "o", col="blue")
+# Fit length-based catch curve, assuming Dirichlet multinomial distribution
+ObsRetCatchFreqAtLen = res$simLenFreq
+nSexes = 1
+InitFishMort = 0.3 # specify starting parameters
+InitL50 = 320
+InitDelta = 50 # L95-L50
+InitLinf = 800
+InitvbK = 0.2
+InitCVSizeAtAge = 0.05
+InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform (so F is always between 0 and 1)
+InitTheta = 0.3 # specify starting parameters
+InitTheta_logit = log(InitTheta/(1-InitTheta)) # logit transform
+params = c(InitFishMort_logit, log(c(InitL50, InitDelta, InitLinf, InitvbK, InitCVSizeAtAge)), InitTheta_logit)
+FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, RefnceAges, MLL, DistnType, nSexes, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
+                                                lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMortType, NatMort, NatMort_sd, TimeStep)
 }

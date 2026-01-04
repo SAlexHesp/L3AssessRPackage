@@ -7,6 +7,7 @@
 CalcDirMultNLL_LogisticCatchCurve(
   params,
   nSexes,
+  NatMortType,
   Ages,
   ObsAgeFreq,
   ExpPropAtAge,
@@ -18,6 +19,8 @@ CalcDirMultNLL_LogisticCatchCurve(
 log(c(FMort, SelA50, SelDelta, theta) for Dirichlet multinomial NLL}
 
 \item{nSexes}{number of sexes}
+
+\item{NatMortType}{1 = fixed, 2 = estimated with prior}
 
 \item{Ages}{ages considered in the analysis}
 

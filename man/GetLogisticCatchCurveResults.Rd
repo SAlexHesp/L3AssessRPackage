@@ -4,13 +4,30 @@
 \alias{GetLogisticCatchCurveResults}
 \title{Get statistical outputs from a fitted catch curve with age-based, logistic selectivity}
 \usage{
-GetLogisticCatchCurveResults(params, NatMort, Ages, ObsAgeFreq)
+GetLogisticCatchCurveResults(
+  params,
+  nSexes,
+  DistnType,
+  NatMortType,
+  NatMort,
+  NatMort_sd,
+  Ages,
+  ObsAgeFreq
+)
 }
 \arguments{
 \item{params}{model parameters log(c(FMort, SelA50, SelDelta) for multinomial NLL or
 log(c(FMort, SelA50, SelDelta, theta) for Dirichlet multinomial NLL}
 
-\item{NatMort}{natural mortality}
+\item{nSexes}{1 or 2}
+
+\item{DistnType}{1 = Multinomial, 2 = Dirichlet multinomial}
+
+\item{NatMortType}{1 = fixed, 2 = estimated with prior}
+
+\item{NatMort}{natural mortality, in normal space. If NatMortType = 2, this is expected value of this parameter in normal space}
+
+\item{NatMort_sd}{standard deviation for natural mortality in log space. Set to NA if NatMortType = 1}
 
 \item{Ages}{ages in observed data}
 
@@ -43,7 +60,7 @@ set.seed(123)
 MinAge = 1
 MaxAge = 40
 Ages = MinAge:MaxAge
-NatMort <- exp(1.46 - (1.01 * (log(MaxAge)))) # i.e. Hoenig's (1983) eqn for fish
+NatMort = exp(1.46 - (1.01 * (log(MaxAge)))) # i.e. Hoenig's (1983) eqn for fish
 FMort = 0.1
 ZMort = FMort + NatMort
 SelA50 = 6
@@ -52,13 +69,16 @@ SampleSize = 1000 # required sample size. For 2 sex model, same sample size gene
 Res=SimAgeFreqData_EqMod(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
 ObsAgeFreq = unlist(as.vector(Res$CatchSample)) # input as vector for single sex model
 # Specify catch curve model and required inputs for that model
-NatMort = 0.104 # Logistic selectivity
-MinFreq = NA # # Logistic selectivity
+nSexes = 1
+DistnType = 1 # 1 = Multinomial, 2 = Dirichlet multinomial
+NatMortType = 1 # 1 = fixed, 2 = estimated with prior
+NatMort = exp(1.46 - (1.01 * (log(MaxAge))))
+NatMort_sd = NA # standard deviation for natural mortality in log space. Set to NA if NatMortType = 1
 Init_FMort = 0.2
 Init_SelA50 = 5
 Init_SelDelta = 2
 params = log(c(Init_FMort, Init_SelA50, Init_SelDelta))
-res=GetLogisticCatchCurveResults(params, NatMort, Ages, ObsAgeFreq)
+res=GetLogisticCatchCurveResults(params, nSexes, DistnType, NatMortType, NatMort, NatMort_sd, Ages, ObsAgeFreq)
 res$ParamEst
 library(dirmult)
 # Simulate data from Dirichlet multinomial distribution (single sex)
@@ -74,13 +94,18 @@ simDat = simPop(J=50, K=nAges, n=10, pi=as.vector(unlist(Res$PropAtAge[1,])), th
 simAges = data.frame(simDat$data)
 colnames(simAges)=Ages
 ObsAgeFreq = as.vector(colSums(simAges))
+nSexes = 1
+DistnType = 2 # 1 = Multinomial, 2 = Dirichlet multinomial
+NatMortType = 1 # 1 = fixed, 2 = estimated with prior
+NatMort = exp(1.46 - (1.01 * (log(MaxAge))))
+NatMort_sd = NA # standard deviation for natural mortality in log space. Set to NA if NatMortType = 1
 Init_FMort = 0.1
 Init_SelA50 = 5
 Init_SelDelta = 2
 Init_theta = 0.35
 Init_theta_logit = log(Init_theta/(1-Init_theta)) # logit transform (so theta is always between 0 and 1)
 params = c(log(Init_FMort), log(Init_SelA50), log(Init_SelDelta), Init_theta_logit)
-res=GetLogisticCatchCurveResults(params, NatMort, Ages, ObsAgeFreq)
+res=GetLogisticCatchCurveResults(params, nSexes, DistnType, NatMortType, NatMort, NatMort_sd, Ages, ObsAgeFreq)
 res$ParamEst
 res$EffSampSize
 # Simulate data from Multinomial distribution (two sexes)
@@ -97,11 +122,16 @@ SampleSize = 1000 # required sample size. For 2 sex model, same sample size gene
 Res=SimAgeFreqData_EqMod(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FMort)
 ObsAgeFreq = Res$CatchSample
 # fit model (multinomial distribution - two sexes)
+nSexes = 2
+DistnType = 1 # 1 = Multinomial, 2 = Dirichlet multinomial
+NatMortType = 1 # 1 = fixed, 2 = estimated with prior
+NatMort = exp(1.46 - (1.01 * (log(MaxAge))))
+NatMort_sd = NA # standard deviation for natural mortality in log space. Set to NA if NatMortType = 1
 Init_FMort = 0.2
 Init_SelA50 = c(5,5)
 Init_SelDelta = c(2,2.5)
 params = log(c(Init_FMort, Init_SelA50, Init_SelDelta))
-res=GetLogisticCatchCurveResults(params, NatMort, Ages, ObsAgeFreq)
+res=GetLogisticCatchCurveResults(params, nSexes, DistnType, NatMortType, NatMort, NatMort_sd, Ages, ObsAgeFreq)
 res$ParamEst
 # Simulate data from Dirichlet multinomial distribution (two sexes)
 # two sexes
@@ -120,13 +150,18 @@ ObsAgeFreq_Mal = as.vector(colSums(simAges_Mal))
 ObsAgeFreq = t(data.frame(ObsAgeFreq_Fem,ObsAgeFreq_Mal))
 colnames(ObsAgeFreq)=Ages
 # fit model (Dirichlet multinomial distribution - two sexes)
+nSexes = 2
+DistnType = 2 # 1 = Multinomial, 2 = Dirichlet multinomial
+NatMortType = 1 # 1 = fixed, 2 = estimated with prior
+NatMort = exp(1.46 - (1.01 * (log(MaxAge))))
+NatMort_sd = NA # standard deviation for natural mortality in log space. Set to NA if NatMortType = 1
 Init_FMort = 0.1
 Init_SelA50 = c(5,5)
 Init_SelDelta = c(2.5,2.5)
 Init_theta = 0.3
 Init_theta_logit = log(Init_theta/(1-Init_theta)) # logit transform (so theta is always between 0 and 1)
 params = c(log(Init_FMort), log(Init_SelA50), log(Init_SelDelta), Init_theta_logit)
-res=GetLogisticCatchCurveResults(params, NatMort, Ages, ObsAgeFreq)
+res=GetLogisticCatchCurveResults(params, nSexes, DistnType, NatMortType, NatMort, NatMort_sd, Ages, ObsAgeFreq)
 res$ParamEst
 res$EffSampSize
 }

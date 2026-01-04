@@ -5,18 +5,22 @@
 \title{Get parameter estimates and associated 95% CLs, in normal space, for age-based catch curve with
 logistic selectivity}
 \usage{
-GetParamEst_LogisticCatchCurve(params, ses)
+GetParamEst_LogisticCatchCurve(params, ses, nSexes, DistnType, NatMortType)
 }
 \arguments{
 \item{params}{model parameters log(c(FMort, SelA50, SelDelta) for multinomial NLL or
 log(c(FMort, SelA50, SelDelta, theta) for Dirichlet multinomial NLL}
 
-\item{ses}{standard errors calculated for each of the estimated model parameters}
+\item{ses}{standard errors calculated for each of the estimated model parameter}
+
+\item{nSexes}{1 or 2}
+
+\item{DistnType}{1 = Multinomial, 2 = Dirichlet multinomial}
+
+\item{NatMortType}{1 = fixed, 2 = estimated with prior}
 }
 \value{
-All estimated parameters and 95 percent CLs (ParamEst), estimates of the following
-individual parameters with 96 percent CLs (EstFMort, EstSelA50, EstSelA95, EstSelA50_1,
-EstSelA95_1, EstSelA50_2, EstSelA95_2, EstTheta)
+All estimated parameters and 95 percent CLs (ParamEst), and also for estimates of individual selectivity parameters
 }
 \description{
 This function returns estimated parameters, in normal space, for the age-based catch curve with

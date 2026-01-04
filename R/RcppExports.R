@@ -9,8 +9,8 @@ CalcNLLCondAgeAtLength_cpp <- function(nLenCl, nAgeCl, ObsCatchFreqAtLengthAndIn
     .Call(`_L3Assess_CalcNLLCondAgeAtLength_cpp`, nLenCl, nAgeCl, ObsCatchFreqAtLengthAndIntAge, ExpRetCatchPropIntAgeGivenLength)
 }
 
-CalcCatches_AgeAndLengthBasedCatchCurves_cpp <- function(params, NatMort, RecLenDist, InitRecNumber, MaxAge, TimeStep, nTimeSteps, nLenCl, midpt, RetAtLength, SelAtLength, DiscMort, LTM) {
-    .Call(`_L3Assess_CalcCatches_AgeAndLengthBasedCatchCurves_cpp`, params, NatMort, RecLenDist, InitRecNumber, MaxAge, TimeStep, nTimeSteps, nLenCl, midpt, RetAtLength, SelAtLength, DiscMort, LTM)
+CalcCatches_AgeAndLengthBasedCatchCurves_cpp <- function(params, NatMortVal, RecLenDist, InitRecNumber, MaxAge, TimeStep, nTimeSteps, nLenCl, midpt, RetAtLength, SelAtLength, DiscMort, LTM) {
+    .Call(`_L3Assess_CalcCatches_AgeAndLengthBasedCatchCurves_cpp`, params, NatMortVal, RecLenDist, InitRecNumber, MaxAge, TimeStep, nTimeSteps, nLenCl, midpt, RetAtLength, SelAtLength, DiscMort, LTM)
 }
 
 CalcLTM_cpp <- function(TimeStepGrowthSizeInc, CVSizeAtAge, lbnd, midpt, ubnd, nLenCl) {

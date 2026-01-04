@@ -10,7 +10,11 @@ PlotAgeBasedCatchCurveResults_LogSpace(
   MinFreq,
   MinAge,
   MaxAge,
+  nSexes,
+  DistnType,
+  NatMortType,
   NatMort,
+  NatMort_sd,
   ObsAgeFreq,
   CatchCurveModel,
   MainLabel,
@@ -36,7 +40,15 @@ PlotAgeBasedCatchCurveResults_LogSpace(
 
 \item{MaxAge}{maximum age}
 
-\item{NatMort}{natural mortality}
+\item{nSexes}{1 or 2}
+
+\item{DistnType}{1 = Multinomial, 2 = Dirichlet multinomial}
+
+\item{NatMortType}{1 = fixed, 2 = estimated with prior}
+
+\item{NatMort}{natural mortality, in normal space. If NatMortType = 2, this is expected value of this parameter in normal space}
+
+\item{NatMort_sd}{standard deviation for natural mortality in log space. Set to NA if NatMortType = 1}
 
 \item{ObsAgeFreq}{observed age frequency data}
 
@@ -82,23 +94,38 @@ Res=SimAgeFreqData_EqMod(SampleSize, MinAge, MaxAge, SelA50, SelA95, NatMort, FM
 ObsAgeFreq = unlist(as.vector(Res$CatchSample)) # input as vector for single sex model
 # Specify catch curve model and required inputs for that model
 # CatchCurveModel = 1 # Chapman Robson
-# NatMort = NA # Chapman Robson
-# RecAssump = 1 # Chapman Robson
-# MinFreq = NA # Chapman Robson
+# nSexes = NA
+# DistnType = NA
+# NatMortType = NA
+# NatMort = NA
+# NatMort_sd = NA
+# RecAssump = 1
+# MinFreq = NA
+# CCResults = NA
 # CatchCurveModel = 2 # Linear
-# NatMort = NA # Linear
-# RecAssump = 1 # Linear
-# MinFreq = 1 # Linear
+# nSexes = NA
+# DistnType = NA
+# NatMortType = NA
+# NatMort = NA
+# NatMort_sd = NA
+# RecAssump = 1
+# MinFreq = 1
+# CCResults = NA
 CatchCurveModel = 3 # Logistic selectivity
-RecAssump = NA # Logistic selectivity
-NatMort = 0.104 # Logistic selectivity
-MinFreq = NA # # Logistic selectivity
+nSexes = 1
+DistnType = 1 # 1 = multinomial, 2 = Dirichlet multinomial
+NatMortType = 1 # 1 = fixed, 2 = estimated with prior
+NatMort = exp(1.46 - (1.01 * (log(MaxAge)))) # i.e. Hoenig's (1983) eqn for fish
+NatMort_sd = NA # in log space if NatMort is estimated, otherwise set to NA
+RecAssump = NA
+NatMort = 0.104
+MinFreq = NA #
+CCResults = NA
 Init_FMort = 0.2
 Init_SelA50 = 5
 Init_SelA95 = 7
 params = log(c(Init_FMort, Init_SelA50, SelA95))
-PlotAgeBasedCatchCurveResults_LogSpace(RecAssump, SpecRecAge=NA, MinFreq, MinAge, MaxAge, NatMort,
-                                       ObsAgeFreq, CatchCurveModel, MainLabel=NA,
-                                       xaxis_lab=NA, yaxis_lab=NA, ymin=NA, xmax=NA, xint=NA,
-                                       ymax=NA, yint=NA, PlotCLs=T, CCResults=NA)
+PlotAgeBasedCatchCurveResults_LogSpace(RecAssump, SpecRecAge=NA, MinFreq, MinAge, MaxAge, nSexes, DistnType, NatMortType,
+                                       NatMort, NatMort_sd, ObsAgeFreq, CatchCurveModel, MainLabel=NA, xaxis_lab=NA,
+                                       yaxis_lab=NA, ymin=NA, xmax=NA, xint=NA, ymax=NA, yint=NA, PlotCLs=T, CCResults=NA)
 }

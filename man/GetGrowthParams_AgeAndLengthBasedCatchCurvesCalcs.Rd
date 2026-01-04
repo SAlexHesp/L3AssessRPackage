@@ -18,7 +18,7 @@ GetGrowthParams_AgeAndLengthBasedCatchCurvesCalcs(
 
 \item{GrowthCurveType}{1=von Bertalanffy, 2=Schnute}
 
-\item{SelectivityType}{1=selectivity inputted as vector, 2=logistic selectivity params,  3=logistic selectivity + retention params}
+\item{SelectivityType}{1=selectivity inputted as vector, 2=logistic selectivity params,}
 }
 \value{
 list including GrowthParams (von Bertalanffy or Schnute growth parameters), GrowthModelType

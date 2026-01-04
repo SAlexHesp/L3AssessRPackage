@@ -4,7 +4,14 @@
 \alias{GetResampResults_LogisticCatchCurve}
 \title{Get estimates of parameters with uncertainty and frequency at age from resampling}
 \usage{
-GetResampResults_LogisticCatchCurve(params, vcov.params, nSexes, Ages)
+GetResampResults_LogisticCatchCurve(
+  params,
+  vcov.params,
+  nSexes,
+  DistnType,
+  NatMortType,
+  Ages
+)
 }
 \arguments{
 \item{params}{model parameters log(c(FMort, SelA50, SelDelta) for multinomial NLL or
@@ -12,15 +19,18 @@ log(c(FMort, SelA50, SelDelta, theta) for Dirichlet multinomial NLL}
 
 \item{vcov.params}{variance-covarience matrix for estimated parameters}
 
-\item{nSexes}{number of sexes}
+\item{nSexes}{1 or 2}
+
+\item{DistnType}{1 = Multinomial, 2 = Dirichlet multinomial}
+
+\item{NatMortType}{1 = fixed, 2 = estimated with prior}
 
 \item{Ages}{ages considered in analysis}
 }
 \value{
 all values for resampled, estimated parameters (sims), estimates from resampling of estimated
 frequencies at age with 95 percent CLs, either for combined or separate sexes (EstFreq.sim_1, EstFreq.sim_2,
-EstFreq, EstFreq_Zlow, EstFreq_Zup, EstFreq_Zlow_2, EstFreq_Zup_2), and values for individual parameters
-(SelA50.sim, SelDelta.sim, SelA95.sim, FMort.sim, EstZMort.sim)
+EstFreq, EstFreq_Zlow, EstFreq_Zup, EstFreq_Zlow_2, EstFreq_Zup_2), and values for individual parameters (ParamSims)
 }
 \description{
 This function returns values estimates of parameters with uncertainty and frequency at age from resampling

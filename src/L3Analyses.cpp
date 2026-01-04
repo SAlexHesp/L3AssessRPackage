@@ -67,7 +67,7 @@ double CalcNLLCondAgeAtLength_cpp(const int nLenCl, const int nAgeCl,
 }
 
 // [[Rcpp::export]]
-List CalcCatches_AgeAndLengthBasedCatchCurves_cpp(NumericVector params, const double NatMort,
+List CalcCatches_AgeAndLengthBasedCatchCurves_cpp(NumericVector params, const double NatMortVal,
                                                   NumericVector RecLenDist, const double InitRecNumber, const int MaxAge,
                                                   const double TimeStep, const int nTimeSteps, const int nLenCl, NumericVector midpt,
                                                   NumericVector RetAtLength, NumericVector SelAtLength, const double DiscMort,
@@ -113,7 +113,7 @@ List CalcCatches_AgeAndLengthBasedCatchCurves_cpp(NumericVector params, const do
     FAtLen(i) = (SelLandAtLength(i) + (DiscMort * SelDiscAtLength(i))) * FishMort;
 
     // total mortality at length
-    ZAtLen(i) = NatMort + FAtLen(i);
+    ZAtLen(i) = NatMortVal + FAtLen(i);
 
     // fishing mortality used to calculate numbers of fish caught and retained
     FAtLenReten(i) = SelLandAtLength(i) * FishMort;
