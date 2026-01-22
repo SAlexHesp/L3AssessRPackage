@@ -83,6 +83,40 @@
  }
 
 
+ #' Generic function to add axes and axes labels to plots
+ #'
+ #' @keywords internal
+ #' @param xmin x axis minimum
+ #' @param xmax x axis maximum
+ #' @param xint x axis tick interval
+ #' @param ymin y axis minimum
+ #' @param ymax y axis maximum
+ #' @param yint y axis tick interval
+ #' @param cexval label size
+ #' @param cexaxisval axis size
+ #' @param lwdval line widths
+ #' @param lineval axis offset
+ #' @param lasval axis orientation
+ #'
+ #' @return adds axes to plots
+ AddAxesAndTickLabelsToPlot <- function(xmin, xmax, xint, ymin, ymax, yint, cexval, cexaxisval, lwdval, lineval, lasval) {
+
+   if (is.na(xmin)) xmin=0
+   if (is.na(ymin)) ymin=0
+   if (is.na(cexval)) cexval=1
+   if (is.na(cexaxisval)) cexaxisval=1
+   if (is.na(lwdval)) lwdval=1
+   if (is.na(lasval)) lasval=1
+   if (is.na(lineval)) lineval=0
+
+   axis(1, at = seq(xmin, xmax, xint), line = lineval, labels = F)
+   axis(2, at = seq(ymin, ymax, yint), line = lineval, labels = F)
+   axis(1, at = seq(xmin, xmax, xint), lwd=lwdval, labels=T, line=lineval, cex=cexval, cex.axis=cexaxisval, las=lasval)
+   axis(2, at = seq(ymin, ymax, yint), lwd=lwdval, labels=T, line=lineval, cex=cexval, cex.axis=cexaxisval, las=lasval)
+
+ }
+
+
  # ****************************************
  # general functions for outputting results
  # ****************************************
@@ -119,38 +153,6 @@
    return(result)
  }
 
- #' Generic function to add axes and axes labels to plots
- #'
- #' @keywords internal
- #' @param xmin x axis minimum
- #' @param xmax x axis maximum
- #' @param xint x axis tick interval
- #' @param ymin y axis minimum
- #' @param ymax y axis maximum
- #' @param yint y axis tick interval
- #' @param cexval label size
- #' @param cexaxisval axis size
- #' @param lwdval line widths
- #' @param lineval axis offset
- #' @param lasval axis orientation
- #'
- #' @return adds axes to plots
- AddAxesAndTickLabelsToPlot <- function(xmin, xmax, xint, ymin, ymax, yint, cexval, cexaxisval, lwdval, lineval, lasval) {
-
-   if (is.na(xmin)) xmin=0
-   if (is.na(ymin)) ymin=0
-   if (is.na(cexval)) cexval=1
-   if (is.na(cexaxisval)) cexaxisval=1
-   if (is.na(lwdval)) lwdval=1
-   if (is.na(lasval)) lasval=1
-   if (is.na(lineval)) lineval=0
-
-   axis(1, at = seq(xmin, xmax, xint), line = lineval, labels = F)
-   axis(2, at = seq(ymin, ymax, yint), line = lineval, labels = F)
-   axis(1, at = seq(xmin, xmax, xint), lwd=lwdval, labels=T, line=lineval, cex=cexval, cex.axis=cexaxisval, las=lasval)
-   axis(2, at = seq(ymin, ymax, yint), lwd=lwdval, labels=T, line=lineval, cex=cexval, cex.axis=cexaxisval, las=lasval)
-
- }
 
 # ****************
 # growth functions
@@ -12520,7 +12522,8 @@ GetResampResults_LogisticCatchCurve <- function(params, vcov.params, nSexes, Dis
 #' @return negative log-likelihood (NLL)
 Calculate_NLL_LogisticCatchCurve <- function(params) {
 
-  Ages = MinAge:MaxAge
+  MinAge = min(Ages); MaxAge = max(Ages)
+
   if (nSexes == 1) {
     TotObsAgeFreq = ObsAgeFreq
   }
@@ -12919,6 +12922,158 @@ GetLogisticCatchCurveResults <- function (params, nSexes, DistnType, NatMortType
 
 }
 
+#' Plot parameter correlations estimated by age, length and age-length catch curves
+#'
+#' This function produced a plot to visualise parameter correlations for multiple catch
+#' curve models, using the variable ParamSims, which contains randomly-generated values
+#' of the parameters, assuming (prior to any back-transformations), they conform to a
+#' multivariate normal distribution.
+#'
+#' @param ParamSims randomly-generated parameter values
+#' @param plot_labels names of parameters which can be specified, otherwise set to NA
+#'
+#' @return plot of parameter correlations
+#'
+#' @examples
+#' # Simulate data
+#' library(dirmult)
+#' SampleSize=1000 # sample size for retained catches (and same number for released fish, if an MLL is specified)
+#' set.seed(123)
+#' MaxAge = 30
+#' TimeStep = 1 # model timestep (e.g. 1 = annual, 1/12 = monthly)
+#' NatMort = 4.22/MaxAge # natural mortality, in normal space
+#' FishMort = NatMort
+#' MaxLen = 1200
+#' LenInc = 20
+#' MLL=NA # (minimum legal length) # retention set to 1 for all lengths if MLL set to NA and retention parameters not specified
+#' SelectivityType=2 # 1=selectivity inputted as vector, 2=logistic selectivity params
+#' SelectivityAtLen = NA # selectivity vector
+#' SelParams = c(500, 50) # L50, L95-L50 for gear selectivity
+#' RetenParams = c(NA, NA) # L50, L95-L50 for retention
+#' DiscMort = 0 # proportion of fish that die due to natural mortality
+#' # single sex, von Bertalanffy
+#' DistnType = 1 # 1 = Multinomial, 2 = Dirichlet multinomial
+#' GrowthCurveType = 1 # 1 = von Bertalanffy, 2 = Schnute
+#' Linf = 800
+#' vbK = 0.2
+#' CVSizeAtAge = 0.08
+#' GrowthParams = c(Linf, vbK)
+#' RefnceAges = NA
+#' Res=SimLenAndAgeFreqData_EqMod(SampleSize, MaxAge, TimeStep, NatMort, FishMort, MaxLen, LenInc, MLL, SelectivityType,
+#'                                SelParams, RetenParams, SelectivityAtLen, DiscMort, GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge)
+#'
+#' Ages = Res$ModelDiag$DecAges
+#' ObsAgeFreq  = as.vector(table(factor(Res$ObsDecAgeRetCatch, levels=Ages)))
+#' # Simulate marginal age data from Dirichlet multinomial distribution (single sex)
+#' # J = number of fish sampling events
+#' # K = number of age classes
+#' # n = number of fish sampled from each sampling event
+#' # pi = expected proportion at age
+#' # theta = amount of autocorrelation between ages of fish within sampling events
+#' # Fit catch curve with Dirichlet multinomial distribution objective function (single sex)
+#' set.seed(123)
+#' nSampEvents = 100
+#' nFishPerSampEvent = 10
+#' theta_val = 0.6
+#' simDat = simPop(J=nSampEvents, K=nAges, n=nFishPerSampEvent, pi=as.vector(unlist(Res$ModelDiag$ExpRetCatchPropAtDecAge)), theta=theta_val)
+#' simAges = data.frame(simDat$data)
+#' colnames(simAges)=Ages
+#' ObsAgeFreq = as.vector(colSums(simAges))
+#' # Simulate marginal length data from Dirichlet multinomial distribution (single sex)
+#' midpt = Res$midpt
+#' ExpPropAtLen = Res$ModelDiag$ExpRetCatchPropAtLen_Fem
+#' # plot(midpt, Res$ModelDiag$ExpRetCatchPropAtLen_Fem, "l")
+#' # lines(midpt, Res$ModelDiag$ExpRetCatchPropAtLen_Mal, col="blue") # check that same for both sexes (as single sex model)
+#' res=SimLenFreqDat_DirMultDistn_EqMod(nSampEvents, nFishPerSampEvent, theta_val, midpt, ExpPropAtLen)
+#' ObsRetCatchFreqAtLen = res$simLenFreq
+#'
+#' # Age-based catch curve
+#' # Specify catch curve model and required inputs for that model
+#' nSexes = 1
+#' DistnType = 1 # 1 = Multinomial, 2 = Dirichlet multinomial
+#' NatMortType = 1 # 1 = fixed, 2 = estimated with prior
+#' NatMort = exp(1.46 - (1.01 * (log(MaxAge))))
+#' NatMort_sd = NA # standard deviation for natural mortality in log space. Set to NA if NatMortType = 1
+#' Init_FMort = 0.2
+#' Init_SelA50 = 5
+#' Init_SelDelta = 2
+#' params = log(c(Init_FMort, Init_SelA50, Init_SelDelta))
+#' FittedRes=GetLogisticCatchCurveResults(params, nSexes, DistnType, NatMortType, NatMort, NatMort_sd, Ages, ObsAgeFreq)
+#' FittedRes$ParamEst
+#' ParamSims <- FittedRes$ParamSims[,c(1,3,4)]
+#' plot_labels <- c("F","A[50]","A[95]")
+#' Plot_Param_Correlations(ParamSims, plot_labels)
+#' @export
+Plot_Param_Correlations <- function(ParamSims, plot_labels = NA) {
+
+  # ---- Input checks ----
+  if (!is.data.frame(ParamSims)) {
+    stop("ParamSims must be a data.frame or tibble")
+  }
+
+  # If plot_labels is NA → default to column names
+  if (length(plot_labels) == 1 && is.na(plot_labels)) {
+    plot_labels <- names(ParamSims)
+  } else {
+    if (length(plot_labels) != ncol(ParamSims)) {
+      stop("Length of plot_labels must match number of columns in ParamSims")
+    }
+    colnames(ParamSims) <- plot_labels
+  }
+
+  # ---- Custom function for upper panels: correlation only ----
+  upper_cor <- function(data, mapping, ...) {
+
+    x <- GGally::eval_data_col(data, mapping$x)
+    y <- GGally::eval_data_col(data, mapping$y)
+
+    r <- stats::cor(x, y, use = "pairwise.complete.obs")
+
+    ggplot2::ggplot(data = data, mapping = mapping) +
+      ggplot2::annotate(
+        "text",
+        x = 0.5, y = 0.5,
+        label = sprintf("r = %.2f", r),
+        size = 4
+      ) +
+      ggplot2::theme_void()
+  }
+
+  # ---- Create ggpairs plot ----
+  p <- GGally::ggpairs(
+    ParamSims,
+    lower = list(
+      continuous = GGally::wrap(
+        "points",
+        alpha  = 0.35,
+        size   = 0.8,
+        colour = "#2C7BB6"
+      )
+    ),
+    upper = list(
+      continuous = upper_cor
+    ),
+    diag = list(
+      continuous = GGally::wrap(
+        "densityDiag",
+        alpha  = 0.5,
+        fill   = "#ABD9E9",
+        colour = "#2C7BB6"
+      )
+    ),
+    labeller = "label_parsed"
+  ) +
+    ggplot2::theme_bw() +
+    ggplot2::theme(
+      panel.grid       = ggplot2::element_blank(),
+      strip.background = ggplot2::element_rect(fill = "white"),
+      strip.text       = ggplot2::element_text(size = 11),
+      axis.text        = ggplot2::element_text(size = 9),
+      axis.title       = ggplot2::element_text(size = 10)
+    )
+
+  return(p)
+}
 
 #' Plot age based catch curve results in normal space
 #'
@@ -18622,9 +18777,87 @@ PlotPerRecruit_Biom_no_err_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, mid
   }
 }
 
+#' Get random parameter values for use in age-based per recruit analysis
+#'
+#'
+#' This function get random parameter values (M, h, F, and gear selectivity) of specified number,
+#' and according to how these are generated as specified by the user, for use in age-based per recruit analysis
+#'
+#' @keywords internal
+#'
+#' @param Steepness steepness parameter of Beverton-Holt or Ricker stock-recruitment relationship
+#' @param Steepness_sd specified error for steepness parameter of Beverton-Holt or Ricker stock-recruitment relationship
+#' @param NatMort natural mortality
+#' @param NatMort_sd specified error for natural mortality
+#' @param Current_F estimate of current fishing mortality
+#' @param Current_F_sd error for estimate of current fishing mortality
+#' @param ParamSims random values of parameters estimated by the age-based catch curve with logistic selectivity
+#' @param nReps number of random parameter sets from parametric resampling to generate per recruit outputs with error
+#'
+#' @return random parameter values
+GetRandomParamVals_PreRecruit_AB_with_err <- function(Steepness, Steepness_sd, Current_F, Current_F_sd, NatMort, NatMort_sd, ParamSims, nReps) {
+
+  hValues=NA; FValues=NA; MValues=NA
+  Gear_sel_A50_1Values=NA; Gear_sel_A50_2Values=NA
+  Gear_sel_A95_1Values=NA; Gear_sel_A95_2Values=NA
+
+  # Steepness - assumed to be independent of other parameters
+  if (Steepness_sd[2]==1) {
+    hValues = rnorm(nReps, Steepness, Steepness_sd[1])
+  } else {
+    hValues = exp(rnorm(nReps, log(Steepness), Steepness_sd[1]))
+  }
+
+  if (length(ParamSims) == 1 && is.na(ParamSims)) {
+    if (Current_F_sd[2]==1) { # normal
+      FValues = rnorm(nReps, Current_F, Current_F_sd[1])
+    } else { # lognormal
+      FValues = exp(rnorm(nReps, log(Current_F), Current_F_sd[1]))
+    }
+    if (NatMort_sd[2]==1) {
+      MValues = rnorm(nReps, NatMort, NatMort_sd[1])
+    } else {
+      MValues = exp(rnorm(nReps, log(NatMort), NatMort_sd[1]))
+    }
+  } else {
+    if ("FMort.sim" %in% names(ParamSims)) FValues <- ParamSims$FMort.sim
+    if ("NatMort.sim" %in% names(ParamSims)) {
+      MValues <- MValues <- ParamSims$NatMort.sim
+    } else {
+      if (NatMort_sd[2]==1) {
+        MValues = rnorm(nReps, NatMort, NatMort_sd[1])
+      } else {
+        MValues = exp(rnorm(nReps, log(NatMort), NatMort_sd[1]))
+      }
+    }
+    if ("SelA50.sim" %in% names(ParamSims)) {
+      Gear_sel_A50_1Values <- ParamSims$SelA50.sim
+      Gear_sel_A50_2Values <- ParamSims$SelA50.sim
+    }
+    if ("SelA95.sim" %in% names(ParamSims)) {
+      Gear_sel_A95_1Values <- ParamSims$SelA95.sim
+      Gear_sel_A95_2Values <- ParamSims$SelA95.sim
+    }
+    if ("SelA50.sim_1" %in% names(ParamSims)) Gear_sel_A50_1Values <- c(ParamSims$SelA50.sim_1)
+    if ("SelA95.sim_1" %in% names(ParamSims)) Gear_sel_A95_1Values <- c(ParamSims$SelA95.sim_1)
+    if ("SelA50.sim_2" %in% names(ParamSims)) Gear_sel_A50_2Values <- c(ParamSims$SelA50.sim_2)
+    if ("SelA95.sim_2" %in% names(ParamSims)) Gear_sel_A95_2Values <- c(ParamSims$SelA95.sim_2)
+  }
+
+  results = list(hValues=hValues,
+                 FValues=FValues,
+                 MValues=MValues,
+                 Gear_sel_A50_1Values=Gear_sel_A50_1Values,
+                 Gear_sel_A95_1Values=Gear_sel_A95_1Values,
+                 Gear_sel_A50_2Values=Gear_sel_A50_2Values,
+                 Gear_sel_A95_2Values=Gear_sel_A95_2Values)
+
+  return(results)
+
+}
 
 #' Get outputs from per age-based recruit analysis across a range of fishing mortality values, allowing for error in
-#' M, h and F
+#' combinations of M, h, F, gear selectivity
 #'
 #' This function provides outputs associated with age-based per recruit analysis, and an
 #' extended form of this analysis with a Beverton-Holt stock recruitment relationship to account
@@ -18672,6 +18905,7 @@ PlotPerRecruit_Biom_no_err_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, mid
 #' @param RefPointPlotOpt plotting option for reference points, 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 #' @param Current_F estimate of current fishing mortality
 #' @param Current_F_sd error for estimate of current fishing mortality
+#' @param ParamSims random values of parameters estimated by the age-based catch curve with logistic selectivity
 #' @param nReps number of random parameter sets from parametric resampling to generate per recruit outputs with error
 #'
 #' @return fishing mortality values for analysis (PerRec_FValues), female SPR estimates vs F (Fem_SPR_Vals)
@@ -18724,42 +18958,37 @@ PlotPerRecruit_Biom_no_err_LB <- function(MaxModelAge, TimeStep, lbnd, ubnd, mid
 #' Current_F <- 0.1 # estimate of fishing mortality, e.g. from catch curve analysis
 #' Current_F_sd <- c(0.005,1) # sd, distribution type, 1=normal, 2=lognormal
 #' RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
+#' ParamSims = NA
 #' nReps = 50
 #' GetPerRecruitResults_AB_with_err(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge, lenwt_a, ln_lenwt_a,
 #'                                  lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern, InitRatioFem,
 #'                                  FinalSex_A50, FinalSex_A95, EstSexRatioAtAge, EggFertParam, mat_A50, mat_A95,
 #'                                  EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95,
 #'                                  EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness,
-#'                                  Steepness_sd, SRrel_Type, NatMort, NatMort_sd, Current_F, Current_F_sd, nReps)
+#'                                  Steepness_sd, SRrel_Type, NatMort, NatMort_sd, Current_F, Current_F_sd, ParamSims, nReps)
 #' @export
 GetPerRecruitResults_AB_with_err <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge, lenwt_a, ln_lenwt_a,
                                              lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern, InitRatioFem,
                                              FinalSex_A50, FinalSex_A95, EstSexRatioAtAge, EggFertParam, mat_A50, mat_A95,
                                              EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95,
                                              EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness,
-                                             Steepness_sd, SRrel_Type, NatMort, NatMort_sd, Current_F, Current_F_sd, nReps) {
+                                             Steepness_sd, SRrel_Type, NatMort, NatMort_sd, Current_F, Current_F_sd, ParamSims, nReps) {
 
-
-  if (Current_F_sd[2]==1) { # normal
-    FValues = rnorm(nReps, Current_F, Current_F_sd[1])
-  } else { # lognormal
-    FValues = exp(rnorm(nReps, log(Current_F), Current_F_sd[1]))
-  }
-  if (Steepness_sd[2]==1) {
-    hValues = rnorm(nReps, Steepness, Steepness_sd[1])
-  } else {
-    hValues = exp(rnorm(nReps, log(Steepness), Steepness_sd[1]))
-  }
-  if (NatMort_sd[2]==1) {
-    MValues = rnorm(nReps, NatMort, NatMort_sd[1])
-  } else {
-    MValues = exp(rnorm(nReps, log(NatMort), NatMort_sd[1]))
-  }
+  # get random parameter values used in per recruit resampling
+  Res = GetRandomParamVals_PreRecruit_AB_with_err(Steepness, Steepness_sd, Current_F, Current_F_sd, NatMort, NatMort_sd, ParamSims, nReps)
+  hValues = Res$hValues; FValues = Res$FValues; MValues = Res$MValues
+  Gear_sel_A50_1Values = Res$Gear_sel_A50_1Values; Gear_sel_A95_1Values = Res$Gear_sel_A95_1Values
+  Gear_sel_A50_2Values = Res$Gear_sel_A50_2Values; Gear_sel_A95_2Values = Res$Gear_sel_A95_2Values
 
   for (i in 1:nReps) {
-    FMort = FValues[i]
     Steepness = hValues[i]
+    Current_F = FValues[i]
     NatMort = MValues[i]
+    if (!is.na(Gear_sel_A50_1Values[1])) {
+      Gear_sel_A50 = c(Gear_sel_A50_1Values[i], Gear_sel_A50_2Values[i])
+      Gear_sel_A95 = c(Gear_sel_A95_1Values[i], Gear_sel_A95_2Values[i])
+    }
+
     PREst = GetPerRecruitResults_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge, lenwt_a, ln_lenwt_a,
                                     lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern, InitRatioFem,
                                     FinalSex_A50, FinalSex_A95, EstSexRatioAtAge, EggFertParam, mat_A50, mat_A95,
@@ -18798,76 +19027,101 @@ GetPerRecruitResults_AB_with_err <- function(MaxModelAge, TimeStep, Linf, vbK, t
 
     BMSY_Vals[i] = PREst$BMSY_Thresh
 
-    cat("i",i,'\n')
+    cat("i",i,"Steepness",Steepness,"Current_F",Current_F,"NatMort",NatMort,"PREst$Eq_FemRelSpBiom",PREst$Eq_FemRelSpBiom,'\n')
   }
 
   # Save key outputs (median and 95% confidence levels)
   EstMedFemSPR = round(median(Fem_SPR_Vals),3)
+  EstLow60FemSPR = as.numeric(round(quantile(Fem_SPR_Vals, 0.2),3))
+  EstUp60FemSPR = as.numeric(round(quantile(Fem_SPR_Vals, 0.8),3))
   EstLow95FemSPR = as.numeric(round(quantile(Fem_SPR_Vals, 0.025),3))
   EstUp95FemSPR = as.numeric(round(quantile(Fem_SPR_Vals, 0.975),3))
   EstFemSPR = data.frame(EstMedFemSPR=EstMedFemSPR,
+                         EstLow60FemSPR=EstLow60FemSPR,
+                         EstUp60FemSPR=EstUp60FemSPR,
                          EstLow95FemSPR=EstLow95FemSPR,
                          EstUp95FemSPR=EstUp95FemSPR)
 
   EstMedMalSPR = round(median(Mal_SPR_Vals),3)
+  EstLow60MalSPR = as.numeric(round(quantile(Mal_SPR_Vals, 0.2),3))
+  EstUp60MalSPR = as.numeric(round(quantile(Mal_SPR_Vals, 0.8),3))
   EstLow95MalSPR = as.numeric(round(quantile(Mal_SPR_Vals, 0.025),3))
   EstUp95MalSPR = as.numeric(round(quantile(Mal_SPR_Vals, 0.975),3))
   EstMalSPR = data.frame(EstMedMalSPR=EstMedMalSPR,
+                         EstLow60MalSPR=EstLow60MalSPR,
+                         EstUp60MalSPR=EstUp60MalSPR,
                          EstLow95MalSPR=EstLow95MalSPR,
                          EstUp95MalSPR=EstUp95MalSPR)
 
   EstMedCombSexSPR = round(median(CombSex_SPR_Vals),3)
+  EstLow60CombSexSPR = as.numeric(round(quantile(CombSex_SPR_Vals, 0.2),3))
+  EstUp60CombSexSPR = as.numeric(round(quantile(CombSex_SPR_Vals, 0.8),3))
   EstLow95CombSexSPR = as.numeric(round(quantile(CombSex_SPR_Vals, 0.025),3))
   EstUp95CombSexSPR = as.numeric(round(quantile(CombSex_SPR_Vals, 0.975),3))
   EstCombSexSPR = data.frame(EstMedCombSexSPR=EstMedCombSexSPR,
+                             EstLow60CombSexSPR=EstLow60CombSexSPR,
+                             EstUp60CombSexSPR=EstUp60CombSexSPR,
                              EstLow95CombSexSPR=EstLow95CombSexSPR,
                              EstUp95CombSexSPR=EstUp95CombSexSPR)
 
   EstMedEquilRelFemSpBiom = round(median(Eq_RelFemSpBiom_Vals),3)
+  Low60EquilRelFemSpBiom = as.numeric(round(quantile(Eq_RelFemSpBiom_Vals, 0.2),3))
+  Upp60EquilRelFemSpBiom = as.numeric(round(quantile(Eq_RelFemSpBiom_Vals, 0.8),3))
   Low95EquilRelFemSpBiom = as.numeric(round(quantile(Eq_RelFemSpBiom_Vals, 0.025),3))
   Upp95EquilRelFemSpBiom = as.numeric(round(quantile(Eq_RelFemSpBiom_Vals, 0.975),3))
   EstEquilRelFemSpBiom = data.frame(EstMedEquilRelFemSpBiom=EstMedEquilRelFemSpBiom,
+                                    Low60EquilRelFemSpBiom=Low60EquilRelFemSpBiom,
+                                    Upp60EquilRelFemSpBiom=Upp60EquilRelFemSpBiom,
                                     Low95EquilRelFemSpBiom=Low95EquilRelFemSpBiom,
                                     Upp95EquilRelFemSpBiom=Upp95EquilRelFemSpBiom)
+  cat("EstMedEquilRelFemSpBiom",EstMedEquilRelFemSpBiom,'\n')
+  print(EstEquilRelFemSpBiom)
 
   EstMedEquilRelMalSpBiom = round(median(Eq_RelMalSpBiom_Vals),3)
+  Low60EquilRelMalSpBiom = as.numeric(round(quantile(Eq_RelMalSpBiom_Vals, 0.2),3))
+  Upp60EquilRelMalSpBiom = as.numeric(round(quantile(Eq_RelMalSpBiom_Vals, 0.8),3))
   Low95EquilRelMalSpBiom = as.numeric(round(quantile(Eq_RelMalSpBiom_Vals, 0.025),3))
   Upp95EquilRelMalSpBiom = as.numeric(round(quantile(Eq_RelMalSpBiom_Vals, 0.975),3))
   EstEquilRelMalSpBiom = data.frame(EstMedEquilRelMalSpBiom=EstMedEquilRelMalSpBiom,
+                                    Low60EquilRelMalSpBiom=Low60EquilRelMalSpBiom,
+                                    Upp60EquilRelMalSpBiom=Upp60EquilRelMalSpBiom,
                                     Low95EquilRelMalSpBiom=Low95EquilRelMalSpBiom,
                                     Upp95EquilRelMalSpBiom=Upp95EquilRelMalSpBiom)
 
   EstMedEquilRelCombSexSpBiom = round(median(Eq_RelCombSexSpBiom_Vals),3)
+  Low60EquilRelCombSexSpBiom = as.numeric(round(quantile(Eq_RelCombSexSpBiom_Vals, 0.2),3))
+  Upp60EquilRelCombSexSpBiom = as.numeric(round(quantile(Eq_RelCombSexSpBiom_Vals, 0.8),3))
   Low95EquilRelCombSexSpBiom = as.numeric(round(quantile(Eq_RelCombSexSpBiom_Vals, 0.025),3))
   Upp95EquilRelCombSexSpBiom = as.numeric(round(quantile(Eq_RelCombSexSpBiom_Vals, 0.975),3))
   EstEquilRelCombSexSpBiom = data.frame(EstMedEquilRelCombSexSpBiom=EstMedEquilRelCombSexSpBiom,
+                                        Low60EquilRelCombSexSpBiom=Low60EquilRelCombSexSpBiom,
+                                        Upp60EquilRelCombSexSpBiom=Upp60EquilRelCombSexSpBiom,
                                         Low95EquilRelCombSexSpBiom=Low95EquilRelCombSexSpBiom,
                                         Upp95EquilRelCombSexSpBiom=Upp95EquilRelCombSexSpBiom)
 
 
   EstMedBMSYratio = round(median(BMSY_Vals),3)
+  Low60EstBMSYratio = as.numeric(round(quantile(BMSY_Vals, 0.2),3))
+  Upp60EstBMSYratio = as.numeric(round(quantile(BMSY_Vals, 0.8),3))
   Low95EstBMSYratio = as.numeric(round(quantile(BMSY_Vals, 0.025),3))
   Upp95EstBMSYratio = as.numeric(round(quantile(BMSY_Vals, 0.975),3))
 
-  ResSummary_with_err <- data.frame(EstMedFemSPR, EstLow95FemSPR, EstUp95FemSPR,
-                                    EstMedMalSPR, EstLow95MalSPR, EstUp95MalSPR,
-                                    EstMedCombSexSPR, EstLow95CombSexSPR, EstUp95CombSexSPR,
-                                    EstMedEquilRelFemSpBiom, Low95EquilRelFemSpBiom, Upp95EquilRelFemSpBiom,
-                                    EstMedEquilRelMalSpBiom, Low95EquilRelMalSpBiom, Upp95EquilRelMalSpBiom,
-                                    EstMedEquilRelCombSexSpBiom, Low95EquilRelCombSexSpBiom, Upp95EquilRelCombSexSpBiom,
-                                    EstMedBMSYratio, Low95EstBMSYratio, Upp95EstBMSYratio)
-
-  colnames(ResSummary_with_err)=c("Fem_SPR", "Fem_LowSPR", "Fem_UppSPR",
-                                  "Mal_SPR", "Mal_LowSPR", "Mal_UppSPR",
-                                  "CombSex_SPR", "CombSex_LowSPR", "CombSex_UppSPR",
-                                  "Fem_EquilSB", "Fem_LowEquilSB", "Fem_UppEquilSB",
-                                  "Mal_EquilSB", "Mal_LowEquilSB", "Mal_UppEquilSB",
-                                  "CombSex_EquilSB", "CombSex_LowEquilSB", "CombSex_UppEquilSB",
-                                  "BMSYratio", "BMSYratio_Low", "BMSYratio_Upp")
+  ResSummary_with_err <- t(data.frame(EstMedFemSPR, EstLow60FemSPR, EstUp60FemSPR, EstLow95FemSPR, EstUp95FemSPR,
+                                      EstMedMalSPR, EstLow60MalSPR, EstUp60MalSPR, EstLow95MalSPR, EstUp95MalSPR,
+                                      EstMedCombSexSPR, EstLow60CombSexSPR, EstUp60CombSexSPR, EstLow95CombSexSPR, EstUp95CombSexSPR,
+                                      EstMedEquilRelFemSpBiom, Low60EquilRelFemSpBiom, Upp60EquilRelFemSpBiom, Low95EquilRelFemSpBiom, Upp95EquilRelFemSpBiom,
+                                      EstMedEquilRelMalSpBiom, Low60EquilRelMalSpBiom, Upp60EquilRelMalSpBiom, Low95EquilRelMalSpBiom, Upp95EquilRelMalSpBiom,
+                                      EstMedEquilRelCombSexSpBiom, Low60EquilRelCombSexSpBiom, Upp60EquilRelCombSexSpBiom, Low95EquilRelCombSexSpBiom, Upp95EquilRelCombSexSpBiom,
+                                      EstMedBMSYratio, Low60EstBMSYratio, Upp60EstBMSYratio, Low95EstBMSYratio, Upp95EstBMSYratio))
 
   Results = list(PerRec_FValues = PREst$FishMort,
                  Fem_SPR_Vals=Fem_SPR_Vals,
+                 hValues=hValues,
+                 EstFValues=FValues,
+                 EstMValues=MValues,
                  Eq_RelFemSpBiom_Vals=Eq_RelFemSpBiom_Vals,
+                 Eq_RelMalSpBiom_Vals=Eq_RelMalSpBiom_Vals,
+                 Eq_RelCombSexSpBiom_Vals=Eq_RelCombSexSpBiom_Vals,
                  BMSY_Vals=BMSY_Vals,
                  Sim_FemSPR=Sim_FemSPR,
                  Sim_Eq_RelFemSpBiom=Sim_Eq_RelFemSpBiom,
@@ -18885,6 +19139,144 @@ GetPerRecruitResults_AB_with_err <- function(MaxModelAge, TimeStep, Linf, vbK, t
   return(Results)
 
 }
+
+
+#' Get random parameter values for use in length-based per recruit analysis
+#'
+#'
+#' This function get random parameter values (M, h, F, and gear selectivity) of specified number,
+#' and according to how these are generated as specified by the user, for use in length-based per recruit analysis
+#'
+#' @keywords internal
+#'
+#' @param Steepness steepness parameter of Beverton-Holt or Ricker stock-recruitment relationship
+#' @param Steepness_sd specified error for steepness parameter of Beverton-Holt or Ricker stock-recruitment relationship
+#' @param NatMort natural mortality
+#' @param NatMort_sd specified error for natural mortality
+#' @param Current_F estimate of current fishing mortality
+#' @param Current_F_sd error for estimate of current fishing mortality
+#' @param ParamSims random values of parameters estimated by the age-based catch curve with logistic selectivity
+#' @param nReps number of random parameter sets from parametric resampling to generate per recruit outputs with error
+#'
+#' @return random parameter values
+GetRandomParamVals_PreRecruit_LB_with_err <- function(Steepness, Steepness_sd, Current_F, Current_F_sd, NatMort, NatMort_sd, ParamSims, nReps) {
+
+  hValues=NA; FValues=NA; MValues=NA
+  Sel_L50_1Values=NA; Sel_L95_1Values=NA; Sel_L50_2Values=NA; Sel_L95_2Values=NA
+  Ret_L50_1Values=NA; Ret_L95_1Values=NA; Ret_L50_2Values=NA; Ret_L95_2Values=NA
+  LinfValues=NA; Linf_FValues=NA; Linf_MValues=NA
+  vbKValues=NA; vbK_FValues=NA; vbK_MValues=NA
+  y2Values=NA; y2_FValues=NA; y2_MValues=NA
+  aValues=NA; a_FValues=NA; a_MValues=NA
+  bValues=NA; b_FValues=NA; b_MValues=NA
+  CVValues=NA
+
+  # Steepness - assumed to be independent of other parameters
+  if (Steepness_sd[2]==1) {
+    hValues = rnorm(nReps, Steepness, Steepness_sd[1])
+  } else {
+    hValues = exp(rnorm(nReps, log(Steepness), Steepness_sd[1]))
+  }
+
+  if (length(ParamSims) == 1 && is.na(ParamSims)) {
+    if (Current_F_sd[2]==1) { # normal
+      FValues = rnorm(nReps, Current_F, Current_F_sd[1])
+    } else { # lognormal
+      FValues = exp(rnorm(nReps, log(Current_F), Current_F_sd[1]))
+    }
+    if (NatMort_sd[2]==1) {
+      MValues = rnorm(nReps, NatMort, NatMort_sd[1])
+    } else {
+      MValues = exp(rnorm(nReps, log(NatMort), NatMort_sd[1]))
+    }
+
+  } else {
+
+    if ("F.sim" %in% names(ParamSims)) FValues <- ParamSims$F.sim
+    if ("NatMort.sim" %in% names(ParamSims)) {
+      MValues <- ParamSims$NatMort.sim
+    } else {
+      if (NatMort_sd[2]==1) {
+        MValues = rnorm(nReps, NatMort, NatMort_sd[1])
+      } else {
+        MValues = exp(rnorm(nReps, log(NatMort), NatMort_sd[1]))
+      }
+    }
+
+    # selectivity and retention
+    if ("L50Sel.sim" %in% names(ParamSims)) {
+      Sel_L50_1Values <- ParamSims$L50Sel.sim
+      Sel_L50_2Values <- ParamSims$L50Sel.sim
+    }
+    if ("L95Sel.sim" %in% names(ParamSims)) {
+      Sel_L95_1Values <- ParamSims$L95Sel.sim
+      Sel_L95_2Values <- ParamSims$L95Sel.sim
+    }
+    if ("L50Ret.sim" %in% names(ParamSims)) {
+      Ret_L50_1Values <- ParamSims$L50Ret.sim
+      Ret_L50_2Values <- ParamSims$L50Ret.sim
+    }
+    if ("L95Ret.sim" %in% names(ParamSims)) {
+      Ret_L95_1Values <- ParamSims$L95Ret.sim
+      Ret_L95_2Values <- ParamSims$L95Ret.sim
+    }
+
+    # von Bertalanffy growth parameters
+    if ("Linf.sim" %in% names(ParamSims)) LinfValues <- ParamSims$Linf.sim
+    if ("Linf_F.sim" %in% names(ParamSims)) Linf_FValues <- ParamSims$Linf_F.sim
+    if ("Linf_M.sim" %in% names(ParamSims)) Linf_MValues <- ParamSims$Linf_M.sim
+    if ("vbK.sim" %in% names(ParamSims)) vbKValues <- ParamSims$vbK.sim
+    if ("vbK_F.sim" %in% names(ParamSims)) vbK_FValues <- ParamSims$vbK_F.sim
+    if ("vbK_M.sim" %in% names(ParamSims)) vbK_MValues <- ParamSims$vbK_M.sim
+
+    # Schnute growth parameters
+    if ("y2.sim" %in% names(ParamSims)) y2Values <- ParamSims$y2.sim
+    if ("y2_F.sim" %in% names(ParamSims)) y2_FValues <- ParamSims$y2_F.sim
+    if ("y2_M.sim" %in% names(ParamSims)) y2_MValues <- ParamSims$y2_M.sim
+    if ("a.sim" %in% names(ParamSims)) aValues <- ParamSims$a.sim
+    if ("a.sim_F" %in% names(ParamSims)) a_FValues <- ParamSims$a.sim_F
+    if ("a.sim_M" %in% names(ParamSims)) a_MValues <- ParamSims$a.sim_M
+    if ("b.sim" %in% names(ParamSims)) bValues <- ParamSims$b.sim
+    if ("b.sim_F" %in% names(ParamSims)) b_FValues <- ParamSims$b.sim_F
+    if ("b.sim_M" %in% names(ParamSims)) b_MValues <- ParamSims$b.sim_M
+
+    # growth variation
+    if ("CV.sim" %in% names(ParamSims)) CVValues <- ParamSims$CV.sim
+
+  }
+
+  results = list(hValues=hValues,
+                 FValues=FValues,
+                 MValues=MValues,
+                 Sel_L50_1Values=Sel_L50_1Values,
+                 Sel_L95_1Values=Sel_L95_1Values,
+                 Sel_L50_2Values=Sel_L50_2Values,
+                 Sel_L95_2Values=Sel_L95_2Values,
+                 Ret_L50_1Values=Ret_L50_1Values,
+                 Ret_L95_1Values=Ret_L95_1Values,
+                 Ret_L50_2Values=Ret_L50_2Values,
+                 Ret_L95_2Values=Ret_L95_2Values,
+                 LinfValues=LinfValues,
+                 Linf_FValues=Linf_FValues,
+                 Linf_MValues=Linf_MValues,
+                 vbKValues=vbKValues,
+                 vbK_FValues=vbK_FValues,
+                 vbK_MValues=vbK_MValues,
+                 y2Values=y2Values,
+                 y2_FValues=y2_FValues,
+                 y2_MValues=y2_MValues,
+                 aValues=aValues,
+                 a_FValues=a_FValues,
+                 a_MValues=a_MValues,
+                 bValues=bValues,
+                 b_FValues=b_FValues,
+                 b_MValues=b_MValues,
+                 CVValues=CVValues)
+
+  return(results)
+
+}
+
 
 
 #' Get outputs from length-based per recruit analysis across a range of fishing mortality values, allowing for error in
@@ -18936,6 +19328,7 @@ GetPerRecruitResults_AB_with_err <- function(MaxModelAge, TimeStep, Linf, vbK, t
 #' @param NatMort_sd standard deviation for natural mortality
 #' @param Current_F estimated current fishing mortality
 #' @param Current_F_sd standard deviation for estimated current fishing mortality
+#' @param ParamSims random values of parameters estimated by the age-based catch curve with logistic selectivity
 #' @param nReps number of resamping trials
 #'
 #' @return fishing mortality values for analysis (PerRec_FValues), female SPR estimates vs F (Fem_SPR_Vals)
@@ -19004,38 +19397,66 @@ GetPerRecruitResults_AB_with_err <- function(MaxModelAge, TimeStep, Linf, vbK, t
 #'                                  ReprodScale, ReprodPattern, InitRatioFem, FinalSex_L50, FinalSex_L95, EstSexRatioAtLen,
 #'                                  EggFertParam, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
 #'                                  ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, Steepness_sd, SRrel_Type, NatMort, NatMort_sd,
-#'                                  Current_F, Current_F_sd, nReps)
+#'                                  Current_F, Current_F_sd, ParamSims, nReps)
 #' @export
 GetPerRecruitResults_LB_with_err <- function(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                              RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtLen,
                                              ReprodScale, ReprodPattern, InitRatioFem, FinalSex_L50, FinalSex_L95, EstSexRatioAtLen,
                                              EggFertParam, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
                                              ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, Steepness_sd, SRrel_Type, NatMort, NatMort_sd,
-                                             Current_F, Current_F_sd, nReps) {
+                                             Current_F, Current_F_sd, ParamSims, nReps) {
 
 
-  if (Current_F_sd[2]==1) { # normal
-    FValues = rnorm(nReps, Current_F, Current_F_sd[1])
-  } else { # lognormal
-    FValues = exp(rnorm(nReps, log(Current_F), Current_F_sd[1]))
-  }
-  if (Steepness_sd[2]==1) {
-    hValues = rnorm(nReps, Steepness, Steepness_sd[1])
-  } else {
-    hValues = exp(rnorm(nReps, log(Steepness), Steepness_sd[1]))
-  }
-  if (NatMort_sd[2]==1) {
-    MValues = rnorm(nReps, NatMort, NatMort_sd[1])
-  } else {
-    MValues = exp(rnorm(nReps, log(NatMort), NatMort_sd[1]))
-  }
+  # get random parameter values used in per recruit resampling
+  Res = GetRandomParamVals_PreRecruit_LB_with_err(Steepness, Steepness_sd, Current_F, Current_F_sd, NatMort, NatMort_sd, ParamSims, nReps)
+  hValues=Res$hValues; FValues=Res$FValues; MValues=Res$MValues
+  Sel_L50_1Values=Res$Sel_L50_1Values; Sel_L95_1Values=Res$Sel_L95_1Values
+  Sel_L50_2Values=Res$Sel_L50_2Values; Sel_L95_2Values=Res$Sel_L95_2Values
+  Ret_L50_1Values=Res$Ret_L50_1Values; Ret_L95_1Values=Res$Ret_L95_1Values
+  Ret_L50_2Values=Res$Ret_L50_2Values; Ret_L95_2Values=Res$Ret_L95_2Values
+  LinfValues=Res$LinfValues; Linf_FValues=Res$Linf_FValues; Linf_MValues=Res$Linf_MValues
+  vbKValues=Res$vbKValues; vbK_FValues=Res$vbK_FValues; vbK_MValues=Res$vbK_MValues
+  y2Values=Res$y2Values; y2_FValues=Res$y2_FValues; y2_MValues=Res$y2_MValues
+  aValues=Res$aValues; a_FValues=Res$a_FValues; a_MValues=Res$a_MValues
+  bValues=Res$bValues; b_FValues=Res$b_FValues; b_MValues=Res$b_MValues
+  CVValues=Res$CVValues
 
   Output_Opt = 1 # 1=standard output, 2=with added length and weight outputs (slower)
-
   for (i in 1:nReps) {
-    FMort = FValues[i]
+
     Steepness = hValues[i]
+    Current_F = FValues[i]
     NatMort = MValues[i]
+
+    if (!is.na(Sel_L50_1Values[1])) {
+      sel_L50 = c(Sel_L50_1Values[i], Sel_L50_2Values[i])
+      sel_L95 = c(Sel_L95_1Values[i], Sel_L95_2Values[i])
+    }
+    if (!is.na(Ret_L50_1Values[1])) {
+      ret_L50 = c(Ret_L50_1Values[i], Ret_L50_2Values[i])
+      ret_L95 = c(Ret_L95_1Values[i], Ret_L95_2Values[i])
+    }
+    if (GrowthCurveType == 1) {
+      if (!is.na(LinfValues[1])) Linf = c(LinfValues[i], LinfValues[i])
+      if (!is.na(Linf_FValues[1])) Linf = c(Linf_FValues[i], Linf_MValues[i])
+      if (!is.na(vbKValues[1])) vbK = c(vbKValues[i], vbKValues[i])
+      if (!is.na(vbK_FValues[1])) vbK = c(vbK_FValues[i], vbK_MValues[i])
+      tzero = c(0, 0)
+      GrowthParams = data.frame(Linf=Linf, vbK=vbK, tzero=tzero)
+    }
+    if (GrowthCurveType == 2) {
+      if (!is.na(y2Values[1])) y2 = c(y2Values[i], y2Values[i])
+      if (!is.na(y2_FValues[1])) y2 = c(y2_FValues[i], y2_MValues[i])
+      if (!is.na(aValues[1])) a = c(aValues[i], aValues[i])
+      if (!is.na(a_FValues[1])) a = c(a_FValues[i], a_MValues[i])
+      if (!is.na(bValues[1])) b = c(bValues[i], bValues[i])
+      if (!is.na(b_FValues[1])) b = c(b_FValues[i], b_MValues[i])
+      y1 = c(0,0)
+      GrowthParams = c(y1, y2, a, b)
+    }
+
+    if (!is.na(CVValues[1])) CVSizeAtAge = c(CVValues[i], CVValues[i])
+
     PREst = GetPerRecruitResults_LB(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenCl, GrowthCurveType, GrowthParams,
                                     RefnceAges, CVSizeAtAge, lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtLen,
                                     ReprodScale, ReprodPattern, InitRatioFem, FinalSex_L50, FinalSex_L95, EstSexRatioAtLen,
@@ -19073,76 +19494,126 @@ GetPerRecruitResults_LB_with_err <- function(MaxModelAge, TimeStep, lbnd, ubnd, 
     Sim_Eq_RelMalSpBiom[i,] = PREst$Eq_MalRelSpBiomResults
     Sim_Eq_RelCombSexSpBiom[i,] = PREst$Eq_CombSexRelSpBiomResults
 
-    cat("i",i,'\n')
+    cat("i",i,"Steepness",Steepness,"Current_F",Current_F,"NatMort",NatMort,"PREst$Eq_FemRelSpBiom",PREst$Eq_FemRelSpBiom,'\n')
   }
 
   # Save key outputs (median and 95% confidence levels)
   EstMedFemSPR = round(median(Fem_SPR_Vals),3)
+  EstLow60FemSPR = as.numeric(round(quantile(Fem_SPR_Vals, 0.2),3))
+  EstUp60FemSPR = as.numeric(round(quantile(Fem_SPR_Vals, 0.8),3))
   EstLow95FemSPR = as.numeric(round(quantile(Fem_SPR_Vals, 0.025),3))
   EstUp95FemSPR = as.numeric(round(quantile(Fem_SPR_Vals, 0.975),3))
   EstFemSPR = data.frame(EstMedFemSPR=EstMedFemSPR,
+                         EstLow60FemSPR=EstLow60FemSPR,
+                         EstUp60FemSPR=EstUp60FemSPR,
                          EstLow95FemSPR=EstLow95FemSPR,
                          EstUp95FemSPR=EstUp95FemSPR)
 
   EstMedMalSPR = round(median(Mal_SPR_Vals),3)
+  EstLow60MalSPR = as.numeric(round(quantile(Mal_SPR_Vals, 0.2),3))
+  EstUp60MalSPR = as.numeric(round(quantile(Mal_SPR_Vals, 0.8),3))
   EstLow95MalSPR = as.numeric(round(quantile(Mal_SPR_Vals, 0.025),3))
   EstUp95MalSPR = as.numeric(round(quantile(Mal_SPR_Vals, 0.975),3))
   EstMalSPR = data.frame(EstMedMalSPR=EstMedMalSPR,
+                         EstLow60MalSPR=EstLow60MalSPR,
+                         EstUp60MalSPR=EstUp60MalSPR,
                          EstLow95MalSPR=EstLow95MalSPR,
                          EstUp95MalSPR=EstUp95MalSPR)
 
   EstMedCombSexSPR = round(median(CombSex_SPR_Vals),3)
+  EstLow60CombSexSPR = as.numeric(round(quantile(CombSex_SPR_Vals, 0.2),3))
+  EstUp60CombSexSPR = as.numeric(round(quantile(CombSex_SPR_Vals, 0.8),3))
   EstLow95CombSexSPR = as.numeric(round(quantile(CombSex_SPR_Vals, 0.025),3))
   EstUp95CombSexSPR = as.numeric(round(quantile(CombSex_SPR_Vals, 0.975),3))
   EstCombSexSPR = data.frame(EstMedCombSexSPR=EstMedCombSexSPR,
-                         EstLow95CombSexSPR=EstLow95CombSexSPR,
-                         EstUp95CombSexSPR=EstUp95CombSexSPR)
+                             EstLow60CombSexSPR=EstLow60CombSexSPR,
+                             EstUp60CombSexSPR=EstUp60CombSexSPR,
+                             EstLow95CombSexSPR=EstLow95CombSexSPR,
+                             EstUp95CombSexSPR=EstUp95CombSexSPR)
 
   EstMedEquilRelFemSpBiom = round(median(Eq_RelFemSpBiom_Vals),3)
+  Low60EquilRelFemSpBiom = as.numeric(round(quantile(Eq_RelFemSpBiom_Vals, 0.2),3))
+  Upp60EquilRelFemSpBiom = as.numeric(round(quantile(Eq_RelFemSpBiom_Vals, 0.8),3))
   Low95EquilRelFemSpBiom = as.numeric(round(quantile(Eq_RelFemSpBiom_Vals, 0.025),3))
   Upp95EquilRelFemSpBiom = as.numeric(round(quantile(Eq_RelFemSpBiom_Vals, 0.975),3))
   EstEquilRelFemSpBiom = data.frame(EstMedEquilRelFemSpBiom=EstMedEquilRelFemSpBiom,
+                                    Low60EquilRelFemSpBiom=Low60EquilRelFemSpBiom,
+                                    Upp60EquilRelFemSpBiom=Upp60EquilRelFemSpBiom,
                                     Low95EquilRelFemSpBiom=Low95EquilRelFemSpBiom,
                                     Upp95EquilRelFemSpBiom=Upp95EquilRelFemSpBiom)
 
   EstMedEquilRelMalSpBiom = round(median(Eq_RelMalSpBiom_Vals),3)
+  Low60EquilRelMalSpBiom = as.numeric(round(quantile(Eq_RelMalSpBiom_Vals, 0.2),3))
+  Upp60EquilRelMalSpBiom = as.numeric(round(quantile(Eq_RelMalSpBiom_Vals, 0.8),3))
   Low95EquilRelMalSpBiom = as.numeric(round(quantile(Eq_RelMalSpBiom_Vals, 0.025),3))
   Upp95EquilRelMalSpBiom = as.numeric(round(quantile(Eq_RelMalSpBiom_Vals, 0.975),3))
   EstEquilRelMalSpBiom = data.frame(EstMedEquilRelMalSpBiom=EstMedEquilRelMalSpBiom,
+                                    Low60EquilRelMalSpBiom=Low60EquilRelMalSpBiom,
+                                    Upp60EquilRelMalSpBiom=Upp60EquilRelMalSpBiom,
                                     Low95EquilRelMalSpBiom=Low95EquilRelMalSpBiom,
                                     Upp95EquilRelMalSpBiom=Upp95EquilRelMalSpBiom)
 
   EstMedEquilRelCombSexSpBiom = round(median(Eq_RelCombSexSpBiom_Vals),3)
+  Low60EquilRelCombSexSpBiom = as.numeric(round(quantile(Eq_RelCombSexSpBiom_Vals, 0.2),3))
+  Upp60EquilRelCombSexSpBiom = as.numeric(round(quantile(Eq_RelCombSexSpBiom_Vals, 0.8),3))
   Low95EquilRelCombSexSpBiom = as.numeric(round(quantile(Eq_RelCombSexSpBiom_Vals, 0.025),3))
   Upp95EquilRelCombSexSpBiom = as.numeric(round(quantile(Eq_RelCombSexSpBiom_Vals, 0.975),3))
   EstEquilRelCombSexSpBiom = data.frame(EstMedEquilRelCombSexSpBiom=EstMedEquilRelCombSexSpBiom,
+                                        Low60EquilRelCombSexSpBiom=Low60EquilRelCombSexSpBiom,
+                                        Upp60EquilRelCombSexSpBiom=Upp60EquilRelCombSexSpBiom,
                                         Low95EquilRelCombSexSpBiom=Low95EquilRelCombSexSpBiom,
                                         Upp95EquilRelCombSexSpBiom=Upp95EquilRelCombSexSpBiom)
 
 
   EstMedBMSYratio = round(median(BMSY_Vals),3)
+  Low60EstBMSYratio = as.numeric(round(quantile(BMSY_Vals, 0.2),3))
+  Upp60EstBMSYratio = as.numeric(round(quantile(BMSY_Vals, 0.8),3))
   Low95EstBMSYratio = as.numeric(round(quantile(BMSY_Vals, 0.025),3))
   Upp95EstBMSYratio = as.numeric(round(quantile(BMSY_Vals, 0.975),3))
 
-  ResSummary_with_err <- data.frame(EstMedFemSPR, EstLow95FemSPR, EstUp95FemSPR,
-                                    EstMedMalSPR, EstLow95MalSPR, EstUp95MalSPR,
-                                    EstMedCombSexSPR, EstLow95CombSexSPR, EstUp95CombSexSPR,
-                                    EstMedEquilRelFemSpBiom, Low95EquilRelFemSpBiom, Upp95EquilRelFemSpBiom,
-                                    EstMedEquilRelMalSpBiom, Low95EquilRelMalSpBiom, Upp95EquilRelMalSpBiom,
-                                    EstMedEquilRelCombSexSpBiom, Low95EquilRelCombSexSpBiom, Upp95EquilRelCombSexSpBiom,
-                                    EstMedBMSYratio, Low95EstBMSYratio, Upp95EstBMSYratio)
+  ResSummary_with_err <- t(data.frame(EstMedFemSPR, EstLow60FemSPR, EstUp60FemSPR, EstLow95FemSPR, EstUp95FemSPR,
+                                      EstMedMalSPR, EstLow60MalSPR, EstUp60MalSPR, EstLow95MalSPR, EstUp95MalSPR,
+                                      EstMedCombSexSPR, EstLow60CombSexSPR, EstUp60CombSexSPR, EstLow95CombSexSPR, EstUp95CombSexSPR,
+                                      EstMedEquilRelFemSpBiom, Low60EquilRelFemSpBiom, Upp60EquilRelFemSpBiom, Low95EquilRelFemSpBiom, Upp95EquilRelFemSpBiom,
+                                      EstMedEquilRelMalSpBiom, Low60EquilRelMalSpBiom, Upp60EquilRelMalSpBiom, Low95EquilRelMalSpBiom, Upp95EquilRelMalSpBiom,
+                                      EstMedEquilRelCombSexSpBiom, Low60EquilRelCombSexSpBiom, Upp60EquilRelCombSexSpBiom, Low95EquilRelCombSexSpBiom, Upp95EquilRelCombSexSpBiom,
+                                      EstMedBMSYratio, Low60EstBMSYratio, Upp60EstBMSYratio, Low95EstBMSYratio, Upp95EstBMSYratio))
 
-  colnames(ResSummary_with_err)=c("Fem_SPR", "Fem_LowSPR", "Fem_UppSPR",
-                                  "Mal_SPR", "Mal_LowSPR", "Mal_UppSPR",
-                                  "CombSex_SPR", "CombSex_LowSPR", "CombSex_UppSPR",
-                                  "Fem_EquilSB", "Fem_LowEquilSB", "Fem_UppEquilSB",
-                                  "Mal_EquilSB", "Mal_LowEquilSB", "Mal_UppEquilSB",
-                                  "CombSex_EquilSB", "CombSex_LowEquilSB", "CombSex_UppEquilSB",
-                                  "BMSYratio", "BMSYratio_Low", "BMSYratio_Upp")
+  ResampParamVals <- list(hValues=hValues,
+                          FValues=FValues,
+                          MValues=MValues,
+                          Sel_L50_1Values=Sel_L50_1Values,
+                          Sel_L95_1Values=Sel_L95_1Values,
+                          Sel_L50_2Values=Sel_L50_2Values,
+                          Sel_L95_2Values=Sel_L95_2Values,
+                          Ret_L50_1Values=Ret_L50_1Values,
+                          Ret_L95_1Values=Ret_L95_1Values,
+                          Ret_L50_2Values=Ret_L50_2Values,
+                          Ret_L95_2Values=Ret_L95_2Values,
+                          LinfValues=LinfValues,
+                          Linf_FValues=Linf_FValues,
+                          Linf_MValues=Linf_MValues,
+                          vbKValues=vbKValues,
+                          vbK_FValues=vbK_FValues,
+                          vbK_MValues=vbK_MValues,
+                          y2Values=y2Values,
+                          y2_FValues=y2_FValues,
+                          y2_MValues=y2_MValues,
+                          aValues=aValues,
+                          a_FValues=a_FValues,
+                          a_MValues=a_MValues,
+                          bValues=bValues,
+                          b_FValues=b_FValues,
+                          b_MValues=b_MValues,
+                          CVValues=CVValues)
 
-  Results = list(PerRec_FValues = PREst$FishMort,
+  Results = list(PerRec_FValues=PREst$FishMort,
                  Fem_SPR_Vals=Fem_SPR_Vals,
+                 Mal_SPR_Vals=Mal_SPR_Vals,
+                 CombSex_SPR_Vals=CombSex_SPR_Vals,
                  Eq_RelFemSpBiom_Vals=Eq_RelFemSpBiom_Vals,
+                 Eq_RelMalSpBiom_Vals=Eq_RelMalSpBiom_Vals,
+                 Eq_RelCombSexSpBiom_Vals=Eq_RelCombSexSpBiom_Vals,
                  BMSY_Vals=BMSY_Vals,
                  Sim_FemSPR=Sim_FemSPR,
                  Sim_Eq_RelFemSpBiom=Sim_Eq_RelFemSpBiom,
@@ -19155,17 +19626,18 @@ GetPerRecruitResults_LB_with_err <- function(MaxModelAge, TimeStep, lbnd, ubnd, 
                  EstEquilRelMalSpBiom=EstEquilRelMalSpBiom,
                  EstEquilRelCombSexSpBiom=EstEquilRelCombSexSpBiom,
                  EstMedBMSYratio=EstMedBMSYratio,
-                 ResSummary_with_err=ResSummary_with_err)
+                 ResSummary_with_err=ResSummary_with_err,
+                 ResampParamVals=ResampParamVals)
 
   return(Results)
 
 }
 
 #' Plot of SPR and relative equilibrium biomass vs F from age-based per recruit analysis and extended analysis
-#' with a stock-recruitment relationship, with error for M, h and F
+#' with a stock-recruitment relationship, with error for combinations of M, h, F and gear selectivity
 #'
 #' This function provides a plot of SPR and relative equilibrium biomass vs F from age-based per recruit analysis
-#' and extended analysis with a stock-recruitment relationship, with specified error for M, h and F
+#' and extended analysis with a stock-recruitment relationship, with specified error for M, h, F, gear selectivity
 #'
 #' @param MaxModelAge maximum age considered in model
 #' @param TimeStep model timestep (e.g. 1 = annual, 1/12 = monthly)
@@ -19209,6 +19681,7 @@ GetPerRecruitResults_LB_with_err <- function(MaxModelAge, TimeStep, lbnd, ubnd, 
 #' @param RefPointPlotOpt plotting option for reference points, 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 #' @param Current_F estimate of current fishing mortality
 #' @param Current_F_sd error for estimate of current fishing mortality
+#' @param ParamSims random values of parameters estimated by the age-based catch curve with logistic selectivity
 #' @param nReps number of random parameter sets from parametric resampling to generate per recruit outputs with error
 #' @param MainLabel plot label
 #' @param xaxis_lab y axis label
@@ -19263,6 +19736,7 @@ GetPerRecruitResults_LB_with_err <- function(MaxModelAge, TimeStep, lbnd, ubnd, 
 #' NatMort_sd <- c(0.31, 2) # sd, distribution type, 1=normal, 2=lognormal
 #' Current_F <- 0.1 # estimate of fishing mortality, e.g. from catch curve analysis
 #' Current_F_sd <- c(0.005,1) # sd, distribution type, 1=normal, 2=lognormal
+#' ParamSims = NA
 #' PlotOpt <- 1 # 1=females, 2=males, 3=combined sex
 #' RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 #' nReps = 50
@@ -19271,14 +19745,14 @@ GetPerRecruitResults_LB_with_err <- function(MaxModelAge, TimeStep, lbnd, ubnd, 
 #'                                  FinalSex_A50, FinalSex_A95, EstSexRatioAtAge, EggFertParam, mat_A50, mat_A95,
 #'                                  EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95,
 #'                                  EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness,
-#'                                  Steepness_sd, SRrel_Type, NatMort, NatMort_sd, Current_F, Current_F_sd, nReps)
+#'                                  Steepness_sd, SRrel_Type, NatMort, NatMort_sd, Current_F, Current_F_sd, ParamSims, nReps)
 #' # Plot. Note, can skip above step and set FittedRes=NA (plot function will be slower
 #' PlotPerRecruit_Biom_with_err_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge, lenwt_a, ln_lenwt_a, lenwt_b,
 #'                                 WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_A50,
 #'                                 FinalSex_A95, EstSexRatioAtAge, EggFertParam, mat_A50, mat_A95, EstMatAtAge,
 #'                                 Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95, EstLandSelAtAge,
 #'                                 ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness, Steepness_sd, SRrel_Type,
-#'                                 NatMort, NatMort_sd, Current_F, Current_F_sd, PlotOpt, RefPointPlotOpt, FittedRes, nReps,
+#'                                 NatMort, NatMort_sd, Current_F, Current_F_sd, ParamSims, PlotOpt, RefPointPlotOpt, FittedRes, nReps,
 #'                                 MainLabel=NA, xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA, ymax=NA, yint=NA)
 #' # Example 2: hermaphroditic species
 #' InitRecruit <- 1 # Initial recruitment
@@ -19321,6 +19795,7 @@ GetPerRecruitResults_LB_with_err <- function(MaxModelAge, TimeStep, lbnd, ubnd, 
 #' NatMort_sd <- c(0.31, 2) # sd, distribution type, 1=normal, 2=lognormal
 #' Current_F <- 0.1 # estimate of fishing mortality, e.g. from catch curve analysis
 #' Current_F_sd <- c(0.005,1) # sd, distribution type, 1=normal, 2=lognormal
+#' ParamSims = NA
 #' PlotOpt <- 1 # 1=females, 2=males, 3=combined sex
 #' RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 #' nReps = 10
@@ -19329,14 +19804,14 @@ GetPerRecruitResults_LB_with_err <- function(MaxModelAge, TimeStep, lbnd, ubnd, 
 #'                                  FinalSex_A50, FinalSex_A95, EstSexRatioAtAge, EggFertParam, mat_A50, mat_A95,
 #'                                  EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95,
 #'                                  EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness,
-#'                                  Steepness_sd, SRrel_Type, NatMort, NatMort_sd, Current_F, Current_F_sd, nReps)
+#'                                  Steepness_sd, SRrel_Type, NatMort, NatMort_sd, Current_F, Current_F_sd, ParamSims, nReps)
 #' # Plot. Note, can skip above step and set FittedRes=NA (plot function will be slower
 #' PlotPerRecruit_Biom_with_err_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge, lenwt_a, ln_lenwt_a, lenwt_b,
 #'                                 WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_A50,
 #'                                 FinalSex_A95, EstSexRatioAtAge, EggFertParam, mat_A50, mat_A95, EstMatAtAge,
 #'                                 Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95, EstLandSelAtAge,
 #'                                 ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness, Steepness_sd, SRrel_Type,
-#'                                 NatMort, NatMort_sd, Current_F, Current_F_sd, PlotOpt, RefPointPlotOpt, FittedRes, nReps,
+#'                                 NatMort, NatMort_sd, Current_F, Current_F_sd, ParamSims, PlotOpt, RefPointPlotOpt, FittedRes, nReps,
 #'                                 MainLabel=NA, xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA, ymax=NA, yint=NA)
 #' @export
 PlotPerRecruit_Biom_with_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge, lenwt_a, ln_lenwt_a, lenwt_b,
@@ -19344,7 +19819,7 @@ PlotPerRecruit_Biom_with_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
                                             FinalSex_A95, EstSexRatioAtAge, EggFertParam, mat_A50, mat_A95, EstMatAtAge,
                                             Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95, EstLandSelAtAge,
                                             ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness, Steepness_sd, SRrel_Type,
-                                            NatMort, NatMort_sd, Current_F, Current_F_sd, PlotOpt, RefPointPlotOpt, FittedRes, nReps,
+                                            NatMort, NatMort_sd, Current_F, Current_F_sd, ParamSims, PlotOpt, RefPointPlotOpt, FittedRes, nReps,
                                             MainLabel, xaxis_lab, yaxis_lab, xmax, xint, ymax, yint) {
 
   # get BMSY reference points
@@ -19364,7 +19839,7 @@ PlotPerRecruit_Biom_with_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
                                          FinalSex_A50, FinalSex_A95, EstSexRatioAtAge, EggFertParam, mat_A50, mat_A95,
                                          EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95,
                                          EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness,
-                                         Steepness_sd, SRrel_Type, NatMort, NatMort_sd, Current_F, Current_F_sd, nReps)
+                                         Steepness_sd, SRrel_Type, NatMort, NatMort_sd, Current_F, Current_F_sd, ParamSims, nReps)
   }
 
   if (is.na(yaxis_lab)) yaxis_lab = "Relative spawning biomass"
@@ -19373,6 +19848,13 @@ PlotPerRecruit_Biom_with_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
   if (is.na(xint)) xint = 0.5
   if (is.na(ymax)) ymax = 1
   if (is.na(yint)) yint = 0.2
+
+  if ("FMort.sim" %in% names(ParamSims)) {
+    PlotF <- median(Res$EstFValues[1:nReps])
+  } else {
+    PlotF <- Current_F
+  }
+
 
   # Plot per recruit outputs with uncertainty
   if (PlotOpt==1) { # plot females
@@ -19389,11 +19871,12 @@ PlotPerRecruit_Biom_with_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
     polygon(c(Res$PerRec_FValues[1:x],rev(Res$PerRec_FValues[1:x])),c(EqB_lw60[1:x],rev(EqB_hi60[1:x])),
             col="pink", border="pink")
     lines(Res$PerRec_FValues[1:x], EqB_med[1:x],col="red")
-    points(Current_F, Res$EstEquilRelFemSpBiom[1], cex=1.2, col="red", pch=16)
-    lw=as.numeric(Res$EstEquilRelFemSpBiom[2]); up=as.numeric(Res$EstEquilRelFemSpBiom[3])
-    arrows(Current_F, lw, Current_F, up,length=0.001, angle=90, code=3,col="red")
-    legend("topleft", col=c("red","pink","lightgrey"), pch = c(16,-1,-1),
-           legend=c("Estimate - females","60% CLs", "95% CLs"), lty=c("solid","solid","solid"), lwd=c(-1,5,5),
+    # lw=as.numeric(Res$EstEquilRelFemSpBiom[4]); up=as.numeric(Res$EstEquilRelFemSpBiom[5])
+    # arrows(PlotF, lw, PlotF, up,length=0.001, angle=90, code=3,col="red")
+    points(Res$EstFValues[1:nReps],Res$Eq_RelFemSpBiom_Vals,pch=16,cex=0.6)
+    points(PlotF, Res$EstEquilRelFemSpBiom[1], cex=1.2, col="red", pch=16)
+    legend("topright", col=c("red","pink","lightgrey"), pch = c(16,-1,-1),
+           legend=c("Est. - females","60% CLs", "95% CLs"), lty=c("solid","solid","solid"), lwd=c(-1,5,5),
            bty="n", cex=1,0, inset = 0.05)
     }
 
@@ -19412,10 +19895,11 @@ PlotPerRecruit_Biom_with_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
             col="lightblue", border="lightblue")
     lines(Res$PerRec_FValues[1:x], EqB_med[1:x],col="blue")
     lw=as.numeric(Res$EstEquilRelMalSpBiom[2]); up=as.numeric(Res$EstEquilRelMalSpBiom[3])
-    arrows(Current_F, lw, Current_F, up,length=0.001, angle=90, code=3,col="blue")
-    points(Current_F, Res$EstEquilRelMalSpBiom[1], cex=1.2, col="blue", pch=16)
-    legend("topleft", col=c("blue","lightblue","lightgrey"), pch = c(16,-1,-1),
-           legend=c("Estimate - males","60% CLs", "95% CLs"), lty=c("solid","solid","solid"), lwd=c(-1,5,5),
+    # arrows(PlotF, lw, PlotF, up,length=0.001, angle=90, code=3,col="blue")
+    points(Res$EstFValues[1:nReps],Res$Eq_RelMalSpBiom_Vals,pch=16,cex=0.6)
+    points(PlotF, Res$EstEquilRelMalSpBiom[1], cex=1.2, col="blue", pch=16)
+    legend("topright", col=c("blue","lightblue","lightgrey"), pch = c(16,-1,-1),
+           legend=c("Est. - males","60% CLs", "95% CLs"), lty=c("solid","solid","solid"), lwd=c(-1,5,5),
            bty="n", cex=1,0, inset = 0.05)
   }
 
@@ -19434,10 +19918,11 @@ PlotPerRecruit_Biom_with_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
             col="lightgreen", border="lightgreen")
     lines(Res$PerRec_FValues[1:x], EqB_med[1:x],col="black")
     lw=as.numeric(Res$EstEquilRelCombSexSpBiom[2]); up=as.numeric(Res$EstEquilRelCombSexSpBiom[3])
-    arrows(Current_F, lw, Current_F, up,length=0.001, angle=90, code=3,col="black")
-    points(Current_F, Res$EstEquilRelCombSexSpBiom[1], cex=1.2, col="black", pch=16)
-    legend("topleft", col=c("black","lightgreen","lightgrey"), pch = c(16,-1,-1),
-           legend=c("Estimate - comb. sex","60% CLs", "95% CLs"), lty=c("solid","solid","solid"), lwd=c(-1,5,5),
+    # arrows(PlotF, lw, PlotF, up,length=0.001, angle=90, code=3,col="black")
+    points(Res$EstFValues[1:nReps],Res$Eq_RelCombSexSpBiom_Vals,pch=16,cex=0.6)
+    points(PlotF, Res$EstEquilRelCombSexSpBiom[1], cex=1.2, col="black", pch=16)
+    legend("topright", col=c("black","lightgreen","lightgrey"), pch = c(16,-1,-1),
+           legend=c("Est. - comb. sex","60% CLs", "95% CLs"), lty=c("solid","solid","solid"), lwd=c(-1,5,5),
            bty="n", cex=1,0, inset = 0.05)
   }
   AddAxesAndTickLabelsToPlot(xmin=0, xmax, xint, ymin=0, ymax, yint, cexval=NA, cexaxisval=1, lwdval=1, lineval=-0.3, lasval=1)
@@ -19448,14 +19933,14 @@ PlotPerRecruit_Biom_with_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
     lines(abline(h = 0.4, col = "green"))
     lines(abline(h = 0.3, col = "orange"))
     lines(abline(h = 0.2, col = "red"))
-    legend("topright", col = c("green", "orange", "red"), lty = c("solid", "solid", "solid"),
+    legend("bottomleft", col = c("green", "orange", "red"), lty = c("solid", "solid", "solid"),
            legend = c("0.4", "0.3", "0.2"), bty = "n", cex = 0.8, lwd = 1.75)
   }
   if (RefPointPlotOpt == 2) {
     lines(abline(h = res$BMSY_Targ, col = "green"))
     lines(abline(h = res$BMSY_Thresh, col = "orange"))
     lines(abline(h = res$BMSY_Lim, col = "red"))
-    legend("topright", col = c("green", "orange", "red"), lty = c("solid", "solid", "solid"),
+    legend("bottomleft", col = c("green", "orange", "red"), lty = c("solid", "solid", "solid"),
            legend = c("1.2BMSY", "BMSY",  "0.5BMSY"), bty = "n", cex = 0.8, lwd = 1.75)
   }
 }
@@ -19507,6 +19992,7 @@ PlotPerRecruit_Biom_with_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
 #' @param NatMort_sd standard deviation for natural mortality
 #' @param Current_F estimated current fishing mortality
 #' @param Current_F_sd standard deviation for estimated current fishing mortality
+#' @param ParamSims random values of parameters estimated by the age-based catch curve with logistic selectivity
 #' @param PlotOpt # 1=females, 2=males, 3=combined sex
 #' @param RefPointPlotOpt # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 #' @param FittedRes option to input per recruit results into plot function to increase speed, can set to NA
@@ -19571,6 +20057,7 @@ PlotPerRecruit_Biom_with_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
 #' NatMort_sd <- c(0.31, 2) # sd, distribution type, 1=normal, 2=lognormal
 #' Current_F <- 0.1 # estimate of fishing mortality, e.g. from catch curve analysis
 #' Current_F_sd <- c(0.005,1) # sd, distribution type, 1=normal, 2=lognormal
+#' ParamSims = NA
 #' PlotOpt <- 1 # 1=females, 2=males, 3=combined sex
 #' RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 #' nReps = 10 # number of resampling trials. Set to low number to test, then much higher for final analysis.
@@ -19579,14 +20066,14 @@ PlotPerRecruit_Biom_with_err_AB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
 #'                                            ReprodScale, ReprodPattern, InitRatioFem, FinalSex_L50, FinalSex_L95, EstSexRatioAtLen,
 #'                                            EggFertParam, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
 #'                                            ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, Steepness_sd, SRrel_Type, NatMort, NatMort_sd,
-#'                                            Current_F, Current_F_sd, nReps)
+#'                                            Current_F, Current_F_sd, ParamSims, nReps)
 #' # Plot. Note, can skip above step and set FittedRes=NA (plot function will be slower
 #' PlotPerRecruit_Biom_with_err_LB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
 #'                                             lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern,
 #'                                             InitRatioFem, FinalSex_L50, FinalSex_L95, EstSexRatioAtLen, EggFertParam, mat_A50, mat_A95,
 #'                                             EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, ret_Pmax, ret_A50, ret_A95,
 #'                                             EstRetenAtAge, DiscMort, Steepness, Steepness_sd, SRrel_Type, NatMort, NatMort_sd,
-#'                                             Current_F, Current_F_sd, PlotOpt, RefPointPlotOpt, FittedRes, nReps, MainLabel=NA,
+#'                                             Current_F, Current_F_sd, ParamSims, PlotOpt, RefPointPlotOpt, FittedRes, nReps, MainLabel=NA,
 #'                                             xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA, ymax=NA, yint=NA)
 #' @export
 PlotPerRecruit_Biom_with_err_LB <- function(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge,
@@ -19594,7 +20081,7 @@ PlotPerRecruit_Biom_with_err_LB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
                                             InitRatioFem, FinalSex_L50, FinalSex_L95, EstSexRatioAtLen, EggFertParam, mat_A50, mat_A95,
                                             EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, ret_Pmax, ret_A50, ret_A95,
                                             EstRetenAtAge, DiscMort, Steepness, Steepness_sd, SRrel_Type, NatMort, NatMort_sd,
-                                            Current_F, Current_F_sd, PlotOpt, RefPointPlotOpt, FittedRes, nReps, MainLabel,
+                                            Current_F, Current_F_sd, ParamSims, PlotOpt, RefPointPlotOpt, FittedRes, nReps, MainLabel,
                                             xaxis_lab, yaxis_lab, xmax, xint, ymax, yint) {
 
   # get BMSY reference points
@@ -19615,7 +20102,7 @@ PlotPerRecruit_Biom_with_err_LB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
                                          ReprodScale, ReprodPattern, InitRatioFem, FinalSex_L50, FinalSex_L95, EstSexRatioAtLen,
                                          EggFertParam, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
                                          ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, Steepness_sd, SRrel_Type, NatMort, NatMort_sd,
-                                         Current_F, Current_F_sd, nReps)
+                                         Current_F, Current_F_sd, ParamSims, nReps)
   }
 
   if (is.na(yaxis_lab)) yaxis_lab = "Relative spawning biomass"
@@ -19624,6 +20111,8 @@ PlotPerRecruit_Biom_with_err_LB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
   if (is.na(xint)) xint = 0.5
   if (is.na(ymax)) ymax = 1
   if (is.na(yint)) yint = 0.2
+
+  # names(Res$ModelDiag)
 
   if (PlotOpt==1) { # plot females
     EqB_med = apply(Res$Sim_Eq_RelFemSpBiom,2,quantile, probs=c(0.5))
@@ -19639,10 +20128,11 @@ PlotPerRecruit_Biom_with_err_LB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
     polygon(c(Res$PerRec_FValues[1:x],rev(Res$PerRec_FValues[1:x])),c(EqB_lw60[1:x],rev(EqB_hi60[1:x])),
             col="pink", border="pink")
     lines(Res$PerRec_FValues[1:x], EqB_med[1:x],col="red")
+    points(Res$ResampParamVals$FValues[1:nReps],Res$Eq_RelFemSpBiom_Vals,pch=16,cex=0.6)
     points(Current_F, Res$EstEquilRelFemSpBiom[1], cex=1.2, col="red", pch=16)
-    lw=as.numeric(Res$EstEquilRelFemSpBiom[2]); up=as.numeric(Res$EstEquilRelFemSpBiom[3])
-    arrows(Current_F, lw, Current_F, up,length=0.001, angle=90, code=3,col="red")
-    legend("topleft", col=c("red","pink","lightgrey"), pch = c(16,-1,-1),
+    # lw=as.numeric(Res$EstEquilRelFemSpBiom[2]); up=as.numeric(Res$EstEquilRelFemSpBiom[3])
+    # arrows(Current_F, lw, Current_F, up,length=0.001, angle=90, code=3,col="red")
+    legend("topright", col=c("red","pink","lightgrey"), pch = c(16,-1,-1),
            legend=c("Estimate - females","60% CLs", "95% CLs"), lty=c("solid","solid","solid"), lwd=c(-1,5,5),
            bty="n", cex=1,0, inset = 0.05)
 
@@ -19662,10 +20152,11 @@ PlotPerRecruit_Biom_with_err_LB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
     polygon(c(Res$PerRec_FValues[1:x],rev(Res$PerRec_FValues[1:x])),c(EqB_lw60[1:x],rev(EqB_hi60[1:x])),
             col="lightblue", border="lightblue")
     lines(Res$PerRec_FValues[1:x], EqB_med[1:x],col="blue")
-    lw=as.numeric(Res$EstEquilRelMalSpBiom[2]); up=as.numeric(Res$EstEquilRelMalSpBiom[3])
-    arrows(Current_F, lw, Current_F, up,length=0.001, angle=90, code=3,col="blue")
+    # lw=as.numeric(Res$EstEquilRelMalSpBiom[2]); up=as.numeric(Res$EstEquilRelMalSpBiom[3])
+    # arrows(Current_F, lw, Current_F, up,length=0.001, angle=90, code=3,col="blue")
+    points(Res$ResampParamVals$FValues[1:nReps],Res$Eq_RelMalSpBiom_Vals,pch=16,cex=0.6)
     points(Current_F, Res$EstEquilRelMalSpBiom[1], cex=1.2, col="blue", pch=16)
-    legend("topleft", col=c("blue","lightblue","lightgrey"), pch = c(16,-1,-1),
+    legend("topright", col=c("blue","lightblue","lightgrey"), pch = c(16,-1,-1),
            legend=c("Estimate - males","60% CLs", "95% CLs"), lty=c("solid","solid","solid"), lwd=c(-1,5,5),
            bty="n", cex=1,0, inset = 0.05)
   }
@@ -19684,10 +20175,11 @@ PlotPerRecruit_Biom_with_err_LB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
     polygon(c(Res$PerRec_FValues[1:x],rev(Res$PerRec_FValues[1:x])),c(EqB_lw60[1:x],rev(EqB_hi60[1:x])),
             col="lightgreen", border="lightgreen")
     lines(Res$PerRec_FValues[1:x], EqB_med[1:x],col="black")
-    lw=as.numeric(Res$EstEquilRelCombSexSpBiom[2]); up=as.numeric(Res$EstEquilRelCombSexSpBiom[3])
-    arrows(Current_F, lw, Current_F, up,length=0.001, angle=90, code=3,col="black")
+    # lw=as.numeric(Res$EstEquilRelCombSexSpBiom[2]); up=as.numeric(Res$EstEquilRelCombSexSpBiom[3])
+    # arrows(Current_F, lw, Current_F, up,length=0.001, angle=90, code=3,col="black")
+    points(Res$ResampParamVals$FValues[1:nReps],Res$Eq_RelCombSexSpBiom_Vals,pch=16,cex=0.6)
     points(Current_F, Res$EstEquilRelCombSexSpBiom[1], cex=1.2, col="black", pch=16)
-    legend("topleft", col=c("black","lightgreen","lightgrey"), pch = c(16,-1,-1),
+    legend("topright", col=c("black","lightgreen","lightgrey"), pch = c(16,-1,-1),
            legend=c("Estimate - comb. sex","60% CLs", "95% CLs"), lty=c("solid","solid","solid"), lwd=c(-1,5,5),
            bty="n", cex=1,0, inset = 0.05)
   }
@@ -19699,14 +20191,14 @@ PlotPerRecruit_Biom_with_err_LB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
     lines(abline(h = 0.4, col = "green"))
     lines(abline(h = 0.3, col = "orange"))
     lines(abline(h = 0.2, col = "red"))
-    legend("topright", col = c("green", "orange", "red"), lty = c("solid", "solid", "solid"),
+    legend("bottomleft", col = c("green", "orange", "red"), lty = c("solid", "solid", "solid"),
            legend = c("0.4", "0.3", "0.2"), bty = "n", cex = 0.8, lwd = 1.75)
   }
   if (RefPointPlotOpt == 2) {
     lines(abline(h = res$BMSY_Targ, col = "green"))
     lines(abline(h = res$BMSY_Thresh, col = "orange"))
     lines(abline(h = res$BMSY_Lim, col = "red"))
-    legend("topright", col = c("green", "orange", "red"), lty = c("solid", "solid", "solid"),
+    legend("bottomleft", col = c("green", "orange", "red"), lty = c("solid", "solid", "solid"),
            legend = c("1.2BMSY", "BMSY",  "0.5BMSY"), bty = "n", cex = 0.8, lwd = 1.75)
   }
 }
@@ -19723,7 +20215,8 @@ PlotPerRecruit_Biom_with_err_LB <- function(MaxModelAge, TimeStep, Linf, vbK, tz
 #' @param ubnd upper bounds of length classes
 #' @param midpt mid points bounds of length classes
 #' @param Res object containing results outputted by CalcYPRAndSPRForFMort_LB function
-#' @export
+#'
+#' @return Growth_95PLs
 GetPerRecruitGrowthPredIntervals_LB <- function(nTimeSteps, nLenCl, midpt, lbnd, ubnd, Res) {
 
   FemLenAtAge_lw = rep(NA,nTimeSteps); FemLenAtAge_hi = rep(NA,nTimeSteps)

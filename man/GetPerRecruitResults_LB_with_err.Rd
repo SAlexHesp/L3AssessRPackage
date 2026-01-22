@@ -46,6 +46,7 @@ GetPerRecruitResults_LB_with_err(
   NatMort_sd,
   Current_F,
   Current_F_sd,
+  ParamSims,
   nReps
 )
 }
@@ -131,6 +132,8 @@ GetPerRecruitResults_LB_with_err(
 
 \item{Current_F_sd}{standard deviation for estimated current fishing mortality}
 
+\item{ParamSims}{random values of parameters estimated by the age-based catch curve with logistic selectivity}
+
 \item{nReps}{number of resamping trials}
 }
 \value{
@@ -205,5 +208,5 @@ GetPerRecruitResults_LB_with_err(MaxModelAge, TimeStep, lbnd, ubnd, midpt, nLenC
                                  ReprodScale, ReprodPattern, InitRatioFem, FinalSex_L50, FinalSex_L95, EstSexRatioAtLen,
                                  EggFertParam, mat_L50, mat_L95, EstMatAtLen, sel_L50, sel_L95, EstGearSelAtLen, ret_Pmax,
                                  ret_L50, ret_L95, EstRetenAtLen, DiscMort, Steepness, Steepness_sd, SRrel_Type, NatMort, NatMort_sd,
-                                 Current_F, Current_F_sd, nReps)
+                                 Current_F, Current_F_sd, ParamSims, nReps)
 }

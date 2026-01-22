@@ -3,7 +3,7 @@
 \name{PlotPerRecruit_Biom_with_err_AB}
 \alias{PlotPerRecruit_Biom_with_err_AB}
 \title{Plot of SPR and relative equilibrium biomass vs F from age-based per recruit analysis and extended analysis
-with a stock-recruitment relationship, with error for M, h and F}
+with a stock-recruitment relationship, with error for combinations of M, h, F and gear selectivity}
 \usage{
 PlotPerRecruit_Biom_with_err_AB(
   MaxModelAge,
@@ -45,6 +45,7 @@ PlotPerRecruit_Biom_with_err_AB(
   NatMort_sd,
   Current_F,
   Current_F_sd,
+  ParamSims,
   PlotOpt,
   RefPointPlotOpt,
   FittedRes,
@@ -138,6 +139,8 @@ PlotPerRecruit_Biom_with_err_AB(
 
 \item{Current_F_sd}{error for estimate of current fishing mortality}
 
+\item{ParamSims}{random values of parameters estimated by the age-based catch curve with logistic selectivity}
+
 \item{PlotOpt}{# 1=females, 2=males, 3=combined sex}
 
 \item{RefPointPlotOpt}{plotting option for reference points, 0=don't plot, 1=plot defaults, 2=plot BMSY ref points}
@@ -164,7 +167,7 @@ and extended analysis with a stock-recruitment relationship, with specified erro
 }
 \description{
 This function provides a plot of SPR and relative equilibrium biomass vs F from age-based per recruit analysis
-and extended analysis with a stock-recruitment relationship, with specified error for M, h and F
+and extended analysis with a stock-recruitment relationship, with specified error for M, h, F, gear selectivity
 }
 \examples{
 # Example. Non-hermaphroditic species
@@ -208,6 +211,7 @@ NatMort <- 0.2 # natural mortality  (year-1)
 NatMort_sd <- c(0.31, 2) # sd, distribution type, 1=normal, 2=lognormal
 Current_F <- 0.1 # estimate of fishing mortality, e.g. from catch curve analysis
 Current_F_sd <- c(0.005,1) # sd, distribution type, 1=normal, 2=lognormal
+ParamSims = NA
 PlotOpt <- 1 # 1=females, 2=males, 3=combined sex
 RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 nReps = 50
@@ -216,14 +220,14 @@ FittedRes=GetPerRecruitResults_AB_with_err(MaxModelAge, TimeStep, Linf, vbK, tze
                                  FinalSex_A50, FinalSex_A95, EstSexRatioAtAge, EggFertParam, mat_A50, mat_A95,
                                  EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95,
                                  EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness,
-                                 Steepness_sd, SRrel_Type, NatMort, NatMort_sd, Current_F, Current_F_sd, nReps)
+                                 Steepness_sd, SRrel_Type, NatMort, NatMort_sd, Current_F, Current_F_sd, ParamSims, nReps)
 # Plot. Note, can skip above step and set FittedRes=NA (plot function will be slower
 PlotPerRecruit_Biom_with_err_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge, lenwt_a, ln_lenwt_a, lenwt_b,
                                 WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_A50,
                                 FinalSex_A95, EstSexRatioAtAge, EggFertParam, mat_A50, mat_A95, EstMatAtAge,
                                 Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95, EstLandSelAtAge,
                                 ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness, Steepness_sd, SRrel_Type,
-                                NatMort, NatMort_sd, Current_F, Current_F_sd, PlotOpt, RefPointPlotOpt, FittedRes, nReps,
+                                NatMort, NatMort_sd, Current_F, Current_F_sd, ParamSims, PlotOpt, RefPointPlotOpt, FittedRes, nReps,
                                 MainLabel=NA, xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA, ymax=NA, yint=NA)
 # Example 2: hermaphroditic species
 InitRecruit <- 1 # Initial recruitment
@@ -266,6 +270,7 @@ NatMort <- 0.2 # natural mortality  (year-1)
 NatMort_sd <- c(0.31, 2) # sd, distribution type, 1=normal, 2=lognormal
 Current_F <- 0.1 # estimate of fishing mortality, e.g. from catch curve analysis
 Current_F_sd <- c(0.005,1) # sd, distribution type, 1=normal, 2=lognormal
+ParamSims = NA
 PlotOpt <- 1 # 1=females, 2=males, 3=combined sex
 RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
 nReps = 10
@@ -274,13 +279,13 @@ FittedRes=GetPerRecruitResults_AB_with_err(MaxModelAge, TimeStep, Linf, vbK, tze
                                  FinalSex_A50, FinalSex_A95, EstSexRatioAtAge, EggFertParam, mat_A50, mat_A95,
                                  EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95,
                                  EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness,
-                                 Steepness_sd, SRrel_Type, NatMort, NatMort_sd, Current_F, Current_F_sd, nReps)
+                                 Steepness_sd, SRrel_Type, NatMort, NatMort_sd, Current_F, Current_F_sd, ParamSims, nReps)
 # Plot. Note, can skip above step and set FittedRes=NA (plot function will be slower
 PlotPerRecruit_Biom_with_err_AB(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge, lenwt_a, ln_lenwt_a, lenwt_b,
                                 WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern, InitRatioFem, FinalSex_A50,
                                 FinalSex_A95, EstSexRatioAtAge, EggFertParam, mat_A50, mat_A95, EstMatAtAge,
                                 Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95, EstLandSelAtAge,
                                 ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness, Steepness_sd, SRrel_Type,
-                                NatMort, NatMort_sd, Current_F, Current_F_sd, PlotOpt, RefPointPlotOpt, FittedRes, nReps,
+                                NatMort, NatMort_sd, Current_F, Current_F_sd, ParamSims, PlotOpt, RefPointPlotOpt, FittedRes, nReps,
                                 MainLabel=NA, xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA, ymax=NA, yint=NA)
 }

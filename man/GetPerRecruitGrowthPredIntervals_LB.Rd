@@ -19,6 +19,9 @@ GetPerRecruitGrowthPredIntervals_LB(nTimeSteps, nLenCl, midpt, lbnd, ubnd, Res)
 
 \item{Res}{object containing results outputted by CalcYPRAndSPRForFMort_LB function}
 }
+\value{
+Growth_95PLs
+}
 \description{
 This function outputs 95 percent prediction intervals for growth curves used in length-based per recruit analysis
 }

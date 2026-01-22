@@ -3,7 +3,7 @@
 \name{GetPerRecruitResults_AB_with_err}
 \alias{GetPerRecruitResults_AB_with_err}
 \title{Get outputs from per age-based recruit analysis across a range of fishing mortality values, allowing for error in
-M, h and F}
+combinations of M, h, F, gear selectivity}
 \usage{
 GetPerRecruitResults_AB_with_err(
   MaxModelAge,
@@ -45,6 +45,7 @@ GetPerRecruitResults_AB_with_err(
   NatMort_sd,
   Current_F,
   Current_F_sd,
+  ParamSims,
   nReps
 )
 }
@@ -128,6 +129,8 @@ GetPerRecruitResults_AB_with_err(
 
 \item{Current_F_sd}{error for estimate of current fishing mortality}
 
+\item{ParamSims}{random values of parameters estimated by the age-based catch curve with logistic selectivity}
+
 \item{nReps}{number of random parameter sets from parametric resampling to generate per recruit outputs with error}
 
 \item{RefPointPlotOpt}{plotting option for reference points, 0=don't plot, 1=plot defaults, 2=plot BMSY ref points}
@@ -189,11 +192,12 @@ NatMort_sd <- c(0.31, 2) # sd, distribution type, 1=normal, 2=lognormal
 Current_F <- 0.1 # estimate of fishing mortality, e.g. from catch curve analysis
 Current_F_sd <- c(0.005,1) # sd, distribution type, 1=normal, 2=lognormal
 RefPointPlotOpt <- 1 # 0=don't plot, 1=plot defaults, 2=plot BMSY ref points
+ParamSims = NA
 nReps = 50
 GetPerRecruitResults_AB_with_err(MaxModelAge, TimeStep, Linf, vbK, tzero, EstLenAtAge, lenwt_a, ln_lenwt_a,
                                  lenwt_b, WLrel_Type, EstWtAtAge, ReprodScale, ReprodPattern, InitRatioFem,
                                  FinalSex_A50, FinalSex_A95, EstSexRatioAtAge, EggFertParam, mat_A50, mat_A95,
                                  EstMatAtAge, Gear_sel_A50, Gear_sel_A95, EstGearSelAtAge, Land_sel_A50, Land_sel_A95,
                                  EstLandSelAtAge, ret_Pmax, ret_A50, ret_A95, EstRetenAtAge, DiscMort, Steepness,
-                                 Steepness_sd, SRrel_Type, NatMort, NatMort_sd, Current_F, Current_F_sd, nReps)
+                                 Steepness_sd, SRrel_Type, NatMort, NatMort_sd, Current_F, Current_F_sd, ParamSims, nReps)
 }
