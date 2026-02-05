@@ -5004,7 +5004,6 @@ GetRandFishLengths_DynMod_ALB <- function(nYears, midpt, ObsLenClRetCatchMidPt_F
                                DiscSampleSize_Fem, DiscSampleSize_Mal, SimAnnSampSize) {
 
 
-
   EmptyFrame <- data.frame(matrix(nrow = nYears, ncol = SimAnnSampSize))
   colnames(EmptyFrame) <- 1:SimAnnSampSize; EmptyFrame <- as.matrix(EmptyFrame)
   ObsRandLenRetCatch_Fem = EmptyFrame; ObsRandLenRetCatch_Mal = EmptyFrame; ObsRandLenRetCatch = EmptyFrame;
@@ -5018,6 +5017,12 @@ GetRandFishLengths_DynMod_ALB <- function(nYears, midpt, ObsLenClRetCatchMidPt_F
     ObsRandLenRetCatch_Fem[i,1:SampleSize_Fem[i]] = round(ObsLenClRetCatchMidPt_Fem[i,1:SampleSize_Fem[i]] + runif(SampleSize_Fem[i],-LenInterv, LenInterv),0)
     ObsRandLenRetCatch_Mal[i,1:SampleSize_Mal[i]] = round(ObsLenClRetCatchMidPt_Mal[i,1:SampleSize_Mal[i]] + runif(SampleSize_Mal[i],-LenInterv, LenInterv),0)
 
+    # data for both sexes
+    fem_vals <- ObsRandLenRetCatch_Fem[i, !is.na(ObsRandLenRetCatch_Fem[i, ])]
+    mal_vals <- ObsRandLenRetCatch_Mal[i, !is.na(ObsRandLenRetCatch_Mal[i, ])]
+    vals <- c(fem_vals, mal_vals)
+    ObsRandLenRetCatch[i, ] <- c(vals, rep(NA, SimAnnSampSize - length(vals)))
+
     if (sum(c(DiscSampleSize_Fem[1],DiscSampleSize_Mal[1])) < 1) {
       ObsRandLenDiscCatch_Fem[i,] = NA
       ObsRandLenDiscCatch_Mal[i,] = NA
@@ -5027,12 +5032,15 @@ GetRandFishLengths_DynMod_ALB <- function(nYears, midpt, ObsLenClRetCatchMidPt_F
       # random fish lengths, within each length class, for each of the fish in discarded catches
       ObsRandLenDiscCatch_Fem[i,1:DiscSampleSize_Fem[i]] = round(ObsLenClDiscCatchMidPt_Fem[i,1:DiscSampleSize_Fem[i]] + runif(DiscSampleSize_Fem[i],-LenInterv, LenInterv),0)
       ObsRandLenDiscCatch_Mal[i,1:DiscSampleSize_Mal[i]] = round(ObsLenClDiscCatchMidPt_Mal[i,1:DiscSampleSize_Mal[i]] + runif(DiscSampleSize_Mal[i],-LenInterv, LenInterv),0)
+
+      # data for both sexes
+      fem_vals_disc <- ObsRandLenDiscCatch_Fem[i, !is.na(ObsRandLenDiscCatch_Fem[i, ])]
+      mal_vals_disc <- ObsRandLenDiscCatch_Mal[i, !is.na(ObsRandLenDiscCatch_Mal[i, ])]
+      vals_disc <- c(fem_vals_disc, mal_vals_disc)
+      ObsRandLenDiscCatch[i, ] <- c(vals_disc, rep(NA, SimAnnSampSize - length(vals_disc)))
+
     }
   } # year
-
-  # data for both sexes
-  ObsRandLenRetCatch = rbind(ObsRandLenRetCatch_Fem, ObsRandLenRetCatch_Mal)
-  ObsRandLenDiscCatch = rbind(ObsRandLenDiscCatch_Fem, ObsRandLenDiscCatch_Mal)
 
   Results = list(ObsRandLenRetCatch_Fem = ObsRandLenRetCatch_Fem,
                  ObsRandLenRetCatch_Mal = ObsRandLenRetCatch_Mal,
