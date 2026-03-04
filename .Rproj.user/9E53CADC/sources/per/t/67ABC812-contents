@@ -21068,7 +21068,7 @@ GetVarRecCatchCurveResults <- function(dat, params) {
   param_est = as.list(sdr, "Est", report=TRUE)
   params_sd = as.list(sdr, "Std", report=TRUE)
 
-  EstFMort = c(param_est$FMort, param_est$FMort - 1.96 * params_sd$FMort,
+  EstFMort = data.frame(param_est$FMort, param_est$FMort - 1.96 * params_sd$FMort,
                param_est$FMort + 1.96 * params_sd$FMort)
   colnames(EstFMort) = c("Estimate","lw_95%CL","up_95%CL")
   EstRecDevs = data.frame(param_est$RecDevs, param_est$RecDevs - 1.96 * params_sd$RecDevs,
