@@ -9,6 +9,7 @@ GetResampLengthsAtAge_AgeLengthCatchCurve_Growth(
   nTimeSteps,
   PlotAges,
   GrowthCurveType,
+  nSexes,
   RefnceAges,
   params,
   vcov.params,
@@ -19,6 +20,8 @@ GetResampLengthsAtAge_AgeLengthCatchCurve_Growth(
 \item{nReps}{number of samples}
 
 \item{GrowthCurveType}{1=von Bertalanffy, 2=Schnute}
+
+\item{nSexes}{number of sexes}
 
 \item{RefnceAges}{references ages for Schnute growth curve}
 

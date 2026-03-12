@@ -9897,6 +9897,7 @@ GetAgeLenVectors_AgeLengthCatchCurve_Growth <- function(nTimeSteps, TimeStep, nL
 #' @param TimeStep observed frequencies in length classes
 #' @param DecAges decimal ages
 #' @param GrowthCurveType 1=von Bertalanffy, 2=Schnute
+#' @param nSexes number of sexes
 #' @param RefnceAges references ages for Schnute growth curve
 #' @param params parameter estimates
 #' @param vcov.params variance covariance matrix for parameter estimates
@@ -9904,9 +9905,8 @@ GetAgeLenVectors_AgeLengthCatchCurve_Growth <- function(nTimeSteps, TimeStep, nL
 #'
 #' @return EstProp.sim, EstProp.sim_low, EstProp.sim_up, EstPropF.sim, EstPropF.sim_low, EstPropF.sim_up,
 #' EstPropM.sim, EstPropM.sim_low, EstPropM.sim_up, EstLenAtAge.sim, EstLenAtAgeF.sim, EstLenAtAgeM.sim
-#'
-GetResampLengthsAtAge_AgeLengthCatchCurve_Growth <- function(nReps, nTimeSteps, PlotAges, GrowthCurveType, RefnceAges, params, vcov.params,
-                                                          ObsRetCatchFreqAtLen) {
+GetResampLengthsAtAge_AgeLengthCatchCurve_Growth <- function(nReps, nTimeSteps, PlotAges, GrowthCurveType, nSexes, RefnceAges, params, vcov.params,
+                                                             ObsRetCatchFreqAtLen) {
 
 
   set.seed(123)
@@ -9921,14 +9921,21 @@ GetResampLengthsAtAge_AgeLengthCatchCurve_Growth <- function(nReps, nTimeSteps, 
       ParamVals = exp(unlist(sims[j,]))
       if (is.vector(ObsRetCatchFreqAtLen)) { # length at age data for combined sexes
         if (SelectivityType == 1) { # input vector
-          EstLenAtAge.sim[j,] = ParamVals[2] * (1 - exp(-ParamVals[3]*(PlotAges)))
+          if (nSexes == 1) {
+            EstLenAtAge.sim[j,] = ParamVals[2] * (1 - exp(-ParamVals[3]*(PlotAges)))
+          }
+          if (nSexes == 2) {
+            EstLenAtAgeF.sim[j,] = ParamVals[2] * (1 - exp(-ParamVals[4]*(PlotAges)))
+            EstLenAtAgeM.sim[j,] = ParamVals[3] * (1 - exp(-ParamVals[5]*(PlotAges)))
+          }
         }
         if (SelectivityType == 2) { # estimated
-          if (length(ParamVals)==8) { # estimating sex-specific growth parameters, with sexes unknown for observed data
+          if (nSexes == 1) {
+            EstLenAtAge.sim[j,] = ParamVals[4] * (1 - exp(-ParamVals[5]*(PlotAges))) # growth curve for single sex or combined sexes
+          }
+          if (nSexes == 2) { # estimating sex-specific growth parameters, with sexes unknown for observed data
             EstLenAtAgeF.sim[j,] = ParamVals[4] * (1 - exp(-ParamVals[6]*(PlotAges)))
             EstLenAtAgeM.sim[j,] = ParamVals[5] * (1 - exp(-ParamVals[7]*(PlotAges)))
-          } else {
-            EstLenAtAge.sim[j,] = ParamVals[4] * (1 - exp(-ParamVals[5]*(PlotAges))) # growth curve for single sex or combined sexes
           }
         }
 
@@ -10032,7 +10039,6 @@ GetResampLengthsAtAge_AgeLengthCatchCurve_Growth <- function(nReps, nTimeSteps, 
   return(results)
 
 }
-
 
 
 #' Show estimated growth curve from age and length catch curve model
@@ -10220,7 +10226,7 @@ PlotAgeLengthCatchCurve_Growth <- function(params, RefnceAges, MLL, DistnType, n
   vcov.params = res$ModelDiag$vcov.Params
 
   # Get lengths at age and associated quantiles from resampling
-  res = GetResampLengthsAtAge_AgeLengthCatchCurve_Growth(nReps, nTimeSteps, PlotAges, GrowthCurveType, RefnceAges,
+  res = GetResampLengthsAtAge_AgeLengthCatchCurve_Growth(nReps, nTimeSteps, PlotAges, GrowthCurveType, nSexes, RefnceAges,
                                                          params, vcov.params, ObsRetCatchFreqAtLen)
 
   EstProp.sim = res$EstProp.sim; EstProp.sim_low = res$EstProp.sim_low; EstProp.sim_up = res$EstProp.sim_up
@@ -10233,7 +10239,7 @@ PlotAgeLengthCatchCurve_Growth <- function(params, RefnceAges, MLL, DistnType, n
   if (is.na(xmax)) xmax = xlims$xmax
   if (is.na(xint)) xint = xlims$xint
 
-  if (is.vector(ObsRetCatchFreqAtLen)) { # combined sex
+  if (is.vector(ObsRetCatchFreqAtLen)) { # combined sex data (single plot)
     if (is.na(yaxis_lab)) yaxis_lab = "Length (mm)"
     ylims = Get_yaxis_scale(midpt)
     if (is.na(ymax)) ymax = ylims$ymax
@@ -10242,32 +10248,37 @@ PlotAgeLengthCatchCurve_Growth <- function(params, RefnceAges, MLL, DistnType, n
          xaxt = "n", yaxt = "n", xlab=list(xaxis_lab,cex=1.2),ylab=list(yaxis_lab,cex=1.2), frame=F, xlim=c(0,xmax), ylim=c(0,ymax))
     points(ObsAge, ObsLenClRetCatchMidPt, col=rgb(1,0,0,0.1), cex=1.0)
 
-    if (!is.na(EstLenAtAge.sim[1,1])) {
-      if (PlotCLs == TRUE) {
-        x = c(PlotAges,rev(PlotAges)) # using shading for 95% CLs
-        y = c(EstProp.sim_low, rev(EstProp.sim_up))
-        polygon(x,y,col="lightgrey",border=NA)
+    if (nSexes == 1) {
+      if (!is.na(EstLenAtAge.sim[1,1])) {
+        if (PlotCLs == TRUE) {
+          x = c(PlotAges,rev(PlotAges)) # using shading for 95% CLs
+          y = c(EstProp.sim_low, rev(EstProp.sim_up))
+          polygon(x,y,col="lightgrey",border=NA)
+        } # PlotCLs == TRUE
+        lines(PlotAges, EstProp.sim, col="black", lwd=2)
       }
-      points(ObsAge, ObsLenClRetCatchMidPt, col=rgb(1,0,0,0.1), cex=1.0)
-      lines(PlotAges, EstProp.sim, , col="black", lwd=2)
-    } else {
-      if (PlotCLs == TRUE) {
-        x = c(PlotAges,rev(PlotAges)) # using shading for 95% CLs
-        y = c(EstPropF.sim_low, rev(EstPropF.sim_up))
-        polygon(x,y,col="lightgrey",border=NA)
-        y = c(EstPropM.sim_low, rev(EstPropM.sim_up))
-        polygon(x,y,col="lightgrey",border=NA)
-
-      }
-      points(PlotAges,EstPropF.sim, col="black", cex=1.0, "o")
-      points(PlotAges,EstPropM.sim, col="black", cex=1.0, "o")
     }
+    if (nSexes == 2) {
+      if (!is.na(EstLenAtAgeF.sim[1,1])) {
+        if (PlotCLs == TRUE) {
+          x = c(PlotAges,rev(PlotAges)) # using shading for 95% CLs
+          y = c(EstPropF.sim_low, rev(EstPropF.sim_up))
+          polygon(x,y,col="lightgrey",border=NA)
+          y = c(EstPropM.sim_low, rev(EstPropM.sim_up))
+          polygon(x,y,col="lightgrey",border=NA)
+        } # PlotCLs == TRUE
+        lines(PlotAges,EstPropF.sim, col="black", lwd=2)
+        lines(PlotAges,EstPropM.sim, col="black", lwd=2)
+      }
+    }
+
     AddAxesAndTickLabelsToPlot(xmin=NA, xmax, xint, ymin=NA, ymax, yint, cexval=NA, cexaxisval=NA, lwdval=NA, lineval=NA, lasval=NA)
     if (ShowLegend == T) {
       legend("bottomright", legend=c("least samples", "most samples"), lty="solid", lwd=c(-1,-1),
              pch=c(16,16), col=c(rgb(1,0,0,0.1), rgb(1,0,0,1)), bty='n', cex=1.0)
     }
-  } else {
+  } else { # separate sex data (two plots)
+
     # females
     ylims = Get_yaxis_scale(midpt)
     if (is.na(ymax)) ymax = ylims$ymax
