@@ -10254,6 +10254,7 @@ PlotAgeLengthCatchCurve_Growth <- function(params, RefnceAges, MLL, DistnType, n
           x = c(PlotAges,rev(PlotAges)) # using shading for 95% CLs
           y = c(EstProp.sim_low, rev(EstProp.sim_up))
           polygon(x,y,col="lightgrey",border=NA)
+          points(ObsAge, ObsLenClRetCatchMidPt, col=rgb(1,0,0,0.1), cex=1.0)
         } # PlotCLs == TRUE
         lines(PlotAges, EstProp.sim, col="black", lwd=2)
       }
@@ -10266,6 +10267,7 @@ PlotAgeLengthCatchCurve_Growth <- function(params, RefnceAges, MLL, DistnType, n
           polygon(x,y,col="lightgrey",border=NA)
           y = c(EstPropM.sim_low, rev(EstPropM.sim_up))
           polygon(x,y,col="lightgrey",border=NA)
+          points(ObsAge, ObsLenClRetCatchMidPt, col=rgb(1,0,0,0.1), cex=1.0)
         } # PlotCLs == TRUE
         lines(PlotAges,EstPropF.sim, col="black", lwd=2)
         lines(PlotAges,EstPropM.sim, col="black", lwd=2)
@@ -10296,8 +10298,9 @@ PlotAgeLengthCatchCurve_Growth <- function(params, RefnceAges, MLL, DistnType, n
       x = c(PlotAges,rev(PlotAges)) # using shading for 95% CLs
       y = c(EstPropF.sim_low, rev(EstPropF.sim_up))
       polygon(x,y,col="lightgrey",border=NA)
-      lines(PlotAges,EstPropF.sim, col="black", lwd=2)
+      points(ObsAge_F, ObsLenClRetCatchMidPt_F, col=rgb(1,0,0,0.1), cex=1.0)
     }
+    lines(PlotAges,EstPropF.sim, col="black", lwd=2)
     AddAxesAndTickLabelsToPlot(xmin=NA, xmax, xint, ymin=NA, ymax, yint, cexval=NA, cexaxisval=NA, lwdval=NA, lineval=NA, lasval=NA)
     if (ShowLegend == T) {
       legend("bottomright", legend=c("least samples", "most samples"), lty="solid", lwd=c(-1,-1), pch=c(16,16),
@@ -10320,6 +10323,7 @@ PlotAgeLengthCatchCurve_Growth <- function(params, RefnceAges, MLL, DistnType, n
       x = c(PlotAges,rev(PlotAges)) # using shading for 95% CLs
       y = c(EstPropM.sim_low, rev(EstPropM.sim_up))
       polygon(x,y,col="lightgrey",border=NA)
+      points(ObsAge_M, ObsLenClRetCatchMidPt_M, col=rgb(0,0,1,0.1), cex=1.0)
     }
     lines(PlotAges, EstPropM.sim, col="black", lwd=2)
     AddAxesAndTickLabelsToPlot(xmin=NA, xmax, xint, ymin=NA, ymax, yint, cexval=NA, cexaxisval=NA, lwdval=NA, lineval=NA, lasval=NA)
