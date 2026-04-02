@@ -1919,9 +1919,16 @@ GetGrowthParams_AgeAndLengthBasedCatchCurvesCalcs <- function(params, NatMortTyp
         }
         if (nSexes == 2) { # 2 sexes
           Linf = exp(params[2:3])
-          vbK = exp(params[4:5])
-          GrowthParams = data.frame(Linf=Linf,vbK=vbK)
-          CVSizeAtAge = c(exp(params[6]),exp(params[6]))
+          if (length(params) == 5) { # common K
+            vbK = exp(c(params[4],params[4]))
+            GrowthParams = data.frame(Linf=Linf,vbK=vbK)
+            CVSizeAtAge = c(exp(params[5]),exp(params[5]))
+          }
+          if (length(params) == 6) { # separate k
+            vbK = exp(params[4:5])
+            GrowthParams = data.frame(Linf=Linf,vbK=vbK)
+            CVSizeAtAge = c(exp(params[6]),exp(params[6]))
+          }
         }
       } # selectivity type = 1 - direct input
 
@@ -3553,27 +3560,43 @@ GetParamRes_AgeAndLengthBasedCatchCurve <- function (NatMortType, DistnType, Gro
       }
     }
     if (SelectivityType == 1 & GrowthModelType == 2) {   # selectivity vector input, separate sex growth
-      EstLinf_F = ci_exp(params[2], ses[2])
-      EstLinf_M = ci_exp(params[3], ses[3])
-      Estk_F = ci_exp(params[4], ses[4])
-      Estk_M = ci_exp(params[5], ses[5])
-      EstCV = ci_exp(params[6], ses[6])
-      Linf_F.sim = exp(sims[,2]); Linf_M.sim = exp(sims[,3]); vbK_F.sim = exp(sims[,4]); vbK_M.sim = exp(sims[,5])
-      CV.sim = exp(sims[,6])
-      if (DistnType == 1) { # Multinomial distribution
-        ParamEst = t(data.frame(FMort = round(EstFMort, 3), Linf_F = round(EstLinf_F, 3), Linf_M = round(EstLinf_M, 3),
-                                vbK_F = round(Estk_F, 3), vbK_M = round(Estk_M, 3), CV = round(EstCV, 3)))
-        ParamSims = data.frame(F.sim=F.sim, Linf_F.sim=Linf_F.sim, Linf_M.sim=Linf_M.sim, vbK_F.sim=vbK_F.sim,
-                               vbK_M.sim=vbK_M.sim, CV.sim=CV.sim)
+      if (length(params) == 5) { # common k
+        EstLinf_F = ci_exp(params[2], ses[2])
+        EstLinf_M = ci_exp(params[3], ses[3])
+        Estk = ci_exp(params[4], ses[4])
+        EstCV = ci_exp(params[5], ses[5])
+        Linf_F.sim = exp(sims[,2]); Linf_M.sim = exp(sims[,3]); vbK.sim = exp(sims[,4])
+        CV.sim = exp(sims[,5])
+        if (DistnType == 1) { # Multinomial distribution
+          ParamEst = t(data.frame(FMort = round(EstFMort, 3), Linf_F = round(EstLinf_F, 3), Linf_M = round(EstLinf_M, 3),
+                                  vbK = round(Estk, 3), CV = round(EstCV, 3)))
+          ParamSims = data.frame(F.sim=F.sim, Linf_F.sim=Linf_F.sim, Linf_M.sim=Linf_M.sim, vbK.sim=vbK.sim,
+                                 CV.sim=CV.sim)
+        }
       }
-      if (DistnType == 2) { # Dirichlet multinomial distribution for marginal length comp
-        temp = ci(params[7], ses[7])
-        Esttheta = 1/(1+exp(-temp))
-        ParamEst = t(data.frame(FMort = round(EstFMort, 3), Linf_F = round(EstLinf_F, 3), Linf_M = round(EstLinf_M, 3),
-                                vbK_F = round(Estk_F, 3), vbK_M = round(Estk_M, 3), CV = round(EstCV, 3), theta = round(Esttheta, 3)))
-        theta.sim = 1/(1+exp(-sims[,7]))
-        ParamSims = data.frame(F.sim=F.sim, Linf_F.sim=Linf_F.sim, Linf_M.sim=Linf_M.sim, vbK_F.sim=vbK_F.sim,
-                               vbK_M.sim=vbK_M.sim, CV.sim=CV.sim, theta.sim=theta.sim)
+      if (length(params) == 6) { # separate k
+        EstLinf_F = ci_exp(params[2], ses[2])
+        EstLinf_M = ci_exp(params[3], ses[3])
+        Estk_F = ci_exp(params[4], ses[4])
+        Estk_M = ci_exp(params[5], ses[5])
+        EstCV = ci_exp(params[6], ses[6])
+        Linf_F.sim = exp(sims[,2]); Linf_M.sim = exp(sims[,3]); vbK_F.sim = exp(sims[,4]); vbK_M.sim = exp(sims[,5])
+        CV.sim = exp(sims[,6])
+        if (DistnType == 1) { # Multinomial distribution
+          ParamEst = t(data.frame(FMort = round(EstFMort, 3), Linf_F = round(EstLinf_F, 3), Linf_M = round(EstLinf_M, 3),
+                                  vbK_F = round(Estk_F, 3), vbK_M = round(Estk_M, 3), CV = round(EstCV, 3)))
+          ParamSims = data.frame(F.sim=F.sim, Linf_F.sim=Linf_F.sim, Linf_M.sim=Linf_M.sim, vbK_F.sim=vbK_F.sim,
+                                 vbK_M.sim=vbK_M.sim, CV.sim=CV.sim)
+        }
+        if (DistnType == 2) { # Dirichlet multinomial distribution for marginal length comp
+          temp = ci(params[7], ses[7])
+          Esttheta = 1/(1+exp(-temp))
+          ParamEst = t(data.frame(FMort = round(EstFMort, 3), Linf_F = round(EstLinf_F, 3), Linf_M = round(EstLinf_M, 3),
+                                  vbK_F = round(Estk_F, 3), vbK_M = round(Estk_M, 3), CV = round(EstCV, 3), theta = round(Esttheta, 3)))
+          theta.sim = 1/(1+exp(-sims[,7]))
+          ParamSims = data.frame(F.sim=F.sim, Linf_F.sim=Linf_F.sim, Linf_M.sim=Linf_M.sim, vbK_F.sim=vbK_F.sim,
+                                 vbK_M.sim=vbK_M.sim, CV.sim=CV.sim, theta.sim=theta.sim)
+        }
       }
     }
     if (SelectivityType == 2 & GrowthModelType == 2) { # logistic selectivity, separate sex growth
@@ -9925,8 +9948,14 @@ GetResampLengthsAtAge_AgeLengthCatchCurve_Growth <- function(nReps, nTimeSteps, 
             EstLenAtAge.sim[j,] = ParamVals[2] * (1 - exp(-ParamVals[3]*(PlotAges)))
           }
           if (nSexes == 2) {
-            EstLenAtAgeF.sim[j,] = ParamVals[2] * (1 - exp(-ParamVals[4]*(PlotAges)))
-            EstLenAtAgeM.sim[j,] = ParamVals[3] * (1 - exp(-ParamVals[5]*(PlotAges)))
+            if (length(params) == 5) { # common k
+              EstLenAtAgeF.sim[j,] = ParamVals[2] * (1 - exp(-ParamVals[4]*(PlotAges)))
+              EstLenAtAgeM.sim[j,] = ParamVals[3] * (1 - exp(-ParamVals[4]*(PlotAges)))
+            }
+            if (length(params) == 6) { # separate k
+              EstLenAtAgeF.sim[j,] = ParamVals[2] * (1 - exp(-ParamVals[4]*(PlotAges)))
+              EstLenAtAgeM.sim[j,] = ParamVals[3] * (1 - exp(-ParamVals[5]*(PlotAges)))
+            }
           }
         }
         if (SelectivityType == 2) { # estimated
