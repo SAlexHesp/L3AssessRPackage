@@ -172,7 +172,7 @@ InitDelta = 50 # L95-L50
 InitLinf = 800
 InitvbK = 0.2
 InitCVSizeAtAge = 0.05
-InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform (so F is always between 0 and 1)
+InitFishMort_logit = log(InitFishMort / (2 - InitFishMort)) # logit transform (so F is always between 0 and 2)
 params = c(InitFishMort_logit, log(c(InitL50, InitDelta, InitLinf, InitvbK, InitCVSizeAtAge)))
 # # get params - 2 sexes
 # nSexes = 2
@@ -182,7 +182,7 @@ params = c(InitFishMort_logit, log(c(InitL50, InitDelta, InitLinf, InitvbK, Init
 # InitLinf = c(800,800)
 # InitvbK = c(0.25,0.25)
 # InitCVSizeAtAge = 0.05
-# InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform (so F is always between 0 and 1)
+# InitFishMort_logit = log(InitFishMort / (2 - InitFishMort)) # logit transform (so F is always between 0 and 2)
 # params = c(InitFishMort_logit, log(c(InitL50, InitDelta, InitLinf, InitvbK, InitCVSizeAtAge)))
 FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, RefnceAges, MLL, DistnType, nSexes, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
                                                 lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMortType, NatMort, NatMort_sd, TimeStep)
@@ -215,7 +215,7 @@ InitFishMort = 0.3 # specify starting parameters
 InitLinf = 800
 InitvbK = 0.2
 InitCVSizeAtAge = 0.05
-InitFishMort_logit = log(InitFishMort/(1-InitFishMort)) # logit transform (so F is always between 0 and 1)
+InitFishMort_logit = log(InitFishMort / (2 - InitFishMort)) # logit transform (so F is always between 0 and 2)
 params = c(InitFishMort_logit, log(c(InitLinf, InitvbK, InitCVSizeAtAge)))
 FittedRes=GetAgeAndLengthBasedCatchCurveResults(params, RefnceAges, MLL, DistnType, nSexes, GrowthCurveType, SelectivityType, ObsRetCatchFreqAtLen, ObsRetCatchFreqAtLengthAndAge,
                                                 lbnd, ubnd, midpt, SelectivityAtLen, DiscMort, MaxAge, NatMortType, NatMort, NatMort_sd, TimeStep)

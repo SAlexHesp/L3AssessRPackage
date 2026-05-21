@@ -81,7 +81,7 @@ SimAgeFreqData_DynMod_AB(
 
 \item{EstWtAtAge}{weight at ages}
 
-\item{ReprodScale}{<- 1 # 1=default (standard calculations for spawning biomass), 2=hyperallometric reproductive scaling with female mass (i.e. BOFFF effects)}
+\item{ReprodScale}{1=default (standard calculations for spawning biomass), use alternative number to specify reproductive scaling with female mass factor (i.e. BOFFF effects)}
 
 \item{ReprodPattern}{reproductive pattern, 1=gonochoristic, 2=protogynous (female to male sex change) hermaphroditism,
 3=protandrous hermaphroditism (male to female sex change)}

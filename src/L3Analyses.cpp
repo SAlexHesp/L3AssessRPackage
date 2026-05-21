@@ -95,7 +95,10 @@ List CalcCatches_AgeAndLengthBasedCatchCurves_cpp(NumericVector params, const do
   NumericMatrix TotCatchAtDecAgeLen(nTimeSteps, nLenCl); // total (released + retained) catches at age and length
 
   //inverse of logit transformation
-  FishMort = 1/(1+exp(-params(0)));
+  // for between 0 and 1
+  //FishMort = 1/(1+exp(-params(0)));
+  //for between 0 and 2
+  FishMort = (2.0 * exp(params(0))) / (1 + exp(params(0)));
 
   // per recruit numbers surviving after natural mortality
   for (i=0; i<nLenCl; i++) {

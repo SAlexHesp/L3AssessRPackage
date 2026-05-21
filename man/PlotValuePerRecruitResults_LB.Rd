@@ -79,7 +79,7 @@ PlotValuePerRecruitResults_LB(
 
 \item{EstWtAtLen}{user-specified weights at lengths}
 
-\item{ReprodScale}{<- 1 # 1=default (standard calculations for spawning biomass), 2=hyperallometric reproductive scaling with female mass (i.e. BOFFF effects)}
+\item{ReprodScale}{1=default (standard calculations for spawning biomass), use alternative number to specify reproductive scaling with female mass factor (i.e. BOFFF effects)}
 
 \item{ReprodPattern}{reproductive pattern, 1=gonochoristic, 2=protogynous (female to male sex change) hermaphroditism,
 3=protandrous hermaphroditism (male to female sex change)}
@@ -157,7 +157,7 @@ lenwt_b <- 3 # combined sexes - weight (g) vs length (mm, TL) relationship param
 WLrel_Type <- 1 # 1=power, 2=log-log relationship
 EstWtAtLen <- data.frame(EstFemWtAtLen=NA,
                          EstMalWtAtLen=NA) # weight at age (from age 0), inputted as values in data frame
-ReprodScale <- 1 # 1=default (standard calculations for spawning biomass), 2=hyperallometric reproductive scaling with female mass (i.e. BOFFF effects)
+ReprodScale <- 1 # 1=default (standard calculations for spawning biomass), use alternative number to specify reproductive scaling with female mass factor (i.e. BOFFF effects)
 ReprodPattern <- 1 # 1 = gonochoristic (separate sexes), 2 = protogynous (female to male sex change), 3 = protandrous (male to female sex change)
 InitRatioFem <- 0.5 # Ratio of females to males at age zero
 FinalSex_L50 <- NA # Logistic sex change relationship parameters (inflection point)
