@@ -4980,11 +4980,10 @@ GetRandFishLengths <- function(MLL, RetenParams, LenInc, ObsLenClRetCatchMidPt_F
                                ObsLenClDiscCatchMidPt_Fem, ObsLenClDiscCatchMidPt_Mal, SampleSize_Fem, SampleSize_Mal,
                                DiscSampleSize_Fem, DiscSampleSize_Mal) {
 
-
   # generate random fish lengths, within each length class, for retained catches
   LenInterv = LenInc / 2 # randomising fish lengths, within each length class
-  ObsRandLenRetCatch_Fem = round(ObsLenClRetCatchMidPt_Fem + runif(SampleSize_Fem,-LenInterv, LenInterv),0)
-  ObsRandLenRetCatch_Mal = round(ObsLenClRetCatchMidPt_Mal + runif(SampleSize_Mal,-LenInterv, LenInterv),0)
+  ObsRandLenRetCatch_Fem = floor(runif(SampleSize_Fem, ObsLenClRetCatchMidPt_Fem - LenInterv, ObsLenClRetCatchMidPt_Fem + LenInterv))
+  ObsRandLenRetCatch_Mal = floor(runif(SampleSize_Mal, ObsLenClRetCatchMidPt_Mal - LenInterv, ObsLenClRetCatchMidPt_Mal + LenInterv))
   ObsRandLenRetCatch = c(ObsRandLenRetCatch_Fem, ObsRandLenRetCatch_Mal)
 
   if (is.na(MLL) & is.na(RetenParams[1])) {
@@ -4996,8 +4995,8 @@ GetRandFishLengths <- function(MLL, RetenParams, LenInc, ObsLenClRetCatchMidPt_F
   } else {
 
     # random fish lengths, within each length class, for each of the fish in discarded catches
-    ObsRandLenDiscCatch_Fem = round(ObsLenClDiscCatchMidPt_Fem + runif(DiscSampleSize_Fem,-LenInterv, LenInterv),0)
-    ObsRandLenDiscCatch_Mal = round(ObsLenClDiscCatchMidPt_Mal + runif(DiscSampleSize_Mal,-LenInterv, LenInterv),0)
+    ObsRandLenDiscCatch_Fem = floor(runif(DiscSampleSize_Fem, ObsLenClDiscCatchMidPt_Fem - LenInterv, ObsLenClDiscCatchMidPt_Fem + LenInterv))
+    ObsRandLenDiscCatch_Mal = floor(runif(DiscSampleSize_Mal, ObsLenClDiscCatchMidPt_Mal - LenInterv, ObsLenClDiscCatchMidPt_Mal + LenInterv))
     ObsRandLenDiscCatch = c(ObsRandLenDiscCatch_Fem, ObsRandLenDiscCatch_Mal)
   }
 
@@ -5038,7 +5037,6 @@ GetRandFishLengths_DynMod_ALB <- function(nYears, midpt, ObsLenClRetCatchMidPt_F
                                ObsLenClDiscCatchMidPt_Fem, ObsLenClDiscCatchMidPt_Mal, SampleSize_Fem, SampleSize_Mal,
                                DiscSampleSize_Fem, DiscSampleSize_Mal, SimAnnSampSize) {
 
-
   EmptyFrame <- data.frame(matrix(nrow = nYears, ncol = SimAnnSampSize))
   colnames(EmptyFrame) <- 1:SimAnnSampSize; EmptyFrame <- as.matrix(EmptyFrame)
   ObsRandLenRetCatch_Fem = EmptyFrame; ObsRandLenRetCatch_Mal = EmptyFrame; ObsRandLenRetCatch = EmptyFrame;
@@ -5049,8 +5047,8 @@ GetRandFishLengths_DynMod_ALB <- function(nYears, midpt, ObsLenClRetCatchMidPt_F
   LenInterv = LenInc / 2 # randomising fish lengths, within each length class
 
   for (i in 1:nYears) {
-    ObsRandLenRetCatch_Fem[i,1:SampleSize_Fem[i]] = round(ObsLenClRetCatchMidPt_Fem[i,1:SampleSize_Fem[i]] + runif(SampleSize_Fem[i],-LenInterv, LenInterv),0)
-    ObsRandLenRetCatch_Mal[i,1:SampleSize_Mal[i]] = round(ObsLenClRetCatchMidPt_Mal[i,1:SampleSize_Mal[i]] + runif(SampleSize_Mal[i],-LenInterv, LenInterv),0)
+    ObsRandLenRetCatch_Fem[i,1:SampleSize_Fem[i]] = floor(runif(SampleSize_Fem[i], ObsLenClRetCatchMidPt_Fem[i,1:SampleSize_Fem[i]] - LenInterv, ObsLenClRetCatchMidPt_Fem[i,1:SampleSize_Fem[i]] + LenInterv))
+    ObsRandLenRetCatch_Mal[i,1:SampleSize_Mal[i]] = floor(runif(SampleSize_Mal[i], ObsLenClRetCatchMidPt_Mal[i,1:SampleSize_Mal[i]] - LenInterv, ObsLenClRetCatchMidPt_Mal[i,1:SampleSize_Mal[i]] + LenInterv))
 
     # data for both sexes
     fem_vals <- ObsRandLenRetCatch_Fem[i, !is.na(ObsRandLenRetCatch_Fem[i, ])]
@@ -5065,8 +5063,9 @@ GetRandFishLengths_DynMod_ALB <- function(nYears, midpt, ObsLenClRetCatchMidPt_F
 
     } else {
       # random fish lengths, within each length class, for each of the fish in discarded catches
-      ObsRandLenDiscCatch_Fem[i,1:DiscSampleSize_Fem[i]] = round(ObsLenClDiscCatchMidPt_Fem[i,1:DiscSampleSize_Fem[i]] + runif(DiscSampleSize_Fem[i],-LenInterv, LenInterv),0)
-      ObsRandLenDiscCatch_Mal[i,1:DiscSampleSize_Mal[i]] = round(ObsLenClDiscCatchMidPt_Mal[i,1:DiscSampleSize_Mal[i]] + runif(DiscSampleSize_Mal[i],-LenInterv, LenInterv),0)
+      ObsRandLenDiscCatch_Fem[i,1:DiscSampleSize_Fem[i]] = floor(runif(DiscSampleSize_Fem[i], ObsLenClDiscCatchMidPt_Fem[i,1:DiscSampleSize_Fem[i]] - LenInterv, ObsLenClDiscCatchMidPt_Fem[i,1:DiscSampleSize_Fem[i]] + LenInterv))
+      ObsRandLenDiscCatch_Mal[i,1:DiscSampleSize_Mal[i]] = floor(runif(DiscSampleSize_Mal[i], ObsLenClDiscCatchMidPt_Mal[i,1:DiscSampleSize_Mal[i]] - LenInterv, ObsLenClDiscCatchMidPt_Mal[i,1:DiscSampleSize_Mal[i]] + LenInterv))
+
 
       # data for both sexes
       fem_vals_disc <- ObsRandLenDiscCatch_Fem[i, !is.na(ObsRandLenDiscCatch_Fem[i, ])]
@@ -7129,40 +7128,56 @@ GenerateRandomLengthFreqData_DynSimMod <- function(nYears, SimAnnSampSize, lbnd,
 #' @return MeanAgeStats
 GetMeanAgeStats_DynSimMod <- function(nYears, MaxModelAge, RandObsCatchAgeFreq_Fem, RandObsCatchAgeFreq_Mal) {
 
-  Ages <- seq(0,MaxModelAge,1)
-  FemMeanCatchAge <- rep(0,nYears); MalMeanCatchAge <- rep(0,nYears)
-  FemMeanCatchAge.lw95 <- rep(0,nYears); FemMeanCatchAge.up95 <- rep(0,nYears)
-  MalMeanCatchAge.lw95 <- rep(0,nYears); MalMeanCatchAge.up95 <- rep(0,nYears)
-  AgeInterv = 1 # randomising fish ages, within each age class
+  Ages <- seq(0, MaxModelAge, 1)
 
-  # calculate mean lengths for each year and associated 95% CLs
+  FemMeanCatchAge <- rep(NA, nYears)
+  MalMeanCatchAge <- rep(NA, nYears)
+  FemMeanCatchAge.lw95 <- rep(NA, nYears)
+  FemMeanCatchAge.up95 <- rep(NA, nYears)
+  MalMeanCatchAge.lw95 <- rep(NA, nYears)
+  MalMeanCatchAge.up95 <- rep(NA, nYears)
+
+  AgeInterv <- 1  # randomising within age class
+
   for (t in 1:nYears) {
 
-    # genearte random individual ages (2dp), and mean age with 95% CLs
-    FemFishAge = round(rep(Ages, RandObsCatchAgeFreq_Fem[t,]) + runif(length(rep(Ages, RandObsCatchAgeFreq_Fem[t,])),0, AgeInterv),2)
-    MalFishAge = round(rep(Ages, RandObsCatchAgeFreq_Mal[t,]) + runif(length(rep(Ages, RandObsCatchAgeFreq_Mal[t,])),0, AgeInterv),2)
+    # Construct individual ages (no rounding)
+    FemAgesExpanded <- rep(Ages, RandObsCatchAgeFreq_Fem[t, ])
+    MalAgesExpanded <- rep(Ages, RandObsCatchAgeFreq_Mal[t, ])
 
-    FemMeanCatchAge[t] = round(mean(FemFishAge),1)
-    MalMeanCatchAge[t] = round(mean(MalFishAge),1)
-    FemMeanCatchAge.lw95[t] = round(FemMeanCatchAge[t] -1.96 * (sd(FemFishAge)/sqrt(length(FemFishAge))),1)
-    FemMeanCatchAge.up95[t] = round(FemMeanCatchAge[t] +1.96 * (sd(FemFishAge)/sqrt(length(FemFishAge))),1)
-    MalMeanCatchAge.lw95[t] = round(MalMeanCatchAge[t] -1.96 * (sd(MalFishAge)/sqrt(length(MalFishAge))),1)
-    MalMeanCatchAge.up95[t] = round(MalMeanCatchAge[t] +1.96 * (sd(MalFishAge)/sqrt(length(MalFishAge))),1)
+    FemFishAge <- FemAgesExpanded + runif(length(FemAgesExpanded), 0, AgeInterv)
+    MalFishAge <- MalAgesExpanded + runif(length(MalAgesExpanded), 0, AgeInterv)
 
+    # Female stats
+    if (length(FemFishAge) > 0) {
+      FemMeanCatchAge[t] <- mean(FemFishAge)
+      se_fem <- sd(FemFishAge) / sqrt(length(FemFishAge))
+      FemMeanCatchAge.lw95[t] <- FemMeanCatchAge[t] - 1.96 * se_fem
+      FemMeanCatchAge.up95[t] <- FemMeanCatchAge[t] + 1.96 * se_fem
+    }
+
+    # Male stats
+    if (length(MalFishAge) > 0) {
+      MalMeanCatchAge[t] <- mean(MalFishAge)
+      se_mal <- sd(MalFishAge) / sqrt(length(MalFishAge))
+      MalMeanCatchAge.lw95[t] <- MalMeanCatchAge[t] - 1.96 * se_mal
+      MalMeanCatchAge.up95[t] <- MalMeanCatchAge[t] + 1.96 * se_mal
+    }
   }
 
-  MeanAgeStats <- data.frame(YrIndex = 1:nYears,
-                             FemMeanAge=FemMeanCatchAge,
-                             FemMeanAge.lw95=FemMeanCatchAge.lw95,
-                             FemMeanAge.up95=FemMeanCatchAge.up95,
-                             MalMeanAge=MalMeanCatchAge,
-                             MalMeanAge.lw95=MalMeanCatchAge.lw95,
-                             MalMeanAge.up95=MalMeanCatchAge.up95)
+  # Round for outputs
+  MeanAgeStats <- data.frame(
+    YrIndex = 1:nYears,
+    FemMeanAge = round(FemMeanCatchAge, 1),
+    FemMeanAge.lw95 = round(FemMeanCatchAge.lw95, 1),
+    FemMeanAge.up95 = round(FemMeanCatchAge.up95, 1),
+    MalMeanAge = round(MalMeanCatchAge, 1),
+    MalMeanAge.lw95 = round(MalMeanCatchAge.lw95, 1),
+    MalMeanAge.up95 = round(MalMeanCatchAge.up95, 1)
+  )
 
   return(MeanAgeStats)
-
 }
-
 
 #' Calculate mean length statistics for dynamic simulation model
 #'
@@ -7178,39 +7193,55 @@ GetMeanAgeStats_DynSimMod <- function(nYears, MaxModelAge, RandObsCatchAgeFreq_F
 #' @return MeanLengthStats
 GetMeanLengthStats_DynSimMod <- function(nYears, RandObsCatchLenFreq_Fem, RandObsCatchLenFreq_Mal) {
 
-  FemMeanCatchLen <- rep(0,nYears); MalMeanCatchLen <- rep(0,nYears)
-  FemMeanCatchLen.lw95 <- rep(0,nYears); FemMeanCatchLen.up95 <- rep(0,nYears)
-  MalMeanCatchLen.lw95 <- rep(0,nYears); MalMeanCatchLen.up95 <- rep(0,nYears)
-  LenInterv = (ubnd[1] - lbnd[1]) / 2 # randomising fish lengths, within each length class
+  FemMeanCatchLen <- rep(NA, nYears)
+  MalMeanCatchLen <- rep(NA, nYears)
+  FemMeanCatchLen.lw95 <- rep(NA, nYears)
+  FemMeanCatchLen.up95 <- rep(NA, nYears)
+  MalMeanCatchLen.lw95 <- rep(NA, nYears)
+  MalMeanCatchLen.up95 <- rep(NA, nYears)
 
-  # calculate mean lengths for each year and associated 95% CLs
+  LenInterv <- (ubnd[1] - lbnd[1]) / 2  # half-bin width
+
   for (t in 1:nYears) {
 
-    # get random individual lengths (nearest 1 mm), and mean lengths with 95% CLs
-    FemFishLen = round(rep(midpt, RandObsCatchLenFreq_Fem[t,]) + runif(length(rep(midpt, RandObsCatchLenFreq_Fem[t,])),-LenInterv, LenInterv),0)
-    MalFishLen = round(rep(midpt, RandObsCatchLenFreq_Mal[t,]) + runif(length(rep(midpt, RandObsCatchLenFreq_Mal[t,])),-LenInterv, LenInterv),0)
+    # Expand length classes
+    FemLensExpanded <- rep(midpt, RandObsCatchLenFreq_Fem[t, ])
+    MalLensExpanded <- rep(midpt, RandObsCatchLenFreq_Mal[t, ])
 
-    FemMeanCatchLen[t] = round(mean(FemFishLen),1)
-    MalMeanCatchLen[t] = round(mean(MalFishLen),1)
-    FemMeanCatchLen.lw95[t] = round(FemMeanCatchLen[t] -1.96 * (sd(FemFishLen)/sqrt(length(FemFishLen))),1)
-    FemMeanCatchLen.up95[t] = round(FemMeanCatchLen[t] +1.96 * (sd(FemFishLen)/sqrt(length(FemFishLen))),1)
-    MalMeanCatchLen.lw95[t] = round(MalMeanCatchLen[t] -1.96 * (sd(MalFishLen)/sqrt(length(MalFishLen))),1)
-    MalMeanCatchLen.up95[t] = round(MalMeanCatchLen[t] +1.96 * (sd(MalFishLen)/sqrt(length(MalFishLen))),1)
+    # Add within-bin variation (no rounding here)
+    FemFishLen <- FemLensExpanded + runif(length(FemLensExpanded), -LenInterv, LenInterv)
+    MalFishLen <- MalLensExpanded + runif(length(MalLensExpanded), -LenInterv, LenInterv)
 
+    # Female stats
+    if (length(FemFishLen) > 0) {
+      FemMeanCatchLen[t] <- mean(FemFishLen)
+      se_fem <- sd(FemFishLen) / sqrt(length(FemFishLen))
+      FemMeanCatchLen.lw95[t] <- FemMeanCatchLen[t] - 1.96 * se_fem
+      FemMeanCatchLen.up95[t] <- FemMeanCatchLen[t] + 1.96 * se_fem
+    }
+
+    # Male stats
+    if (length(MalFishLen) > 0) {
+      MalMeanCatchLen[t] <- mean(MalFishLen)
+      se_mal <- sd(MalFishLen) / sqrt(length(MalFishLen))
+      MalMeanCatchLen.lw95[t] <- MalMeanCatchLen[t] - 1.96 * se_mal
+      MalMeanCatchLen.up95[t] <- MalMeanCatchLen[t] + 1.96 * se_mal
+    }
   }
 
-  MeanLengthStats <- data.frame(YrIndex = 1:nYears,
-                                FemMeanLen=FemMeanCatchLen,
-                                FemMeanLen.lw95=FemMeanCatchLen.lw95,
-                                FemMeanLen.up95=FemMeanCatchLen.up95,
-                                MalMeanLen=MalMeanCatchLen,
-                                MalMeanLen.lw95=MalMeanCatchLen.lw95,
-                                MalMeanLen.up95=MalMeanCatchLen.up95)
+  # Round only for reporting
+  MeanLengthStats <- data.frame(
+    YrIndex = 1:nYears,
+    FemMeanLen = round(FemMeanCatchLen, 1),
+    FemMeanLen.lw95 = round(FemMeanCatchLen.lw95, 1),
+    FemMeanLen.up95 = round(FemMeanCatchLen.up95, 1),
+    MalMeanLen = round(MalMeanCatchLen, 1),
+    MalMeanLen.lw95 = round(MalMeanCatchLen.lw95, 1),
+    MalMeanLen.up95 = round(MalMeanCatchLen.up95, 1)
+  )
 
   return(MeanLengthStats)
-
 }
-
 
 #' Simulate length composition data from a length-based dynamic model with recruitment variation
 #'
