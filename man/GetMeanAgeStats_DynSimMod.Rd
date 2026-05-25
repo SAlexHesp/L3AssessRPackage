@@ -6,7 +6,7 @@
 \usage{
 GetMeanAgeStats_DynSimMod(
   nYears,
-  MaxModelAge,
+  Ages,
   RandObsCatchAgeFreq_Fem,
   RandObsCatchAgeFreq_Mal
 )
@@ -14,7 +14,7 @@ GetMeanAgeStats_DynSimMod(
 \arguments{
 \item{nYears}{number of years of length data}
 
-\item{MaxModelAge}{maximum age considered by model}
+\item{Ages}{ages considered by the model}
 
 \item{RandObsCatchLenFreq_Fem}{randomly generated annual length frequencies for females}
 

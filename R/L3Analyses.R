@@ -7121,14 +7121,12 @@ GenerateRandomLengthFreqData_DynSimMod <- function(nYears, SimAnnSampSize, lbnd,
 #' @keywords internal
 #'
 #' @param nYears number of years of length data
-#' @param MaxModelAge maximum age considered by model
+#' @param Ages ages considered by the model
 #' @param RandObsCatchLenFreq_Fem randomly generated annual length frequencies for females
 #' @param RandObsCatchLenFreq_Mal randomly generated annual length frequencies for males
 #'
 #' @return MeanAgeStats
-GetMeanAgeStats_DynSimMod <- function(nYears, MaxModelAge, RandObsCatchAgeFreq_Fem, RandObsCatchAgeFreq_Mal) {
-
-  Ages <- seq(0, MaxModelAge, 1)
+GetMeanAgeStats_DynSimMod <- function(nYears, Ages, RandObsCatchAgeFreq_Fem, RandObsCatchAgeFreq_Mal) {
 
   FemMeanCatchAge <- rep(NA, nYears)
   MalMeanCatchAge <- rep(NA, nYears)
@@ -7423,9 +7421,10 @@ SimAgeFreqData_DynMod_AB <- function(SimAnnSampSize, nYears, lnSigmaR, autocorr,
   RandObsCatchAgeFreq_Fem = res$RandObsCatchAgeFreq_Fem; RandObsCatchAgeFreq_Mal = res$RandObsCatchAgeFreq_Mal
 
   # calculate mean lengths for each year and associated 95% CLs
-  MeanAgeStats = GetMeanAgeStats_DynSimMod(nYears, MaxModelAge, RandObsCatchAgeFreq_Fem, RandObsCatchAgeFreq_Mal)
+  Ages <- seq(0, MaxModelAge, 1)
+  MeanAgeStats = GetMeanAgeStats_DynSimMod(nYears, Ages, RandObsCatchAgeFreq_Fem, RandObsCatchAgeFreq_Mal)
 
-  ModelDiag = list(Ages = seq(0,MaxModelAge,1),
+  ModelDiag = list(Ages = Ages,
                    FemLenAtAge = FemLenAtAge,
                    MalLenAtAge = MalLenAtAge,
                    FemWtAtAge = FemWtAtAge,
@@ -8016,10 +8015,17 @@ SimLenAndAgeFreqData_DynMod_ALB <- function(SimAnnSampSize, nYears, lnSigmaR, au
   ObsLenClDiscCatchMidPt_Fem = res$ObsLenClDiscCatchMidPt_Fem
   ObsLenClDiscCatchMidPt_Mal = res$ObsLenClDiscCatchMidPt_Mal
   ObsLenClDiscCatchMidPt = res$ObsLenClDiscCatchMidPt
-
+  ObsRetCatchFreqAtDecAge_Fem = res$ObsRetCatchFreqAtDecAge_Fem
+  ObsRetCatchFreqAtDecAge_Mal = res$ObsRetCatchFreqAtDecAge_Mal
   RandCatchLenRes = GetRandFishLengths_DynMod_ALB(nYears, midpt, ObsLenClRetCatchMidPt_Fem, ObsLenClRetCatchMidPt_Mal,
                                             ObsLenClDiscCatchMidPt_Fem, ObsLenClDiscCatchMidPt_Mal, SampleSize_Fem, SampleSize_Mal,
                                             DiscSampleSize_Fem, DiscSampleSize_Mal, SimAnnSampSize)
+
+  # get mean ages for each year and associated 95% CLs for retained catches
+  MeanAgeStatsRetCatch = GetMeanAgeStats_DynSimMod(nYears, Ages, ObsRetCatchFreqAtDecAge_Fem, ObsRetCatchFreqAtDecAge_Mal)
+
+  # calculate mean lengths for each year and associated 95% CLs for retained catches
+  MeanLengthStatsRetCatch = GetMeanLengthStats_DynSimMod(nYears, ObsRetCatchFreqAtLen_Fem, ObsRetCatchFreqAtLen_Mal)
 
   ResultsSummary = list(ObsRetCatchFreqAtLen_Fem = ObsRetCatchFreqAtLen_Fem,
                         ObsRetCatchFreqAtLen_Mal = ObsRetCatchFreqAtLen_Mal,
@@ -8060,7 +8066,9 @@ SimLenAndAgeFreqData_DynMod_ALB <- function(SimAnnSampSize, nYears, lnSigmaR, au
                         ObsRandLenRetCatch_Mal = RandCatchLenRes$ObsRandLenRetCatch_Mal,
                         ObsRandLenDiscCatch = RandCatchLenRes$ObsRandLenDiscCatch,
                         ObsRandLenDiscCatch_Fem = RandCatchLenRes$ObsRandLenDiscCatch_Fem,
-                        ObsRandLenDiscCatch_Mal = RandCatchLenRes$ObsRandLenDiscCatch_Mal)
+                        ObsRandLenDiscCatch_Mal = RandCatchLenRes$ObsRandLenDiscCatch_Mal,
+                        MeanAgeStatsRetCatch = MeanAgeStatsRetCatch,
+                        MeanLengthStatsRetCatch = MeanLengthStatsRetCatch)
 
   ModelDiag = list(MeanSizeAtAge = MeanSizeAtAge,
                    FemWtAtLen = FemWtAtLen,
@@ -20334,7 +20342,7 @@ GetPerRecruitGrowthPredIntervals_LB <- function(nTimeSteps, nLenCl, midpt, lbnd,
       FemDat = hist(RandFemLenCl,breaks=seq(0,nLenCl,1),right=F, plot=F)
       FreqFem = as.vector(FemDat$counts)
       RandFemLenClAtAge=rep(midpt,FreqFem)
-      RandFemLen = round(RandFemLenClAtAge + runif(nFem,-LenInterv, LenInterv),0)
+      RandFemLen = RandFemLenClAtAge + runif(nFem,-LenInterv, LenInterv)
       FemLenAtAge_lw[i] = quantile(RandFemLen,0.025); FemLenAtAge_hi[i] = quantile(RandFemLen,0.975)
     } else {
       FemLenAtAge_lw[i]=NA; FemLenAtAge_hi[i]=NA
@@ -20345,7 +20353,7 @@ GetPerRecruitGrowthPredIntervals_LB <- function(nTimeSteps, nLenCl, midpt, lbnd,
       MalDat = hist(RandMalLenCl,breaks=seq(0,nLenCl,1),right=F, plot=F)
       FreqMal = as.vector(MalDat$counts)
       RandMalLenClAtAge=rep(midpt,FreqMal)
-      RandMalLen = round(RandMalLenClAtAge + runif(nMal,-LenInterv, LenInterv),0)
+      RandMalLen = RandMalLenClAtAge + runif(nMal,-LenInterv, LenInterv)
       MalLenAtAge_lw[i] = quantile(RandMalLen,0.025); MalLenAtAge_hi[i] = quantile(RandMalLen,0.975)
     } else {
       MalLenAtAge_lw[i]=NA; MalLenAtAge_hi[i]=NA
