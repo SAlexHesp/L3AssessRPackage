@@ -8,6 +8,7 @@ GetLogisticCatchCurveResults(
   params,
   nSexes,
   DistnType,
+  SelDeltaVal,
   NatMortType,
   NatMort,
   NatMort_sd,
@@ -22,6 +23,8 @@ log(c(FMort, SelA50, SelDelta, theta) for Dirichlet multinomial NLL}
 \item{nSexes}{1 or 2}
 
 \item{DistnType}{1 = Multinomial, 2 = Dirichlet multinomial}
+
+\item{SelDeltaVal}{NA, or fixed value if not estimating this parameter}
 
 \item{NatMortType}{1 = fixed, 2 = estimated with prior}
 
@@ -71,6 +74,7 @@ ObsAgeFreq = unlist(as.vector(Res$CatchSample)) # input as vector for single sex
 # Specify catch curve model and required inputs for that model
 nSexes = 1
 DistnType = 1 # 1 = Multinomial, 2 = Dirichlet multinomial
+SelDeltaVal = NA # NA, or fixed value if not estimating this parameter
 NatMortType = 1 # 1 = fixed, 2 = estimated with prior
 NatMort = exp(1.46 - (1.01 * (log(MaxAge))))
 NatMort_sd = NA # standard deviation for natural mortality in log space. Set to NA if NatMortType = 1
@@ -78,7 +82,7 @@ Init_FMort = 0.2
 Init_SelA50 = 5
 Init_SelDelta = 2
 params = log(c(Init_FMort, Init_SelA50, Init_SelDelta))
-res=GetLogisticCatchCurveResults(params, nSexes, DistnType, NatMortType, NatMort, NatMort_sd, Ages, ObsAgeFreq)
+res=GetLogisticCatchCurveResults(params, nSexes, DistnType, SelDeltaVal, NatMortType, NatMort, NatMort_sd, Ages, ObsAgeFreq)
 res$ParamEst
 library(dirmult)
 # Simulate data from Dirichlet multinomial distribution (single sex)
@@ -96,6 +100,7 @@ colnames(simAges)=Ages
 ObsAgeFreq = as.vector(colSums(simAges))
 nSexes = 1
 DistnType = 2 # 1 = Multinomial, 2 = Dirichlet multinomial
+SelDeltaVal = NA # NA, or fixed value if not estimating this parameter
 NatMortType = 1 # 1 = fixed, 2 = estimated with prior
 NatMort = exp(1.46 - (1.01 * (log(MaxAge))))
 NatMort_sd = NA # standard deviation for natural mortality in log space. Set to NA if NatMortType = 1
@@ -105,7 +110,7 @@ Init_SelDelta = 2
 Init_theta = 0.35
 Init_theta_logit = log(Init_theta/(1-Init_theta)) # logit transform (so theta is always between 0 and 1)
 params = c(log(Init_FMort), log(Init_SelA50), log(Init_SelDelta), Init_theta_logit)
-res=GetLogisticCatchCurveResults(params, nSexes, DistnType, NatMortType, NatMort, NatMort_sd, Ages, ObsAgeFreq)
+res=GetLogisticCatchCurveResults(params, nSexes, DistnType, SelDeltaVal, NatMortType, NatMort, NatMort_sd, Ages, ObsAgeFreq)
 res$ParamEst
 res$EffSampSize
 # Simulate data from Multinomial distribution (two sexes)
@@ -124,6 +129,7 @@ ObsAgeFreq = Res$CatchSample
 # fit model (multinomial distribution - two sexes)
 nSexes = 2
 DistnType = 1 # 1 = Multinomial, 2 = Dirichlet multinomial
+SelDeltaVal = NA # NA, or fixed value if not estimating this parameter
 NatMortType = 1 # 1 = fixed, 2 = estimated with prior
 NatMort = exp(1.46 - (1.01 * (log(MaxAge))))
 NatMort_sd = NA # standard deviation for natural mortality in log space. Set to NA if NatMortType = 1
@@ -131,7 +137,7 @@ Init_FMort = 0.2
 Init_SelA50 = c(5,5)
 Init_SelDelta = c(2,2.5)
 params = log(c(Init_FMort, Init_SelA50, Init_SelDelta))
-res=GetLogisticCatchCurveResults(params, nSexes, DistnType, NatMortType, NatMort, NatMort_sd, Ages, ObsAgeFreq)
+res=GetLogisticCatchCurveResults(params, nSexes, DistnType, SelDeltaVal, NatMortType, NatMort, NatMort_sd, Ages, ObsAgeFreq)
 res$ParamEst
 # Simulate data from Dirichlet multinomial distribution (two sexes)
 # two sexes
@@ -152,6 +158,7 @@ colnames(ObsAgeFreq)=Ages
 # fit model (Dirichlet multinomial distribution - two sexes)
 nSexes = 2
 DistnType = 2 # 1 = Multinomial, 2 = Dirichlet multinomial
+SelDeltaVal = NA # NA, or fixed value if not estimating this parameter
 NatMortType = 1 # 1 = fixed, 2 = estimated with prior
 NatMort = exp(1.46 - (1.01 * (log(MaxAge))))
 NatMort_sd = NA # standard deviation for natural mortality in log space. Set to NA if NatMortType = 1
@@ -161,7 +168,7 @@ Init_SelDelta = c(2.5,2.5)
 Init_theta = 0.3
 Init_theta_logit = log(Init_theta/(1-Init_theta)) # logit transform (so theta is always between 0 and 1)
 params = c(log(Init_FMort), log(Init_SelA50), log(Init_SelDelta), Init_theta_logit)
-res=GetLogisticCatchCurveResults(params, nSexes, DistnType, NatMortType, NatMort, NatMort_sd, Ages, ObsAgeFreq)
+res=GetLogisticCatchCurveResults(params, nSexes, DistnType, SelDeltaVal, NatMortType, NatMort, NatMort_sd, Ages, ObsAgeFreq)
 res$ParamEst
 res$EffSampSize
 }

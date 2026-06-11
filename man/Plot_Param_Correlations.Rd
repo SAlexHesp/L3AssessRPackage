@@ -77,6 +77,7 @@ ObsRetCatchFreqAtLen = res$simLenFreq
 # Specify catch curve model and required inputs for that model
 nSexes = 1
 DistnType = 1 # 1 = Multinomial, 2 = Dirichlet multinomial
+SelDeltaVal = NA # NA, or fixed value if not estimating this parameter
 NatMortType = 1 # 1 = fixed, 2 = estimated with prior
 NatMort = exp(1.46 - (1.01 * (log(MaxAge))))
 NatMort_sd = NA # standard deviation for natural mortality in log space. Set to NA if NatMortType = 1
@@ -84,7 +85,7 @@ Init_FMort = 0.2
 Init_SelA50 = 5
 Init_SelDelta = 2
 params = log(c(Init_FMort, Init_SelA50, Init_SelDelta))
-FittedRes=GetLogisticCatchCurveResults(params, nSexes, DistnType, NatMortType, NatMort, NatMort_sd, Ages, ObsAgeFreq)
+FittedRes=GetLogisticCatchCurveResults(params, nSexes, DistnType, SelDeltaVal, NatMortType, NatMort, NatMort_sd, Ages, ObsAgeFreq)
 FittedRes$ParamEst
 ParamSims <- FittedRes$ParamSims[,c(1,3,4)]
 plot_labels <- c("F","A[50]","A[95]")

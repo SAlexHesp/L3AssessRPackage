@@ -12,6 +12,7 @@ PlotAgeBasedCatchCurveResults_LogSpace(
   MaxAge,
   nSexes,
   DistnType,
+  SelDeltaVal,
   NatMortType,
   NatMort,
   NatMort_sd,
@@ -43,6 +44,8 @@ PlotAgeBasedCatchCurveResults_LogSpace(
 \item{nSexes}{1 or 2}
 
 \item{DistnType}{1 = Multinomial, 2 = Dirichlet multinomial}
+
+\item{SelDeltaVal}{NA, or fixed value if not estimating this parameter}
 
 \item{NatMortType}{1 = fixed, 2 = estimated with prior}
 
@@ -114,6 +117,7 @@ ObsAgeFreq = unlist(as.vector(Res$CatchSample)) # input as vector for single sex
 CatchCurveModel = 3 # Logistic selectivity
 nSexes = 1
 DistnType = 1 # 1 = multinomial, 2 = Dirichlet multinomial
+SelDeltaVal = NA # NA, or fixed value if not estimating this parameter
 NatMortType = 1 # 1 = fixed, 2 = estimated with prior
 NatMort = exp(1.46 - (1.01 * (log(MaxAge)))) # i.e. Hoenig's (1983) eqn for fish
 NatMort_sd = NA # in log space if NatMort is estimated, otherwise set to NA
@@ -125,7 +129,7 @@ Init_FMort = 0.2
 Init_SelA50 = 5
 Init_SelA95 = 7
 params = log(c(Init_FMort, Init_SelA50, SelA95))
-PlotAgeBasedCatchCurveResults_LogSpace(RecAssump, SpecRecAge=NA, MinFreq, MinAge, MaxAge, nSexes, DistnType, NatMortType,
+PlotAgeBasedCatchCurveResults_LogSpace(RecAssump, SpecRecAge=NA, MinFreq, MinAge, MaxAge, nSexes, DistnType,  SelDeltaVal, NatMortType,
                                        NatMort, NatMort_sd, ObsAgeFreq, CatchCurveModel, MainLabel=NA, xaxis_lab=NA,
                                        yaxis_lab=NA, ymin=NA, xmax=NA, xint=NA, ymax=NA, yint=NA, PlotCLs=T, CCResults=NA)
 }

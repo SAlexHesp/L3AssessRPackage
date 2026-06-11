@@ -12,6 +12,7 @@ PlotAgeBasedCatchCurveResults_NormalSpace(
   MaxAge,
   nSexes,
   DistnType,
+  SelDeltaVal,
   NatMortType,
   NatMort,
   NatMort_sd,
@@ -42,6 +43,8 @@ PlotAgeBasedCatchCurveResults_NormalSpace(
 \item{nSexes}{1 or 2}
 
 \item{DistnType}{1 = Multinomial, 2 = Dirichlet multinomial}
+
+\item{SelDeltaVal}{NA or fixed value, if not estimating this parameter}
 
 \item{NatMortType}{1 = fixed, 2 = estimated with prior}
 
@@ -114,6 +117,7 @@ CatchCurveModel = 3 # Logistic selectivity
 RecAssump = NA
 nSexes = 1
 DistnType = 1 # 1 = multinomial, 2 = Dirichlet multinomial
+SelDeltaVal = NA # NA, or fixed value if not estimating this parameter
 NatMortType = 1 # 1 = fixed, 2 = estimated with prior
 NatMort = exp(1.46 - (1.01 * (log(MaxAge)))) # i.e. Hoenig's (1983) eqn for fish
 NatMort_sd = NA # in log space if NatMort is estimated, otherwise set to NA
@@ -122,9 +126,9 @@ Init_FMort = 0.2
 Init_SelA50 = 5
 Init_SelDelta = 2
 params = log(c(Init_FMort, Init_SelA50, Init_SelDelta))
-CCResults=GetLogisticCatchCurveResults(params, nSexes, DistnType, NatMortType, NatMort, NatMort_sd, Ages, ObsAgeFreq)
+CCResults=GetLogisticCatchCurveResults(params, nSexes, DistnType, SelDeltaVal, NatMortType, NatMort, NatMort_sd, Ages, ObsAgeFreq)
 CCResults$ParamEst
-PlotAgeBasedCatchCurveResults_NormalSpace(RecAssump, SpecRecAge=NA, MinFreq, MinAge, MaxAge, nSexes, DistnType,
+PlotAgeBasedCatchCurveResults_NormalSpace(RecAssump, SpecRecAge=NA, MinFreq, MinAge, MaxAge, nSexes, DistnType, SelDeltaVal,
                                           NatMortType, NatMort, NatMort_sd, ObsAgeFreq, CatchCurveModel, MainLabel=NA,
                                           xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA, ymax=NA, yint=NA, PlotCLs=T, CCResults)
 
@@ -145,6 +149,7 @@ colnames(simAges)=Ages
 ObsAgeFreq = as.vector(colSums(simAges))
 nSexes = 1
 DistnType = 2 # 1 = multinomial, 2 = Dirichlet multinomial
+SelDeltaVal = NA # NA, or fixed value if not estimating this parameter
 NatMortType = 1 # 1 = fixed, 2 = estimated with prior
 NatMort = exp(1.46 - (1.01 * (log(MaxAge)))) # i.e. Hoenig's (1983) eqn for fish
 NatMort_sd = NA # in log space if NatMort is estimated, otherwise set to NA
@@ -154,10 +159,10 @@ Init_SelDelta = 2
 Init_theta = 0.35
 Init_theta_logit = log(Init_theta/(1-Init_theta)) # logit transform (so theta is always between 0 and 1)
 params = c(log(Init_FMort), log(Init_SelA50), log(Init_SelDelta), Init_theta_logit)
-CCResults=GetLogisticCatchCurveResults(params, nSexes, DistnType, NatMortType, NatMort, NatMort_sd, Ages, ObsAgeFreq)
+CCResults=GetLogisticCatchCurveResults(params, nSexes, DistnType, SelDeltaVal, NatMortType, NatMort, NatMort_sd, Ages, ObsAgeFreq)
 CCResults$ParamEst
 CCResults$EffSampSize
-PlotAgeBasedCatchCurveResults_NormalSpace(RecAssump, SpecRecAge=NA, MinFreq, MinAge, MaxAge, nSexes, DistnType,
+PlotAgeBasedCatchCurveResults_NormalSpace(RecAssump, SpecRecAge=NA, MinFreq, MinAge, MaxAge, nSexes, DistnType, SelDeltaVal,
                                           NatMortType, NatMort, NatMort_sd, ObsAgeFreq, CatchCurveModel, MainLabel=NA,
                                           xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA, ymax=NA, yint=NA, PlotCLs=T, CCResults)
 
@@ -178,6 +183,7 @@ ObsAgeFreq = Res$CatchSample
 # fit model (multinomial distribution - two sexes)
 nSexes = 2
 DistnType = 1 # 1 = multinomial, 2 = Dirichlet multinomial
+SelDeltaVal = NA # NA, or fixed value if not estimating this parameter
 NatMortType = 1 # 1 = fixed, 2 = estimated with prior
 NatMort = exp(1.46 - (1.01 * (log(MaxAge)))) # i.e. Hoenig's (1983) eqn for fish
 NatMort_sd = NA # in log space if NatMort is estimated, otherwise set to NA
@@ -185,9 +191,9 @@ Init_FMort = 0.2
 Init_SelA50 = c(5,5)
 Init_SelDelta = c(2,2.5)
 params = log(c(Init_FMort, Init_SelA50, Init_SelDelta))
-CCResults=GetLogisticCatchCurveResults(params, nSexes, DistnType, NatMortType, NatMort, NatMort_sd, Ages, ObsAgeFreq)
+CCResults=GetLogisticCatchCurveResults(params, nSexes, DistnType, SelDeltaVal, NatMortType, NatMort, NatMort_sd, Ages, ObsAgeFreq)
 CCResults$ParamEst
-PlotAgeBasedCatchCurveResults_NormalSpace(RecAssump, SpecRecAge=NA, MinFreq, MinAge, MaxAge, nSexes, DistnType,
+PlotAgeBasedCatchCurveResults_NormalSpace(RecAssump, SpecRecAge=NA, MinFreq, MinAge, MaxAge, nSexes, DistnType, SelDeltaVal,
                                           NatMortType, NatMort, NatMort_sd, ObsAgeFreq, CatchCurveModel, MainLabel=NA,
                                           xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA, ymax=NA, yint=NA, PlotCLs=T, CCResults)
 
@@ -209,6 +215,7 @@ colnames(ObsAgeFreq)=Ages
 # fit model (Dirichlet multinomial distribution - two sexes)
 nSexes = 2
 DistnType = 2 # 1 = Multinomial, 2 = Dirichlet multinomial
+SelDeltaVal = NA # NA, or fixed value if not estimating this parameter
 NatMortType = 1 # 1 = fixed, 2 = estimated with prior
 NatMort = exp(1.46 - (1.01 * (log(MaxAge))))
 NatMort_sd = NA # standard deviation for natural mortality in log space. Set to NA if NatMortType = 1
@@ -218,10 +225,10 @@ Init_SelDelta = c(2.5,2.5)
 Init_theta = 0.3
 Init_theta_logit = log(Init_theta/(1-Init_theta)) # logit transform (so theta is always between 0 and 1)
 params = c(log(Init_FMort), log(Init_SelA50), log(Init_SelDelta), Init_theta_logit)
-CCResults=GetLogisticCatchCurveResults(params, nSexes, DistnType, NatMortType, NatMort, NatMort_sd, Ages, ObsAgeFreq)
+CCResults=GetLogisticCatchCurveResults(params, nSexes, DistnType, SelDeltaVal, NatMortType, NatMort, NatMort_sd, Ages, ObsAgeFreq)
 CCResults$ParamEst
 CCResults$EffSampSize
-PlotAgeBasedCatchCurveResults_NormalSpace(RecAssump, SpecRecAge=NA, MinFreq, MinAge, MaxAge, nSexes, DistnType,
+PlotAgeBasedCatchCurveResults_NormalSpace(RecAssump, SpecRecAge=NA, MinFreq, MinAge, MaxAge, nSexes, DistnType, SelDeltaVal,
                                           NatMortType, NatMort, NatMort_sd, ObsAgeFreq, CatchCurveModel, MainLabel=NA,
                                           xaxis_lab=NA, yaxis_lab=NA, xmax=NA, xint=NA, ymax=NA, yint=NA, PlotCLs=T, CCResults)
 }

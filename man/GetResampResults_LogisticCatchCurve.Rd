@@ -7,6 +7,7 @@
 GetResampResults_LogisticCatchCurve(
   params,
   vcov.params,
+  SelDeltaVal,
   nSexes,
   DistnType,
   NatMortType,
@@ -18,6 +19,8 @@ GetResampResults_LogisticCatchCurve(
 log(c(FMort, SelA50, SelDelta, theta) for Dirichlet multinomial NLL}
 
 \item{vcov.params}{variance-covarience matrix for estimated parameters}
+
+\item{SelDeltaVal}{NA, or fixed value if not estimating this parameter}
 
 \item{nSexes}{1 or 2}
 
