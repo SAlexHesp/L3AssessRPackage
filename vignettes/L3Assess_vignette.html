@@ -432,7 +432,7 @@ an analysis for calculating length-based selectivity given estimates of
 selectivity parameters for fish caught by gillnet fishing.</p>
 <p>Several data simulation routines have been implemented for model
 testing. The include length and/or age generation from equilibrium
-population models, and more sophistiated dynamic modelling approaches,
+population models, and more sophisticated dynamic modelling approaches,
 allowing for a specified history of exploitation and level of annual
 recruitment variation.</p>
 <p>Please note that this is a ‘trial version’ with testing of the
@@ -445,7 +445,7 @@ Hesp (<span class="math inline">\(\mathrm{Alex.Hesp@dpird.wa.gov.au}\)</span>).<
 <h3>Chapman and Robson (1960) mortality estimator</h3>
 <p><span class="math display">\[
 \hat{Z} =
-\ln\bigg[1+\overline{X}-\frac{1}{n}\bigg]^{-1}-\ln\overline{X}-\bigg[\frac{{(n-1)(n-2)}}{n(t+1)(n+t-1)}\bigg]
+\ln\bigg[1+\overline{X}-\frac{1}{n}\bigg]-\ln\overline{X}-\bigg[\frac{{(n-1)(n-2)}}{n(t+1)(n+t-1)}\bigg]
 \]</span> where <span class="math inline">\(\overline{X}\)</span> is the
 mean age above the age at full recruitment into the fishery, <span class="math inline">\(n\)</span> is the sample size and <span class="math inline">\(t=n\overline{X}\)</span>.</p>
 <p>An approximate estimate of the variance of <span class="math inline">\(Z\)</span> (for large sample sizes) may be
@@ -973,11 +973,28 @@ observed length composition data for retained fish is as follows</p>
 <p><span class="math display">\[
 \lambda = \sum_k C_k^R \ln \left( P_k^R + 0.0001 \right)
 \]</span> The small constant is used to robustify the calculations.</p>
-<p>Note that LBCC may also be fitted simultaneously to size compositions
-for retained fish and also for fish of sizes that would typically be
-caught and released during normal fishing operations (e.g. if such fish
-were measured by researchers during onboard monitoring). In such cases,
-an additional multinomial likelihood is calculated, associated with the
+<p>When fitting the model, natural mortality (<span class="math inline">\(M\)</span>) may be estimated using an informative
+lognormal prior, allowing uncertainty in <span class="math inline">\(M\)</span> to be propagated through the analysis.
+Because the length composition data contain little or no information
+about natural mortality, the estimated value of <span class="math inline">\(M\)</span> is expected to remain close to the
+user-specified prior distribution. The prior is specified using a mean
+natural mortality (<span class="math inline">\(\bar{M}\)</span>) and a
+standard deviation on the log scale (<span class="math inline">\(\sigma_M\)</span>). Thus, <span class="math display">\[ \log(M) \sim \mathrm{Normal}(\mu_M,\sigma_M)
+\]</span></p>
+<p>where</p>
+<p><span class="math display">\[ \mu_M = \log(\bar{M}) -
+\frac{\sigma_M^2}{2} \]</span></p>
+<p>so that the expected value of <span class="math inline">\(M\)</span>
+is <span class="math display">\[ E(M) = \bar{M} \]</span> The
+corresponding lognormal penalty function associated with <span class="math inline">\(M\)</span> is <span class="math display">\[
+\lambda_M = \log(\sigma_M\sqrt{2\pi}) + \frac{ \left( \log(M)-\mu_M
+\right)^2 } {2\sigma_M^2}. \]</span> When estimating <span class="math inline">\(M\)</span>, the overall objective function <span class="math inline">\(\lambda_{\mathrm{T}}\)</span> is thus <span class="math display">\[ \lambda_{\mathrm{T}} = \lambda + \lambda_M
+\]</span></p>
+<p>LBCC may also be fitted simultaneously to size compositions for
+retained fish and for fish of sizes that would typically be caught and
+released during normal fishing operations (e.g. if such fish were
+measured by researchers during onboard monitoring). In such cases, an
+additional multinomial likelihood is calculated, associated with the
 observed and expected length distributions for released fish. The model
 is then fitted to the summed likelihoods for retained and released fish.
 LBCC can also be fitted assuming a Dirichlet-multinomial (rather than
@@ -1086,6 +1103,13 @@ use a shorter model timestep (if samples are collected at intervals
 throughout the year), such that the modelled length compositions more
 closely match observed data, by allowing fish to grow throughout the
 year.</p>
+<p>As with the length-based catch curve (LBCC), the natural mortality
+may be estimated when fitting the length and age-based catch curve,
+assuming that <span class="math inline">\(M\)</span> conforms to a
+lognormal distribution. In this case, an informative lognormal penalty
+prior for <span class="math inline">\(M\)</span> is added to the
+objective function. For more details, see description given for the LBCC
+method.</p>
 <div id="apply-length-and-age-based-catch-curve" class="section level3">
 <h3>Apply length and age-based catch curve</h3>
 <p>Key functions relevant to applying this method are:<br />

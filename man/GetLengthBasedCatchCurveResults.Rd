@@ -174,6 +174,7 @@ RetenAtLen = NA # specify vector to fix, otherwise set to NA
 midpt=Res$midpt
 lbnd=Res$lbnd
 ubnd=Res$ubnd
+# Fit model
 InitFishMort = 0.25 # specify starting parameters
 InitFishMort_logit = log(InitFishMort / (2 - InitFishMort)) # logit transform (so F is always between 0 and 2)
 InitL50 = 400
@@ -183,6 +184,18 @@ params = c(InitFishMort_logit, log(InitL50), log(InitDelta))
 # InitL50Ret = 410
 # InitDeltaRet = 60
 # params = c(InitFishMort_logit, log(InitL50), log(InitDelta), log(InitL50Ret), log(InitDeltaRet))
+FittedRes=GetLengthBasedCatchCurveResults(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen, lbnd, ubnd, midpt,
+                                          SelectivityAtLen, RetenAtLen, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMortType, NatMort, NatMort_sd, TimeStep)
+
+# Fit model, also estimating natural mortality with informative prior
+NatMortType = 2 # 1 = fixed, 2 = estimated with prior to allow for uncertainty
+NatMort_sd = 0.15 # standard deviation for natural mortality in log space. Set to NA if NatMortType = 1.
+InitFishMort = 0.25 # specify starting parameters
+InitFishMort_logit = log(InitFishMort / (2 - InitFishMort)) # logit transform (so F is always between 0 and 2)
+InitNatMort = 0.2
+InitL50 = 400
+InitDelta = 100
+params = c(InitFishMort_logit, log(InitNatMort), log(InitL50), log(InitDelta))
 FittedRes=GetLengthBasedCatchCurveResults(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen, lbnd, ubnd, midpt,
                                           SelectivityAtLen, RetenAtLen, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMortType, NatMort, NatMort_sd, TimeStep)
 

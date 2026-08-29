@@ -973,6 +973,7 @@ VisualiseGrowthApplyingLTM <- function (nFish, TimeStep, MaxAge, Growth_params, 
 #' midpt=Res$midpt
 #' lbnd=Res$lbnd
 #' ubnd=Res$ubnd
+#' # Fit model
 #' InitFishMort = 0.25 # specify starting parameters
 #' InitFishMort_logit = log(InitFishMort / (2 - InitFishMort)) # logit transform (so F is always between 0 and 2)
 #' InitL50 = 400
@@ -982,6 +983,18 @@ VisualiseGrowthApplyingLTM <- function (nFish, TimeStep, MaxAge, Growth_params, 
 #' # InitL50Ret = 410
 #' # InitDeltaRet = 60
 #' # params = c(InitFishMort_logit, log(InitL50), log(InitDelta), log(InitL50Ret), log(InitDeltaRet))
+#' FittedRes=GetLengthBasedCatchCurveResults(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen, lbnd, ubnd, midpt,
+#'                                           SelectivityAtLen, RetenAtLen, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMortType, NatMort, NatMort_sd, TimeStep)
+#'
+#' # Fit model, also estimating natural mortality with informative prior
+#' NatMortType = 2 # 1 = fixed, 2 = estimated with prior to allow for uncertainty
+#' NatMort_sd = 0.15 # standard deviation for natural mortality in log space. Set to NA if NatMortType = 1.
+#' InitFishMort = 0.25 # specify starting parameters
+#' InitFishMort_logit = log(InitFishMort / (2 - InitFishMort)) # logit transform (so F is always between 0 and 2)
+#' InitNatMort = 0.2
+#' InitL50 = 400
+#' InitDelta = 100
+#' params = c(InitFishMort_logit, log(InitNatMort), log(InitL50), log(InitDelta))
 #' FittedRes=GetLengthBasedCatchCurveResults(params, DistnType, GrowthCurveType, GrowthParams, RefnceAges, MLL, SelectivityType, ObsRetCatchFreqAtLen, lbnd, ubnd, midpt,
 #'                                           SelectivityAtLen, RetenAtLen, ObsDiscCatchFreqAtLen, DiscMort, CVSizeAtAge, MaxAge, NatMortType, NatMort, NatMort_sd, TimeStep)
 #'
@@ -1274,7 +1287,7 @@ GetLengthBasedCatchCurveResults <- function (params, DistnType, GrowthCurveType,
     ParamEst = Results$ParamEst; RetCatch_EffSampleSize = Results$RetCatch_EffSampleSize; ParamSims = Results$ParamSims
 
     temp = ci(params[1], ses[1]) # logit space
-    EstFMort = 1/(1+exp(-temp)) # inverse logit transformed value
+    EstFMort = 2/(1+exp(-temp)) # inverse logit transformed value
     EstFMort_se = ((EstFMort[3]-EstFMort[2])/2)/1.96
 
   } else { # is.matrix(vcov.Params)
@@ -1612,17 +1625,22 @@ CalcObjFunc_LengthBasedCatchCurve <- function(params) {
   NLL = NLL_RetCatch + NLL_DiscCatch + Res$L50_Pen + Res$L95_Pen + NLL_NatMort
 
   if (NatMortType == 1) { # natural mortality fixed
-    #cat("NLL", NLL, " FMort ", 1/(1+exp(-params[1])),"sel params",exp(params[2:length(params)])," L50_Pen ", Res$L50_Pen, " L95_Pen " ,Res$L95_Pen, '\n')
-    cat("NLL", NLL, " FMort ", (2 * exp(params[1])) / (1 + exp(params[1])),"sel params",exp(params[2:length(params)]),
-        " L50_Pen ", Res$L50_Pen, " L95_Pen " ,Res$L95_Pen, '\n')
-
-
+    if (SelectivityType == 1) {  # selectivity specified as vector
+      cat("NLL", NLL, " FMort ", (2 * exp(params[1])) / (1 + exp(params[1])), '\n')
+    }
+    if (SelectivityType == 2) { # logistic selectivity
+      cat("NLL", NLL, " FMort ", (2 * exp(params[1])) / (1 + exp(params[1])),"sel params",exp(params[2:length(params)]),
+          " L50_Pen ", Res$L50_Pen, " L95_Pen " ,Res$L95_Pen, '\n')
+    }
   }
   if (NatMortType == 2) { # natural mortality estimated with a prior
-    #cat("NLL", NLL, " FMort ", 1/(1+exp(-params[1])), " NatMort ", exp(params[2]),
-    #    "sel params",exp(params[3:length(params)])," L50_Pen ", Res$L50_Pen, " L95_Pen " ,Res$L95_Pen, '\n')
+    if (SelectivityType == 1) {  # selectivity specified as vector
+      cat("NLL", NLL, " FMort ", (2 * exp(params[1])) / (1 + exp(params[1])), " NatMort ", exp(params[2]), '\n')
+    }
+    if (SelectivityType == 2) { # logistic selectivity
     cat("NLL", NLL, " FMort ", (2 * exp(params[1])) / (1 + exp(params[1])), " NatMort ", exp(params[2]),
         "sel params",exp(params[3:length(params)])," L50_Pen ", Res$L50_Pen, " L95_Pen " ,Res$L95_Pen, '\n')
+    }
   }
 
   return(NLL)
@@ -3291,7 +3309,8 @@ GetAgeAndLengthBasedCatchCurveResults <- function (params, RefnceAges, MLL, Dist
     Result = GetParamRes_AgeAndLengthBasedCatchCurve(NatMortType, DistnType, GrowthModelType, SelectivityType, nlmb, params, ses, sims)
     ParamEst = Result$ParamEst; ParamSims = Result$ParamSims
     EstFMort_se = ((ParamEst[1,3]-ParamEst[1,2])/2)/1.96
-    EstFMort = 1/(1+exp(-nlmb$par[1]))
+    # EstFMort = 1/(1+exp(-nlmb$par[1]))
+    EstFMort = (2 * exp(nlmb$par[1])) / (1 + exp(nlmb$par[1]))
 
   } else {
     EstFMort_se = NA
@@ -8070,7 +8089,12 @@ SimLenAndAgeFreqData_DynMod_ALB <- function(SimAnnSampSize, nYears, lnSigmaR, au
                         MeanAgeStatsRetCatch = MeanAgeStatsRetCatch,
                         MeanLengthStatsRetCatch = MeanLengthStatsRetCatch)
 
-  ModelDiag = list(MeanSizeAtAge = MeanSizeAtAge,
+  ModelDiag = list(MaxModelAge = MaxModelAge,
+                   TimeStep = TimeStep,
+                   lbnd = lbnd,
+                   midpt = midpt,
+                   ubnd = midpt,
+                   MeanSizeAtAge = MeanSizeAtAge,
                    FemWtAtLen = FemWtAtLen,
                    MalWtAtLen = MalWtAtLen,
                    FemPropMatAtLen = FemPropMatAtLen,
@@ -8878,15 +8902,21 @@ PlotLengthBasedCatchCurve_RetCatch <- function(params, DistnType, MLL, Selectivi
   AddAxesAndTickLabelsToPlot(xmin=0, xmax, xint, ymin=0, ymax, yint, cexval=NA, cexaxisval=1, lwdval=0, lineval=0.2, lasval=1)
   # inverse logit transformed value
   params = res$params # from point estimate, not from resampled values
-  Fval = round(1/(1+exp(-params[1])),2)
+  Fval = round(2/(1+exp(-params[1])),2)
   Fest = bquote("F =" ~ .(Fval) ~ y^-1)
   if (SelectivityType==1) {
     legend("topright", pch=-1, legend=as.expression(Fest),
            lty="solid",col="black", bty='n', cex=0.8,lwd=-1, y.intersp=1.2, adj=0)
   }
   if (SelectivityType==2) {
-    L50est=paste("L50 =",round(exp(params[2]),0),"mm")
-    L95est=paste("L95 - L50 =",round(exp(params[3]),0),"mm")
+    if (NatMortType == 1) {
+      L50est=paste("L50 =",round(exp(params[2]),0),"mm")
+      L95est=paste("L95 - L50 =",round(exp(params[3]),0),"mm")
+    }
+    if (NatMortType == 2) {
+      L50est=paste("L50 =",round(exp(params[3]),0),"mm")
+      L95est=paste("L95 - L50 =",round(exp(params[4]),0),"mm")
+    }
     legend("topright", pch=-1, legend=c(as.expression(Fest), L50est, L95est),
            lty="solid",col="black", bty='n', cex=0.8,lwd=-1, y.intersp=1.2)
   }
@@ -9059,7 +9089,9 @@ PlotLengthBasedCatchCurve_DiscCatch <- function(params, DistnType, MLL, Selectiv
     AddAxesAndTickLabelsToPlot(xmin=0, xmax, xint, ymin=0, ymax, yint, cexval=NA, cexaxisval=1, lwdval=0, lineval=0.2, lasval=1)
     # inverse logit transformed value
     params = res$params # from point estimate, not from resampled values
-    Fval = round(1/(1+exp(-params[1])),2)
+    # Fval = round(1/(1+exp(-params[1])),2)
+    Fval = round(2/(1+exp(-params[1])),2)
+
     Fest = bquote("F =" ~ .(Fval) ~ y^-1)
     if (SelectivityType==1) {
       legend("topright", pch=-1, legend=as.expression(Fest),

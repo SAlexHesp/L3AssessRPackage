@@ -37,7 +37,7 @@ The estimates of 'fishing mortality', from catch curve analysis, female spawning
 
 The package contains several age- and length-based routines for catch curve analysis, per recruit analysis, and an "extended" form of per recruit analysis with a stock-recruitment relationship. It also contains an analysis for calculating length-based selectivity given estimates of selectivity parameters for fish caught by gillnet fishing. 
 
-Several data simulation routines have been implemented for model testing. The include length and/or age generation from equilibrium population models, and more sophistiated dynamic modelling approaches, allowing for a specified history of exploitation and level of annual recruitment variation. 
+Several data simulation routines have been implemented for model testing. The include length and/or age generation from equilibrium population models, and more sophisticated dynamic modelling approaches, allowing for a specified history of exploitation and level of annual recruitment variation. 
 
 Please note that this is a 'trial version' with testing of the various routines continuing. Please report any identified issues to Alex Hesp ($\mathrm{Alex.Hesp@dpird.wa.gov.au}$).
 
@@ -46,7 +46,7 @@ Please note that this is a 'trial version' with testing of the various routines 
 ### Chapman and Robson (1960) mortality estimator
 
 $$
-\hat{Z} = \ln\bigg[1+\overline{X}-\frac{1}{n}\bigg]^{-1}-\ln\overline{X}-\bigg[\frac{{(n-1)(n-2)}}{n(t+1)(n+t-1)}\bigg]
+\hat{Z} = \ln\bigg[1+\overline{X}-\frac{1}{n}\bigg]-\ln\overline{X}-\bigg[\frac{{(n-1)(n-2)}}{n(t+1)(n+t-1)}\bigg]
 $$
 where $\overline{X}$ is the mean age above the age at full recruitment into the fishery, $n$ is the sample size and $t=n\overline{X}$.
 
@@ -451,7 +451,21 @@ $$
 $$
 The small constant is used to robustify the calculations.
 
-Note that LBCC may also be fitted simultaneously to size compositions for retained fish and also for fish of sizes that would typically be caught and released during normal fishing operations (e.g. if such fish were measured by researchers during onboard monitoring). In such cases, an additional multinomial likelihood is calculated, associated with the observed and expected length distributions for released fish. The model is then fitted to the summed likelihoods for retained and released fish. LBCC can also be fitted assuming a Dirichlet-multinomial (rather than multinomial distribution). The Dirichlet multinomial distribution has been implemented in the same way as described for the age-based logistic catch curve in L3Assess (see above), i.e. using the 'linear effective sample size' parameterisation, as recommended in Thorson et al. (2017) 
+When fitting the model, natural mortality ($M$) may be estimated using an informative lognormal prior, allowing uncertainty in $M$ to be propagated through the analysis. Because the length composition data contain little or no information about natural mortality, the estimated value of $M$ is expected to remain close to the user-specified prior distribution. The prior is specified using a mean natural mortality ($\bar{M}$) and a standard deviation on the log scale ($\sigma_M$). Thus, 
+$$ \log(M) \sim \mathrm{Normal}(\mu_M,\sigma_M) $$ 
+
+where 
+
+$$ \mu_M = \log(\bar{M}) - \frac{\sigma_M^2}{2} $$ 
+
+so that the expected value of $M$ is 
+$$ E(M) = \bar{M} $$ 
+The corresponding lognormal penalty function associated with $M$ is 
+$$ \lambda_M = \log(\sigma_M\sqrt{2\pi}) + \frac{ \left( \log(M)-\mu_M \right)^2 } {2\sigma_M^2}. $$
+When estimating $M$, the overall objective function $\lambda_{\mathrm{T}}$ is thus 
+$$ \lambda_{\mathrm{T}} = \lambda + \lambda_M $$
+
+LBCC may also be fitted simultaneously to size compositions for retained fish and for fish of sizes that would typically be caught and released during normal fishing operations (e.g. if such fish were measured by researchers during onboard monitoring). In such cases, an additional multinomial likelihood is calculated, associated with the observed and expected length distributions for released fish. The model is then fitted to the summed likelihoods for retained and released fish. LBCC can also be fitted assuming a Dirichlet-multinomial (rather than multinomial distribution). The Dirichlet multinomial distribution has been implemented in the same way as described for the age-based logistic catch curve in L3Assess (see above), i.e. using the 'linear effective sample size' parameterisation, as recommended in Thorson et al. (2017) 
 
 
 #### Calculation of model diagnostics on proportion of released fish, and mean length of released fish
@@ -520,6 +534,8 @@ $$
 The overall log-likelihood is calculated as the sum of the log-likelihoods associated with the marginal length composition, $\lambda_1$ (as described above for the length-based catch curve method) and the conditional age at length log-likelihood, $\lambda_2$.
 
 Note that this catch curve routine also allows use of alternative model time step values (e.g. 1/12 of a year vs 1 year). For shorter-lived species (e.g. < 10 y), it is likely more appropriate to use a shorter model timestep (if samples are collected at intervals throughout the year), such that the modelled length compositions more closely match observed data, by allowing fish to grow throughout the year. 
+
+As with the length-based catch curve (LBCC), the natural mortality may be estimated when fitting the length and age-based catch curve, assuming that $M$ conforms to a lognormal distribution. In this case, an informative lognormal penalty prior for $M$ is added to the objective function. For more details, see description given for the LBCC method.
 
 ### Apply length and age-based catch curve
 

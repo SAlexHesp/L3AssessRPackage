@@ -215,6 +215,7 @@ NumericMatrix CalcLTM_cpp(NumericVector TimeStepGrowthSizeInc, const double CVSi
   NumericVector MeanEndingLength(nLenCl);
   NumericVector StDev(nLenCl);
   NumericVector temp;
+  double colsum;
 
     MeanEndingLength = midpt + TimeStepGrowthSizeInc;
     StDev = MeanEndingLength * CVSizeAtAge;
@@ -224,6 +225,12 @@ NumericMatrix CalcLTM_cpp(NumericVector TimeStepGrowthSizeInc, const double CVSi
         temp = pnorm(ubnd, MeanEndingLength(ii), StDev(ii)) -
           pnorm(lbnd, MeanEndingLength(ii), StDev(ii));
 
+        // ensure columns sum to zero
+        colsum = sum(temp);
+        if (colsum > 0.0) {
+          temp = temp / colsum;
+        }
+        
         for (i=0; i<nLenCl; i++) {
           LTM(i,ii) = temp(i);
         }
