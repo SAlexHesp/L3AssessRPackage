@@ -5858,8 +5858,8 @@ GetRecruitmentDeviations_DynSimMod <- function(nYears, lnSigmaR, autocorr) {
   for (j in seq(2,nYears+1,1)) {
     lnrandom_dev[j] <- autocorr * lnrandom_dev[j-1] +
       rnorm(1,0,err_normdist_sd1)
-    random_dev = exp(lnrandom_dev - 0.5*lnSigmaR*lnSigmaR)
   }
+  random_dev = exp(lnrandom_dev - 0.5*lnSigmaR*lnSigmaR)
   return(random_dev)
 }
 
@@ -20946,7 +20946,8 @@ VarRecCC_ObjFunc <- function(params) {
 
   RTMB::getAll(dat, params, warn=FALSE)
   FMort <- exp(lnFMort)
-  RecDevs <- exp(lnRecDevs)
+  RecDevs <- exp(lnRecDevs - 0.5 * SigmaR^2)
+
 
   # selectivity of landings
   SelAtAge <- rep(1,nAges)
@@ -20967,7 +20968,7 @@ VarRecCC_ObjFunc <- function(params) {
   Recruit = rep(1,length(RecruitYrs))
   EstRecDevYrs = LastRecDevYr:FirstRecDevYr
   x=which(RecruitYrs <= LastRecDevYr & RecruitYrs >= FirstRecDevYr)
-  Recruit[x] = RecDevs - (0.5 * SigmaR * SigmaR)
+  Recruit[x] <- RecDevs
 
   # calculate numbers at age for the first year
   # age < 0 < A
@@ -21037,7 +21038,7 @@ VarRecCC_ObjFunc <- function(params) {
   }
 
   # variance penalty for recruitment deviations
-  NLL2 = (1 / (2 * pi * SigmaR^2)) * sum(lnRecDevs^2)
+  NLL2 = -sum(dnorm(lnRecDevs, mean = 0, sd = SigmaR, log = TRUE))
 
   # sum to zero penalty for estimated recruitment deviations
   sumlnRecDevs = sum(lnRecDevs)
