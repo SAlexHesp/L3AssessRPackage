@@ -1705,6 +1705,7 @@ CalcObjFunc_AgeAndLengthBasedCatchCurve <- function(params) {
                                           GrowthCurveType, GrowthParams, RefnceAges, CVSizeAtAge, CatchCurveType,
                                           MLL, SelectivityType, SelectivityAtLen, RetenAtLen, DiscMort)
 
+  Linf_Pen = Res$Linf_Pen
   L50_Pen = Res$L50_Pen
   L95_Pen = Res$L95_Pen
   GrowthModelType = Res$GrowthModelType # 1 = von Bert single sex, 2 = von Bert, 2 sexes,
@@ -1794,23 +1795,20 @@ CalcObjFunc_AgeAndLengthBasedCatchCurve <- function(params) {
     NLL_NatMort = -dnorm(Estlog_NatMort, Meanlog_NatMort, NatMort_sd, log=TRUE)
   }
 
-  NLL = Length_NLL + CondAgeAtLengthNLL + L50_Pen + L95_Pen + NLL_NatMort
+  NLL = Length_NLL + CondAgeAtLengthNLL + Linf_Pen + L50_Pen + L95_Pen + NLL_NatMort
 
   if (NatMortType == 1) { # natural mortality fixed
-    cat("NLL", NLL, "Length_NLL", Length_NLL, "CondAgeAtLengthNLL", CondAgeAtLengthNLL, "L50_Pen", L50_Pen,
+    cat("NLL", NLL, "Length_NLL", Length_NLL, "CondAgeAtLengthNLL", CondAgeAtLengthNLL, "Linf_Pen", Linf_Pen, "L50_Pen", L50_Pen,
         "L95_Pen",L95_Pen, "\n")
-    #cat("F ", 1/(1+exp(-params[1])), " other params ",exp(params[2:length(params)]), "\n")
     cat("F ", (2 * exp(params[1])) / (1 + exp(params[1])), " other params ",exp(params[2:length(params)]), "\n")
     cat("", "\n")
   }
   if (NatMortType == 2) { # natural mortality estimated with a prior
-    cat("NLL", NLL, "Length_NLL", Length_NLL, "CondAgeAtLengthNLL", CondAgeAtLengthNLL, "L50_Pen", L50_Pen,
+    cat("NLL", NLL, "Length_NLL", Length_NLL, "CondAgeAtLengthNLL", CondAgeAtLengthNLL, "Linf_Pen", Linf_Pen, "L50_Pen", L50_Pen,
         "L95_Pen",L95_Pen, "\n")
-    #cat("F ", 1/(1+exp(-params[1]))," NatMort ", exp(params[2]), " other params ",exp(params[3:length(params)]), "\n")
     cat("F ", (2 * exp(params[1])) / (1 + exp(params[1]))," NatMort ", exp(params[2]), " other params ",exp(params[3:length(params)]), "\n")
     cat("", "\n")
   }
-
 
   return(NLL)
 
@@ -1947,6 +1945,11 @@ GetGrowthParams_AgeAndLengthBasedCatchCurvesCalcs <- function(params, NatMortTyp
         }
         if (nSexes == 2) { # 2 sexes
           Linf = exp(params[2:3])
+          if (length(params) == 4) { # common K, cv is global variable input, not in params
+            vbK = exp(c(params[4],params[4]))
+            GrowthParams = data.frame(Linf=Linf,vbK=vbK)
+            CVSizeAtAge = c(CVSizeAtAge,CVSizeAtAge) # global variable (for Dillon)
+          }
           if (length(params) == 5) { # common K
             vbK = exp(c(params[4],params[4]))
             GrowthParams = data.frame(Linf=Linf,vbK=vbK)
@@ -2298,6 +2301,38 @@ CalcAsymptoticLengthFromSchnuteParams <- function (GrowthModelType, Res, GrowthP
   return(Linf)
 }
 
+#' Calculate penalties to ensure separation of asymptotic lengths for two sex models
+#'
+#' This function ensures that the asymptotic length parameters are separated by a minimal amount
+#'
+#' @keywords internal
+#' @param Res list of outputs from GetGrowthInputsForLengthTransitionMatrices function
+#' @param GrowthCurveType 1=von Bertalanffy, 2=Schnute
+#' @param GrowthModelType # 1=1 sex, von Bertalanffy, 2=2 sexes, von Bertalanffy, 3=1 sex, Schnute, 4=2 sexes, Schnute
+#'
+#' @return Linf asymptotic length parameter
+CalcLinfPenalties <- function (Res, GrowthCurveType, GrowthModelType) {
+
+  Linf_Pen = 0
+  if (GrowthCurveType==1) { # von Bertalanffy
+    if (GrowthModelType == 2) { # two sex, von Bertalanffy
+      if ((abs(Res$Linf[1]-Res$Linf[2])) < 2) {
+        Linf_Pen = (2 - (abs(Res$Linf[1]-Res$Linf[2])))^2
+        x = which(Res$Linf == max(Res$Linf))
+        xx = which(Res$Linf == min(Res$Linf))
+        Res$Linf[x] = Res$Linf[xx] + 2
+      }
+    }
+  }
+
+  # ensure that for separate sex models, the 2 Linf values are separated by a minimum amount
+  Results = list(Res=Res,
+                 Linf_Pen=Linf_Pen)
+
+  return(Results)
+
+}
+
 #' Calculate penalties for selectivity and reset parameters values when necessary
 #'
 #' This function ensures that the length at 95% selectivity does not exceed Linf, and
@@ -2455,6 +2490,11 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, DistnType, lbnd, ubnd, mi
   MeanSizeAtAge = Res$MeanSizeAtAge
   TimestepGrowthSizeInc = Res$TimestepGrowthSizeInc
   MeanEndingLength = Res$MeanEndingLength
+
+  # ensure Linf1 vs Linf2 are separated by some minimal amount (for two sex models)
+  Res2 = CalcLinfPenalties(Res, GrowthCurveType, GrowthModelType)
+  Res = Res2$Res
+  Linf_Pen = Res2$Linf_Pen
 
   # get natural mortality value
   if (NatMortType == 1) NatMortVal = NatMort # natural mortality fixed
@@ -2693,6 +2733,7 @@ AgeAndLengthBasedCatchCurvesCalcs <- function (params, DistnType, lbnd, ubnd, mi
                  ExpRetCatchPropLengthGivenIntAge = ExpRetCatchPropLengthGivenIntAge,
                  ExpRetCatchPropLengthGivenIntAge_Fem = ExpRetCatchPropLengthGivenIntAge_Fem,
                  ExpRetCatchPropLengthGivenIntAge_Mal = ExpRetCatchPropLengthGivenIntAge_Mal,
+                 Linf_Pen = Linf_Pen,
                  L50_Pen = L50_Pen,
                  L95_Pen = L95_Pen,
                  GrowthModelType = GrowthModelType,
@@ -3309,7 +3350,6 @@ GetAgeAndLengthBasedCatchCurveResults <- function (params, RefnceAges, MLL, Dist
     Result = GetParamRes_AgeAndLengthBasedCatchCurve(NatMortType, DistnType, GrowthModelType, SelectivityType, nlmb, params, ses, sims)
     ParamEst = Result$ParamEst; ParamSims = Result$ParamSims
     EstFMort_se = ((ParamEst[1,3]-ParamEst[1,2])/2)/1.96
-    # EstFMort = 1/(1+exp(-nlmb$par[1]))
     EstFMort = (2 * exp(nlmb$par[1])) / (1 + exp(nlmb$par[1]))
 
   } else {
@@ -3372,6 +3412,7 @@ GetAgeAndLengthBasedCatchCurveResults <- function (params, RefnceAges, MLL, Dist
                    ExpRetCatchPropLengthGivenIntAge_Mal = res$ExpRetCatchPropLengthGivenIntAge_Mal,
                    L50_Pen = res$L50_Pen,
                    L95_Pen = res$L95_Pen,
+                   Linf_Pen = res$Linf_Pen,
                    GrowthModelType = res$GrowthModelType,
                    TotCatchAtIntAgeLen = res$TotCatchAtIntAgeLen,
                    TotCatchAtIntAgeLen_Fem = res$TotCatchAtIntAgeLen_Fem,
@@ -3512,8 +3553,6 @@ GetParamRes_AgeAndLengthBasedCatchCurve <- function (NatMortType, DistnType, Gro
 
   # estimate of fishing mortality in logit space
   temp = ci(params[1], ses[1])
-  # EstFMort = 1/(1+exp(-temp)) # inverse logit transformed value
-  # F.sim = 1/(1+exp(-sims[,1]))
   EstFMort = (2 * exp(temp)) / (1 + exp(temp)) # inverse logit transformed value
   F.sim = (2 * exp(sims[,1])) / (1 + exp(sims[,1]))
 
@@ -3591,6 +3630,19 @@ GetParamRes_AgeAndLengthBasedCatchCurve <- function (NatMortType, DistnType, Gro
       }
     }
     if (SelectivityType == 1 & GrowthModelType == 2) {   # selectivity vector input, separate sex growth
+
+      if (length(params) == 4) { # common k, fixed CV (for Dillon's project)
+        EstLinf_F = ci_exp(params[2], ses[2])
+        EstLinf_M = ci_exp(params[3], ses[3])
+        Estk = ci_exp(params[4], ses[4])
+        Linf_F.sim = exp(sims[,2]); Linf_M.sim = exp(sims[,3]); vbK.sim = exp(sims[,4])
+        if (DistnType == 1) { # Multinomial distribution
+          ParamEst = t(data.frame(FMort = round(EstFMort, 3), Linf_F = round(EstLinf_F, 3), Linf_M = round(EstLinf_M, 3),
+                                  vbK = round(Estk, 3)))
+          ParamSims = data.frame(F.sim=F.sim, Linf_F.sim=Linf_F.sim, Linf_M.sim=Linf_M.sim, vbK.sim=vbK.sim)
+        }
+      }
+
       if (length(params) == 5) { # common k
         EstLinf_F = ci_exp(params[2], ses[2])
         EstLinf_M = ci_exp(params[3], ses[3])
@@ -10032,7 +10084,7 @@ GetResampLengthsAtAge_AgeLengthCatchCurve_Growth <- function(nReps, nTimeSteps, 
             EstLenAtAge.sim[j,] = ParamVals[2] * (1 - exp(-ParamVals[3]*(PlotAges)))
           }
           if (nSexes == 2) {
-            if (length(params) == 5) { # common k
+            if (length(params) == 4 | length(params) == 5) { # common k
               EstLenAtAgeF.sim[j,] = ParamVals[2] * (1 - exp(-ParamVals[4]*(PlotAges)))
               EstLenAtAgeM.sim[j,] = ParamVals[3] * (1 - exp(-ParamVals[4]*(PlotAges)))
             }
