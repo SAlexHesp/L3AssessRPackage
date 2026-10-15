@@ -19024,13 +19024,6 @@ GetRandomParamVals_PreRecruit_AB_with_err <- function(Steepness, Steepness_sd, C
   Gear_sel_A50_1Values=NA; Gear_sel_A50_2Values=NA
   Gear_sel_A95_1Values=NA; Gear_sel_A95_2Values=NA
 
-  # Steepness - assumed to be independent of other parameters
-  if (Steepness_sd[2]==1) {
-    hValues = rnorm(nReps, Steepness, Steepness_sd[1])
-  } else {
-    hValues = exp(rnorm(nReps, log(Steepness), Steepness_sd[1]))
-  }
-
   if (length(ParamSims) == 1 && is.na(ParamSims)) {
     if (Current_F_sd[2]==1) { # normal
       FValues = rnorm(nReps, Current_F, Current_F_sd[1])
@@ -19042,7 +19035,13 @@ GetRandomParamVals_PreRecruit_AB_with_err <- function(Steepness, Steepness_sd, C
     } else {
       MValues = exp(rnorm(nReps, log(NatMort), NatMort_sd[1]))
     }
+    if (Steepness_sd[2]==1) {
+      hValues = rnorm(nReps, Steepness, Steepness_sd[1])
+    } else {
+      hValues = exp(rnorm(nReps, log(Steepness), Steepness_sd[1]))
+    }
   } else {
+    if ("Steep.sim" %in% names(ParamSims)) hValues <- ParamSims$Steep.sim
     if ("FMort.sim" %in% names(ParamSims)) FValues <- ParamSims$FMort.sim
     if ("NatMort.sim" %in% names(ParamSims)) {
       MValues <- MValues <- ParamSims$NatMort.sim
