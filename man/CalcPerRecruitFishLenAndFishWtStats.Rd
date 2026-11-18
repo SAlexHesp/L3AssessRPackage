@@ -25,7 +25,7 @@ CalcPerRecruitFishLenAndFishWtStats(
 
 \item{MalCatchNumLen}{male per recruit catch numbers at length}
 
-\item{CombSexCatchNumLen}{}
+\item{CombSexCatchNumLen}{combined sex per recruit catch numbers at length}
 }
 \value{
 PerRecRandFishLen

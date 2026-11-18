@@ -1945,10 +1945,10 @@ GetGrowthParams_AgeAndLengthBasedCatchCurvesCalcs <- function(params, NatMortTyp
         }
         if (nSexes == 2) { # 2 sexes
           Linf = exp(params[2:3])
-          if (length(params) == 4) { # common K, cv is global variable input, not in params
+          if (length(params) == 4) { # common K, fix cv
             vbK = exp(c(params[4],params[4]))
             GrowthParams = data.frame(Linf=Linf,vbK=vbK)
-            CVSizeAtAge = c(CVSizeAtAge,CVSizeAtAge) # global variable (for Dillon)
+            CVSizeAtAge = c(CVSizeAtAge,CVSizeAtAge) # fix cv (use global variable input, not in params)
           }
           if (length(params) == 5) { # common K
             vbK = exp(c(params[4],params[4]))
@@ -1971,10 +1971,24 @@ GetGrowthParams_AgeAndLengthBasedCatchCurvesCalcs <- function(params, NatMortTyp
           CVSizeAtAge = exp(params[6])
         }
         if (nSexes == 2) { # 2 sexes, logistic selectivity
-          Linf = exp(params[4:5])
-          vbK = exp(params[6:7])
-          GrowthParams = data.frame(Linf=Linf,vbK=vbK)
-          CVSizeAtAge = c(exp(params[8]),exp(params[8]))
+          if (length(params) == 6) { # single k, fix cv
+            Linf = exp(params[4:5])
+            vbK = exp(c(params[6],params[6]))
+            GrowthParams = data.frame(Linf=Linf,vbK=vbK)
+            CVSizeAtAge = c(CVSizeAtAge,CVSizeAtAge) # fix cv (use global variable input, not in params)
+          }
+          if (length(params) == 7) { # single k, est cv
+            Linf = exp(params[4:5])
+            vbK = exp(c(params[6],params[6]))
+            GrowthParams = data.frame(Linf=Linf,vbK=vbK)
+            CVSizeAtAge = c(exp(params[7]),exp(params[7]))
+          }
+          if (length(params) == 8) { # sep k, est cv
+            Linf = exp(params[4:5])
+            vbK = exp(params[6:7])
+            GrowthParams = data.frame(Linf=Linf,vbK=vbK)
+            CVSizeAtAge = c(exp(params[8]),exp(params[8]))
+          }
         }
       } # selectivity type = 2 - logistic selectivity
     } # von Bertalanffy
@@ -3683,35 +3697,98 @@ GetParamRes_AgeAndLengthBasedCatchCurve <- function (NatMortType, DistnType, Gro
       }
     }
     if (SelectivityType == 2 & GrowthModelType == 2) { # logistic selectivity, separate sex growth
-      EstL50 = ci_exp(params[2], ses[2])
-      EstDelta = ci_exp(params[3], ses[3])
-      EstLinf_F = ci_exp(params[4], ses[4])
-      EstLinf_M = ci_exp(params[5], ses[5])
-      Estk_F = ci_exp(params[6], ses[6])
-      Estk_M = ci_exp(params[7], ses[7])
-      EstCV = ci_exp(params[8], ses[8])
-      L50Sel.sim = exp(sims[,2]); L95Sel.sim = exp(sims[,2]) + exp(sims[,3])
-      Linf_F.sim = exp(sims[,4]); Linf_M.sim = exp(sims[,5]); vbK_F.sim = exp(sims[,6]); vbK_M.sim = exp(sims[,7])
-      CV.sim = exp(sims[,8])
-      if (DistnType == 1) { # Multinomial distribution
-        ParamEst = t(data.frame(FMort = round(EstFMort, 3), SelL50 = round(EstL50, 3), Delta = round(EstDelta, 3),
-                                Linf_F = round(EstLinf_F, 3), Linf_M = round(EstLinf_M, 3),
-                                vbK_F = round(Estk_F, 3), vbK_M = round(Estk_M, 3), CV = round(EstCV, 3)))
-        ParamSims = data.frame(F.sim=F.sim, L50Sel.sim=L50Sel.sim, L95Sel.sim=L95Sel.sim,
-                               Linf_F.sim=Linf_F.sim, Linf_M.sim=Linf_M.sim, vbK_F.sim=vbK_F.sim,
-                               vbK_M.sim=vbK_M.sim, CV.sim=CV.sim)
-      }
-      if (DistnType == 2) { # Dirichlet multinomial distribution for marginal length comp
-        temp = ci(params[9], ses[9])
-        Esttheta = 1/(1+exp(-temp))
-        ParamEst = t(data.frame(FMort = round(EstFMort, 3), SelL50 = round(EstL50, 3), Delta = round(EstDelta, 3),
-                                Linf_F = round(EstLinf_F, 3), Linf_M = round(EstLinf_M, 3),
-                                vbK_F = round(Estk_F, 3), vbK_M = round(Estk_M, 3), CV = round(EstCV, 3), theta = round(Esttheta, 3)))
-        theta.sim = 1/(1+exp(-sims[,9]))
-        ParamSims = data.frame(F.sim=F.sim, L50Sel.sim=L50Sel.sim, L95Sel.sim=L95Sel.sim,
-                               Linf_F.sim=Linf_F.sim, Linf_M.sim=Linf_M.sim, vbK_F.sim=vbK_F.sim,
-                               vbK_M.sim=vbK_M.sim, CV.sim=CV.sim, theta.sim=theta.sim)
-      }
+
+      if (length(params) == 8) { # sep k
+        EstL50 = ci_exp(params[2], ses[2])
+        EstDelta = ci_exp(params[3], ses[3])
+        EstLinf_F = ci_exp(params[4], ses[4])
+        EstLinf_M = ci_exp(params[5], ses[5])
+        Estk_F = ci_exp(params[6], ses[6])
+        Estk_M = ci_exp(params[7], ses[7])
+        EstCV = ci_exp(params[8], ses[8])
+        L50Sel.sim = exp(sims[,2]); L95Sel.sim = exp(sims[,2]) + exp(sims[,3])
+        Linf_F.sim = exp(sims[,4]); Linf_M.sim = exp(sims[,5]); vbK_F.sim = exp(sims[,6]); vbK_M.sim = exp(sims[,7])
+        CV.sim = exp(sims[,8])
+        if (DistnType == 1) { # Multinomial distribution
+          ParamEst = t(data.frame(FMort = round(EstFMort, 3), SelL50 = round(EstL50, 3), Delta = round(EstDelta, 3),
+                                  Linf_F = round(EstLinf_F, 3), Linf_M = round(EstLinf_M, 3),
+                                  vbK_F = round(Estk_F, 3), vbK_M = round(Estk_M, 3), CV = round(EstCV, 3)))
+          ParamSims = data.frame(F.sim=F.sim, L50Sel.sim=L50Sel.sim, L95Sel.sim=L95Sel.sim,
+                                 Linf_F.sim=Linf_F.sim, Linf_M.sim=Linf_M.sim, vbK_F.sim=vbK_F.sim,
+                                 vbK_M.sim=vbK_M.sim, CV.sim=CV.sim)
+        }
+        if (DistnType == 2) { # Dirichlet multinomial distribution for marginal length comp
+          temp = ci(params[9], ses[9])
+          Esttheta = 1/(1+exp(-temp))
+          ParamEst = t(data.frame(FMort = round(EstFMort, 3), SelL50 = round(EstL50, 3), Delta = round(EstDelta, 3),
+                                  Linf_F = round(EstLinf_F, 3), Linf_M = round(EstLinf_M, 3),
+                                  vbK_F = round(Estk_F, 3), vbK_M = round(Estk_M, 3), CV = round(EstCV, 3), theta = round(Esttheta, 3)))
+          theta.sim = 1/(1+exp(-sims[,9]))
+          ParamSims = data.frame(F.sim=F.sim, L50Sel.sim=L50Sel.sim, L95Sel.sim=L95Sel.sim,
+                                 Linf_F.sim=Linf_F.sim, Linf_M.sim=Linf_M.sim, vbK_F.sim=vbK_F.sim,
+                                 vbK_M.sim=vbK_M.sim, CV.sim=CV.sim, theta.sim=theta.sim)
+        }
+      } # length(params) = 8
+
+      if (length(params) == 7) { # common k
+        EstL50 = ci_exp(params[2], ses[2])
+        EstDelta = ci_exp(params[3], ses[3])
+        EstLinf_F = ci_exp(params[4], ses[4])
+        EstLinf_M = ci_exp(params[5], ses[5])
+        Estk = ci_exp(params[6], ses[6])
+        EstCV = ci_exp(params[7], ses[7])
+        L50Sel.sim = exp(sims[,2]); L95Sel.sim = exp(sims[,2]) + exp(sims[,3])
+        Linf_F.sim = exp(sims[,4]); Linf_M.sim = exp(sims[,5]); vbK.sim = exp(sims[,6])
+        CV.sim = exp(sims[,7])
+        if (DistnType == 1) { # Multinomial distribution
+          ParamEst = t(data.frame(FMort = round(EstFMort, 3), SelL50 = round(EstL50, 3), Delta = round(EstDelta, 3),
+                                  Linf_F = round(EstLinf_F, 3), Linf_M = round(EstLinf_M, 3),
+                                  vbK = round(Estk, 3), CV = round(EstCV, 3)))
+          ParamSims = data.frame(F.sim=F.sim, L50Sel.sim=L50Sel.sim, L95Sel.sim=L95Sel.sim,
+                                 Linf_F.sim=Linf_F.sim, Linf_M.sim=Linf_M.sim, vbK.sim=vbK.sim,
+                                 CV.sim=CV.sim)
+        }
+        if (DistnType == 2) { # Dirichlet multinomial distribution for marginal length comp
+          temp = ci(params[8], ses[8])
+          Esttheta = 1/(1+exp(-temp))
+          ParamEst = t(data.frame(FMort = round(EstFMort, 3), SelL50 = round(EstL50, 3), Delta = round(EstDelta, 3),
+                                  Linf_F = round(EstLinf_F, 3), Linf_M = round(EstLinf_M, 3),
+                                  vbK = round(Estk, 3), CV = round(EstCV, 3), theta = round(Esttheta, 3)))
+          theta.sim = 1/(1+exp(-sims[,8]))
+          ParamSims = data.frame(F.sim=F.sim, L50Sel.sim=L50Sel.sim, L95Sel.sim=L95Sel.sim,
+                                 Linf_F.sim=Linf_F.sim, Linf_M.sim=Linf_M.sim, vbK.sim=vbK.sim,
+                                 CV.sim=CV.sim, theta.sim=theta.sim)
+        }
+      } # length(params) = 7
+
+      if (length(params) == 6) { # common k, fix CV
+        EstL50 = ci_exp(params[2], ses[2])
+        EstDelta = ci_exp(params[3], ses[3])
+        EstLinf_F = ci_exp(params[4], ses[4])
+        EstLinf_M = ci_exp(params[5], ses[5])
+        Estk = ci_exp(params[6], ses[6])
+        L50Sel.sim = exp(sims[,2]); L95Sel.sim = exp(sims[,2]) + exp(sims[,3])
+        Linf_F.sim = exp(sims[,4]); Linf_M.sim = exp(sims[,5]); vbK.sim = exp(sims[,6])
+        if (DistnType == 1) { # Multinomial distribution
+          ParamEst = t(data.frame(FMort = round(EstFMort, 3), SelL50 = round(EstL50, 3), Delta = round(EstDelta, 3),
+                                  Linf_F = round(EstLinf_F, 3), Linf_M = round(EstLinf_M, 3),
+                                  vbK = round(Estk, 3)))
+          ParamSims = data.frame(F.sim=F.sim, L50Sel.sim=L50Sel.sim, L95Sel.sim=L95Sel.sim,
+                                 Linf_F.sim=Linf_F.sim, Linf_M.sim=Linf_M.sim, vbK.sim=vbK.sim)
+        }
+        if (DistnType == 2) { # Dirichlet multinomial distribution for marginal length comp
+          temp = ci(params[7], ses[7])
+          Esttheta = 1/(1+exp(-temp))
+          ParamEst = t(data.frame(FMort = round(EstFMort, 3), SelL50 = round(EstL50, 3), Delta = round(EstDelta, 3),
+                                  Linf_F = round(EstLinf_F, 3), Linf_M = round(EstLinf_M, 3),
+                                  vbK = round(Estk, 3), theta = round(Esttheta, 3)))
+          theta.sim = 1/(1+exp(-sims[,7]))
+          ParamSims = data.frame(F.sim=F.sim, L50Sel.sim=L50Sel.sim, L95Sel.sim=L95Sel.sim,
+                                 Linf_F.sim=Linf_F.sim, Linf_M.sim=Linf_M.sim, vbK.sim=vbK.sim,
+                                 theta.sim=theta.sim)
+        }
+      } # length(params) = 6
+
     }
 
     if (SelectivityType == 3 & GrowthModelType == 2) { # logistic selectivity + retention, separate sex growth
@@ -10099,8 +10176,14 @@ GetResampLengthsAtAge_AgeLengthCatchCurve_Growth <- function(nReps, nTimeSteps, 
             EstLenAtAge.sim[j,] = ParamVals[4] * (1 - exp(-ParamVals[5]*(PlotAges))) # growth curve for single sex or combined sexes
           }
           if (nSexes == 2) { # estimating sex-specific growth parameters, with sexes unknown for observed data
-            EstLenAtAgeF.sim[j,] = ParamVals[4] * (1 - exp(-ParamVals[6]*(PlotAges)))
-            EstLenAtAgeM.sim[j,] = ParamVals[5] * (1 - exp(-ParamVals[7]*(PlotAges)))
+            if (length(ParamVals)==8) { # sep k
+              EstLenAtAgeF.sim[j,] = ParamVals[4] * (1 - exp(-ParamVals[6]*(PlotAges)))
+              EstLenAtAgeM.sim[j,] = ParamVals[5] * (1 - exp(-ParamVals[7]*(PlotAges)))
+            }
+            if (length(ParamVals)==6| length(ParamVals)==7) { # common k with fixed or est cv
+              EstLenAtAgeF.sim[j,] = ParamVals[4] * (1 - exp(-ParamVals[6]*(PlotAges)))
+              EstLenAtAgeM.sim[j,] = ParamVals[5] * (1 - exp(-ParamVals[6]*(PlotAges)))
+            }
           }
         }
 
@@ -13903,7 +13986,7 @@ CalcWeightAtAge <- function(lenwt_a, ln_lenwt_a, lenwt_b, WLrel_Type, EstWtAtAge
 #' @param vbK von Bertalanffy growth parameter
 #' @param tzero von Bertalanffy growth parameter
 #' @param EstLenAtAge lengths at age, inputted as vector
-#' @param Ages
+#' @param Ages fish age classes
 #'
 #' @return FemLenAtAge
 #' @return MalLenAtAge
@@ -15048,7 +15131,7 @@ GetLTMInputsForPerRecruitAnalysis <- function(GrowthCurveType, TimeStep, MaxAge,
 #' @param midpt length class mid-points
 #' @param FemCatchNumLen female per recruit catch numbers at length
 #' @param MalCatchNumLen male per recruit catch numbers at length
-#' @param CombSexCatchNumLen
+#' @param CombSexCatchNumLen combined sex per recruit catch numbers at length
 #'
 #' @return PerRecRandFishLen
 #' @return PerRecMeanCatchLen

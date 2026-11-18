@@ -15,7 +15,7 @@ CalcLengthAtAge(Linf, vbK, tzero, EstLenAtAge, Ages)
 
 \item{EstLenAtAge}{lengths at age, inputted as vector}
 
-\item{Ages}{}
+\item{Ages}{fish age classes}
 }
 \value{
 FemLenAtAge
